@@ -1,10 +1,15 @@
 # blacklist everything
 /*
 
+# add bash scripts directory
+!/.bin
+
+# add emacs config directory
+!/.emacs.d
+
+# add i3 window manager config directory
+!/.i3
+
 # whitelist github files
 !.gitignore
-
-# whitelist project files and folders
-#!.emacs.d/		# emacs config
-#!.i3/			# i3 window manager config
-!.bin/ 			# bash scripts
+!README.md

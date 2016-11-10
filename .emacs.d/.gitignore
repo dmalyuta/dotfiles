@@ -1,0 +1,12 @@
+# blacklist everything
+/*
+
+# whitelist lisp scripts
+!/lisp
+
+# whitelist main config file
+!init.el
+
+# whitelist github files
+!.gitignore
+!README.md

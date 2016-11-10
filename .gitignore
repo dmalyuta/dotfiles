@@ -5,6 +5,6 @@
 !.gitignore
 
 # whitelist project files and folders
-!.emacs.d/		# emacs config
-!.i3/			# i3 window manager config
+#!.emacs.d/		# emacs config
+#!.i3/			# i3 window manager config
 !.bin/ 			# bash scripts

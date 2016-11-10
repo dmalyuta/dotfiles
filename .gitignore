@@ -1,0 +1,11 @@
+# blacklist everything
+/*
+
+# whitelist project files and folders
+!.emacs.d/		# emacs config
+!.i3/			# i3 window manager config
+!bin/ 			# bash scripts
+
+# whitelist github files
+!.gitignore
+!README.md

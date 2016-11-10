@@ -1,4 +1,4 @@
-# My Emacs Configuration
+# Emacs Configuration
 
 I use Emacs for C/C++ and LaTeX. This configuration aims to provide functionality that I need to work with these languages, aiming to be clean, understandable and portable. Currently I use this configuration with Linux Mint 18 Mate 64-bit and Emacs 24.5.1.
 

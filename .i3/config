@@ -36,7 +36,7 @@ bindsym $mod+Return exec i3-sensible-terminal
 bindsym $mod+Shift+q kill
 
 # start rofi (a program launcher)
-bindsym $mod+d exec rofi -show run -lines 10 -eh 2 -width 100 -padding 100 -opacity "85" -bw 0 -bc "$bg-color" -bg "$bg-color" -fg "$text-color" -hlbg "$bg-color" -hlfg "#9575cd" -font "System San Francisco Display 12"
+bindsym $mod+d exec rofi -show drun -lines 10 -eh 2 -width 100 -padding 100 -opacity "85" -separator-style none
 # enable transparency support (i3 does not support transparent windows out of the box)
 exec --no-startup-id exec compton
 # There also is the (new) i3-dmenu-desktop which only displays applications
@@ -102,13 +102,15 @@ set $workspace2 "2: "
 set $workspace3 "3: "
 # Internet
 set $workspace4 "4: "
+# Email
+set $workspace5 "5: "
 
 # switch to workspace
 bindsym $mod+1 workspace $workspace1
 bindsym $mod+2 workspace $workspace2
 bindsym $mod+3 workspace $workspace3
 bindsym $mod+4 workspace $workspace4
-bindsym $mod+5 workspace 5
+bindsym $mod+5 workspace $workspace5
 bindsym $mod+6 workspace 6
 bindsym $mod+7 workspace 7
 bindsym $mod+8 workspace 8
@@ -120,7 +122,7 @@ bindsym $mod+Shift+1 move container to workspace $workspace1
 bindsym $mod+Shift+2 move container to workspace $workspace2
 bindsym $mod+Shift+3 move container to workspace $workspace3
 bindsym $mod+Shift+4 move container to workspace $workspace4
-bindsym $mod+Shift+5 move container to workspace 5
+bindsym $mod+Shift+5 move container to workspace $workspace5
 bindsym $mod+Shift+6 move container to workspace 6
 bindsym $mod+Shift+7 move container to workspace 7
 bindsym $mod+Shift+8 move container to workspace 8
@@ -214,9 +216,24 @@ bindsym XF86AudioNext exec playerctl next
 bindsym XF86AudioPrev exec playerctl previous
 
 # Wallpaper
-exec_always --no-startup-id exec feh --bg-scale /home/danylo/.config/i3/wallpaper
+exec_always --no-startup-id exec feh --bg-scale /home/danylo/.i3/wallpaper
 
 # Map certain programs to workspaces
 assign [class="Emacs24"] $workspace2
-assign [class="Mate-terminal"] $workspace3
+#assign [class="Gnome-terminal"] $workspace3
 assign [class="Google-chrome"] $workspace4
+assign [class="Thunderbird"] $workspace5
+
+# Scratchpad (temporarily hide a window)
+# Make the currently focused window a scratchpad
+bindsym $mod+Shift+minus move scratchpad
+# Show the first scratchpad window
+bindsym $mod+minus scratchpad show, floating disable
+
+# Focus parent container (enables splith or splitv next to group of windows (container)!)
+bindsym $mod+p focus parent
+
+# Set keyboard typematic delay and rate
+# r option enables autorepeat when key is held down
+#                                     delay [ms]   rate [Hz]
+exec --no-startup-id exec xset r rate 200          30

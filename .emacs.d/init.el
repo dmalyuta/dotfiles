@@ -378,10 +378,10 @@
 (define-key global-map (kbd "RET") 'newline-and-indent)
 (put 'downcase-region 'disabled nil)
 ;; scroll one line at a time (less "jumpy" than defaults)
-(setq mouse-wheel-scroll-amount '(1 ((shift) . 1))) ;; one line at a time
-(setq mouse-wheel-progressive-speed nil) ;; don't accelerate scrolling
-(setq mouse-wheel-follow-mouse 't) ;; scroll window under mouse
-(setq scroll-step 1) ;; keyboard scroll one line at a time
+;; (setq mouse-wheel-scroll-amount '(1 ((shift) . 1))) ;; one line at a time
+;; (setq mouse-wheel-progressive-speed nil) ;; don't accelerate scrolling
+;; (setq mouse-wheel-follow-mouse 't) ;; scroll window under mouse
+;; (setq scroll-step 1) ;; keyboard scroll one line at a time
 ;; Save/load window configurations
 (global-set-key (kbd "<f10>") '(lambda () (interactive) (jump-to-register 9)
                                 (message "Windows disposition loaded"))) ;; load window config

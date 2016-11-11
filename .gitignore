@@ -9,6 +9,7 @@
 
 # add i3 window manager config directory
 !/.i3
+!.Xresources
 
 # whitelist github files
 !.gitignore

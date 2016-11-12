@@ -28,6 +28,8 @@ If you are having problems, please submit an issue - I will respond right away!
 
 You should be running a Ubuntu-based Linux operating system. So far, however, only Linux Mint 18 MATE 64-bit has been tested. You should also be connected to the Internet, since the install script downloads a few files.
 
+Note that the script is smart enough to backup any existing dotfiles to a directory `~/dotfile_backup_ddmmYYYY_THHMMSS/` (where the second half of the folder name is the current date and time) before overwriting any dotfile with one from this repository.
+
 #### Instructions
 
 1. Clone this repository into any directory `DIR` you wish with `git clone https://github.com/danyloM/dotfiles DIR`;

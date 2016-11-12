@@ -109,6 +109,18 @@ configure_make_install()
     runcmd "make install"
 }
 
+wget_targz_install()
+{
+    local name="$1"
+    local url="$2"
+        
+    runcmd "wget $url"
+    runcmd "tar -zxvf ${name}.tar.gz"
+    runcmd "rm -rf ${name}.tar.gz"
+    (runcmd "cd ${name}/" && configure_make_install)
+    runcmd "rm -rf ${name}/"
+}
+
 ########## check that run as root
 
 if [[ $EUID -ne 0 ]]; then
@@ -196,11 +208,7 @@ if ! global --version >/dev/null 2>&1; then
     apt_get_install_pkg libncurses5-dev
 
     # install GNU GLOBAL
-
-    runcmd "wget ftp://ftp.gnu.org/pub/gnu/global/global-6.5.5.tar.gz"
-    runcmd "tar -zxvf global-6.5.5.tar.gz"
-    (runcmd "cd global-6.5.5/" && configure_make_install)
-    runcmd "rm -rf global-6.5.5/"
+    wget_targz_install "global-6.5.5" "ftp://ftp.gnu.org/pub/gnu/global/global-6.5.5.tar.gz"
 fi
 
 ########## i3 window manager
@@ -276,18 +284,12 @@ if ! rofi -version >/dev/null 2>&1; then
 
     # install xcb-util-xrm dependency
     # TODO: somehow check if installed already
-
-    runcmd "wget https://github.com/Airblader/xcb-util-xrm/releases/download/v1.0/xcb-util-xrm-1.0.tar.gz"
-    runcmd "tar -zxvf xcb-util-xrm-1.0.tar.gz"
-    (runcmd "cd xcb-util-xrm-1.0/" && configure_make_install)
-    runcmd "rm -rf xcb-util-xrm-1.0/"
+    
+    wget_targz_install "xcb-util-xrm-1.0" "https://github.com/Airblader/xcb-util-xrm/releases/download/v1.0/xcb-util-xrm-1.0.tar.gz"
     
     # install rofi
 
-    runcmd "wget https://github.com/DaveDavenport/rofi/releases/download/1.2.0/rofi-1.2.0.tar.gz"
-    runcmd "tar -zxvf rofi-1.2.0.tar.gz"
-    (runcmd "cd rofi-1.2.0/" && configure_make_install)
-    runcmd "rm -rf rofi-1.2.0/"
+    wget_targz_install "rofi-1.2.0" "https://github.com/DaveDavenport/rofi/releases/download/1.2.0/rofi-1.2.0.tar.gz"
     
     # make sure that shared libraries in /usr/local/lib/ are seen
     

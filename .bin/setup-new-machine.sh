@@ -1,8 +1,9 @@
 #!/bin/bash
 # ----------------------------------------------------------------------
 #
-# Install script for settings up my working environment on a new Linux
-# computer. Tested with: Linux Mint 18 MATE 64-bit.
+# Install script for setting up my working environment on a new Linux
+# computer. Tested with: Linux Mint 18 MATE 64-bit. Works also for
+# existing installations.
 #
 # ----------------------------------------------------------------------
 
@@ -21,6 +22,7 @@ dryrun=false
 yellowbold="\033[1;33m"
 redbold="\033[1;31m"
 nostyle="\033[0m"
+date=$(date +"%d%m%Y_T%H%M%S")
 
 ########## functions
 
@@ -159,7 +161,7 @@ fi
 echo "moving dotfiles to $home"
 if [ "$dir" != "$home" ]; then
     # create backup folder
-    backup_folder="${home}/dotfile_backup"
+    backup_folder="${home}/dotfile_backup_$date"
     temp="$backup_folder"
     counter=0
     while [ -d "$backup_folder" ]

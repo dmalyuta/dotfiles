@@ -3,6 +3,7 @@
 
 # add bash scripts directory
 !/.bin
+!.setup-new-machine.sh
 
 # add emacs config directory
 !/.emacs.d

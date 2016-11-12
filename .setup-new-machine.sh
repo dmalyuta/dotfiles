@@ -15,7 +15,7 @@ cd "$realdir"
 
 ########## global variables
 
-dir="$(dirname $(pwd))"
+dir="$realdir"
 home="${HOME}"
 dotfiles_list=(".bin" ".fonts" ".emacs.d" ".i3" ".Xresources" ".gtkrc-2.0" ".config/gtk-3.0/settings.ini" ".dmrc")
 dryrun=false
@@ -29,14 +29,14 @@ date=$(date +"%d%m%Y_T%H%M%S")
 echoerr()
 { # output to STDERR (standard error stream)
     echo
-    echo -e "${redbold}error${nostyle}: $@" 1>&2
+    echo -e "${redbold}error${nostyle}: $1" 1>&2
     echo
 }
 
 echowarn()
 { # output a warning
     echo
-    echo -e "${yellowbold}warning${nostyle}: $@"
+    echo -e "${yellowbold}warning${nostyle}: $1"
     echo
 }
 

@@ -250,23 +250,6 @@ if (( $(id -u) != 0 )); then
     exit $BACKUP_DIR_NOT_FOUND # backup directory not found
 fi
 
-# check that backup directory exists
-if ! isdir "$BACKUP_DIR"; then
-    echoerr "Error: $BACKUP_DIR is not a directory"
-    echoerr "Hint: check that backup external disk is connected and mounted at /root/backup/"
-    echoerr "$ABORT_MSG"
-    exit $BACKUP_DIR_NOT_FOUND # backup directory not found
-fi
-
-# check that backup directory has enough space
-SPACE_AVAIL_BEFORE=$(get_size "avail")
-SPACE_USED_BEFORE=$(get_size "used")
-if [[ $SPACE_AVAIL_BEFORE -le $CRITICAL_SPACE_LEFT ]]; then
-    echoerr "Only $SPACE_AVAIL_BEFORE GB left on backup media, which is less than $CRITICAL_SPACE_LEFT"
-    echoerr "$ABORT_MSG"
-    exit $NOT_ENOUGH_SPACE
-fi
-
 # process flags (sets prefix and, optionally, depth and monitoring mode)
 DEPTH=3 # how many snapshots to keep (default)
 WITH_MONITORING=false # if true, then recursively back up any unfinished backups
@@ -303,6 +286,27 @@ if [[ -z $PREFIX ]]; then
     echoerr "Must specify flag -p with possible values [hourly/daily/weekly/monthly]"
     echoerr "$ABORT_MSG"
     exit $UNKNOWN_FLAG
+fi
+
+# set the name of the new backup folder and of the backup running indicator file
+NEW_PREFIX="00.""$PREFIX""_"$DATE
+BACKUP_RUNTIME_FILE=".running_$NEW_PREFIX"
+
+# check that backup directory exists
+if ! isdir "$BACKUP_DIR"; then
+    echoerr "Error: $BACKUP_DIR is not a directory"
+    echoerr "Hint: check that backup external disk is connected and mounted at /root/backup/"
+    echoerr "$ABORT_MSG"
+    exit $BACKUP_DIR_NOT_FOUND # backup directory not found
+fi
+
+# check that backup directory has enough space
+SPACE_AVAIL_BEFORE=$(get_size "avail")
+SPACE_USED_BEFORE=$(get_size "used")
+if [[ $SPACE_AVAIL_BEFORE -le $CRITICAL_SPACE_LEFT ]]; then
+    echoerr "Only $SPACE_AVAIL_BEFORE GB left on backup media, which is less than $CRITICAL_SPACE_LEFT"
+    echoerr "$ABORT_MSG"
+    exit $NOT_ENOUGH_SPACE
 fi
 
 ########## rotate $PREFIX snapshots
@@ -393,9 +397,7 @@ done
 
 ########## create most recent backup now
 
-NEW_PREFIX="00.""$PREFIX""_"$DATE
 RSYNC_ARGS=(-aH --stats --delete --exclude={"/dev/*","/proc/*","/sys/*","/tmp/*","/run/*","/mnt/*","/media/*","/lost+found","/root/backup/*"})
-BACKUP_RUNTIME_FILE=".running_$NEW_PREFIX"
 
 # step 1: find most recent existing backup
 MOST_RECENT=$(find "$BACKUP_DIR" -maxdepth 1 -type d | grep -o '[^/]\{1,\}$' | sort -t_ -k2.5nr,2 -k2.3nr,2 -k2.1nr,2 -k3r | head -1)

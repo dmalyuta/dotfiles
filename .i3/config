@@ -224,6 +224,12 @@ assign [class="Emacs24"] $workspace2
 assign [class="Google-chrome"] $workspace4
 assign [class="Thunderbird"] $workspace5
 
+# ### assign properties to some windows
+
+# # floating
+# #for_window [class="Polkit-mate-authentication-agent-1"] floating enable, border normal
+# for_window [class="MintUpdate.py"] floating enable, border normal
+
 # Scratchpad (temporarily hide a window)
 # Make the currently focused window a scratchpad
 bindsym $mod+Shift+minus move scratchpad
@@ -237,3 +243,6 @@ bindsym $mod+p focus parent
 # r option enables autorepeat when key is held down
 #                                     delay [ms]   rate [Hz]
 exec --no-startup-id exec xset r rate 200          30
+
+# Run polkit-mate-authentication-agent-1 for polkit
+exec --no-startup-id exec /usr/lib/x86_64-linux-gnu/polkit-mate-authentication-agent-1

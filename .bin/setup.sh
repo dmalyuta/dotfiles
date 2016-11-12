@@ -33,7 +33,12 @@ echowarn()
 
 runcmd()
 { # run a command in active mode, just print it in dry run mode
-    local cmd="$1 1>/dev/null"
+    if [ "$2" ]; then
+	# disable 1>/dev/null which prevents from writing to file
+	local cmd="$1"
+    else
+	local cmd="$1 1>/dev/null"
+    fi
     echo "$1"
     if [ $dryrun = false ]; then
 	eval $cmd
@@ -251,22 +256,22 @@ if ! dpkg -l "python3-powerline" >/dev/null 2>&1; then
     if [ ! -f "${home}/.screenrc" ]; then
 	runcmd "sudo -u $SUDO_USER touch ${home}/.screenrc"
     fi
-    runcmd "sed -i '1i term screen-256color' ${home}/.screenrc"
+    runcmd "sed -i '1i term screen-256color' ${home}/.screenrc" nonull
     runcmd "tar -zxvf new_machine_install_soft/powerline.tar.gz"
-    move_foo "powerline/" "$realdir" "${home}/.config/"
+    move_foo "powerline/" "$realdir" "${home}/.config"
     runcmd "rm -rf powerline/"
 
     # enable in vim
-    runcmd "echo \"set laststatus=2\" >> ${home}/.vimrc"
-    runcmd "echo -e \"python3 from powerline.vim import setup as powerline_setup\" >> ${home}/.vimrc"
-    runcmd "echo -e \"python3 powerline_setup()\npython3 del powerline_setup\" >> ${home}/.vimrc"
+    runcmd "echo \"set laststatus=2\" >> ${home}/.vimrc" nonull
+    runcmd "echo -e \"python3 from powerline.vim import setup as powerline_setup\" >> ${home}/.vimrc" nonull
+    runcmd "echo -e \"python3 powerline_setup()\npython3 del powerline_setup\" >> ${home}/.vimrc" nonull
 
     # enable in shell
-    runcmd "echo \". /usr/share/powerline/bindings/bash/powerline.sh\" >> ${home}/.bashrc"
+    runcmd "echo \". /usr/share/powerline/bindings/bash/powerline.sh\" >> ${home}/.bashrc" nonull
 
     # configure TERM variable to work properly under gnome-terminal with and without screen
-    runcmd "echo 'if [ \"$TERM\" != \"screen-256color\" ] ; then' >> ${home}/.bashrc"
-    runcmd "echo -e \"\texport TERM=xterm-256color\nfi\" >> ${home}/.bashrc"
+    runcmd "echo 'if [ \"$TERM\" != \"screen-256color\" ] ; then' >> ${home}/.bashrc" nonull
+    runcmd "echo -e \"\texport TERM=xterm-256color\nfi\" >> ${home}/.bashrc" nonull
 fi
 
 ########## closing actions

@@ -139,7 +139,7 @@ apt_get_install_pkg compton
 # numix theme
 if ! dpkg -l "numix-gtk-theme" >/dev/null 2>&1; then
     # numix theme not installed --> install it
-    runcmd "add-apt-repository ppa:numix/ppa"
+    runcmd "add-apt-repository -y ppa:numix/ppa"
     runcmd "apt-get update"
     apt_get_install_pkg numix-gtk-theme
 fi
@@ -169,8 +169,7 @@ if ! rofi -version >/dev/null 2>&1; then
     # rofi not installed --> install it
 
     # install dependencies
-    apt_get_install_pkg xcb-util
-    apt_get_install_pkg xcb-util-wm
+    apt_get_install_pkg xcb
     apt_get_install_pkg libxcb-util-dev
     apt_get_install_pkg libxcb-ewmh-dev
     apt_get_install_pkg libxcb-xinerama0
@@ -180,6 +179,7 @@ if ! rofi -version >/dev/null 2>&1; then
     apt_get_install_pkg libstartup-notification0
     apt_get_install_pkg libstartup-notification0-dev
     apt_get_install_pkg libxkbcommon-x11-dev
+    apt_get_install_pkg libglib2.0-dev
     
     # install rofi
     runcmd "tar -zxvf new_machine_install_soft/rofi-1.2.0.tar.gz"

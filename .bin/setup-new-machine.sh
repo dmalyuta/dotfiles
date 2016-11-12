@@ -302,6 +302,14 @@ if ! rofi -version >/dev/null 2>&1; then
     runcmd "ldconfig"
 fi
 
+########## gnome terminal
+
+# install gnome terminal
+apt_get_install_pkg gnome-terminal
+
+# remove mate terminal
+runcmd "apt-get --assume-yes purge mate-terminal"
+
 ########## powerline for bash
 
 # install powerline
@@ -348,7 +356,6 @@ move_foo "powerline" "$realdir" "${home}/.config"
 # remove Firefox
 
 runcmd "apt-get --assume-yes purge firefox"
-runcmd "apt-get --assume-yes autoremove"
 
 # install Chrome's dependencies
 
@@ -366,6 +373,8 @@ fi
 
 ########## closing actions
 
+# delete backup folder if it's empty (nothing was backed up)
+
 if [ -d "$backup_folder" ]; then
     if ! find "$backup_folder" -mindepth 1 -print -quit | grep -q .; then
 	echo "$backup_folder is empty (no existing dotfiles found in ${home}), deleting it"
@@ -373,6 +382,18 @@ if [ -d "$backup_folder" ]; then
     fi
 fi
 
-echo "finished successfully"
+# remove not needed packages
+
+runcmd "apt-get --assume-yes autoremove"
+
+# prompt for restart
+
+echowarn "finished successfully, recommended to restart [now/later]?"
+select user_choice in "now" "later"; do
+    case $user_choice in
+        now ) runcmd "shutdown -r now"; break;;
+        later ) exit 0;;
+    esac
+done
 
 exit 0

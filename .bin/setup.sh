@@ -62,8 +62,8 @@ move_foo()
 	if [ -e "$home_foo" ]; then
 	    runcmd "mv $home_foo $backup_folder"
 	fi
-	# move git repo folder to home
-	runcmd "cp -r $git_foo $home"
+	# copy git repo folder to home, preserving permissions
+	runcmd "cp -rp $git_foo $home"
     else
 	echowarn "couldn't find $git_foo"
     fi
@@ -90,11 +90,13 @@ done
 
 echo "moving dotfiles to $home"
 if [ "$dir" != "$home" ]; then
-    # make backup folder
+    # create backup folder
     backup_folder="${home}/dotfile_backup"
-    runcmd "mkdir $backup_folder"
+    if [ ! -d "$backup_folder" ]; then
+	runcmd "su -c \"mkdir $backup_folder\" \"$SUDO_USER\""
+    fi
     echo "any existing dotfiles in $home will be moved to $backup_folder"
-    # loop through each dotfile/folder
+    # loop through each dotfile/folder and back them up
     for foo in "${dotfiles_list[@]}"
     do
 	move_foo "$foo" "$dir" "$home"

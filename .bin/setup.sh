@@ -242,10 +242,9 @@ apt_get_install_pkg git
 apt_get_install_pkg gnome-terminal
 
 # powerline
-if ! dpkg -l "powerline" >/dev/null 2>&1; then
+if ! dpkg -l "python3-powerline" >/dev/null 2>&1; then
     apt_get_install_pkg powerline
     apt_get_install_pkg fonts-powerline
-    apt_get_install_pkg powerline
     apt_get_install_pkg python3-powerline
 
     # configure powerline

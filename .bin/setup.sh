@@ -6,6 +6,12 @@
 #
 # ----------------------------------------------------------------------
 
+########## go to directory where setup.sh actually is
+# necessary in case script is called from another directory
+
+realdir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+cd "$realdir"
+
 ########## global variables
 
 dir="$(dirname $(pwd))"
@@ -57,7 +63,7 @@ move_foo()
 	    runcmd "mv $home_foo $backup_folder"
 	fi
 	# move git repo folder to home
-	runcmd "mv $git_foo $home"
+	runcmd "cp -r $git_foo $home"
     else
 	echowarn "couldn't find $git_foo"
     fi

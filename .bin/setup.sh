@@ -37,7 +37,7 @@ runcmd()
     echo "$1"
     if [ $dryrun = false ]; then
 	eval $cmd
-	local exist_status=$?
+	local exit_status=$?
 	if [ $exit_status -ne 0 ]; then
 	    echoerr "the last command failed (exit status ${exit_status}), please see why and rerun the script"
 	    exit 1
@@ -192,6 +192,7 @@ if ! rofi -version >/dev/null 2>&1; then
     apt_get_install_pkg libstartup-notification0
     apt_get_install_pkg libstartup-notification0-dev
     apt_get_install_pkg libxkbcommon-x11-dev
+    apt_get_install_pkg libxkbcommon0
     apt_get_install_pkg libglib2.0-dev
     apt_get_install_pkg libperl-dev
     apt_get_install_pkg libgtk2.0-dev

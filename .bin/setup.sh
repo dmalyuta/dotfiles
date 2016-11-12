@@ -193,6 +193,8 @@ if ! rofi -version >/dev/null 2>&1; then
     apt_get_install_pkg libstartup-notification0-dev
     apt_get_install_pkg libxkbcommon-x11-dev
     apt_get_install_pkg libglib2.0-dev
+    apt_get_install_pkg libperl-dev
+    apt_get_install_pkg libgtk2.0-dev
     
     # install rofi
     runcmd "tar -zxvf new_machine_install_soft/rofi-1.2.0.tar.gz"

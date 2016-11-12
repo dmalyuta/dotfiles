@@ -97,11 +97,12 @@ echo "moving dotfiles to $home"
 if [ "$dir" != "$home" ]; then
     # create backup folder
     backup_folder="${home}/dotfile_backup"
+    temp="$backup_folder"
     counter=0
     while [ -d "$backup_folder" ]
     do
 	((counter++))
-	backup_folder="${backup_folder}_$counter"
+	backup_folder_new="${temp}_$counter"
     done
     runcmd "sudo -u $SUDO_USER mkdir $backup_folder"
     echo "any existing dotfiles in $home will be moved to $backup_folder"

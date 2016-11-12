@@ -30,8 +30,7 @@ runcmd()
     local cmd="$1 1>/dev/null"
     echo "$1"
     if [ $dryrun = false ]; then
-	echo "here"
-	#eval $cmd
+	eval $cmd
     fi
 }
 
@@ -40,7 +39,6 @@ apt_get_install_pkg()
     local pkg="$1"
     if ! dpkg -l "$pkg" >/dev/null 2>&1; then
 	# package not installed
-	echo "installing $pkg"
 	runcmd "apt-get --assume-yes install $pkg"
     fi
 }
@@ -89,7 +87,7 @@ if [ "$dir" != "$home" ]; then
     # make backup folder
     backup_folder="${home}/dotfile_backup"
     runcmd "mkdir $backup_folder"
-    echo "any existing dotfiles in $home will be moved to $backup_fodler"
+    echo "any existing dotfiles in $home will be moved to $backup_folder"
     # loop through each dotfile/folder
     for foo in "${dotfiles_list[@]}"
     do
@@ -241,5 +239,7 @@ if [ -d "$backup_folder" ]; then
 	runcmd "rmdir $backup_folder"
     fi
 fi
+
+echo "finished successfully. Enjoy!"
 
 exit 0

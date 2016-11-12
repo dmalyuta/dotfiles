@@ -60,7 +60,7 @@ move_foo()
     local dir="$2"
     local dest="$3"
     
-    local git_foo="${dir}/$foo" # new folder from respository
+    local git_foo="${dir}/$foo" # new folder from repository
     local home_foo="${dest}/$foo" # existing folder in ${HOME}
     if [ -e "$git_foo" ]; then
 	# move existing foo to backup folder
@@ -68,7 +68,7 @@ move_foo()
 	    runcmd "mv $home_foo $backup_folder"
 	fi
 	# copy git repo folder to home, preserving permissions
-	runcmd "cp -rp $git_foo $home"
+	runcmd "cp -rp $git_foo $home_foo"
     else
 	echowarn "couldn't find $git_foo"
     fi
@@ -204,6 +204,8 @@ if ! rofi -version >/dev/null 2>&1; then
     apt_get_install_pkg libglib2.0-dev
     apt_get_install_pkg libperl-dev
     apt_get_install_pkg libgtk2.0-dev
+    apt_get_install_pkg xutils
+    apt_get_install_pkg xutils-dev
 
     # install xcb-util-xrm dependency
     # TODO: somehow check if installed already

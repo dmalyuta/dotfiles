@@ -16,19 +16,26 @@ cd "$realdir"
 
 dir="$(dirname $(pwd))"
 home="${HOME}"
-dotfiles_list=(".bin" ".fonts" ".emacs.d" ".i3" ".Xresources" ".gtkrc-2.0" ".config/gtk-3.0" ".dmrc")
+dotfiles_list=(".bin" ".fonts" ".emacs.d" ".i3" ".Xresources" ".gtkrc-2.0" ".config/gtk-3.0/settings.ini" ".dmrc")
 dryrun=false
+yellowbold="\033[1;33m"
+redbold="\033[1;31m"
+nostyle="\033[0m"
 
 ########## functions
 
 echoerr()
 { # output to STDERR (standard error stream)
-    echo "error: $@" 1>&2
+    echo
+    echo -e "${redbold}error${nostyle}: $@" 1>&2
+    echo
 }
 
 echowarn()
 { # output a warning
-    echo "warning: $@"
+    echo
+    echo -e "${yellowbold}warning${nostyle}: $@"
+    echo
 }
 
 runcmd()
@@ -118,6 +125,22 @@ do
 	   dryrun=true;;
     esac
 done
+
+########## confirm that user really wants to proceed if not dry run
+
+if [ $dryrun = false ]; then
+    echowarn "not in dry run mode"
+    echo "this script will change the $SUDO_USER user's dotfiles and settings in the ${home} directory"
+
+    confirm_string="I really want to do this"
+    echo "to proceed, type without the brackets exactly [${confirm_string}]"
+    read -p "" user_string
+
+    if [ "$user_string" != "$confirm_string" ]; then
+	echowarn "mistyped string, aborting"
+	exit 1
+    fi
+fi
 
 ########## make backups of existing dotfiles
 

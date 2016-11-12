@@ -97,9 +97,13 @@ echo "moving dotfiles to $home"
 if [ "$dir" != "$home" ]; then
     # create backup folder
     backup_folder="${home}/dotfile_backup"
-    if [ ! -d "$backup_folder" ]; then
-	runcmd "sudo -u $SUDO_USER mkdir $backup_folder"
-    fi
+    counter=0
+    while [ -d "$backup_folder" ]
+    do
+	((counter++))
+	backup_folder="${backup_folder}_$counter"
+    done
+    runcmd "sudo -u $SUDO_USER mkdir $backup_folder"
     echo "any existing dotfiles in $home will be moved to $backup_folder"
     # loop through each dotfile/folder and back them up
     for foo in "${dotfiles_list[@]}"
@@ -211,8 +215,11 @@ if ! rofi -version >/dev/null 2>&1; then
     runcmd "tar -zxvf new_machine_install_soft/rofi-1.2.0.tar.gz"
     (runcmd "cd rofi-1.2.0/" && runcmd "./configure" && runcmd "make" && runcmd "make install")
     runcmd "rm -rf rofi-1.2.0/"
+    
     # make sure that shared libraries in /usr/local/lib/ are seen
-    runcmd "touch /etc/ld.so.conf.d/usr-local.conf"
+    if [ ! -f  "/etc/ld.so.conf.d/usr-local.conf" ]; then
+	runcmd "touch /etc/ld.so.conf.d/usr-local.conf"
+    fi
     runcmd "echo \"/usr/local/lib\" > /etc/ld.so.conf.d/usr-local.conf"
     runcmd "ldconfig"
 fi

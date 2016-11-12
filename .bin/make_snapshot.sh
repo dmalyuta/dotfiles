@@ -59,7 +59,7 @@
 #   0 */4 * * * /usr/bin/flock -w 10800 /var/lock/my_cron_backup.lock /home/danylo/.bin/make_snapshot.sh -m -p hourly -d 6 2>&1 | mail -s "Cron job: hourly backup" "danylo.malyuta@gmail.com"
 #   # daily, weekly and monthly backups done by anacrontab (see /etc/anacrontab and /var/spool/anacron/)
 #
-# ######## anacron
+# ######## anacron (backup.* files in /var/spool/anacron/)
 #   # backups
 #   # daily with history of 6
 #   1	5	backup.daily	/usr/bin/flock -w 10800 /var/lock/my_cron_backup.lock /home/danylo/.bin/make_snapshot.sh -p daily -d 6 2>&1 | mail -s "Cron job: daily backup" "danylo.malyuta@gmail.com"
@@ -70,7 +70,8 @@
 #
 # The advantage of anacron is that it ensures that daily, weekly and
 # monthly backups are made as soon as the computer is turned on after
-# being turned off.
+# being turned off at the time when the backup was "supposed" to
+# happen.
 #
 # ---------------------------------------------------------------------
 

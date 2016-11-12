@@ -182,6 +182,9 @@ if ! rofi -version >/dev/null 2>&1; then
     # rofi not installed --> install it
 
     # install dependencies
+    apt_get_install_pkg libpango-1.0-0
+    apt_get_install_pkg libpangocairo-1.0-0
+    apt_get_install_pkg libcairo2
     apt_get_install_pkg xcb
     apt_get_install_pkg libxcb-util-dev
     apt_get_install_pkg libxcb-ewmh-dev
@@ -193,9 +196,16 @@ if ! rofi -version >/dev/null 2>&1; then
     apt_get_install_pkg libstartup-notification0-dev
     apt_get_install_pkg libxkbcommon-x11-dev
     apt_get_install_pkg libxkbcommon0
+    apt_get_install_pkg libxkbcommon-dev
     apt_get_install_pkg libglib2.0-dev
     apt_get_install_pkg libperl-dev
     apt_get_install_pkg libgtk2.0-dev
+
+    # install xcb-util-xrm dependency
+    # TODO: somehow check if installed already
+    runcmd "tar -zxvf new_machine_install_soft/xcb-util-xrm-1.0.tar.gz"
+    (runcmd "cd xcb-util-xrm-1.0/" && runcmd "./configure" && runcmd "make" && runcmd "make install")
+    runcmd "rm -rf xcb-util-xrm-1.0/"
     
     # install rofi
     runcmd "tar -zxvf new_machine_install_soft/rofi-1.2.0.tar.gz"

@@ -16,26 +16,40 @@ A set of dotfiles and a setup script to hit the ground running on a vanilla Ubun
 * [Rofi](https://github.com/DaveDavenport/rofi) application launcher
 * [Automated backup](https://github.com/danyloM/dotfiles/blob/master/.bin/make_snapshot.sh) using `rsync`, `cron` and `anacron` with support for grandfather-father-son backup scheme
 
+## Contributing
+
+Pull requests are welcome!
+
+If you are having problems, please submit an issue - I will respond right away!
+
 ## Installation
 
-## Know issues
+#### Requirements
+
+You should be running a Ubuntu-based Linux operating system. So far, however, only Linux Mint 18 MATE 64-bit has been tested. You should also be connected to the Internet, since the install script downloads a few files.
+
+#### Instructions
+
+1. Clone this repository into any directory `DIR` you wish with `git clone https://github.com/danyloM/dotfiles DIR`;
+2. Move into `DIR` with `cd DIR`;
+3. To view a dry-run simulation of the installation (without actually doing anything), use `sudo ./.setup-new-machine.sh -d`. Note that since folders aren't copied or moved in this simulation, you will see some "couldn't find folder" warnings that will not be present in the actual installation;
+4. To run the installation, use `sudo ./.setup-new-machine.sh`. You are recommended to reinstall after the installation is finished. If any errors come up and the installation halts, fix them and run the installation again.
+
+Note that the automated backup solution needs you to configure `cron` and `anacron` manually. See the starting comment block of the [backup script](https://github.com/danyloM/dotfiles/blob/master/.bin/make_snapshot.sh) to learn how. It would not be good to automate this step as it should be your choice on how, if at all, to run backups.
+
+When you open Emacs for the first time, all required packages will be automatically downloaded thanks to [use-package](https://github.com/jwiegley/use-package). You will need to run `M-x irony-install-server` after opening a C/C++ file for the very first time inside Emacs.
+
+## Known issues
+
+ 1. When in its first run Emacs auto-installs [pdf-tools](https://github.com/politza/pdf-tools), the error ``Error (use-package): pdf-tools :config: No executable `epdfinfo' found`` might be thrown. Then you just need to restart Emacs. The error will never appear again.
+ 2. Sometimes weird errors come up in the first run of Emacs when all packages are being auto-installed (e.g. sometimes I get an `Assertion failed: (or (= (buffer-size tar-data-buffer) (buffer-size)) ...)`). Then just restart Emacs - the error will go away and the auto-installation will proceed.
 
 ## TODO
+
+* Test install script on other Linux distributions (priority: Ubuntu-based distributions)
 
 ## License
 
+The code is available under the [MIT license](https://github.com/danyloM/dotfiles/blob/master/LICENSE).
 
-
-# My Linux `$HOME` dotfiles
-
-## Description
-
-This repository contains the personal configuration files located in my `$HOME` directory of Linux Mint 18 MATE 64-bit. So far these include:
-
-- [Emacs 24.5.1](https://www.gnu.org/software/emacs/) configuration in `.emacs.d/`
-- [i3 window manager](http://i3wm.org/) configuration in `.i3/`
-- Personal productivity bash scripts in `.bin/`
-
-## TODO
-
-- Make a bash script to auto-setup all depedencies
+Everything here is put with the best of my intentions. I am not a lawyer, however, so if there are any legal issues with parts of this repository please submit an issue and I will correct the problem!

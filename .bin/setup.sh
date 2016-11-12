@@ -16,7 +16,7 @@ cd "$realdir"
 
 dir="$(dirname $(pwd))"
 home="${HOME}"
-dotfiles_list=(".bin" ".fonts" ".emacs.d" ".i3" ".Xresources" ".gtkrc-2.0")
+dotfiles_list=(".bin" ".fonts" ".emacs.d" ".i3" ".Xresources" ".gtkrc-2.0" ".config/gtk-3.0" ".dmrc")
 dryrun=false
 
 ########## functions
@@ -53,10 +53,7 @@ runcmd()
 apt_get_install_pkg()
 { # install package with apt-get
     local pkg="$1"
-    if ! dpkg -l "$pkg" >/dev/null 2>&1; then
-	# package not installed
-	runcmd "apt-get --assume-yes install $pkg"
-    fi
+    runcmd "apt-get --assume-yes install $pkg"
 }
 
 copy_foo()
@@ -73,6 +70,7 @@ copy_foo()
 	    runcmd "mv $home_foo $backup_folder"
 	fi
 	# copy git repo folder to home, preserving permissions
+	makefolder "$dest"
 	runcmd "cp -rp $git_foo $home_foo"
     else
 	echowarn "couldn't find $git_foo"
@@ -145,7 +143,11 @@ else
     echowarn "already in $home so will not move/backup anything"
 fi
 
-########## Emacs dependencies
+########## git
+
+apt_get_install_pkg git
+
+########## Emacs
 
 # Emacs itself
 
@@ -191,15 +193,11 @@ apt_get_install_pkg sysstat
 apt_get_install_pkg acpi
 apt_get_install_pkg compton
 
-# numix theme
+# numix theme and icons
 
-if ! dpkg -l "numix-gtk-theme" >/dev/null 2>&1; then
-    # numix theme not installed --> install it
-    
-    runcmd "add-apt-repository -y ppa:numix/ppa"
-    runcmd "apt-get update"
-    apt_get_install_pkg numix-gtk-theme
-fi
+runcmd "add-apt-repository -y ppa:numix/ppa"
+runcmd "apt-get update"
+apt_get_install_pkg numix-gtk-theme
 apt_get_install_pkg numix-icon-theme
 
 # arc-theme
@@ -214,15 +212,16 @@ if ! dpkg -l "arc-theme" >/dev/null 2>&1; then
     runcmd "apt-get update"
     runcmd "sh -c \"echo 'deb http://download.opensuse.org/repositories/home:/Horst3180/xUbuntu_16.04/ /' > /etc/apt/sources.list.d/arc-theme.list\""
     runcmd "apt-get update"
-    runcmd "apt-get install arc-theme"
+    apt_get_install_pkg arc-theme
 fi
 
 # playerctl
 
 if ! playerctl --version >/dev/null 2>&1; then
     # playerctl not installed --> install it
-    
-    runcmd "dpkg -i new_machine_install_soft/playerctl-0.5.0_amd64.deb"
+    runcmd "wget https://github.com/acrisci/playerctl/releases/download/v0.5.0/playerctl-0.5.0_amd64.deb"
+    runcmd "dpkg -i playerctl-0.5.0_amd64.deb"
+    runcmd "rm -rf playerctl-0.5.0_amd64.deb"
 fi
 
 # rofi
@@ -276,18 +275,6 @@ if ! rofi -version >/dev/null 2>&1; then
     runcmd "ldconfig"
 fi
 
-########## GTK
-
-# config for gtk-3.0 applications
-
-if [ "$dir" != "$home" ]; then
-    copy_foo "settings.ini" "${dir}/.config/gtk-3.0" "${home}/.config/gtk-3.0"
-fi
-
-########## git
-
-apt_get_install_pkg git
-
 ########## powerline for bash
 
 # install powerline
@@ -309,16 +296,45 @@ runcmd "wget https://github.com/powerline/powerline/raw/develop/font/10-powerlin
 font_dir="${home}/.fonts"
 makefolder "$font_dir"
 move_foo "PowerlineSymbols.otf" "$realdir" "$font_dir"
+runcmd "fc-cache -vf ${font_dir}"
 
 fontconfig_dir="${home}/.config/fontconfig/conf.d"
 makefolder "$fontconfig_dir"
 move_foo "10-powerline-symbols.conf" "$realdir" "$fontconfig_dir"
 
+# enable powerline for bash
+# following instructions: https://powerline.readthedocs.io/en/latest/usage/shell-prompts.html#bash-prompt
 repository_root=$(sudo -H pip show powerline-status | grep Location | cut -d " " -f 2)
 msg=". ${repository_root}/powerline/bindings/bash/powerline.sh"
 if ! $(cat "${home}/.bashrc" | grep "export TERMS="); then
     # line not already in ~/.bashrc, so append it
     runcmd "echo \"${msg}\" >> ${home}/.bashrc" nonull
+fi
+
+# configure powerline
+# following instructions: https://github.com/adidenko/powerline
+runcmd "git clone https://github.com/adidenko/powerline"
+move_foo "powerline" "$realdir" "${home}/.config"
+
+########## Google Chrome
+
+# remove Firefox
+
+runcmd "apt-get --assume-yes purge firefox"
+runcmd "apt-get --assume-yes autoremove"
+
+# install Chrome's dependencies
+
+apt_get_install_pkg libxss1
+apt_get_install_pkg apt_get_install_pkg
+apt_get_install_pkg apt_get_install_pkg
+
+# Chrome itself
+
+if ! google-chrome --version >/dev/null 2>&1; then
+    runcmd "wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb"
+    runcmd "dpkg -i google-chrome*.deb"
+    runcmd "rm -rf google-chrome*.deb"
 fi
 
 ########## closing actions

@@ -10,6 +10,7 @@
 # add i3 window manager config directory
 !/.i3
 !.Xresources
+!.dmrc
 
 # add fonts directory
 !/.fonts

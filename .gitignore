@@ -11,6 +11,17 @@
 !/.i3
 !.Xresources
 
+# add fonts directory
+!/.fonts
+
+# add gtk config (theme, icons, system font)
+!/.gtkrc-2.0
+!/.config
+/.config/*
+!/.config/gtk-3.0
+/.config/gtk-3.0/*
+!/.config/gtk-3.0/settings.ini
+
 # whitelist github files
 !.gitignore
 !README.md

@@ -248,6 +248,9 @@ if ! dpkg -l "python3-powerline" >/dev/null 2>&1; then
     apt_get_install_pkg python3-powerline
 
     # configure powerline
+    if [ ! -f "${home}/.screenrc" ]; then
+	runcmd "sudo -u $SUDO_USER touch ${home}/.screenrc"
+    fi
     runcmd "sed -i '1i term screen-256color' ${home}/.screenrc"
     runcmd "tar -zxvf new_machine_install_soft/powerline.tar.gz"
     runcmd "mv powerline/ ${home}/.config/"

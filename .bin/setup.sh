@@ -93,7 +93,7 @@ if [ "$dir" != "$home" ]; then
     # create backup folder
     backup_folder="${home}/dotfile_backup"
     if [ ! -d "$backup_folder" ]; then
-	runcmd "su -c \"mkdir $backup_folder\" \"$SUDO_USER\""
+	runcmd "sudo -u $SUDO_USER mkdir $backup_folder"
     fi
     echo "any existing dotfiles in $home will be moved to $backup_folder"
     # loop through each dotfile/folder and back them up

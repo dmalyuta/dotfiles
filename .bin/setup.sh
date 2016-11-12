@@ -253,7 +253,7 @@ if ! dpkg -l "python3-powerline" >/dev/null 2>&1; then
     fi
     runcmd "sed -i '1i term screen-256color' ${home}/.screenrc"
     runcmd "tar -zxvf new_machine_install_soft/powerline.tar.gz"
-    runcmd "mv powerline/ ${home}/.config/"
+    move_foo "powerline/" "$realdir" "${home}/.config/"
     runcmd "rm -rf powerline/"
 
     # enable in vim

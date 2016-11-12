@@ -351,8 +351,8 @@ runcmd "apt-get --assume-yes autoremove"
 # install Chrome's dependencies
 
 apt_get_install_pkg libxss1
-apt_get_install_pkg apt_get_install_pkg
-apt_get_install_pkg apt_get_install_pkg
+apt_get_install_pkg libappindicator1
+apt_get_install_pkg libindicator7
 
 # Chrome itself
 

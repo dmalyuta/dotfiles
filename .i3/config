@@ -104,6 +104,8 @@ set $workspace3 "3: "
 set $workspace4 "4: "
 # Email
 set $workspace5 "5: "
+# MATLAB
+set $workspace6 "6: "
 
 # switch to workspace
 bindsym $mod+1 workspace $workspace1
@@ -111,7 +113,7 @@ bindsym $mod+2 workspace $workspace2
 bindsym $mod+3 workspace $workspace3
 bindsym $mod+4 workspace $workspace4
 bindsym $mod+5 workspace $workspace5
-bindsym $mod+6 workspace 6
+bindsym $mod+6 workspace $workspace6
 bindsym $mod+7 workspace 7
 bindsym $mod+8 workspace 8
 bindsym $mod+9 workspace 9
@@ -123,7 +125,7 @@ bindsym $mod+Shift+2 move container to workspace $workspace2
 bindsym $mod+Shift+3 move container to workspace $workspace3
 bindsym $mod+Shift+4 move container to workspace $workspace4
 bindsym $mod+Shift+5 move container to workspace $workspace5
-bindsym $mod+Shift+6 move container to workspace 6
+bindsym $mod+Shift+6 move container to workspace $workspace6
 bindsym $mod+Shift+7 move container to workspace 7
 bindsym $mod+Shift+8 move container to workspace 8
 bindsym $mod+Shift+9 move container to workspace 9
@@ -223,18 +225,13 @@ assign [class="Emacs24"] $workspace2
 #assign [class="Gnome-terminal"] $workspace3
 assign [class="Google-chrome"] $workspace4
 assign [class="Thunderbird"] $workspace5
-
-# ### assign properties to some windows
-
-# # floating
-# #for_window [class="Polkit-mate-authentication-agent-1"] floating enable, border normal
-# for_window [class="MintUpdate.py"] floating enable, border normal
+#assign [class="MATLAB R2016b - academic use"] $workspace6
 
 # Scratchpad (temporarily hide a window)
 # Make the currently focused window a scratchpad
 bindsym $mod+Shift+minus move scratchpad
 # Show the first scratchpad window
-bindsym $mod+minus scratchpad show, floating disable
+bindsym $mod+minus scratchpad show
 
 # Focus parent container (enables splith or splitv next to group of windows (container)!)
 bindsym $mod+p focus parent
@@ -246,3 +243,33 @@ exec --no-startup-id exec xset r rate 200          30
 
 # Run polkit-mate-authentication-agent-1 for polkit
 exec --no-startup-id exec /usr/lib/x86_64-linux-gnu/polkit-mate-authentication-agent-1
+
+# Run dropbox
+exec --no-startup-id exec dropbox start -i
+
+# Force some windows floating
+for_window [class="Vpnui"] floating enable, border normal
+for_window [class="Gnome-disks"] floating enable, border normal
+for_window [title="Simulink Library Browser"] floating enable, border normal
+for_window [title="Diagnostic Viewer"] floating enable, border normal
+
+# lock after wakeup from suspend
+exec --no-startup-id xautolock -time 9 -locker '~/.i3/i3exit.sh lock' &
+
+##
+# system
+##
+set $mode_system    [L]OCK       LOG[O]UT       [S]USPEND       [R]EBOOT       [P]OWEROFF
+bindsym $mod+Delete mode "$mode_system"
+bindsym Ctrl+$mod+BackSpace mode "$mode_system"
+mode "$mode_system" {
+    bindsym l exec --no-startup-id ~/.i3/i3exit.sh lock, mode "default"
+    bindsym o exec --no-startup-id ~/.i3/i3exit.sh logout, mode "default"
+    bindsym s exec --no-startup-id ~/.i3/i3exit.sh suspend, mode "default"
+    bindsym r exec --no-startup-id ~/.i3/i3exit.sh reboot, mode "default"
+    bindsym p exec --no-startup-id ~/.i3/i3exit.sh poweroff, mode "default"
+
+    # back to normal: Enter or Escape
+    bindsym Return mode "default"
+    bindsym Escape mode "default"
+}

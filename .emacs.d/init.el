@@ -43,6 +43,7 @@
 
 (use-package cedet
   ;; collection of Emacs development environment tools
+  :demand
   :bind
   (:map c-mode-base-map
 	("C-c n" . senator-next-tag)
@@ -306,6 +307,58 @@
   (setq nyan-wavy-trail nil)
   (setq nyan-animate-nyancat t))
 
+(use-package srefactor
+  ;; C/C++ refactoring tool based on Semantic parser framework
+  :ensure t
+  :demand
+  :bind
+  (("M-RET o" . srefactor-lisp-one-line)
+   ("M-RET m" . srefactor-lisp-format-sexp)
+   ("M-RET d" . srefactor-lisp-format-defun)
+   ("M-RET b" . srefactor-lisp-format-buffer)
+   :map c-mode-map
+   ("M-RET" . srefactor-refactor-at-point)
+   :map c++-mode-map
+   ("M-RET" . srefactor-refactor-at-point))
+  :config
+  (require 'semantic)
+  (require 'srefactor)
+  (require 'srefactor-lisp)
+  (setq srefactor-ui-menu-show-help nil) ;; hide menu help message
+  (semantic-mode 1))
+
+(use-package multiple-cursors
+  ;; multiple cursors for emacs (live editing of same word at multiple points)
+  ;; use case: edit grep buffer using wgrep for refactoring
+  :ensure t
+  :demand
+  :bind
+  (("C->" . mc/mark-next-like-this)
+   ("C-<" . mc/mark-previous-like-this)
+   ("C-*" . mc/mark-all-like-this))
+  :config
+  (require 'multiple-cursors))
+
+(use-package wgrep
+  ;; edit a grep buffer and apply those changes to the file buffer
+  ;; use-case: local/global rename variables, functions, classes, namespaces, etc.
+  ;; workflow:
+  ;;    1) Way 1: Do grep within project using grep-projectile "C-c p s g" then "C-x C-s" to save
+  ;;              helm-grep results to grep buffer
+  ;;       Way 2: Do grep on certain files of your choice using M-x rgrep
+  ;;    2) In the grep buffer, active wgrep with "C-c C-p"
+  ;;    3) Rename whatever you want by editing the names (e.g. use replace-string or multiple-curscors (see above))
+  ;;    4) "C-c C-e" to save changes to "C-c C-k" to discard changes of "C-x C-q" to exit wgrep
+  ;;       and prompt whether to save changes
+  :ensure t
+  :config
+  (use-package wgrep-helm
+    :ensure t
+    :config
+    (require 'wgrep)
+    (require 'wgrep-helm)
+    (setq wgrep-auto-save-buffer t)))
+
 ;;;;;;;;;;;;;;;;; PERSONAL PACKAGES
 
 (use-package setup-helm
@@ -360,9 +413,6 @@
   :config
   (add-to-list 'auto-mode-alist '("CMakeLists\\.txt\\'" . ros-cmake-mode))
   (autoload 'ros-cmake-mode "lisp/ros-cmake-mode.el" t))
-
-;; (use-package buff-menu+
-;;   :load-path "lisp/")
 
 ;;;;;;;;;;;;;;;;; OTHER STUFF
 

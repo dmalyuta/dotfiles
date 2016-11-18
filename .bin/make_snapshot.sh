@@ -289,10 +289,6 @@ if [[ -z $PREFIX ]]; then
     exit $UNKNOWN_FLAG
 fi
 
-# set the name of the new backup folder and of the backup running indicator file
-NEW_PREFIX="00.""$PREFIX""_"$DATE
-BACKUP_RUNTIME_FILE=".running_$NEW_PREFIX"
-
 # check that backup directory exists
 if ! isdir "$BACKUP_DIR"; then
     echoerr "Error: $BACKUP_DIR is not a directory"
@@ -353,7 +349,7 @@ do
 	    rm -rf "$BACKUP_DIR$BACKUP_RUNTIME_FILE"
 	fi
 	if $WITH_MONITORING; then
-	    if ! -z ${UNDONE[$THIS_LEVEL]}; then # $THIS_LEVEL corresponds to backup type that we can auto-redo in monitoring mode
+	    if [ ! -z ${UNDONE[$THIS_LEVEL]} ]; then # $THIS_LEVEL corresponds to backup type that we can auto-redo in monitoring mode
 		if ! ${UNDONE[$THIS_LEVEL]}; then # if not already set to redo
 		    # save a note that this level has an unfinished backup
 		    echo "Detected that $THIS_LEVEL backup has been unfinished, will redo it"
@@ -398,14 +394,17 @@ done
 
 ########## create most recent backup now
 
-RSYNC_ARGS=(-aH --stats --delete --exclude={"/dev/*","/proc/*","/sys/*","/tmp/*","/run/*","/mnt/*","/media/*","/lost+found","/root/backup/*"})
-
 # step 1: find most recent existing backup
 MOST_RECENT=$(find "$BACKUP_DIR" -maxdepth 1 -type d | grep -o '[^/]\{1,\}$' | sort -t_ -k2.5nr,2 -k2.3nr,2 -k2.1nr,2 -k3r | head -1)
+
+# step 2: set the name of the new backup folder and of the backup running indicator file
+NEW_PREFIX="00.""$PREFIX""_"$DATE
+BACKUP_RUNTIME_FILE=".running_$NEW_PREFIX"
 mkdir "$BACKUP_DIR$NEW_PREFIX" # folder where backup will be stored
 touch "$BACKUP_DIR$BACKUP_RUNTIME_FILE" # file which exists while the backup is running
 
-# step 2: make backup using rsync
+# step 3: make backup using rsync
+RSYNC_ARGS=(-aH --stats --delete --exclude={"/dev/*","/proc/*","/sys/*","/tmp/*","/run/*","/mnt/*","/media/*","/lost+found","/root/backup/*"})
 if [[ -z $MOST_RECENT ]]; then
     echo "No existing backup, so creating a new backup of $SOURCE_DIR in $NEW_PREFIX"
     echo

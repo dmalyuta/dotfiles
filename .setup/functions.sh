@@ -43,15 +43,15 @@ echo_warnings_errors()
 
 runcmd()
 { # run a command in active mode, just print it in dry run mode
-    if [ "$2" ]; then
-	# disable 1>/dev/null which prevents from writing to file
-	local cmd="$1"
-    else
-	local cmd="$1 1>/dev/null"
-    fi
-    echo "$1"
+    local cmd="$1"
+    echo "$cmd"
     if [ $dryrun = false ]; then
-	"$cmd"
+	if [ "$2" ]; then
+	    # disable 1>/dev/null which prevents from writing to file
+	    $cmd
+	else
+	    $cmd 1>/dev/null
+	fi
 	local exit_status=$?
 	if [ $exit_status -ne 0 ]; then
 	    echoerr "the last command failed (exit status ${exit_status}), please see why and rerun the script"

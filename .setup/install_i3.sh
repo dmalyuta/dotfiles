@@ -85,6 +85,17 @@ if program_not_installed "rofi"; then
     # rofi not installed --> install it
 
     # install dependencies
+    if [[ "$os_name" == "Ubuntu" ]] && [[ ${os_version:0:2} -lt 15 ]]; then
+	# workaround for Ubuntu 14.04 for installing xkbcommon berion 0.5
+	# see https://github.com/DaveDavenport/rofi/issues/371
+	
+	runcmd "sudo add-apt-repository -y 'deb http://debian.jpleau.ca/ jessie-backports main contrib non-free'"
+	runcmd "sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys ED45C181B540212D"
+	echowarn "Installed potentially missing public key ED45C181B540212D. In case this key has changed and the apt-get update command below throws a NO_PUBKEY error, re-run the above command manually, replacing the public key value with the one mentioned in the error."
+	runcmd "sudo apt-get update -qq"
+	runcmd "sudo apt-get install -y libxkbcommon-dev libxkbcommon-x11-dev"
+    fi
+    
     apt_get_install_pkg libpango-1.0-0
     apt_get_install_pkg libpangocairo-1.0-0
     apt_get_install_pkg libcairo2
@@ -97,8 +108,8 @@ if program_not_installed "rofi"; then
     apt_get_install_pkg libxcb-xkb-dev
     apt_get_install_pkg libstartup-notification0
     apt_get_install_pkg libstartup-notification0-dev
-    apt_get_install_pkg libxkbcommon-x11-dev
-    apt_get_install_pkg libxkbcommon0
+    apt_get_install_pkg libxkbcommon-x11-dev	
+    #apt_get_install_pkg libxkbcommon0
     apt_get_install_pkg libxkbcommon-dev
     apt_get_install_pkg libglib2.0-dev
     apt_get_install_pkg libperl-dev

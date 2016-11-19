@@ -68,6 +68,8 @@ date=$(date +"%d%m%Y_T%H%M%S")
 echo_prefix="[main setup] "
 number_warnings=0
 number_errors=0
+os_name=$(lsb_release -si)
+os_version=$(lsb_release -sr)
 
 ########## functions
 

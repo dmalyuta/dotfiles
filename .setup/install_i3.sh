@@ -20,11 +20,30 @@ echo_prefix="[i3 setup] "
 apt_get_install_pkg i3
 apt_get_install_pkg i3status
 apt_get_install_pkg i3lock
-apt_get_install_pkg i3blocks
 apt_get_install_pkg feh
 apt_get_install_pkg sysstat
 apt_get_install_pkg acpi
 apt_get_install_pkg compton
+
+# i3blocks (status bar info like volume, battery, etc.)
+
+install_from_source=false
+if [[ "$os_name" == "Ubuntu" ]]; then
+    # Ubuntu operating system
+    if [[ ${os_version:0:2} -lt 15 ]]; then
+	install_from_source=true
+    fi
+fi
+if $install_from_source; then
+    # install i3blocks from source
+    runcmd "wget https://github.com/vivien/i3blocks/releases/download/1.4/i3blocks-1.4.tar.gz"
+    runcmd "tar -zxvf i3blocks-1.4.tar.gz"
+    (runcmd "cd i3blocks-1.4/" && runcmd "make clean all" && runcmd "make install")
+    runcmd "rm -rf i3blocks*"
+else
+    # install i3blocks with apt-get install
+    apt_get_install_pkg i3blocks
+fi
 
 # numix theme and icons
 

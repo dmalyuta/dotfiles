@@ -25,7 +25,8 @@ if ! type "FoxitReader" > /dev/null; then
 
     # install it
     echowarn "Please follow the GUI's instructions and install Foxit PDF Reader into /opt/foxitsoftware/foxitreader"
-    runcmd "sudo ./FoxitReader*.run"
+    foxit_installer_name=$(ls FoxitReader*.run)
+    runcmd "sudo ./$foxit_installer_name"
 
     # delete the installer and compressed archive
     runcmd "rm -rf FoxitReader*"

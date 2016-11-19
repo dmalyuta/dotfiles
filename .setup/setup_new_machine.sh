@@ -7,7 +7,7 @@
 #
 # ----------------------------------------------------------------------
 
-########## go to directory where setup.sh actually is
+########## go to directory where setup_new_machine.sh actually is
 # necessary in case script is called from another directory
 
 realdir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"

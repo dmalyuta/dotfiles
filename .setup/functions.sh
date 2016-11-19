@@ -44,7 +44,7 @@ echo_warnings_errors()
 exit()
 { # custom exit
     echo_warnings_errors
-    exit "$1"
+    builtin exit "$1"
 }
 
 runcmd()

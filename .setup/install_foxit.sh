@@ -84,9 +84,9 @@ if program_not_installed "FoxitReader"; then
     fi
 
     if [[ -z $skip_fxplugins ]]; then
-	# remove Foxit PDF Reader cloud tools
-	runcmd "mkdir -p ${fxplugins_dir}_old"
-	runcmd "mv ${fxplugins_dir}/* ${fxplugins_dir}_old/*"
+	# move Foxit PDF Reader cloud tools to fxplugins_old directory, which effectively disables them without deleting them
+	runcmd "mv ${fxplugins_dir} ${fxplugins_dir}_old"
+	runcmd "mkdir -p ${fxplugins_dir}"
     else
 	echoerr "Failed to disable fxplugins, which means Foxit PDF Reader's cloud tools may remain active. Beware: these may consume a lot of CPU! You are advised to remove them."
     fi

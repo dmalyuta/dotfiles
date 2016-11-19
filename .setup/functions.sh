@@ -51,7 +51,7 @@ runcmd()
     fi
     echo "$1"
     if [ $dryrun = false ]; then
-	eval $cmd
+	$cmd
 	local exit_status=$?
 	if [ $exit_status -ne 0 ]; then
 	    echoerr "the last command failed (exit status ${exit_status}), please see why and rerun the script"

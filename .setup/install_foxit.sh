@@ -30,7 +30,6 @@ if program_not_installed "FoxitReader"; then
     # install Foxit PDF Reader
     echowarn "Please follow the GUI's instructions and install Foxit PDF Reader into /opt/foxitsoftware/foxitreader"
     runcmd "pwd" nonull
-    exit 1
     runcmd "sudo ./'$foxit_installer_name'"
     installer_exit_status=$?
 

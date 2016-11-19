@@ -36,12 +36,13 @@ if program_not_installed "FoxitReader"; then
     runcmd "rm -rf '$foxit_installer_name'"
 
     # disable the Foxit PDF Reader's cloud tools, which use lots of CPU, by moving to the fxpluging_old directory
+    echo "Will now disable Foxit PDF Reader's cloud tools, which can needlessly consume a lot of CPU."    
     fxplugins_dir="/opt/foxitsoftware/foxitreader/fxplugins"
     if [ ! -d "${fxplugins_dir}" ]; then
 	echowarn "Looks like you did not install Foxit PDF Reader in /opt/foxitsoftware/foxitreader/"
-	echo "Searching for fxplugins folder location"
+	echo "Searching for fxplugins folder location..."
 
-	fxplugins_search_results=$(find / -type d \( -path /root -o -path /mnt -o -path /media \) -prune -o -name '*fxplugins' -print 2>/dev/null)
+	fxplugins_search_results=( $(find / -type d \( -path /root -o -path /mnt -o -path /media \) -prune -o -name '*fxplugins' -print 2>/dev/null) )
 	number_matches=${#fxplugins_search_results[@]}
 
 	if [[ $number_matches -eq 0 ]]; then
@@ -82,7 +83,7 @@ if program_not_installed "FoxitReader"; then
 	fi
     fi
 
-    if [[ -z skip_fxplugins ]]; then
+    if [[ -z $skip_fxplugins ]]; then
 	# remove Foxit PDF Reader cloud tools
 	runcmd "mkdir -p ${fxplugins_dir}_old"
 	runcmd "mv ${fxplugins_dir}/* ${fxplugins_dir}_old/*"

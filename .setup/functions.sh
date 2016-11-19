@@ -73,10 +73,6 @@ install_program()
 
     if [[ ! -z ${install_programs_list["$program_name"]} ]]; then
 	source $prog_script
-	prog_script_status=$?
-	if [[ $prog_script_status -ne 0 ]]; then
-	    exit 1
-	fi
     fi
 }
 

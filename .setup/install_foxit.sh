@@ -106,4 +106,3 @@ fi
 
 echo_prefix="$echo_prefix_temp"
 
-exit 0

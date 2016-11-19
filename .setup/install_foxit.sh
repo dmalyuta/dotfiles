@@ -105,3 +105,5 @@ if program_not_installed "FoxitReader"; then
 fi
 
 echo_prefix="$echo_prefix_temp"
+
+exit 0

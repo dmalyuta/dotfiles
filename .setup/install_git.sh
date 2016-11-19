@@ -17,3 +17,5 @@ echo_prefix="[git setup] "
 apt_get_install_pkg git
 
 echo_prefix="$echo_prefix_temp"
+
+exit 0

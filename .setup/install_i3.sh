@@ -68,7 +68,7 @@ if program_not_installed "rofi"; then
     apt_get_install_pkg libpangocairo-1.0-0
     apt_get_install_pkg libcairo2
     apt_get_install_pkg xcb
-    apt_get_install_pkg libxcb-util-dev
+    apt_get_install_pkg libxcb-util0-dev
     apt_get_install_pkg libxcb-ewmh-dev
     apt_get_install_pkg libxcb-xinerama0
     apt_get_install_pkg libxcb-xinerama0-dev
@@ -84,6 +84,7 @@ if program_not_installed "rofi"; then
     apt_get_install_pkg libgtk2.0-dev
     apt_get_install_pkg xutils
     apt_get_install_pkg xutils-dev
+    apt_get_install_pkg m4
 
     # install xcb-util-xrm dependency
     # TODO: somehow check if installed already
@@ -104,3 +105,5 @@ if program_not_installed "rofi"; then
 fi
 
 echo_prefix="$echo_prefix_temp"
+
+exit 0

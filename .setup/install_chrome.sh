@@ -29,3 +29,5 @@ if program_not_installed "google-chrome"; then
 fi
 
 echo_prefix="$echo_prefix_temp"
+
+exit 0

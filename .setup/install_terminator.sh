@@ -18,3 +18,5 @@ echo_prefix="[terminator setup] "
 apt_get_install_pkg terminator
 
 echo_prefix="$echo_prefix_temp"
+
+exit 0

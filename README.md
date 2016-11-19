@@ -36,12 +36,14 @@ The install script has been tested for the following operating systems:
 
 #### Instructions
 
-> A recording of a sample setup on a vanilla install of Linux Mint 18 MATE 64-bit can be found in `.setup/sample/`. You can either view the whole output at once using `cat sample_setup_output.log` or play back the installation as it happened using `scriptreplay --timing=sample_setup_time.txt --divisor=<number> sample_setup_output.log` where `<number>` speeds up the playback by *number* of times (use `--divisor=1` for real time).
-
 1. Clone this repository into any directory `DIR` you wish with `git clone https://github.com/danyloM/dotfiles DIR`;
 2. Move into `DIR` with `cd DIR`;
 3. To view a dry-run simulation of the installation (without actually doing anything), use `sudo .setup/setup_new_machine.sh -d`. Note that since folders aren't copied or moved in this simulation, you will see some "couldn't find folder" warnings that will not be present in the actual installation;
 4. To run the installation, use `sudo .setup/setup_new_machine.sh`. The install script will prompt you for what specific programs and to install and will give you instructions when manual work is needed (such as during the Foxit PDF Reader installation, if you choose to install it). The aim is to safely deploy this repository partially or fully to your computer. You are recommended to reboot after the installation is finished. If any errors come up and the installation halts, fix them and simply run the installation again.
+
+> A recording of a sample setup on a vanilla install of Linux Mint 18 MATE 64-bit can be found in `.setup/sample/`. You can either view the whole output at once using `cat sample_setup_output.log` or play back the installation as it happened using `scriptreplay --timing=sample_setup_time.txt --divisor=<number> sample_setup_output.log` where `<number>` speeds up the playback by *number* of times (use `--divisor=1` for real time).
+
+> **Advice**: to build confidence in the install script's functionality for your specific OS, use either the dry-run simulation and/or install a copy of you OS in [VirtualBox](https://www.virtualbox.org/wiki/Downloads) and run the full installation there.
 
 Note that the automated backup solution needs you to configure `cron` and `anacron` manually. See the starting comment block of the [backup script](https://github.com/danyloM/dotfiles/blob/master/.bin/make_snapshot.sh) to learn how. It would not be good to automate this step as it should be your choice on how, if at all, to run backups.
 
@@ -55,6 +57,7 @@ When you open Emacs for the first time, all required packages will be automatica
 ## TODO
 
 * Test install script on more Linux distributions (priority: Ubuntu-based distributions)
+* Create an uninstall script to revert changes made by `.setup/setup_new_machine.sh` install script
 
 ## License
 

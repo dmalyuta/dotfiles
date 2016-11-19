@@ -95,7 +95,8 @@ if [ $dryrun = false ]; then
     echo "this script will change the $SUDO_USER user's dotfiles and settings in the ${home} directory"
 
     confirm_string="I really want to do this"
-    printf_prompt "to proceed, type without the brackets exactly [${confirm_string}]\n"
+    printf_prompt "to proceed, type without the brackets exactly [${confirm_string}]"
+    builtin echo
     read -p "" user_string
 
     if [ "$user_string" != "$confirm_string" ]; then
@@ -115,7 +116,7 @@ builtin echo
 
 declare -A install_programs_list
 declare -a install_dotfiles_list
-for key in "${!dotfiles_prompt[@]}"
+for key in "${programs_list[@]}"
 do
     printf_prompt "${dotfiles_prompt[$key]}"
     read -r -p "" user_response

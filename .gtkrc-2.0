@@ -1,7 +1,8 @@
 # DO NOT EDIT! This file will be overwritten by LXAppearance.
 # Any customization should be done in ~/.gtkrc-2.0.mine instead.
 
-gtk-theme-name="Arc-Darker"
+include "/home/danylo/.gtkrc-2.0.mine"
+gtk-theme-name="Numix"
 gtk-icon-theme-name="Numix"
 gtk-font-name="System San Francisco Display 10"
 gtk-cursor-theme-name="DMZ-White"

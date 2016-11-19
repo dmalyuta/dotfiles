@@ -28,15 +28,8 @@ apt_get_install_pkg compton
 # i3blocks (status bar info like volume, battery, etc.)
 
 if program_not_installed "i3blocks"; then
-    install_from_source=false
-    if [[ "$os_name" == "Ubuntu" ]]; then
-	# Ubuntu operating system
-	if [[ ${os_version:0:2} -lt 15 ]]; then
-	    install_from_source=true
-	fi
-    fi
-    if $install_from_source; then
-	# install i3blocks from source
+    if [[ "$os_name" == "Ubuntu" ]] && [[ ${os_version:0:2} -lt 15 ]]; then
+	# install from source
 	runcmd "wget https://github.com/vivien/i3blocks/releases/download/1.4/i3blocks-1.4.tar.gz"
 	runcmd "tar -zxvf i3blocks-1.4.tar.gz"
 	(runcmd "cd i3blocks-1.4/" && runcmd "make clean all" && runcmd "make install")
@@ -56,18 +49,18 @@ apt_get_install_pkg numix-icon-theme
 
 # arc-theme
 
-if ! dpkg -l "arc-theme" >/dev/null 2>&1; then
-    # arc-theme not installed --> install it
-    # following instructions: http://software.opensuse.org/download.html?project=home%3AHorst3180&package=arc-theme
+# if ! dpkg -l "arc-theme" >/dev/null 2>&1; then
+#     # arc-theme not installed --> install it
+#     # following instructions: http://software.opensuse.org/download.html?project=home%3AHorst3180&package=arc-theme
     
-    runcmd "wget http://download.opensuse.org/repositories/home:Horst3180/xUbuntu_16.04/Release.key"
-    runcmd "apt-key add - < Release.key"
-    runcmd "rm Release.key"
-    runcmd "apt-get update"
-    runcmd "sh -c \"echo 'deb http://download.opensuse.org/repositories/home:/Horst3180/xUbuntu_16.04/ /' > /etc/apt/sources.list.d/arc-theme.list\""
-    runcmd "apt-get update"
-    apt_get_install_pkg arc-theme
-fi
+#     runcmd "wget http://download.opensuse.org/repositories/home:Horst3180/xUbuntu_16.04/Release.key"
+#     runcmd "apt-key add - < Release.key"
+#     runcmd "rm Release.key"
+#     runcmd "apt-get update"
+#     runcmd "sh -c \"echo 'deb http://download.opensuse.org/repositories/home:/Horst3180/xUbuntu_16.04/ /' > /etc/apt/sources.list.d/arc-theme.list\""
+#     runcmd "apt-get update"
+#     apt_get_install_pkg arc-theme
+# fi
 
 # playerctl
 
@@ -134,6 +127,12 @@ if program_not_installed "rofi"; then
     fi
     runcmd "echo \"/usr/local/lib\" > /etc/ld.so.conf.d/usr-local.conf"
     runcmd "ldconfig"
+fi
+
+# if OS is Ubuntu, make sure Nautilus file manager does not make Desktop pop up when launched
+
+if [[ "$os_name" == "Ubuntu" ]]; then
+    runcmd "gsettings set org.gnome.desktop.background show-desktop-icons false"
 fi
 
 echo_prefix="$echo_prefix_temp"

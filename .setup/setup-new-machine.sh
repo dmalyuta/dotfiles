@@ -156,7 +156,7 @@ fi
 
 ########## git
 
-apt_get_install_pkg git
+install_program "git" install_git.sh
 
 ########## Emacs
 

@@ -23,13 +23,17 @@ if ! type "FoxitReader" > /dev/null 2>&1; then
     # unpack the installer
     runcmd "tar -zxvf FoxitReader*.tar.gz"
 
-    # install it
-    echowarn "Please follow the GUI's instructions and install Foxit PDF Reader into /opt/foxitsoftware/foxitreader"
+    # get name of tarball and installer
+    foxit_tar_gz_name=$(ls FoxitReader*.tar.gz)
     foxit_installer_name=$(ls FoxitReader*.run)
+	
+    # install Foxit PDF Reader
+    echowarn "Please follow the GUI's instructions and install Foxit PDF Reader into /opt/foxitsoftware/foxitreader"
     runcmd "sudo ./'$foxit_installer_name'"
 
-    # delete the installer and compressed archive
-    runcmd "rm -rf FoxitReader*"
+    # delete the installer and tarball
+    runcmd "rm -rf '$foxit_tar_gz_name'"
+    runcmd "rm -rf '$foxit_installer_name'"
 
     # disable the Foxit PDF Reader's cloud tools, which use lots of CPU, by moving to the fxpluging_old directory
     runcmd "mkdir -p /opt/foxitsoftware/foxitreader/fxplugins_old"

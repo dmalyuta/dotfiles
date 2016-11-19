@@ -85,7 +85,7 @@ copy_foo()
 	    # make the parent directory of the file/folder to be
 	    # copied if it does not exist already
 	    home_foo_parent_dir="$(dirname "$home_foo")"
-	    if [ -e "$home_foo_parent_dir" ]; then
+	    if [ ! -e "$home_foo_parent_dir" ]; then
 		runcmd "mkdir -p $home_foo_parent_dir"
 	    fi
 	fi

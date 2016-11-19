@@ -30,65 +30,77 @@ if program_not_installed "FoxitReader"; then
     # install Foxit PDF Reader
     echowarn "Please follow the GUI's instructions and install Foxit PDF Reader into /opt/foxitsoftware/foxitreader"  
     runcmd "sudo ./'$foxit_installer_name'"
+    installer_exit_status=$?
 
     # delete the installer and tarball
     runcmd "rm -rf '$foxit_tar_gz_name'"
     runcmd "rm -rf '$foxit_installer_name'"
 
-    # disable the Foxit PDF Reader's cloud tools, which use lots of CPU, by moving to the fxpluging_old directory
-    echo "Will now disable Foxit PDF Reader's cloud tools, which can needlessly consume a lot of CPU."    
-    fxplugins_dir="/opt/foxitsoftware/foxitreader/fxplugins"
-    if [ ! -d "${fxplugins_dir}" ]; then
-	echowarn "Looks like you did not install Foxit PDF Reader in /opt/foxitsoftware/foxitreader/"
-	echo "Searching for fxplugins folder location..."
+    if [[ $installer_exit_status -eq 0 ]]; then
+	# installation finished successfully (i.e. user did not quit it)
+	
+	# disable the Foxit PDF Reader's cloud tools, which use lots of CPU, by moving to the fxpluging_old directory
+	echo "Will now disable Foxit PDF Reader's cloud tools, which can needlessly consume a lot of CPU."    
+	fxplugins_dir="/opt/foxitsoftware/foxitreader/fxplugins"
+	if [ ! -d "${fxplugins_dir}" ]; then
+	    echowarn "Looks like you did not install Foxit PDF Reader in /opt/foxitsoftware/foxitreader/"
+	    echo "Searching for fxplugins folder location..."
 
-	fxplugins_search_results=( $(find / -type d \( -path /root -o -path /mnt -o -path /media \) -prune -o -name '*fxplugins' -print 2>/dev/null) )
-	number_matches=${#fxplugins_search_results[@]}
+	    fxplugins_search_results=( $(find / -type d \( -path /root -o -path /mnt -o -path /media \) -prune -o -name '*fxplugins' -print 2>/dev/null) )
+	    number_matches=${#fxplugins_search_results[@]}
 
-	if [[ $number_matches -eq 0 ]]; then
-	    echowarn "Couldn't find any fxplugins folder, skipping this step"
-	    skip_fxplugins=true
-	else    
-	    echo "Found $number_matches matches:"
-	    builtin echo
-	    counter=1
-	    for element in "${fxplugins_search_results[@]}"
-	    do
-		echo "   ${counter}) $element"
-		((++counter))
-	    done
-	    builtin echo
-	    flush_stdin
-	    while true
-	    do
-		printf_prompt "Enter search result number [1-${number_matches}] of the correct directory for your Foxit PDF Reader installation or type [quit] to skip this step: "
-		read -r -p "" user_response
+	    if [[ $number_matches -eq 0 ]]; then
+		echowarn "Couldn't find any fxplugins folder, skipping this step"
+		skip_fxplugins=true
+	    else    
+		echo "Found $number_matches matches:"
+		builtin echo
+		counter=1
+		for element in "${fxplugins_search_results[@]}"
+		do
+		    echo "   ${counter}) $element"
+		    ((++counter))
+		done
+		builtin echo
+		flush_stdin
+		while true
+		do
+		    printf_prompt "Enter search result number [1-${number_matches}] of the correct directory for your Foxit PDF Reader installation or type [quit] to skip this step: "
+		    read -r -p "" user_response
 
-		reg_exp='^-?[0-9]+([.][0-9]*)?$'
-		if [[ "$user_response" =~ $reg_exp ]]; then
-		    # user entered a number
-		    if [[ "$user_response" -le $number_matches ]] && [[ "$user_response" -ge 1 ]]; then
-			element_choice=$((user_response-1))
-			fxplugins_dir="${fxplugins_search_results[element_choice]}"
-			break
+		    reg_exp='^-?[0-9]+([.][0-9]*)?$'
+		    if [[ "$user_response" =~ $reg_exp ]]; then
+			# user entered a number
+			if [[ "$user_response" -le $number_matches ]] && [[ "$user_response" -ge 1 ]]; then
+			    element_choice=$((user_response-1))
+			    fxplugins_dir="${fxplugins_search_results[element_choice]}"
+			    break
+			fi
+		    else
+			# user entered a string
+			if [[ "$user_response" =~ ^[qQ][uU][iI][tT]$ ]]; then
+			    skip_fxplugins=true
+			    break
+			fi
 		    fi
-		else
-		    # user entered a string
-		    if [[ "$user_response" =~ ^[qQ][uU][iI][tT]$ ]]; then
-			skip_fxplugins=true
-			break
-		    fi
-		fi
-	    done
+		done
+	    fi
 	fi
-    fi
 
-    if [[ -z $skip_fxplugins ]]; then
-	# move Foxit PDF Reader cloud tools to fxplugins_old directory, which effectively disables them without deleting them
-	runcmd "mv ${fxplugins_dir} ${fxplugins_dir}_old"
-	runcmd "mkdir -p ${fxplugins_dir}"
+	if [[ -z $skip_fxplugins ]]; then
+	    # move Foxit PDF Reader cloud tools to fxplugins_old directory, which effectively disables them without deleting them
+	    runcmd "mv ${fxplugins_dir} ${fxplugins_dir}_old"
+	    runcmd "mkdir -p ${fxplugins_dir}"
+
+	    # give ownership of Foxit PDF Reader to the normal user
+	    foxit_base_install_dir="$(dirname "$fxplugins_dir")"
+	    runcmd "chown -R ${SUDO_USER}:${SUDO_USER} $foxit_base_install_dir"
+	else
+	    echoerr "Failed to disable Foxit PDF Reader's cloud tools. Beware: these may consume a lot of CPU! You are advised to remove them."
+	    echoerr "Failed to give ownership of Foxit PDF Reader to the normal user. You have to manually run `sudo chown -R ${SUDO_USER}:${SUDO_USER} <foxit reader install directory>` to make the program work normally."
+	fi
     else
-	echoerr "Failed to disable fxplugins, which means Foxit PDF Reader's cloud tools may remain active. Beware: these may consume a lot of CPU! You are advised to remove them."
+	echoerr "You quit the Foxit PDF Reader installer... won't install it."
     fi
 fi
 

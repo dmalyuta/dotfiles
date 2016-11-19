@@ -16,7 +16,7 @@
 echo_prefix_temp="$echo_prefix"
 echo_prefix="[foxit setup] "
 
-if ! type "FoxitReader" > /dev/null; then
+if ! type "FoxitReader" > /dev/null 2>&1; then
     # download Foxit Reader
     runcmd "wget http://cdn01.foxitsoftware.com/pub/foxit/reader/desktop/linux/2.x/2.2/en_us/FoxitReader2.2.1025_Server_x86_enu_Setup.run.tar.gz"
 
@@ -26,7 +26,7 @@ if ! type "FoxitReader" > /dev/null; then
     # install it
     echowarn "Please follow the GUI's instructions and install Foxit PDF Reader into /opt/foxitsoftware/foxitreader"
     foxit_installer_name=$(ls FoxitReader*.run)
-    runcmd "sudo ./$foxit_installer_name"
+    runcmd "sudo ./'$foxit_installer_name'"
 
     # delete the installer and compressed archive
     runcmd "rm -rf FoxitReader*"

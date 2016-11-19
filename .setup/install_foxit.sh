@@ -17,6 +17,9 @@ echo_prefix_temp="$echo_prefix"
 echo_prefix="[foxit setup] "
 
 if program_not_installed "FoxitReader"; then
+    # remove any previous Foxit Reader archives and installers
+    runcmd "rm -rf FoxitReader*"
+    
     # download Foxit Reader
     bit_number="$(uname -m)"
     if [[ "$bit_number" == "x86_64" ]]; then

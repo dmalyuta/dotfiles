@@ -122,15 +122,22 @@ declare -a install_dotfiles_list
 flush_stdin
 for key in "${programs_list[@]}"
 do
-    printf_prompt "${dotfiles_prompt[$key]}"
-    read -r -p "" user_response
-    if [[ $user_response =~ ^[yY]$ ]] || [[ -z $user_response ]] && [[ ${dotfiles_prompt[$key]: -5:1} == Y ]]; then
-	# answered yes or pressed RET and yes is the default option --> add program to install list
-	install_programs_list["$key"]="yes"
-
-	tempvar=dependencies_$key[@]
-	install_dotfiles_list=(${install_dotfiles_list[@]} ${!tempvar})
-    fi
+    while true
+    do
+	printf_prompt "${dotfiles_prompt[$key]}"
+	read -r -p "" user_response
+	if [[ $user_response =~ ^[yY]$ ]] || [[ -z $user_response ]] && [[ ${dotfiles_prompt[$key]: -5:1} == Y ]]; then
+	    # answered yes or pressed RET and yes is the default option --> add program to install list
+	    install_programs_list["$key"]="yes"
+	    tempvar=dependencies_$key[@]
+	    install_dotfiles_list=(${install_dotfiles_list[@]} ${!tempvar})
+	    break
+	elif [[ $user_response =~ ^[nN]$ ]] || [[ -z $user_response ]] && [[ ${dotfiles_prompt[$key]: -4:1} == N ]]; then
+	    # answered no or pressed RET and no is the default option --> do not add program to install list
+	    break
+	fi
+	# otherwise pose the question again (user entered gibberish)...
+    done
 done
 builtin echo
 

@@ -54,8 +54,7 @@ When you open Emacs for the first time, all required packages will be automatica
 
 ## TODO
 
-* Test install script on other Linux distributions (priority: Ubuntu-based distributions)
-* Modularize the setup script such that each application is self-contained and is merely "plugged" into the installation process. Thus give the option to install only parts of the dotfiles (e.g. omit i3 installation if user does not want to install this window manager).
+* Test install script on more Linux distributions (priority: Ubuntu-based distributions)
 
 ## License
 

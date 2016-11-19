@@ -82,7 +82,8 @@ copy_foo()
 	if [ -e "$home_foo" ]; then
 	    runcmd "mv $home_foo $backup_folder"
 	else
-	    runcmd "mkdir -p $home_foo"
+	    home_foo_parent_dir="$(dirname "$home_foo")"
+	    runcmd "mkdir -p $home_foo_parent_dir"
 	fi
 	# copy git repo folder to home, preserving permissions
 	makefolder "$dest"

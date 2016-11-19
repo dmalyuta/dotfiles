@@ -41,12 +41,6 @@ echo_warnings_errors()
     echo "finished with ${yellowbold}${number_warnings} warnings${nostyle} and ${redbold}${number_errors} errors${nostyle}"
 }
 
-exit()
-{ # custom exit
-    echo_warnings_errors
-    builtin exit "$1"
-}
-
 runcmd()
 { # run a command in active mode, just print it in dry run mode
     if [ "$2" ]; then
@@ -61,6 +55,7 @@ runcmd()
 	local exit_status=$?
 	if [ $exit_status -ne 0 ]; then
 	    echoerr "the last command failed (exit status ${exit_status}), please see why and rerun the script"
+	    echo_warnings_errors
 	    exit 1
 	fi
     fi

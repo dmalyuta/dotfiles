@@ -79,6 +79,7 @@ source functions.sh
 
 if [[ $EUID -ne 0 ]]; then
     echoerr "must be root (hint: run with sudo)"
+    echo_warnings_errors
     exit 1
 fi
 
@@ -106,6 +107,7 @@ if [ $dryrun = false ]; then
 
     if [ "$user_string" != "$confirm_string" ]; then
 	echowarn "mistyped string, aborting"
+	echo_warnings_errors
 	exit 1
     fi
 fi
@@ -234,4 +236,4 @@ done
 
 # exit program successfully
 
-builtin exit 0
+exit 0

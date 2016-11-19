@@ -196,7 +196,6 @@ fi
 # remove not needed packages
 
 if [ ${#install_programs_list[@]} -ne 0 ]; then
-    echo "here!"
     runcmd "apt-get --assume-yes autoremove"
 fi
 

@@ -16,19 +16,13 @@
 echo_prefix_temp="$echo_prefix"
 echo_prefix="[chrome setup] "
 
-# remove Firefox
+if program_not_installed "google-chrome"; then
+    # install Chrome's dependencies
+    apt_get_install_pkg libxss1
+    apt_get_install_pkg libappindicator1
+    apt_get_install_pkg libindicator7
 
-runcmd "apt-get --assume-yes purge firefox"
-
-# install Chrome's dependencies
-
-apt_get_install_pkg libxss1
-apt_get_install_pkg libappindicator1
-apt_get_install_pkg libindicator7
-
-# Chrome itself
-
-if ! google-chrome --version >/dev/null 2>&1; then
+    # install Chrome itself
     runcmd "wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb"
     runcmd "dpkg -i google-chrome*.deb"
     runcmd "rm -rf google-chrome*.deb"

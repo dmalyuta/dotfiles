@@ -66,6 +66,8 @@ redbold="\e[1;31m"
 nostyle="\e[0m"
 date=$(date +"%d%m%Y_T%H%M%S")
 echo_prefix="[main setup] "
+number_warnings=0
+number_errors=0
 
 ########## functions
 
@@ -95,6 +97,7 @@ if [ $dryrun = false ]; then
     echo "this script will change the $SUDO_USER user's dotfiles and settings in the ${home} directory"
 
     confirm_string="I really want to do this"
+    flush_stdin
     printf_prompt "to proceed, type without the brackets exactly [${confirm_string}]"
     builtin echo
     read -p "" user_string
@@ -116,6 +119,7 @@ builtin echo
 
 declare -A install_programs_list
 declare -a install_dotfiles_list
+flush_stdin
 for key in "${programs_list[@]}"
 do
     printf_prompt "${dotfiles_prompt[$key]}"
@@ -202,9 +206,12 @@ fi
 # prompt for restart
 
 builtin echo
+echo_warnings_errors
+builtin echo
+flush_stdin
 while true
 do
-    printf_prompt "finished successfully, recommended to restart [now/later]? "
+    printf_prompt "Recommended to restart, do it [now/later]? "
     read -r -p "" user_response
     if [[ "$user_response" =~ ^[nN][oO][wW]$ ]]; then
 	builtin echo
@@ -218,4 +225,4 @@ done
 
 # exit program successfully
 
-exit 0
+builtin exit 0

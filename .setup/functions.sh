@@ -25,6 +25,7 @@ echoerr()
     builtin echo
     builtin echo -e "${redbold}[error]${nostyle} $1" 1>&2
     builtin echo
+    ((++number_errors))
 }
 
 echowarn()
@@ -32,6 +33,18 @@ echowarn()
     builtin echo
     builtin echo -e "${yellowbold}[warning]${nostyle} $1"
     builtin echo
+    ((++number_warnings))
+}
+
+echo_warnings_errors()
+{ # print out how many warnings and errors were encountered
+    echo "finished with ${yellowbold}${number_warnings} warnings${nostyle} and ${redbold}${number_errors} errors${nostyle}"
+}
+
+exit()
+{ # custom exit
+    echo_warnings_errors
+    exit "$1"
 }
 
 runcmd()
@@ -132,4 +145,18 @@ wget_targz_install()
     runcmd "rm -rf ${name}.tar.gz"
     (runcmd "cd ${name}/" && configure_make_install)
     runcmd "rm -rf ${name}/"
+}
+
+program_not_installed()
+{ # return true if program is not installed
+    local program_name="$1"
+    ! type "$program_name" > /dev/null 2>&1
+}
+
+flush_stdin()
+{ # flush the input buffer
+    while read -r -t 0
+    do
+	read -r
+    done
 }

@@ -3,7 +3,7 @@
 #
 # Emacs installation.
 #
-# An extensible, customizable, free/libre text editor — and more. At
+# An extensible, customizable, free/libre text editor - and more. At
 # its core is an interpreter for Emacs Lisp, a dialect of the Lisp
 # programming language with extensions to support text editing.
 #
@@ -30,11 +30,10 @@ apt_get_install_pkg libclang-dev
 apt_get_install_pkg shellcheck
 
 # helm-gtags GNU GLOBAL
-if ! global --version >/dev/null 2>&1; then
+if program_not_installed "global"; then
     # GNU GLOBAL not installed --> install it
 
-    # install dependencies
-    
+    # install dependencies    
     apt_get_install_pkg libncurses5
     apt_get_install_pkg libncurses5-dev
 

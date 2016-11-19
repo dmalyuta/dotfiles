@@ -395,7 +395,18 @@ done
 ########## create most recent backup now
 
 # step 1: find most recent existing backup
-MOST_RECENT=$(find "$BACKUP_DIR" -maxdepth 1 -type d | grep -o '[^/]\{1,\}$' | sort -t_ -k2.5nr,2 -k2.3nr,2 -k2.1nr,2 -k3r | head -1)
+ALL_BACKUPS_LIST=( $(find "$BACKUP_DIR" -maxdepth 1 -type d | grep -o '[^/]\{1,\}$') ) # all backup directories
+declare -a FINISHED_BACKUPS_LIST # will store all the backups that have actually been run to completion
+for BACKUP_FOLDER_ITER in "${ALL_BACKUPS_LIST[@]}"
+do
+    if [ ! -f "${BACKUP_DIR}.running_$BACKUP_FOLDER_ITER" ]; then
+	# this backup has been run to completion since a .running file does not exist for it
+	# thus, add this backup to the finished backups list
+	FINISHED_BACKUPS_LIST=( "${FINISHED_BACKUPS_LIST[@]}" "$BACKUP_FOLDER_ITER" )
+    fi
+done
+# get the most recent backup folder amongst the finished backups
+MOST_RECENT=$(printf "%s\n" "${FINISHED_BACKUPS_LIST[@]}" | sort -t_ -k2.5nr,2 -k2.3nr,2 -k2.1nr,2 -k3r | head -1)
 
 # step 2: set the name of the new backup folder and of the backup running indicator file
 NEW_PREFIX="00.""$PREFIX""_"$DATE

@@ -50,8 +50,9 @@ fi
 
 # playerctl
 
-if ! playerctl --version >/dev/null 2>&1; then
+if program_not_installed "playerctl"; then
     # playerctl not installed --> install it
+
     runcmd "wget https://github.com/acrisci/playerctl/releases/download/v0.5.0/playerctl-0.5.0_amd64.deb"
     runcmd "dpkg -i playerctl-0.5.0_amd64.deb"
     runcmd "rm -rf playerctl-0.5.0_amd64.deb"
@@ -59,7 +60,7 @@ fi
 
 # rofi
 
-if ! rofi -version >/dev/null 2>&1; then
+if program_not_installed "rofi"; then
     # rofi not installed --> install it
 
     # install dependencies

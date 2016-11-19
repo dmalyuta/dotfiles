@@ -16,7 +16,7 @@
 echo_prefix_temp="$echo_prefix"
 echo_prefix="[foxit setup] "
 
-if ! type "FoxitReader" > /dev/null 2>&1; then
+if program_not_installed "FoxitReader"; then
     # download Foxit Reader
     runcmd "wget http://cdn01.foxitsoftware.com/pub/foxit/reader/desktop/linux/2.x/2.2/en_us/FoxitReader2.2.1025_Server_x86_enu_Setup.run.tar.gz"
 
@@ -28,7 +28,7 @@ if ! type "FoxitReader" > /dev/null 2>&1; then
     foxit_installer_name=$(ls FoxitReader*.run)
 	
     # install Foxit PDF Reader
-    echowarn "Please follow the GUI's instructions and install Foxit PDF Reader into /opt/foxitsoftware/foxitreader"
+    echowarn "Please follow the GUI's instructions and install Foxit PDF Reader into /opt/foxitsoftware/foxitreader"  
     runcmd "sudo ./'$foxit_installer_name'"
 
     # delete the installer and tarball
@@ -36,8 +36,59 @@ if ! type "FoxitReader" > /dev/null 2>&1; then
     runcmd "rm -rf '$foxit_installer_name'"
 
     # disable the Foxit PDF Reader's cloud tools, which use lots of CPU, by moving to the fxpluging_old directory
-    runcmd "mkdir -p /opt/foxitsoftware/foxitreader/fxplugins_old"
-    runcmd "mv /opt/foxitsoftware/foxitreader/fxplugins/ /opt/foxitsoftware/foxitreader/fxplugins_old/"
+    fxplugins_dir="/opt/foxitsoftware/foxitreader/fxplugins"
+    if [ ! -d "${fxplugins_dir}" ]; then
+	echowarn "Looks like you did not install Foxit PDF Reader in /opt/foxitsoftware/foxitreader/"
+	echo "Searching for fxplugins folder location"
+
+	fxplugins_search_results=$(find / -type d \( -path /root -o -path /mnt -o -path /media \) -prune -o -name '*fxplugins' -print 2>/dev/null)
+	number_matches=${#fxplugins_search_results[@]}
+
+	if [[ $number_matches -eq 0 ]]; then
+	    echowarn "Couldn't find any fxplugins folder, skipping this step"
+	    skip_fxplugins=true
+	else    
+	    echo "Found $number_matches matches:"
+	    builtin echo
+	    counter=1
+	    for element in "${fxplugins_search_results[@]}"
+	    do
+		echo "   ${counter}) $element"
+		((++counter))
+	    done
+	    builtin echo
+	    flush_stdin
+	    while true
+	    do
+		printf_prompt "Enter search result number [1-${number_matches}] of the correct directory for your Foxit PDF Reader installation or type [quit] to skip this step: "
+		read -r -p "" user_response
+
+		reg_exp='^-?[0-9]+([.][0-9]*)?$'
+		if [[ "$user_response" =~ $reg_exp ]]; then
+		    # user entered a number
+		    if [[ "$user_response" -le $number_matches ]] && [[ "$user_response" -ge 1 ]]; then
+			element_choice=$((user_response-1))
+			fxplugins_dir="${fxplugins_search_results[element_choice]}"
+			break
+		    fi
+		else
+		    # user entered a string
+		    if [[ "$user_response" =~ ^[qQ][uU][iI][tT]$ ]]; then
+			skip_fxplugins=true
+			break
+		    fi
+		fi
+	    done
+	fi
+    fi
+
+    if [[ -z skip_fxplugins ]]; then
+	# remove Foxit PDF Reader cloud tools
+	runcmd "mkdir -p ${fxplugins_dir}_old"
+	runcmd "mv ${fxplugins_dir}/* ${fxplugins_dir}_old/*"
+    else
+	echoerr "Failed to disable fxplugins, which means Foxit PDF Reader's cloud tools may remain active. Beware: these may consume a lot of CPU! You are advised to remove them."
+    fi
 fi
 
 echo_prefix="$echo_prefix_temp"

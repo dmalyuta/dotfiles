@@ -4,7 +4,7 @@
 
 A set of dotfiles and a setup script to hit the ground running on a vanilla Ubuntu-based Linux installation for C/C++ developers. The objective is to have a no-questions-asked, robust and fully automated way of taking you from a fresh install to a fully configured system on which you can immediately get to work.
 
-![screenshot](http://i.imgur.com/N3oP2Mb.png)
+![screenshot](http://i.imgur.com/K0yYU1j.jpg)
 
 ## Features
 

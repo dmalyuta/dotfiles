@@ -47,7 +47,7 @@ if program_not_installed "powerline"; then
     msg=". ${repository_root}/powerline/bindings/bash/powerline.sh"
     if ! $(cat "${home}/.bashrc" | grep "export TERMS="); then
 	# line not already in ~/.bashrc, so append it
-	runcmd "builtin echo \"${msg}\" >> ${home}/.bashrc" nonull
+	runcmd "eval builtin echo \"${msg}\" >> ${home}/.bashrc" nonull
     fi
 
     # configure powerline

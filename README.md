@@ -34,6 +34,8 @@ You should be running a Ubuntu-based Linux operating system. You can run the ins
 - Linux Mint 18 MATE 64-bit
 - Ubuntu 14.04.5 Desktop 64-bit
 
+Other distributions may very well work, but I did not explicitly test them yet. If you try this repository on an OS that is not in the above list, please report what you find and submit pull requests with tweaks for that OS, if you can.
+
 ### Instructions
 
 1. Clone this repository into any directory `DIR` you wish with `git clone https://github.com/danyloM/dotfiles DIR`;

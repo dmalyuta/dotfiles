@@ -11,9 +11,9 @@ A set of dotfiles and a setup script to hit the ground running on a vanilla Ubun
 * [Emacs](https://www.gnu.org/software/emacs/) configuration suitable for C/C++ and LaTeX
 * [Powerline](https://github.com/powerline/powerline) for bash
 * [i3](http://i3wm.org/) tiling window manager
-* [Rofi](https://github.com/DaveDavenport/rofi) application launcher
+  * [Rofi](https://github.com/DaveDavenport/rofi) application launcher
+  * [Numix](https://github.com/numixproject/numix-icon-theme) theme and icon set
 * [Automated backup](https://github.com/danyloM/dotfiles/blob/master/.bin/make_snapshot.sh) using `rsync`, `cron` and `anacron` with support for grandfather-father-son backup scheme
-* [Numix](https://github.com/numixproject/numix-icon-theme) theme and icon set
 * [Google Chrome](https://www.google.com/chrome/) web browser
 * [Foxit Reader](https://www.foxitsoftware.com/products/pdf-reader/) software for standards-compliant reading and annotation of PDFs
 

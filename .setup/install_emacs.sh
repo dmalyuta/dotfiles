@@ -22,7 +22,7 @@ if program_not_installed "emacs"; then
 	# install from source
 
 	# install dependencies
-	runcmd "apt-get build-dep emacs24"
+	runcmd "apt-get --assume-yes build-dep emacs24"
 
 	# download source, build and install Emacs 24.5.1
 	runcmd "wget http://ftp.gnu.org/gnu/emacs/emacs-24.5.tar.gz"

@@ -33,6 +33,7 @@ if program_not_installed "i3blocks"; then
 	runcmd "wget https://github.com/vivien/i3blocks/releases/download/1.4/i3blocks-1.4.tar.gz"
 	runcmd "tar -zxvf i3blocks-1.4.tar.gz"
 	(runcmd "cd i3blocks-1.4/" && runcmd "make clean all" && runcmd "make install LIBEXECDIR=/usr/share")
+	subshell_check $?
 	runcmd "rm -rf i3blocks*"
     else
 	# install i3blocks with apt-get install
@@ -82,8 +83,8 @@ if program_not_installed "rofi"; then
 	# workaround for Ubuntu 14.04 for installing xkbcommon berion 0.5
 	# see https://github.com/DaveDavenport/rofi/issues/371
 	
-	runcmd "sudo add-apt-repository -y 'deb http://debian.jpleau.ca/ jessie-backports main contrib non-free'"
-	runcmd "sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys ED45C181B540212D"
+	runcmd "eval add-apt-repository -y 'deb http://debian.jpleau.ca/ jessie-backports main contrib non-free'"
+	runcmd "eval apt-key adv --keyserver keyserver.ubuntu.com --recv-keys ED45C181B540212D"
 	echowarn "Installed potentially missing public key ED45C181B540212D. In case this key has changed and the apt-get update command below throws a NO_PUBKEY error, re-run the above command manually, replacing the public key value with the one mentioned in the error."
 	runcmd "sudo apt-get update -qq"
 	runcmd "sudo apt-get install -y libxkbcommon-dev libxkbcommon-x11-dev"

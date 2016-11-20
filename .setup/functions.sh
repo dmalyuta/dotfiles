@@ -61,6 +61,14 @@ runcmd()
     fi
 }
 
+subshell_check()
+{ # exit script if subshell failed
+    local subshell_exit_status="$1"
+    if [[ "$subshell_exit_status" -ne 0 ]]; then
+	exit $subshell_exit_status
+    fi
+}
+
 install_program()
 { # install a 
     local program_name="$1"

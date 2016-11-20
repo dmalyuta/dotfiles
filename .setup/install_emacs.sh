@@ -20,9 +20,15 @@ echo_prefix="[emacs setup] "
 if program_not_installed "emacs"; then
     if [[ "$os_name" == "Ubuntu" ]] && [[ ${os_version:0:2} -lt 15 ]]; then
 	# install from source
+
+	# install dependencies
+	runcmd "apt-get build-dep emacs24"
+
+	# download source, build and install Emacs 24.5.1
 	runcmd "wget http://ftp.gnu.org/gnu/emacs/emacs-24.5.tar.gz"
 	runcmd "tar -zxvf emacs-24.5.tar.gz"
-	(runcmd "cd emacs-24.5/" && runcmd "./configure --with-xpm=no --with-jpeg=no --with-gif=no --with-tiff=no" && "make" && "make install")
+	(runcmd "cd emacs-24.5/" && configure_make_install)
+	subshell_check $?
 	runcmd "rm -rf emacs*"
     else
 	# install emacs with apt-get install

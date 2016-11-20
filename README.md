@@ -13,7 +13,7 @@ A set of dotfiles and a setup script to hit the ground running on a vanilla Ubun
 * [i3](http://i3wm.org/) tiling window manager
 * [Rofi](https://github.com/DaveDavenport/rofi) application launcher
 * [Automated backup](https://github.com/danyloM/dotfiles/blob/master/.bin/make_snapshot.sh) using `rsync`, `cron` and `anacron` with support for grandfather-father-son backup scheme
-* [Arc theme](https://github.com/horst3180/arc-theme) and [Numix](https://github.com/numixproject/numix-icon-theme) icon set
+* [Numix](https://github.com/numixproject/numix-icon-theme) theme and icon set
 * [Google Chrome](https://www.google.com/chrome/) web browser
 * [Foxit Reader](https://www.foxitsoftware.com/products/pdf-reader/) software for standards-compliant reading and annotation of PDFs
 
@@ -25,16 +25,16 @@ If you are having problems, please submit an issue - I will respond right away!
 
 ## Installation
 
-#### Requirements
+### Requirements
 
 You should be running a Ubuntu-based Linux operating system. You can run the installation either on a completely fresh or an already used OS. You should also be connected to the Internet throughout the installation, since the install script downloads a few files. Note that the script is smart enough to backup any existing dotfiles to a directory `~/dotfile_backup_ddmmYYYY_THHMMSS/` (where the second half of the folder name is the current date and time) before overwriting any dotfile with one from this repository.
 
-The install script has been tested for the following operating systems:
+### Supported Distributions
 
 - Linux Mint 18 MATE 64-bit
 - Ubuntu 14.04.5 Desktop 64-bit
 
-#### Instructions
+### Instructions
 
 1. Clone this repository into any directory `DIR` you wish with `git clone https://github.com/danyloM/dotfiles DIR`;
 2. Move into `DIR` with `cd DIR`;
@@ -53,6 +53,7 @@ When you open Emacs for the first time, all required packages will be automatica
 
  1. When in its first run Emacs auto-installs [pdf-tools](https://github.com/politza/pdf-tools), the error ``Error (use-package): pdf-tools :config: No executable `epdfinfo' found`` might be thrown. Then you just need to restart Emacs. The error will never appear again.
  2. Sometimes weird errors come up in the first run of Emacs when all packages are being auto-installed (e.g. sometimes I get an `Assertion failed: (or (= (buffer-size tar-data-buffer) (buffer-size)) ...)`). Then just restart Emacs - the error will go away and the auto-installation will proceed.
+ 3. For Ubuntu 14.04: an error may be thrown during installation is `apt-get update` fails due to a "Hash Sum mismatch". The solution is to run `sudo rm -vf /var/lib/apt/lists/* && sudo apt-get clean && sudo apt-get update` (possible several times until the "Hash Sum mismatch" warning disappears), then running the installation script again.
 
 ## TODO
 

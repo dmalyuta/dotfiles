@@ -247,6 +247,9 @@ exec --no-startup-id exec /usr/lib/x86_64-linux-gnu/polkit-mate-authentication-a
 # Run dropbox
 exec --no-startup-id exec dropbox start -i
 
+# Show nework manager tray icon
+exec --no-startup-id exec nm-applet
+
 # Force some windows floating
 for_window [class="Vpnui"] floating enable, border normal
 for_window [class="Gnome-disks"] floating enable, border normal

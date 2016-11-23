@@ -48,7 +48,7 @@ declare -A dotfiles_prompt
 dotfiles_prompt["${programs_list[0]}"]="Do you want to install the .bin directory [Yn]? "
 dotfiles_prompt["${programs_list[1]}"]="Do you want to install Git [Yn]? "
 dotfiles_prompt["${programs_list[2]}"]="Do you want to install Emacs [Yn]? "
-dotfiles_prompt["${programs_list[3]}"]="Do you want to install the i3 window manager and associated themes [Yn]? "
+dotfiles_prompt["${programs_list[3]}"]="Do you want to install the i3 window manager and associated themes [yN]? "
 dotfiles_prompt["${programs_list[4]}"]="Do you want to install the terminator terminal emulator [Yn]? "
 dotfiles_prompt["${programs_list[5]}"]="Do you want to install powerline [Yn]? "
 dotfiles_prompt["${programs_list[6]}"]="Do you want to install Google Chrome [Yn]? "

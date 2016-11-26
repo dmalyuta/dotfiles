@@ -442,8 +442,10 @@ echo "This backup occupied *roughly* an extra "$((SPACE_USED_AFTER-SPACE_USED_BE
 echo 
 echo "-------"
 echo
-if [[ $RSYNC_EXIT_STATUS -ne 0 ]]; then
+if [[ $RSYNC_EXIT_STATUS -ne 0 ]] && [[ $RSYNC_EXIT_STATUS -ne 24 ]]; then
     # something went wrong (rsync returned non-zero exit code)
+    # 0 exit status:  success
+    # 24 exit status: some files vanished before they could be transferred (i.e. some files got deleted during the backup, which is fine...)
     echoerr "Something went wrong (rsync exit status ""$RSYNC_EXIT_STATUS"")."
     echoerr "$ABORT_MSG"
     exit $RSYNC_FAIL

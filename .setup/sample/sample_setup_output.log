@@ -1,534 +1,0 @@
-Script started on Sat 19 Nov 2016 04:54:38 PM CET
-]0;danylo@danylo-VirtualBox ~[01;32mdanylo@danylo-VirtualBox[00m [01;34m~ $[00m cd Downloads/
-]0;danylo@danylo-VirtualBox ~/Downloads[01;32mdanylo@danylo-VirtualBox[00m [01;34m~/Downloads $[00m git clone https://github.com/danyloM/dotfiles
-Cloning into 'dotfiles'...
-remote: Counting objects: 357, done.[K
-remote: Compressing objects:   0% (1/254)   [Kremote: Compressing objects:   1% (3/254)   [Kremote: Compressing objects:   2% (6/254)   [Kremote: Compressing objects:   3% (8/254)   [Kremote: Compressing objects:   4% (11/254)   [Kremote: Compressing objects:   5% (13/254)   [Kremote: Compressing objects:   6% (16/254)   [Kremote: Compressing objects:   7% (18/254)   [Kremote: Compressing objects:   8% (21/254)   [Kremote: Compressing objects:   9% (23/254)   [Kremote: Compressing objects:  10% (26/254)   [Kremote: Compressing objects:  11% (28/254)   [Kremote: Compressing objects:  12% (31/254)   [Kremote: Compressing objects:  13% (34/254)   [Kremote: Compressing objects:  14% (36/254)   [Kremote: Compressing objects:  15% (39/254)   [Kremote: Compressing objects:  16% (41/254)   [Kremote: Compressing objects:  17% (44/254)   [Kremote: Compressing objects:  18% (46/254)   [Kremote: Compressing objects:  19% (49/254)   [Kremote: Compressing objects:  20% (51/254)   [Kremote: Compressing objects:  21% (54/254)   [Kremote: Compressing objects:  22% (56/254)   [Kremote: Compressing objects:  23% (59/254)   [Kremote: Compressing objects:  24% (61/254)   [Kremote: Compressing objects:  25% (64/254)   [Kremote: Compressing objects:  26% (67/254)   [Kremote: Compressing objects:  27% (69/254)   [Kremote: Compressing objects:  28% (72/254)   [Kremote: Compressing objects:  29% (74/254)   [Kremote: Compressing objects:  30% (77/254)   [Kremote: Compressing objects:  31% (79/254)   [Kremote: Compressing objects:  32% (82/254)   [Kremote: Compressing objects:  33% (84/254)   [Kremote: Compressing objects:  34% (87/254)   [Kremote: Compressing objects:  35% (89/254)   [Kremote: Compressing objects:  36% (92/254)   [Kremote: Compressing objects:  37% (94/254)   [Kremote: Compressing objects:  38% (97/254)   [Kremote: Compressing objects:  39% (100/254)   [Kremote: Compressing objects:  40% (102/254)   [Kremote: Compressing objects:  41% (105/254)   [Kremote: Compressing objects:  42% (107/254)   [Kremote: Compressing objects:  43% (110/254)   [Kremote: Compressing objects:  44% (112/254)   [Kremote: Compressing objects:  45% (115/254)   [Kremote: Compressing objects:  46% (117/254)   [Kremote: Compressing objects:  47% (120/254)   [Kremote: Compressing objects:  48% (122/254)   [Kremote: Compressing objects:  49% (125/254)   [Kremote: Compressing objects:  50% (127/254)   [Kremote: Compressing objects:  51% (130/254)   [Kremote: Compressing objects:  52% (133/254)   [Kremote: Compressing objects:  53% (135/254)   [Kremote: Compressing objects:  54% (138/254)   [Kremote: Compressing objects:  55% (140/254)   [Kremote: Compressing objects:  56% (143/254)   [Kremote: Compressing objects:  57% (145/254)   [Kremote: Compressing objects:  58% (148/254)   [Kremote: Compressing objects:  59% (150/254)   [Kremote: Compressing objects:  60% (153/254)   [Kremote: Compressing objects:  61% (155/254)   [Kremote: Compressing objects:  62% (158/254)   [Kremote: Compressing objects:  63% (161/254)   [Kremote: Compressing objects:  64% (163/254)   [Kremote: Compressing objects:  65% (166/254)   [Kremote: Compressing objects:  66% (168/254)   [Kremote: Compressing objects:  67% (171/254)   [Kremote: Compressing objects:  68% (173/254)   [Kremote: Compressing objects:  69% (176/254)   [Kremote: Compressing objects:  70% (178/254)   [Kremote: Compressing objects:  71% (181/254)   [Kremote: Compressing objects:  72% (183/254)   [Kremote: Compressing objects:  73% (186/254)   [Kremote: Compressing objects:  74% (188/254)   [Kremote: Compressing objects:  75% (191/254)   [Kremote: Compressing objects:  76% (194/254)   [Kremote: Compressing objects:  77% (196/254)   [Kremote: Compressing objects:  78% (199/254)   [Kremote: Compressing objects:  79% (201/254)   [Kremote: Compressing objects:  80% (204/254)   [Kremote: Compressing objects:  81% (206/254)   [Kremote: Compressing objects:  82% (209/254)   [Kremote: Compressing objects:  83% (211/254)   [Kremote: Compressing objects:  84% (214/254)   [Kremote: Compressing objects:  85% (216/254)   [Kremote: Compressing objects:  86% (219/254)   [Kremote: Compressing objects:  87% (221/254)   [Kremote: Compressing objects:  88% (224/254)   [Kremote: Compressing objects:  89% (227/254)   [Kremote: Compressing objects:  90% (229/254)   [Kremote: Compressing objects:  91% (232/254)   [Kremote: Compressing objects:  92% (234/254)   [Kremote: Compressing objects:  93% (237/254)   [Kremote: Compressing objects:  94% (239/254)   [Kremote: Compressing objects:  95% (242/254)   [Kremote: Compressing objects:  96% (244/254)   [Kremote: Compressing objects:  97% (247/254)   [Kremote: Compressing objects:  98% (249/254)   [Kremote: Compressing objects:  99% (252/254)   [Kremote: Compressing objects: 100% (254/254)   [Kremote: Compressing objects: 100% (254/254), done.[K
-Receiving objects:   0% (1/357)   Receiving objects:   1% (4/357)   Receiving objects:   2% (8/357)   Receiving objects:   3% (11/357)   Receiving objects:   4% (15/357)   Receiving objects:   5% (18/357)   Receiving objects:   6% (22/357)   Receiving objects:   7% (25/357)   Receiving objects:   8% (29/357)   Receiving objects:   9% (33/357)   Receiving objects:  10% (36/357)   Receiving objects:  11% (40/357)   Receiving objects:  12% (43/357)   Receiving objects:  13% (47/357)   Receiving objects:  14% (50/357)   Receiving objects:  15% (54/357)   Receiving objects:  16% (58/357)   Receiving objects:  17% (61/357)   Receiving objects:  18% (65/357)   Receiving objects:  19% (68/357)   Receiving objects:  20% (72/357)   Receiving objects:  21% (75/357)   Receiving objects:  22% (79/357)   Receiving objects:  23% (83/357)   Receiving objects:  24% (86/357)   Receiving objects:  25% (90/357)   Receiving objects:  26% (93/357)   Receiving objects:  27% (97/357)   Receiving objects:  28% (100/357)   Receiving objects:  29% (104/357)   Receiving objects:  30% (108/357)   Receiving objects:  31% (111/357)   Receiving objects:  32% (115/357)   Receiving objects:  32% (117/357), 484.00 KiB | 444.00 KiB/s   Receiving objects:  33% (118/357), 484.00 KiB | 444.00 KiB/s   Receiving objects:  34% (122/357), 484.00 KiB | 444.00 KiB/s   Receiving objects:  35% (125/357), 484.00 KiB | 444.00 KiB/s   Receiving objects:  36% (129/357), 484.00 KiB | 444.00 KiB/s   Receiving objects:  36% (132/357), 1.21 MiB | 588.00 KiB/s   Receiving objects:  36% (132/357), 2.23 MiB | 733.00 KiB/s   Receiving objects:  36% (132/357), 3.75 MiB | 926.00 KiB/s   Receiving objects:  37% (133/357), 3.75 MiB | 926.00 KiB/s   Receiving objects:  38% (136/357), 3.75 MiB | 926.00 KiB/s   Receiving objects:  39% (140/357), 3.75 MiB | 926.00 KiB/s   Receiving objects:  40% (143/357), 3.75 MiB | 926.00 KiB/s   Receiving objects:  41% (147/357), 3.75 MiB | 926.00 KiB/s   Receiving objects:  42% (150/357), 3.75 MiB | 926.00 KiB/s   Receiving objects:  43% (154/357), 3.75 MiB | 926.00 KiB/s   Receiving objects:  44% (158/357), 3.75 MiB | 926.00 KiB/s   Receiving objects:  45% (161/357), 3.75 MiB | 926.00 KiB/s   Receiving objects:  46% (165/357), 3.75 MiB | 926.00 KiB/s   Receiving objects:  47% (168/357), 3.75 MiB | 926.00 KiB/s   Receiving objects:  48% (172/357), 3.75 MiB | 926.00 KiB/s   Receiving objects:  49% (175/357), 3.75 MiB | 926.00 KiB/s   Receiving objects:  50% (179/357), 3.75 MiB | 926.00 KiB/s   Receiving objects:  51% (183/357), 3.75 MiB | 926.00 KiB/s   Receiving objects:  52% (186/357), 3.75 MiB | 926.00 KiB/s   Receiving objects:  53% (190/357), 3.75 MiB | 926.00 KiB/s   Receiving objects:  54% (193/357), 3.75 MiB | 926.00 KiB/s   Receiving objects:  55% (197/357), 3.75 MiB | 926.00 KiB/s   Receiving objects:  56% (200/357), 3.75 MiB | 926.00 KiB/s   Receiving objects:  57% (204/357), 3.75 MiB | 926.00 KiB/s   Receiving objects:  58% (208/357), 3.75 MiB | 926.00 KiB/s   Receiving objects:  59% (211/357), 3.75 MiB | 926.00 KiB/s   Receiving objects:  60% (215/357), 3.75 MiB | 926.00 KiB/s   Receiving objects:  61% (218/357), 3.75 MiB | 926.00 KiB/s   Receiving objects:  62% (222/357), 3.75 MiB | 926.00 KiB/s   Receiving objects:  63% (225/357), 3.75 MiB | 926.00 KiB/s   Receiving objects:  64% (229/357), 3.75 MiB | 926.00 KiB/s   Receiving objects:  65% (233/357), 3.75 MiB | 926.00 KiB/s   Receiving objects:  66% (236/357), 3.75 MiB | 926.00 KiB/s   Receiving objects:  67% (240/357), 3.75 MiB | 926.00 KiB/s   Receiving objects:  68% (243/357), 3.75 MiB | 926.00 KiB/s   Receiving objects:  69% (247/357), 3.75 MiB | 926.00 KiB/s   Receiving objects:  70% (250/357), 3.75 MiB | 926.00 KiB/s   Receiving objects:  71% (254/357), 3.75 MiB | 926.00 KiB/s   Receiving objects:  72% (258/357), 3.75 MiB | 926.00 KiB/s   Receiving objects:  72% (259/357), 4.70 MiB | 974.00 KiB/s   Receiving objects:  72% (259/357), 5.46 MiB | 1001.00 KiB/s   Receiving objects:  72% (259/357), 6.32 MiB | 991.00 KiB/s   Receiving objects:  73% (261/357), 6.68 MiB | 944.00 KiB/s   Receiving objects:  74% (265/357), 7.54 MiB | 803.00 KiB/s   Receiving objects:  75% (268/357), 7.54 MiB | 803.00 KiB/s   Receiving objects:  76% (272/357), 7.54 MiB | 803.00 KiB/s   Receiving objects:  77% (275/357), 7.54 MiB | 803.00 KiB/s   Receiving objects:  78% (279/357), 7.54 MiB | 803.00 KiB/s   Receiving objects:  79% (283/357), 7.54 MiB | 803.00 KiB/s   Receiving objects:  80% (286/357), 7.54 MiB | 803.00 KiB/s   Receiving objects:  81% (290/357), 7.54 MiB | 803.00 KiB/s   Receiving objects:  82% (293/357), 7.54 MiB | 803.00 KiB/s   remote: Total 357 (delta 207), reused 214 (delta 90), pack-reused 0[K
-Receiving objects:  82% (294/357), 7.54 MiB | 803.00 KiB/s   Receiving objects:  83% (297/357), 7.54 MiB | 803.00 KiB/s   Receiving objects:  84% (300/357), 7.54 MiB | 803.00 KiB/s   Receiving objects:  85% (304/357), 7.54 MiB | 803.00 KiB/s   Receiving objects:  86% (308/357), 7.54 MiB | 803.00 KiB/s   Receiving objects:  87% (311/357), 7.54 MiB | 803.00 KiB/s   Receiving objects:  88% (315/357), 7.54 MiB | 803.00 KiB/s   Receiving objects:  89% (318/357), 7.54 MiB | 803.00 KiB/s   Receiving objects:  90% (322/357), 7.54 MiB | 803.00 KiB/s   Receiving objects:  91% (325/357), 7.54 MiB | 803.00 KiB/s   Receiving objects:  92% (329/357), 7.54 MiB | 803.00 KiB/s   Receiving objects:  93% (333/357), 7.54 MiB | 803.00 KiB/s   Receiving objects:  94% (336/357), 7.54 MiB | 803.00 KiB/s   Receiving objects:  95% (340/357), 7.54 MiB | 803.00 KiB/s   Receiving objects:  96% (343/357), 7.54 MiB | 803.00 KiB/s   Receiving objects:  97% (347/357), 7.54 MiB | 803.00 KiB/s   Receiving objects:  98% (350/357), 7.54 MiB | 803.00 KiB/s   Receiving objects:  99% (354/357), 7.54 MiB | 803.00 KiB/s   Receiving objects: 100% (357/357), 7.54 MiB | 803.00 KiB/s   Receiving objects: 100% (357/357), 7.56 MiB | 786.00 KiB/s, done.
-Resolving deltas:   0% (0/207)   Resolving deltas:  24% (51/207)   Resolving deltas:  39% (81/207)   Resolving deltas:  41% (86/207)   Resolving deltas:  43% (90/207)   Resolving deltas:  44% (92/207)   Resolving deltas:  45% (94/207)   Resolving deltas:  47% (99/207)   Resolving deltas:  48% (101/207)   Resolving deltas:  50% (104/207)   Resolving deltas:  54% (113/207)   Resolving deltas:  57% (119/207)   Resolving deltas:  58% (121/207)   Resolving deltas:  62% (130/207)   Resolving deltas:  66% (137/207)   Resolving deltas:  67% (139/207)   Resolving deltas:  70% (145/207)   Resolving deltas:  71% (147/207)   Resolving deltas:  75% (156/207)   Resolving deltas:  79% (164/207)   Resolving deltas:  82% (170/207)   Resolving deltas:  84% (174/207)   Resolving deltas:  85% (176/207)   Resolving deltas:  95% (197/207)   Resolving deltas:  98% (203/207)   Resolving deltas: 100% (207/207)   Resolving deltas: 100% (207/207), done.
-Checking connectivity... done.
-]0;danylo@danylo-VirtualBox ~/Downloads[01;32mdanylo@danylo-VirtualBox[00m [01;34m~/Downloads $[00m cd dotfiles/
-]0;danylo@danylo-VirtualBox ~/Downloads/dotfiles[01;32mdanylo@danylo-VirtualBox[00m [01;34m~/Downloads/dotfiles $[00m sudo .setup/setup_new_machine.sh -d
-[sudo] password for danylo: 
-[0;32m[main setup] [0mdry-run mode enabled
-
-[0;32m[main setup] [0mAnswer the following questions to determine which programs and dotfiles to install
-
-[0;32m[main setup] [0mType either y or Y for "yes" and anything else for "no". The default answer is capitalized
-[0;32m[main setup] [0min the brackets following the question. Pressing RET selects the default answer.
-
-[1;36m[user input] [0mDo you want to install the .bin directory [Yn]? 
-[1;36m[user input] [0mDo you want to install Git [Yn]? 
-[1;36m[user input] [0mDo you want to install Emacs [Yn]? 
-[1;36m[user input] [0mDo you want to install the i3 window manager and associated themes [Yn]? 
-[1;36m[user input] [0mDo you want to install the terminator terminal emulator [Yn]? 
-[1;36m[user input] [0mDo you want to install powerline [Yn]? 
-[1;36m[user input] [0mDo you want to install Google Chrome [Yn]? 
-[1;36m[user input] [0mDo you want to install Foxit PDF Reader [Yn]? 
-
-[0;32m[main setup] [0mmoving dotfiles to /home/danylo
-[0;32m[main setup] [0msudo -u danylo mkdir /home/danylo/dotfile_backup_19112016_T165515
-[0;32m[main setup] [0many existing dotfiles in /home/danylo will be moved to /home/danylo/dotfile_backup_19112016_T165515
-[0;32m[main setup] [0mcp -rp /home/danylo/Downloads/dotfiles/.bin /home/danylo/.bin
-[0;32m[main setup] [0mcp -rp /home/danylo/Downloads/dotfiles/.emacs.d /home/danylo/.emacs.d
-[0;32m[main setup] [0mcp -rp /home/danylo/Downloads/dotfiles/.fonts /home/danylo/.fonts
-[0;32m[main setup] [0mcp -rp /home/danylo/Downloads/dotfiles/.i3 /home/danylo/.i3
-[0;32m[main setup] [0mcp -rp /home/danylo/Downloads/dotfiles/.Xresources /home/danylo/.Xresources
-[0;32m[main setup] [0mcp -rp /home/danylo/Downloads/dotfiles/.gtkrc-2.0 /home/danylo/.gtkrc-2.0
-[0;32m[main setup] [0mcp -rp /home/danylo/Downloads/dotfiles/.config/gtk-3.0/settings.ini /home/danylo/.config/gtk-3.0/settings.ini
-[0;32m[main setup] [0mmv /home/danylo/.dmrc /home/danylo/dotfile_backup_19112016_T165515
-[0;32m[main setup] [0mcp -rp /home/danylo/Downloads/dotfiles/.dmrc /home/danylo/.dmrc
-[0;32m[main setup] [0mmkdir -p /home/danylo/.config/terminator
-[0;32m[main setup] [0mcp -rp /home/danylo/Downloads/dotfiles/.config/terminator/config /home/danylo/.config/terminator/config
-[0;32m[git setup] [0mapt-get --assume-yes install git
-[0;32m[emacs setup] [0mapt-get --assume-yes install emacs
-[0;32m[emacs setup] [0mapt-get --assume-yes install build-essential
-[0;32m[emacs setup] [0mapt-get --assume-yes install clang
-[0;32m[emacs setup] [0mapt-get --assume-yes install libclang-dev
-[0;32m[emacs setup] [0mapt-get --assume-yes install shellcheck
-[0;32m[emacs setup] [0mapt-get --assume-yes install libncurses5
-[0;32m[emacs setup] [0mapt-get --assume-yes install libncurses5-dev
-[0;32m[emacs setup] [0mwget ftp://ftp.gnu.org/pub/gnu/global/global-6.5.5.tar.gz
-[0;32m[emacs setup] [0mtar -zxvf global-6.5.5.tar.gz
-[0;32m[emacs setup] [0mrm -rf global-6.5.5.tar.gz
-[0;32m[emacs setup] [0mcd global-6.5.5/
-[0;32m[emacs setup] [0m./configure
-[0;32m[emacs setup] [0mmake
-[0;32m[emacs setup] [0mmake install
-[0;32m[emacs setup] [0mrm -rf global-6.5.5/
-[0;32m[i3 setup] [0mapt-get --assume-yes install i3
-[0;32m[i3 setup] [0mapt-get --assume-yes install i3status
-[0;32m[i3 setup] [0mapt-get --assume-yes install i3lock
-[0;32m[i3 setup] [0mapt-get --assume-yes install i3blocks
-[0;32m[i3 setup] [0mapt-get --assume-yes install feh
-[0;32m[i3 setup] [0mapt-get --assume-yes install sysstat
-[0;32m[i3 setup] [0mapt-get --assume-yes install acpi
-[0;32m[i3 setup] [0mapt-get --assume-yes install compton
-[0;32m[i3 setup] [0madd-apt-repository -y ppa:numix/ppa
-[0;32m[i3 setup] [0mapt-get update
-[0;32m[i3 setup] [0mapt-get --assume-yes install numix-gtk-theme
-[0;32m[i3 setup] [0mapt-get --assume-yes install numix-icon-theme
-[0;32m[i3 setup] [0mwget http://download.opensuse.org/repositories/home:Horst3180/xUbuntu_16.04/Release.key
-[0;32m[i3 setup] [0mapt-key add - < Release.key
-[0;32m[i3 setup] [0mrm Release.key
-[0;32m[i3 setup] [0mapt-get update
-[0;32m[i3 setup] [0msh -c "echo 'deb http://download.opensuse.org/repositories/home:/Horst3180/xUbuntu_16.04/ /' > /etc/apt/sources.list.d/arc-theme.list"
-[0;32m[i3 setup] [0mapt-get update
-[0;32m[i3 setup] [0mapt-get --assume-yes install arc-theme
-[0;32m[i3 setup] [0mwget https://github.com/acrisci/playerctl/releases/download/v0.5.0/playerctl-0.5.0_amd64.deb
-[0;32m[i3 setup] [0mdpkg -i playerctl-0.5.0_amd64.deb
-[0;32m[i3 setup] [0mrm -rf playerctl-0.5.0_amd64.deb
-[0;32m[i3 setup] [0mapt-get --assume-yes install libpango-1.0-0
-[0;32m[i3 setup] [0mapt-get --assume-yes install libpangocairo-1.0-0
-[0;32m[i3 setup] [0mapt-get --assume-yes install libcairo2
-[0;32m[i3 setup] [0mapt-get --assume-yes install xcb
-[0;32m[i3 setup] [0mapt-get --assume-yes install libxcb-util-dev
-[0;32m[i3 setup] [0mapt-get --assume-yes install libxcb-ewmh-dev
-[0;32m[i3 setup] [0mapt-get --assume-yes install libxcb-xinerama0
-[0;32m[i3 setup] [0mapt-get --assume-yes install libxcb-xinerama0-dev
-[0;32m[i3 setup] [0mapt-get --assume-yes install libxcb-icccm4-dev
-[0;32m[i3 setup] [0mapt-get --assume-yes install libxcb-xkb-dev
-[0;32m[i3 setup] [0mapt-get --assume-yes install libstartup-notification0
-[0;32m[i3 setup] [0mapt-get --assume-yes install libstartup-notification0-dev
-[0;32m[i3 setup] [0mapt-get --assume-yes install libxkbcommon-x11-dev
-[0;32m[i3 setup] [0mapt-get --assume-yes install libxkbcommon0
-[0;32m[i3 setup] [0mapt-get --assume-yes install libxkbcommon-dev
-[0;32m[i3 setup] [0mapt-get --assume-yes install libglib2.0-dev
-[0;32m[i3 setup] [0mapt-get --assume-yes install libperl-dev
-[0;32m[i3 setup] [0mapt-get --assume-yes install libgtk2.0-dev
-[0;32m[i3 setup] [0mapt-get --assume-yes install xutils
-[0;32m[i3 setup] [0mapt-get --assume-yes install xutils-dev
-[0;32m[i3 setup] [0mwget https://github.com/Airblader/xcb-util-xrm/releases/download/v1.0/xcb-util-xrm-1.0.tar.gz
-[0;32m[i3 setup] [0mtar -zxvf xcb-util-xrm-1.0.tar.gz
-[0;32m[i3 setup] [0mrm -rf xcb-util-xrm-1.0.tar.gz
-[0;32m[i3 setup] [0mcd xcb-util-xrm-1.0/
-[0;32m[i3 setup] [0m./configure
-[0;32m[i3 setup] [0mmake
-[0;32m[i3 setup] [0mmake install
-[0;32m[i3 setup] [0mrm -rf xcb-util-xrm-1.0/
-[0;32m[i3 setup] [0mwget https://github.com/DaveDavenport/rofi/releases/download/1.2.0/rofi-1.2.0.tar.gz
-[0;32m[i3 setup] [0mtar -zxvf rofi-1.2.0.tar.gz
-[0;32m[i3 setup] [0mrm -rf rofi-1.2.0.tar.gz
-[0;32m[i3 setup] [0mcd rofi-1.2.0/
-[0;32m[i3 setup] [0m./configure
-[0;32m[i3 setup] [0mmake
-[0;32m[i3 setup] [0mmake install
-[0;32m[i3 setup] [0mrm -rf rofi-1.2.0/
-[0;32m[i3 setup] [0mtouch /etc/ld.so.conf.d/usr-local.conf
-[0;32m[i3 setup] [0mecho "/usr/local/lib" > /etc/ld.so.conf.d/usr-local.conf
-[0;32m[i3 setup] [0mldconfig
-[0;32m[terminator setup] [0mapt-get --assume-yes install terminator
-[0;32m[powerline setup] [0mapt-get --assume-yes install python3
-[0;32m[powerline setup] [0mapt-get --assume-yes install python-pip
-[0;32m[powerline setup] [0mapt-get --assume-yes install fontconfig
-[0;32m[powerline setup] [0msudo -H pip install --upgrade pip
-[0;32m[powerline setup] [0msudo -H pip install setuptools
-[0;32m[powerline setup] [0msudo -H pip install powerline-status
-[0;32m[powerline setup] [0mwget https://github.com/powerline/powerline/raw/develop/font/PowerlineSymbols.otf
-[0;32m[powerline setup] [0mwget https://github.com/powerline/powerline/raw/develop/font/10-powerline-symbols.conf
-[0;32m[powerline setup] [0mmkdir -p /home/danylo/.fonts
-
-[1;33m[warning][0m couldn't find /home/danylo/Downloads/dotfiles/.setup/PowerlineSymbols.otf
-
-[0;32m[powerline setup] [0mrm -rf /home/danylo/Downloads/dotfiles/.setup/PowerlineSymbols.otf
-[0;32m[powerline setup] [0mfc-cache -vf /home/danylo/.fonts
-[0;32m[powerline setup] [0mmkdir -p /home/danylo/.config/fontconfig/conf.d
-
-[1;33m[warning][0m couldn't find /home/danylo/Downloads/dotfiles/.setup/10-powerline-symbols.conf
-
-[0;32m[powerline setup] [0mrm -rf /home/danylo/Downloads/dotfiles/.setup/10-powerline-symbols.conf
-sudo: pip: command not found
-[0;32m[powerline setup] [0mbuiltin echo ". /powerline/bindings/bash/powerline.sh" >> /home/danylo/.bashrc
-[0;32m[powerline setup] [0mgit clone https://github.com/adidenko/powerline
-
-[1;33m[warning][0m couldn't find /home/danylo/Downloads/dotfiles/.setup/powerline
-
-[0;32m[powerline setup] [0mrm -rf /home/danylo/Downloads/dotfiles/.setup/powerline
-[0;32m[chrome setup] [0mapt-get --assume-yes install libxss1
-[0;32m[chrome setup] [0mapt-get --assume-yes install libappindicator1
-[0;32m[chrome setup] [0mapt-get --assume-yes install libindicator7
-[0;32m[chrome setup] [0mwget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-[0;32m[chrome setup] [0mdpkg -i google-chrome*.deb
-[0;32m[chrome setup] [0mrm -rf google-chrome*.deb
-[0;32m[foxit setup] [0mwget http://cdn01.foxitsoftware.com/pub/foxit/reader/desktop/linux/2.x/2.2/en_us/FoxitReader2.2.1025_Server_x86_enu_Setup.run.tar.gz
-[0;32m[foxit setup] [0mtar -zxvf FoxitReader*.tar.gz
-ls: cannot access 'FoxitReader*.tar.gz': No such file or directory
-ls: cannot access 'FoxitReader*.run': No such file or directory
-
-[1;33m[warning][0m Please follow the GUI's instructions and install Foxit PDF Reader into /opt/foxitsoftware/foxitreader
-
-[0;32m[foxit setup] [0msudo ./''
-[0;32m[foxit setup] [0mrm -rf ''
-[0;32m[foxit setup] [0mrm -rf ''
-[0;32m[foxit setup] [0mWill now disable Foxit PDF Reader's cloud tools, which can needlessly consume a lot of CPU.
-
-[1;33m[warning][0m Looks like you did not install Foxit PDF Reader in /opt/foxitsoftware/foxitreader/
-
-[0;32m[foxit setup] [0mSearching for fxplugins folder location...
-
-[1;33m[warning][0m Couldn't find any fxplugins folder, skipping this step
-
-
-[1;31m[error][0m Failed to disable Foxit PDF Reader's cloud tools. Beware: these may consume a lot of CPU! You are advised to remove them.
-
-
-[1;31m[error][0m Failed to give ownership of Foxit PDF Reader to the normal user. You have to manually run `sudo chown -R danylo:danylo <foxit reader install directory>` to make the program work normally.
-
-[0;32m[main setup] [0mapt-get --assume-yes autoremove
-
-[0;32m[main setup] [0mfinished with [1;33m6 warnings[0m and [1;31m2 errors[0m
-
-[1;36m[user input] [0mRecommended to restart, do it [now/later]? now
-
-[0;32m[main setup] [0mshutdown -r now
-]0;danylo@danylo-VirtualBox ~/Downloads/dotfiles[01;32mdanylo@danylo-VirtualBox[00m [01;34m~/Downloads/dotfiles $[00m sudo .setup/setup_new_machine.sh -d[K[K[K
-
-[1;33m[warning][0m not in dry run mode
-
-[0;32m[main setup] [0mthis script will change the danylo user's dotfiles and settings in the /home/danylo directory
-[1;36m[user input] [0mto proceed, type without the brackets exactly [I really want to do this]
-I really want to do this
-
-[0;32m[main setup] [0mAnswer the following questions to determine which programs and dotfiles to install
-
-[0;32m[main setup] [0mType either y or Y for "yes" and anything else for "no". The default answer is capitalized
-[0;32m[main setup] [0min the brackets following the question. Pressing RET selects the default answer.
-
-[1;36m[user input] [0mDo you want to install the .bin directory [Yn]? 
-[1;36m[user input] [0mDo you want to install Git [Yn]? 
-[1;36m[user input] [0mDo you want to install Emacs [Yn]? 
-[1;36m[user input] [0mDo you want to install the i3 window manager and associated themes [Yn]? 
-[1;36m[user input] [0mDo you want to install the terminator terminal emulator [Yn]? 
-[1;36m[user input] [0mDo you want to install powerline [Yn]? 
-[1;36m[user input] [0mDo you want to install Google Chrome [Yn]? 
-[1;36m[user input] [0mDo you want to install Foxit PDF Reader [Yn]? 
-
-[0;32m[main setup] [0mmoving dotfiles to /home/danylo
-[0;32m[main setup] [0msudo -u danylo mkdir /home/danylo/dotfile_backup_19112016_T165534
-[0;32m[main setup] [0many existing dotfiles in /home/danylo will be moved to /home/danylo/dotfile_backup_19112016_T165534
-[0;32m[main setup] [0mcp -rp /home/danylo/Downloads/dotfiles/.bin /home/danylo/.bin
-[0;32m[main setup] [0mcp -rp /home/danylo/Downloads/dotfiles/.emacs.d /home/danylo/.emacs.d
-[0;32m[main setup] [0mcp -rp /home/danylo/Downloads/dotfiles/.fonts /home/danylo/.fonts
-[0;32m[main setup] [0mcp -rp /home/danylo/Downloads/dotfiles/.i3 /home/danylo/.i3
-[0;32m[main setup] [0mcp -rp /home/danylo/Downloads/dotfiles/.Xresources /home/danylo/.Xresources
-[0;32m[main setup] [0mcp -rp /home/danylo/Downloads/dotfiles/.gtkrc-2.0 /home/danylo/.gtkrc-2.0
-[0;32m[main setup] [0mcp -rp /home/danylo/Downloads/dotfiles/.config/gtk-3.0/settings.ini /home/danylo/.config/gtk-3.0/settings.ini
-[0;32m[main setup] [0mmv /home/danylo/.dmrc /home/danylo/dotfile_backup_19112016_T165534
-[0;32m[main setup] [0mcp -rp /home/danylo/Downloads/dotfiles/.dmrc /home/danylo/.dmrc
-[0;32m[main setup] [0mmkdir -p /home/danylo/.config/terminator
-[0;32m[main setup] [0mcp -rp /home/danylo/Downloads/dotfiles/.config/terminator/config /home/danylo/.config/terminator/config
-[0;32m[git setup] [0mapt-get --assume-yes install git
-[0;32m[emacs setup] [0mapt-get --assume-yes install emacs
-[0;32m[emacs setup] [0mapt-get --assume-yes install build-essential
-[0;32m[emacs setup] [0mapt-get --assume-yes install clang
-[0;32m[emacs setup] [0mapt-get --assume-yes install libclang-dev
-[0;32m[emacs setup] [0mapt-get --assume-yes install shellcheck
-[0;32m[emacs setup] [0mapt-get --assume-yes install libncurses5
-[0;32m[emacs setup] [0mapt-get --assume-yes install libncurses5-dev
-[0;32m[emacs setup] [0mwget ftp://ftp.gnu.org/pub/gnu/global/global-6.5.5.tar.gz
---2016-11-19 16:59:22--  ftp://ftp.gnu.org/pub/gnu/global/global-6.5.5.tar.gz
-           => ‘global-6.5.5.tar.gz’
-Resolving ftp.gnu.org (ftp.gnu.org)... 208.118.235.20, 2001:4830:134:3::b
-Connecting to ftp.gnu.org (ftp.gnu.org)|208.118.235.20|:21... connected.
-Logging in as anonymous ... Logged in!
-==> SYST ... done.    ==> PWD ... done.
-==> TYPE I ... done.  ==> CWD (1) /pub/gnu/global ... done.
-==> SIZE global-6.5.5.tar.gz ... 2934542
-==> PASV ... done.    ==> RETR global-6.5.5.tar.gz ... done.
-Length: 2934542 (2.8M) (unauthoritative)
-
-global-6.5.5.tar.gz             0%[                                               ]       0  --.-KB/s               global-6.5.5.tar.gz             1%[                                               ]  43.84K   132KB/s               global-6.5.5.tar.gz             7%[==>                                            ] 213.52K   327KB/s               global-6.5.5.tar.gz            15%[======>                                        ] 441.98K   519KB/s               global-6.5.5.tar.gz            22%[=========>                                     ] 652.67K   565KB/s               global-6.5.5.tar.gz            47%[=====================>                         ]   1.33M   997KB/s               global-6.5.5.tar.gz            60%[===========================>                   ]   1.68M  1.07MB/s               global-6.5.5.tar.gz            72%[=================================>             ]   2.02M  1.14MB/s               global-6.5.5.tar.gz            86%[=======================================>       ]   2.42M  1.23MB/s               global-6.5.5.tar.gz           100%[==============================================>]   2.80M  1.30MB/s    in 2.1s    
-
-2016-11-19 16:59:28 (1.30 MB/s) - ‘global-6.5.5.tar.gz’ saved [2934542]
-
-[0;32m[emacs setup] [0mtar -zxvf global-6.5.5.tar.gz
-[0;32m[emacs setup] [0mrm -rf global-6.5.5.tar.gz
-[0;32m[emacs setup] [0mcd global-6.5.5/
-[0;32m[emacs setup] [0m./configure
-[0;32m[emacs setup] [0mmake
-ar: `u' modifier ignored since `D' is the default (see `U')
-ar: `u' modifier ignored since `D' is the default (see `U')
-ar: `u' modifier ignored since `D' is the default (see `U')
-ar: `u' modifier ignored since `D' is the default (see `U')
-ar: `u' modifier ignored since `D' is the default (see `U')
-ar: `u' modifier ignored since `D' is the default (see `U')
-ar: `u' modifier ignored since `D' is the default (see `U')
-ar: `u' modifier ignored since `D' is the default (see `U')
-ar: `u' modifier ignored since `D' is the default (see `U')
-ar: `u' modifier ignored since `D' is the default (see `U')
-[01m[Kglobal.c:[m[K In function ‘[01m[Kmain[m[K’:
-[01m[Kglobal.c:942:3:[m[K [01;35m[Kwarning: [m[Kignoring return value of ‘[01m[Kchdir[m[K’, declared with attribute warn_unused_result [-Wunused-result]
-   chdir(root);
-[01;32m[K   ^[m[K
-[01m[Kglobal.c:949:3:[m[K [01;35m[Kwarning: [m[Kignoring return value of ‘[01m[Kchdir[m[K’, declared with attribute warn_unused_result [-Wunused-result]
-   chdir(root);
-[01;32m[K   ^[m[K
-[01m[Kglobal.c:956:3:[m[K [01;35m[Kwarning: [m[Kignoring return value of ‘[01m[Kchdir[m[K’, declared with attribute warn_unused_result [-Wunused-result]
-   chdir(root);
-[01;32m[K   ^[m[K
-[01m[Kglobal.c:963:3:[m[K [01;35m[Kwarning: [m[Kignoring return value of ‘[01m[Kchdir[m[K’, declared with attribute warn_unused_result [-Wunused-result]
-   chdir(root);
-[01;32m[K   ^[m[K
-[01m[Kgozilla.c:[m[K In function ‘[01m[Kshow_page_by_url[m[K’:
-[01m[Kgozilla.c:628:3:[m[K [01;35m[Kwarning: [m[Kignoring return value of ‘[01m[Ksystem[m[K’, declared with attribute warn_unused_result [-Wunused-result]
-   system(com);
-[01;32m[K   ^[m[K
-[01m[Kgozilla.c:635:3:[m[K [01;35m[Kwarning: [m[Kignoring return value of ‘[01m[Ksystem[m[K’, declared with attribute warn_unused_result [-Wunused-result]
-   system(com);
-[01;32m[K   ^[m[K
-[01m[Kgozilla.c:642:3:[m[K [01;35m[Kwarning: [m[Kignoring return value of ‘[01m[Ksystem[m[K’, declared with attribute warn_unused_result [-Wunused-result]
-   system(com);
-[01;32m[K   ^[m[K
-[01m[Kgtags.c:[m[K In function ‘[01m[Kmain[m[K’:
-[01m[Kgtags.c:416:4:[m[K [01;35m[Kwarning: [m[Kignoring return value of ‘[01m[Krealpath[m[K’, declared with attribute warn_unused_result [-Wunused-result]
-    realpath(*argv, dbpath);
-[01;32m[K    ^[m[K
-[01m[Kgtags.c:421:4:[m[K [01;35m[Kwarning: [m[Kignoring return value of ‘[01m[Krealpath[m[K’, declared with attribute warn_unused_result [-Wunused-result]
-    realpath(*argv, dbpath);
-[01;32m[K    ^[m[K
-[0;32m[emacs setup] [0mmake install
-[0;32m[emacs setup] [0mrm -rf global-6.5.5/
-[0;32m[i3 setup] [0mapt-get --assume-yes install i3
-[0;32m[i3 setup] [0mapt-get --assume-yes install i3status
-[0;32m[i3 setup] [0mapt-get --assume-yes install i3lock
-[0;32m[i3 setup] [0mapt-get --assume-yes install i3blocks
-[0;32m[i3 setup] [0mapt-get --assume-yes install feh
-[0;32m[i3 setup] [0mapt-get --assume-yes install sysstat
-[0;32m[i3 setup] [0mapt-get --assume-yes install acpi
-[0;32m[i3 setup] [0mapt-get --assume-yes install compton
-[0;32m[i3 setup] [0madd-apt-repository -y ppa:numix/ppa
-gpg: requesting key 0F164EEB from hkp server keyserver.ubuntu.com
-gpg: key 0F164EEB: public key "Launchpad PPA for Numix Maintainers" imported
-gpg: Total number processed: 1
-gpg:               imported: 1  (RSA: 1)
-[0;32m[i3 setup] [0mapt-get update
-[0;32m[i3 setup] [0mapt-get --assume-yes install numix-gtk-theme
-[0;32m[i3 setup] [0mapt-get --assume-yes install numix-icon-theme
-[0;32m[i3 setup] [0mwget http://download.opensuse.org/repositories/home:Horst3180/xUbuntu_16.04/Release.key
---2016-11-19 17:00:50--  http://download.opensuse.org/repositories/home:Horst3180/xUbuntu_16.04/Release.key
-Resolving download.opensuse.org (download.opensuse.org)... 195.135.221.134, 2001:67c:2178:8::13
-Connecting to download.opensuse.org (download.opensuse.org)|195.135.221.134|:80... connected.
-HTTP request sent, awaiting response... 301 Moved Permanently
-Location: http://download.opensuse.org/repositories/home:/Horst3180/xUbuntu_16.04/Release.key [following]
---2016-11-19 17:00:51--  http://download.opensuse.org/repositories/home:/Horst3180/xUbuntu_16.04/Release.key
-Reusing existing connection to download.opensuse.org:80.
-HTTP request sent, awaiting response... 200 OK
-Length: 1102 (1.1K) [application/pgp-keys]
-Saving to: ‘Release.key’
-
-Release.key                     0%[                                               ]       0  --.-KB/s               Release.key                   100%[==============================================>]   1.08K  --.-KB/s    in 0s      
-
-2016-11-19 17:00:51 (149 MB/s) - ‘Release.key’ saved [1102/1102]
-
-[0;32m[i3 setup] [0mapt-key add - < Release.key
-[0;32m[i3 setup] [0mrm Release.key
-[0;32m[i3 setup] [0mapt-get update
-[0;32m[i3 setup] [0msh -c "echo 'deb http://download.opensuse.org/repositories/home:/Horst3180/xUbuntu_16.04/ /' > /etc/apt/sources.list.d/arc-theme.list"
-[0;32m[i3 setup] [0mapt-get update
-[0;32m[i3 setup] [0mapt-get --assume-yes install arc-theme
-[0;32m[i3 setup] [0mwget https://github.com/acrisci/playerctl/releases/download/v0.5.0/playerctl-0.5.0_amd64.deb
---2016-11-19 17:01:02--  https://github.com/acrisci/playerctl/releases/download/v0.5.0/playerctl-0.5.0_amd64.deb
-Resolving github.com (github.com)... 192.30.253.113, 192.30.253.112
-Connecting to github.com (github.com)|192.30.253.113|:443... connected.
-HTTP request sent, awaiting response... 302 Found
-Location: https://github-cloud.s3.amazonaws.com/releases/18788804/e7a9300c-0428-11e6-8ab9-bca7e9a72c76.deb?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAISTNZFOVBIJMK3TQ%2F20161119%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20161119T160103Z&X-Amz-Expires=300&X-Amz-Signature=5abf2be8bca10fdc640aeabad58ac7fb79e87e53f20df9e8f486ae60b0ad47b6&X-Amz-SignedHeaders=host&actor_id=0&response-content-disposition=attachment%3B%20filename%3Dplayerctl-0.5.0_amd64.deb&response-content-type=application%2Foctet-stream [following]
---2016-11-19 17:01:03--  https://github-cloud.s3.amazonaws.com/releases/18788804/e7a9300c-0428-11e6-8ab9-bca7e9a72c76.deb?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAISTNZFOVBIJMK3TQ%2F20161119%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20161119T160103Z&X-Amz-Expires=300&X-Amz-Signature=5abf2be8bca10fdc640aeabad58ac7fb79e87e53f20df9e8f486ae60b0ad47b6&X-Amz-SignedHeaders=host&actor_id=0&response-content-disposition=attachment%3B%20filename%3Dplayerctl-0.5.0_amd64.deb&response-content-type=application%2Foctet-stream
-Resolving github-cloud.s3.amazonaws.com (github-cloud.s3.amazonaws.com)... 54.231.120.99
-Connecting to github-cloud.s3.amazonaws.com (github-cloud.s3.amazonaws.com)|54.231.120.99|:443... connected.
-HTTP request sent, awaiting response... 200 OK
-Length: 285908 (279K) [application/octet-stream]
-Saving to: ‘playerctl-0.5.0_amd64.deb’
-
-playerctl-0.5.0_amd64.deb       0%[                                               ]       0  --.-KB/s               playerctl-0.5.0_amd64.deb       8%[===>                                           ]  24.57K  92.9KB/s               playerctl-0.5.0_amd64.deb      27%[===========>                                   ]  75.57K   144KB/s               playerctl-0.5.0_amd64.deb      51%[=======================>                       ] 143.57K   187KB/s               playerctl-0.5.0_amd64.deb      94%[===========================================>   ] 262.57K   258KB/s               playerctl-0.5.0_amd64.deb     100%[==============================================>] 279.21K   272KB/s    in 1.0s    
-
-2016-11-19 17:01:05 (272 KB/s) - ‘playerctl-0.5.0_amd64.deb’ saved [285908/285908]
-
-[0;32m[i3 setup] [0mdpkg -i playerctl-0.5.0_amd64.deb
-[0;32m[i3 setup] [0mrm -rf playerctl-0.5.0_amd64.deb
-[0;32m[i3 setup] [0mapt-get --assume-yes install libpango-1.0-0
-[0;32m[i3 setup] [0mapt-get --assume-yes install libpangocairo-1.0-0
-[0;32m[i3 setup] [0mapt-get --assume-yes install libcairo2
-[0;32m[i3 setup] [0mapt-get --assume-yes install xcb
-[0;32m[i3 setup] [0mapt-get --assume-yes install libxcb-util-dev
-[0;32m[i3 setup] [0mapt-get --assume-yes install libxcb-ewmh-dev
-[0;32m[i3 setup] [0mapt-get --assume-yes install libxcb-xinerama0
-[0;32m[i3 setup] [0mapt-get --assume-yes install libxcb-xinerama0-dev
-[0;32m[i3 setup] [0mapt-get --assume-yes install libxcb-icccm4-dev
-[0;32m[i3 setup] [0mapt-get --assume-yes install libxcb-xkb-dev
-[0;32m[i3 setup] [0mapt-get --assume-yes install libstartup-notification0
-[0;32m[i3 setup] [0mapt-get --assume-yes install libstartup-notification0-dev
-[0;32m[i3 setup] [0mapt-get --assume-yes install libxkbcommon-x11-dev
-[0;32m[i3 setup] [0mapt-get --assume-yes install libxkbcommon0
-[0;32m[i3 setup] [0mapt-get --assume-yes install libxkbcommon-dev
-[0;32m[i3 setup] [0mapt-get --assume-yes install libglib2.0-dev
-[0;32m[i3 setup] [0mapt-get --assume-yes install libperl-dev
-[0;32m[i3 setup] [0mapt-get --assume-yes install libgtk2.0-dev
-Extracting templates from packages: 63%Extracting templates from packages: 100%
-[0;32m[i3 setup] [0mapt-get --assume-yes install xutils
-[0;32m[i3 setup] [0mapt-get --assume-yes install xutils-dev
-[0;32m[i3 setup] [0mwget https://github.com/Airblader/xcb-util-xrm/releases/download/v1.0/xcb-util-xrm-1.0.tar.gz
---2016-11-19 17:02:23--  https://github.com/Airblader/xcb-util-xrm/releases/download/v1.0/xcb-util-xrm-1.0.tar.gz
-Resolving github.com (github.com)... 192.30.253.113, 192.30.253.112
-Connecting to github.com (github.com)|192.30.253.113|:443... connected.
-HTTP request sent, awaiting response... 302 Found
-Location: https://github-cloud.s3.amazonaws.com/releases/49815598/53a96dc2-fd93-11e5-9e29-79beab51b8fe.gz?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAISTNZFOVBIJMK3TQ%2F20161119%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20161119T160223Z&X-Amz-Expires=300&X-Amz-Signature=62ebf5c7688e3823d573e39a1ddaf564c88d3f91240bc2c3e799116f3e23392f&X-Amz-SignedHeaders=host&actor_id=0&response-content-disposition=attachment%3B%20filename%3Dxcb-util-xrm-1.0.tar.gz&response-content-type=application%2Foctet-stream [following]
---2016-11-19 17:02:23--  https://github-cloud.s3.amazonaws.com/releases/49815598/53a96dc2-fd93-11e5-9e29-79beab51b8fe.gz?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAISTNZFOVBIJMK3TQ%2F20161119%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20161119T160223Z&X-Amz-Expires=300&X-Amz-Signature=62ebf5c7688e3823d573e39a1ddaf564c88d3f91240bc2c3e799116f3e23392f&X-Amz-SignedHeaders=host&actor_id=0&response-content-disposition=attachment%3B%20filename%3Dxcb-util-xrm-1.0.tar.gz&response-content-type=application%2Foctet-stream
-Resolving github-cloud.s3.amazonaws.com (github-cloud.s3.amazonaws.com)... 54.231.113.203
-Connecting to github-cloud.s3.amazonaws.com (github-cloud.s3.amazonaws.com)|54.231.113.203|:443... connected.
-HTTP request sent, awaiting response... 200 OK
-Length: 402604 (393K) [application/octet-stream]
-Saving to: ‘xcb-util-xrm-1.0.tar.gz’
-
-xcb-util-xrm-1.0.tar.gz         0%[                                               ]       0  --.-KB/s               xcb-util-xrm-1.0.tar.gz         6%[=>                                             ]  24.57K  98.4KB/s               xcb-util-xrm-1.0.tar.gz        19%[========>                                      ]  75.57K   140KB/s               xcb-util-xrm-1.0.tar.gz        40%[==================>                            ] 160.57K   201KB/s               xcb-util-xrm-1.0.tar.gz        75%[==================================>            ] 296.57K   285KB/s               xcb-util-xrm-1.0.tar.gz       100%[==============================================>] 393.17K   342KB/s    in 1.1s    
-
-2016-11-19 17:02:25 (342 KB/s) - ‘xcb-util-xrm-1.0.tar.gz’ saved [402604/402604]
-
-[0;32m[i3 setup] [0mtar -zxvf xcb-util-xrm-1.0.tar.gz
-[0;32m[i3 setup] [0mrm -rf xcb-util-xrm-1.0.tar.gz
-[0;32m[i3 setup] [0mcd xcb-util-xrm-1.0/
-[0;32m[i3 setup] [0m./configure
-configure: WARNING: doxygen not found - documentation targets will be skipped
-[0;32m[i3 setup] [0mmake
-[01m[Ksrc/util.c:[m[K In function ‘[01m[Kresolve_path[m[K’:
-[01m[Ksrc/util.c:77:5:[m[K [01;35m[Kwarning: [m[Kignoring return value of ‘[01m[Kasprintf[m[K’, declared with attribute warn_unused_result [-Wunused-result]
-     asprintf(&result, "%s/%s", base, path);
-[01;32m[K     ^[m[K
-ar: `u' modifier ignored since `D' is the default (see `U')
-[0;32m[i3 setup] [0mmake install
-[0;32m[i3 setup] [0mrm -rf xcb-util-xrm-1.0/
-[0;32m[i3 setup] [0mwget https://github.com/DaveDavenport/rofi/releases/download/1.2.0/rofi-1.2.0.tar.gz
---2016-11-19 17:02:34--  https://github.com/DaveDavenport/rofi/releases/download/1.2.0/rofi-1.2.0.tar.gz
-Resolving github.com (github.com)... 192.30.253.113, 192.30.253.112
-Connecting to github.com (github.com)|192.30.253.113|:443... connected.
-HTTP request sent, awaiting response... 302 Found
-Location: https://github-cloud.s3.amazonaws.com/releases/7715820/85069384-6073-11e6-9597-2b569fd1940f.gz?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAISTNZFOVBIJMK3TQ%2F20161119%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20161119T160234Z&X-Amz-Expires=300&X-Amz-Signature=c51c37ac8c755815e98d797571efdd769e66da7ab5521b92f134605a60b9af35&X-Amz-SignedHeaders=host&actor_id=0&response-content-disposition=attachment%3B%20filename%3Drofi-1.2.0.tar.gz&response-content-type=application%2Foctet-stream [following]
---2016-11-19 17:02:34--  https://github-cloud.s3.amazonaws.com/releases/7715820/85069384-6073-11e6-9597-2b569fd1940f.gz?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAISTNZFOVBIJMK3TQ%2F20161119%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20161119T160234Z&X-Amz-Expires=300&X-Amz-Signature=c51c37ac8c755815e98d797571efdd769e66da7ab5521b92f134605a60b9af35&X-Amz-SignedHeaders=host&actor_id=0&response-content-disposition=attachment%3B%20filename%3Drofi-1.2.0.tar.gz&response-content-type=application%2Foctet-stream
-Resolving github-cloud.s3.amazonaws.com (github-cloud.s3.amazonaws.com)... 54.231.82.170
-Connecting to github-cloud.s3.amazonaws.com (github-cloud.s3.amazonaws.com)|54.231.82.170|:443... connected.
-HTTP request sent, awaiting response... 200 OK
-Length: 250209 (244K) [application/octet-stream]
-Saving to: ‘rofi-1.2.0.tar.gz’
-
-rofi-1.2.0.tar.gz               0%[                                               ]       0  --.-KB/s               rofi-1.2.0.tar.gz              10%[===>                                           ]  24.58K  96.1KB/s               rofi-1.2.0.tar.gz              34%[===============>                               ]  84.58K   162KB/s               rofi-1.2.0.tar.gz              65%[=============================>                 ] 160.58K   205KB/s               rofi-1.2.0.tar.gz             100%[==============================================>] 244.34K   266KB/s    in 0.9s    
-
-2016-11-19 17:02:36 (266 KB/s) - ‘rofi-1.2.0.tar.gz’ saved [250209/250209]
-
-[0;32m[i3 setup] [0mtar -zxvf rofi-1.2.0.tar.gz
-[0;32m[i3 setup] [0mrm -rf rofi-1.2.0.tar.gz
-[0;32m[i3 setup] [0mcd rofi-1.2.0/
-[0;32m[i3 setup] [0m./configure
-[0;32m[i3 setup] [0mmake
-ar: `u' modifier ignored since `D' is the default (see `U')
-[0;32m[i3 setup] [0mmake install
-[0;32m[i3 setup] [0mrm -rf rofi-1.2.0/
-[0;32m[i3 setup] [0mtouch /etc/ld.so.conf.d/usr-local.conf
-[0;32m[i3 setup] [0mecho "/usr/local/lib" > /etc/ld.so.conf.d/usr-local.conf
-[0;32m[i3 setup] [0mldconfig
-[0;32m[terminator setup] [0mapt-get --assume-yes install terminator
-[0;32m[powerline setup] [0mapt-get --assume-yes install python3
-[0;32m[powerline setup] [0mapt-get --assume-yes install python-pip
-[0;32m[powerline setup] [0mapt-get --assume-yes install fontconfig
-[0;32m[powerline setup] [0msudo -H pip install --upgrade pip
-[0;32m[powerline setup] [0msudo -H pip install setuptools
-[0;32m[powerline setup] [0msudo -H pip install powerline-status
-[0;32m[powerline setup] [0mwget https://github.com/powerline/powerline/raw/develop/font/PowerlineSymbols.otf
---2016-11-19 17:03:44--  https://github.com/powerline/powerline/raw/develop/font/PowerlineSymbols.otf
-Resolving github.com (github.com)... 192.30.253.113, 192.30.253.112
-Connecting to github.com (github.com)|192.30.253.113|:443... connected.
-HTTP request sent, awaiting response... 302 Found
-Location: https://raw.githubusercontent.com/powerline/powerline/develop/font/PowerlineSymbols.otf [following]
---2016-11-19 17:03:45--  https://raw.githubusercontent.com/powerline/powerline/develop/font/PowerlineSymbols.otf
-Resolving raw.githubusercontent.com (raw.githubusercontent.com)... 151.101.12.133
-Connecting to raw.githubusercontent.com (raw.githubusercontent.com)|151.101.12.133|:443... connected.
-HTTP request sent, awaiting response... 200 OK
-Length: 2264 (2.2K) [application/octet-stream]
-Saving to: ‘PowerlineSymbols.otf’
-
-PowerlineSymbols.otf            0%[                                               ]       0  --.-KB/s               PowerlineSymbols.otf          100%[==============================================>]   2.21K  --.-KB/s    in 0s      
-
-2016-11-19 17:03:45 (26.7 MB/s) - ‘PowerlineSymbols.otf’ saved [2264/2264]
-
-[0;32m[powerline setup] [0mwget https://github.com/powerline/powerline/raw/develop/font/10-powerline-symbols.conf
---2016-11-19 17:03:45--  https://github.com/powerline/powerline/raw/develop/font/10-powerline-symbols.conf
-Resolving github.com (github.com)... 192.30.253.113, 192.30.253.112
-Connecting to github.com (github.com)|192.30.253.113|:443... connected.
-HTTP request sent, awaiting response... 302 Found
-Location: https://raw.githubusercontent.com/powerline/powerline/develop/font/10-powerline-symbols.conf [following]
---2016-11-19 17:03:46--  https://raw.githubusercontent.com/powerline/powerline/develop/font/10-powerline-symbols.conf
-Resolving raw.githubusercontent.com (raw.githubusercontent.com)... 151.101.12.133
-Connecting to raw.githubusercontent.com (raw.githubusercontent.com)|151.101.12.133|:443... connected.
-HTTP request sent, awaiting response... 200 OK
-Length: 2713 (2.6K) [text/plain]
-Saving to: ‘10-powerline-symbols.conf’
-
-10-powerline-symbols.conf       0%[                                               ]       0  --.-KB/s               10-powerline-symbols.conf     100%[==============================================>]   2.65K  --.-KB/s    in 0.002s  
-
-2016-11-19 17:03:46 (1.12 MB/s) - ‘10-powerline-symbols.conf’ saved [2713/2713]
-
-[0;32m[powerline setup] [0mmv /home/danylo/.fonts/PowerlineSymbols.otf /home/danylo/dotfile_backup_19112016_T165534
-[0;32m[powerline setup] [0mcp -rp /home/danylo/Downloads/dotfiles/.setup/PowerlineSymbols.otf /home/danylo/.fonts/PowerlineSymbols.otf
-[0;32m[powerline setup] [0mrm -rf /home/danylo/Downloads/dotfiles/.setup/PowerlineSymbols.otf
-[0;32m[powerline setup] [0mfc-cache -vf /home/danylo/.fonts
-[0;32m[powerline setup] [0mmkdir -p /home/danylo/.config/fontconfig/conf.d
-[0;32m[powerline setup] [0mcp -rp /home/danylo/Downloads/dotfiles/.setup/10-powerline-symbols.conf /home/danylo/.config/fontconfig/conf.d/10-powerline-symbols.conf
-[0;32m[powerline setup] [0mrm -rf /home/danylo/Downloads/dotfiles/.setup/10-powerline-symbols.conf
-[0;32m[powerline setup] [0mbuiltin echo ". /usr/local/lib/python2.7/dist-packages/powerline/bindings/bash/powerline.sh" >> /home/danylo/.bashrc
-[0;32m[powerline setup] [0mgit clone https://github.com/adidenko/powerline
-Cloning into 'powerline'...
-remote: Counting objects: 163, done.[K
-Receiving objects:   0% (1/163)   Receiving objects:   1% (2/163)   Receiving objects:   2% (4/163)   Receiving objects:   3% (5/163)   Receiving objects:   4% (7/163)   Receiving objects:   5% (9/163)   Receiving objects:   6% (10/163)   Receiving objects:   7% (12/163)   Receiving objects:   8% (14/163)   Receiving objects:   9% (15/163)   Receiving objects:  10% (17/163)   Receiving objects:  11% (18/163)   Receiving objects:  12% (20/163)   Receiving objects:  13% (22/163)   Receiving objects:  14% (23/163)   Receiving objects:  15% (25/163)   Receiving objects:  16% (27/163)   Receiving objects:  17% (28/163)   remote: Total 163 (delta 0), reused 0 (delta 0), pack-reused 163[K
-Receiving objects:  18% (30/163)   Receiving objects:  19% (31/163)   Receiving objects:  20% (33/163)   Receiving objects:  21% (35/163)   Receiving objects:  22% (36/163)   Receiving objects:  23% (38/163)   Receiving objects:  24% (40/163)   Receiving objects:  25% (41/163)   Receiving objects:  26% (43/163)   Receiving objects:  27% (45/163)   Receiving objects:  28% (46/163)   Receiving objects:  29% (48/163)   Receiving objects:  30% (49/163)   Receiving objects:  31% (51/163)   Receiving objects:  32% (53/163)   Receiving objects:  33% (54/163)   Receiving objects:  34% (56/163)   Receiving objects:  35% (58/163)   Receiving objects:  36% (59/163)   Receiving objects:  37% (61/163)   Receiving objects:  38% (62/163)   Receiving objects:  39% (64/163)   Receiving objects:  40% (66/163)   Receiving objects:  41% (67/163)   Receiving objects:  42% (69/163)   Receiving objects:  43% (71/163)   Receiving objects:  44% (72/163)   Receiving objects:  45% (74/163)   Receiving objects:  46% (75/163)   Receiving objects:  47% (77/163)   Receiving objects:  48% (79/163)   Receiving objects:  49% (80/163)   Receiving objects:  50% (82/163)   Receiving objects:  51% (84/163)   Receiving objects:  52% (85/163)   Receiving objects:  53% (87/163)   Receiving objects:  54% (89/163)   Receiving objects:  55% (90/163)   Receiving objects:  56% (92/163)   Receiving objects:  57% (93/163)   Receiving objects:  58% (95/163)   Receiving objects:  59% (97/163)   Receiving objects:  60% (98/163)   Receiving objects:  61% (100/163)   Receiving objects:  62% (102/163)   Receiving objects:  63% (103/163)   Receiving objects:  64% (105/163)   Receiving objects:  65% (106/163)   Receiving objects:  66% (108/163)   Receiving objects:  67% (110/163)   Receiving objects:  68% (111/163)   Receiving objects:  69% (113/163)   Receiving objects:  70% (115/163)   Receiving objects:  71% (116/163)   Receiving objects:  72% (118/163)   Receiving objects:  73% (119/163)   Receiving objects:  74% (121/163)   Receiving objects:  75% (123/163)   Receiving objects:  76% (124/163)   Receiving objects:  77% (126/163)   Receiving objects:  78% (128/163)   Receiving objects:  79% (129/163)   Receiving objects:  80% (131/163)   Receiving objects:  81% (133/163)   Receiving objects:  82% (134/163)   Receiving objects:  83% (136/163)   Receiving objects:  84% (137/163)   Receiving objects:  85% (139/163)   Receiving objects:  86% (141/163)   Receiving objects:  87% (142/163)   Receiving objects:  88% (144/163)   Receiving objects:  89% (146/163)   Receiving objects:  90% (147/163)   Receiving objects:  91% (149/163)   Receiving objects:  92% (150/163)   Receiving objects:  93% (152/163)   Receiving objects:  94% (154/163)   Receiving objects:  95% (155/163)   Receiving objects:  96% (157/163)   Receiving objects:  97% (159/163)   Receiving objects:  98% (160/163)   Receiving objects:  99% (162/163)   Receiving objects: 100% (163/163)   Receiving objects: 100% (163/163), 34.25 KiB | 0 bytes/s, done.
-Resolving deltas:   0% (0/57)   Resolving deltas:   8% (5/57)   Resolving deltas:  42% (24/57)   Resolving deltas:  43% (25/57)   Resolving deltas:  45% (26/57)   Resolving deltas:  47% (27/57)   Resolving deltas:  49% (28/57)   Resolving deltas:  50% (29/57)   Resolving deltas:  52% (30/57)   Resolving deltas:  54% (31/57)   Resolving deltas:  61% (35/57)   Resolving deltas:  63% (36/57)   Resolving deltas:  64% (37/57)   Resolving deltas:  66% (38/57)   Resolving deltas:  77% (44/57)   Resolving deltas:  80% (46/57)   Resolving deltas:  84% (48/57)   Resolving deltas:  85% (49/57)   Resolving deltas:  87% (50/57)   Resolving deltas:  92% (53/57)   Resolving deltas:  94% (54/57)   Resolving deltas:  96% (55/57)   Resolving deltas: 100% (57/57)   Resolving deltas: 100% (57/57), done.
-Checking connectivity... done.
-[0;32m[powerline setup] [0mcp -rp /home/danylo/Downloads/dotfiles/.setup/powerline /home/danylo/.config/powerline
-[0;32m[powerline setup] [0mrm -rf /home/danylo/Downloads/dotfiles/.setup/powerline
-[0;32m[chrome setup] [0mapt-get --assume-yes install libxss1
-[0;32m[chrome setup] [0mapt-get --assume-yes install libappindicator1
-[0;32m[chrome setup] [0mapt-get --assume-yes install libindicator7
-[0;32m[chrome setup] [0mwget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
---2016-11-19 17:03:53--  https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-Resolving dl.google.com (dl.google.com)... 216.58.208.46, 2a00:1450:4001:800::200e
-Connecting to dl.google.com (dl.google.com)|216.58.208.46|:443... connected.
-HTTP request sent, awaiting response... 200 OK
-Length: 45600222 (43M) [application/x-debian-package]
-Saving to: ‘google-chrome-stable_current_amd64.deb’
-
-               google-chrome-   0%[                                               ]       0  --.-KB/s                             google-chrome-s   1%[                                               ] 488.99K  2.38MB/s                            google-chrome-st   2%[>                                              ] 982.85K  2.39MB/s                           google-chrome-sta   3%[>                                              ]   1.58M  2.61MB/s                          google-chrome-stab   5%[=>                                             ]   2.30M  2.84MB/s                         google-chrome-stabl   6%[==>                                            ]   2.96M  2.91MB/s                        google-chrome-stable   7%[==>                                            ]   3.44M  2.82MB/s                       google-chrome-stable_   8%[===>                                           ]   3.86M  2.71MB/s                      google-chrome-stable_c   9%[===>                                           ]   4.30M  2.65MB/s                     google-chrome-stable_cu  11%[====>                                          ]   4.91M  2.69MB/s                    google-chrome-stable_cur  12%[====>                                          ]   5.35M  2.63MB/s                   google-chrome-stable_curr  13%[=====>                                         ]   5.85M  2.62MB/s                  google-chrome-stable_curre  14%[=====>                                         ]   6.39M  2.63MB/s                 google-chrome-stable_curren  16%[======>                                        ]   7.14M  2.71MB/s                google-chrome-stable_current  18%[=======>                                       ]   7.97M  2.81MB/s               google-chrome-stable_current_  20%[========>                                      ]   8.79M  2.89MB/s    eta 12s    oogle-chrome-stable_current_a  22%[=========>                                     ]   9.64M  2.98MB/s    eta 12s    ogle-chrome-stable_current_am  24%[==========>                                    ]  10.44M  3.16MB/s    eta 12s    gle-chrome-stable_current_amd  25%[===========>                                   ]  11.27M  3.20MB/s    eta 12s    le-chrome-stable_current_amd6  27%[============>                                  ]  12.10M  3.25MB/s    eta 12s    e-chrome-stable_current_amd64  29%[============>                                  ]  12.89M  3.28MB/s    eta 10s    -chrome-stable_current_amd64.  31%[=============>                                 ]  13.75M  3.35MB/s    eta 10s    chrome-stable_current_amd64.d  32%[==============>                                ]  14.30M  3.36MB/s    eta 10s    hrome-stable_current_amd64.de  34%[===============>                               ]  15.02M  3.51MB/s    eta 10s    rome-stable_current_amd64.deb  36%[================>                              ]  15.82M  3.58MB/s    eta 10s    ome-stable_current_amd64.deb   38%[================>                              ]  16.60M  3.64MB/s    eta 8s     me-stable_current_amd64.deb    39%[=================>                             ]  17.22M  3.73MB/s    eta 8s     e-stable_current_amd64.deb     40%[==================>                            ]  17.75M  3.71MB/s    eta 8s     -stable_current_amd64.deb      42%[==================>                            ]  18.36M  3.69MB/s    eta 8s     stable_current_amd64.deb       43%[===================>                           ]  19.00M  3.59MB/s    eta 8s     table_current_amd64.deb        45%[====================>                          ]  19.68M  3.57MB/s    eta 7s     able_current_amd64.deb         46%[====================>                          ]  20.33M  3.50MB/s    eta 7s     ble_current_amd64.deb          48%[=====================>                         ]  21.13M  3.49MB/s    eta 7s     le_current_amd64.deb           50%[======================>                        ]  21.82M  3.45MB/s    eta 7s     e_current_amd64.deb            52%[=======================>                       ]  22.64M  3.42MB/s    eta 7s     _current_amd64.deb             53%[========================>                      ]  23.39M  3.38MB/s    eta 6s     current_amd64.deb              55%[=========================>                     ]  24.11M  3.35MB/s    eta 6s     urrent_amd64.deb               56%[=========================>                     ]  24.68M  3.33MB/s    eta 6s     rrent_amd64.deb                58%[==========================>                    ]  25.38M  3.33MB/s    eta 6s     rent_amd64.deb                 60%[===========================>                   ]  26.14M  3.33MB/s    eta 6s     ent_amd64.deb                  62%[============================>                  ]  26.97M  3.36MB/s    eta 5s     nt_amd64.deb                   63%[=============================>                 ]  27.79M  3.42MB/s    eta 5s     t_amd64.deb                    65%[=============================>                 ]  28.47M  3.46MB/s    eta 5s     _amd64.deb                     67%[==============================>                ]  29.33M  3.54MB/s    eta 5s     amd64.deb                      69%[===============================>               ]  30.21M  3.63MB/s    eta 5s     md64.deb                       70%[================================>              ]  30.63M  3.54MB/s    eta 4s     d64.deb                        71%[================================>              ]  31.30M  3.52MB/s    eta 4s     64.deb                         73%[=================================>             ]  31.97M  3.47MB/s    eta 4s     4.deb                          74%[==================================>            ]  32.49M  3.42MB/s    eta 4s     .deb                           75%[==================================>            ]  32.77M  3.26MB/s    eta 4s     deb                            76%[==================================>            ]  33.16M  3.15MB/s    eta 3s     eb                             76%[===================================>           ]  33.47M  3.01MB/s    eta 3s     b                              77%[===================================>           ]  33.86M  2.94MB/s    eta 3s                                    78%[====================================>          ]  34.25M  2.84MB/s    eta 3s                                 g  80%[====================================>          ]  34.83M  2.79MB/s    eta 3s                                go  81%[=====================================>         ]  35.35M  2.74MB/s    eta 3s                               goo  82%[=====================================>         ]  35.88M  2.66MB/s    eta 3s                              goog  83%[======================================>        ]  36.49M  2.58MB/s    eta 3s                             googl  85%[=======================================>       ]  37.10M  2.55MB/s    eta 3s                            google  86%[=======================================>       ]  37.79M  2.44MB/s    eta 3s                           google-  88%[========================================>      ]  38.43M  2.48MB/s    eta 2s                          google-c  89%[=========================================>     ]  39.05M  2.51MB/s    eta 2s                         google-ch  91%[=========================================>     ]  39.77M  2.56MB/s    eta 2s                        google-chr  93%[==========================================>    ]  40.47M  2.57MB/s    eta 2s                       google-chro  94%[===========================================>   ]  41.07M  2.64MB/s    eta 2s                      google-chrom  95%[===========================================>   ]  41.61M  2.69MB/s    eta 1s                     google-chrome  96%[============================================>  ]  42.16M  2.78MB/s    eta 1s                    google-chrome-  98%[=============================================> ]  42.86M  2.88MB/s    eta 1s                   google-chrome-s  99%[=============================================> ]  43.30M  2.88MB/s    eta 1s     google-chrome-stable_current_ 100%[==============================================>]  43.49M  2.93MB/s    in 14s     
-
-2016-11-19 17:04:07 (3.10 MB/s) - ‘google-chrome-stable_current_amd64.deb’ saved [45600222/45600222]
-
-[0;32m[chrome setup] [0mdpkg -i google-chrome*.deb
-[0;32m[chrome setup] [0mrm -rf google-chrome*.deb
-[0;32m[foxit setup] [0mwget http://cdn01.foxitsoftware.com/pub/foxit/reader/desktop/linux/2.x/2.2/en_us/FoxitReader2.2.1025_Server_x86_enu_Setup.run.tar.gz
---2016-11-19 17:04:17--  http://cdn01.foxitsoftware.com/pub/foxit/reader/desktop/linux/2.x/2.2/en_us/FoxitReader2.2.1025_Server_x86_enu_Setup.run.tar.gz
-Resolving cdn01.foxitsoftware.com (cdn01.foxitsoftware.com)... 64.62.151.53, 184.105.233.234, 64.71.129.101, ...
-Connecting to cdn01.foxitsoftware.com (cdn01.foxitsoftware.com)|64.62.151.53|:80... connected.
-HTTP request sent, awaiting response... 200 OK
-Length: 62222993 (59M) [application/x-gzip]
-Saving to: ‘FoxitReader2.2.1025_Server_x86_enu_Setup.run.tar.gz’
-
-               FoxitReader2.2   0%[                                               ]       0  --.-KB/s                             FoxitReader2.2.   0%[                                               ]  35.08K  84.1KB/s                            FoxitReader2.2.1   0%[                                               ]  66.19K   107KB/s                           FoxitReader2.2.10   0%[                                               ]  91.65K   110KB/s                          FoxitReader2.2.102   0%[                                               ] 127.00K   122KB/s                         FoxitReader2.2.1025   0%[                                               ] 176.49K   142KB/s                        FoxitReader2.2.1025_   0%[                                               ] 257.09K   178KB/s                       FoxitReader2.2.1025_S   0%[                                               ] 346.18K   207KB/s                      FoxitReader2.2.1025_Se   0%[                                               ] 463.55K   248KB/s                     FoxitReader2.2.1025_Ser   0%[                                               ] 592.23K   280KB/s                    FoxitReader2.2.1025_Serv   1%[                                               ] 770.40K   333KB/s                   FoxitReader2.2.1025_Serve   1%[                                               ] 979.68K   382KB/s                  FoxitReader2.2.1025_Server   2%[                                               ]   1.22M   452KB/s                 FoxitReader2.2.1025_Server_   2%[>                                              ]   1.53M   526KB/s                FoxitReader2.2.1025_Server_x   3%[>                                              ]   1.88M   608KB/s    eta 97s    FoxitReader2.2.1025_Server_x8   3%[>                                              ]   2.36M   716KB/s    eta 97s    oxitReader2.2.1025_Server_x86   4%[=>                                             ]   2.82M   810KB/s    eta 97s    xitReader2.2.1025_Server_x86_   5%[=>                                             ]   3.30M   896KB/s    eta 97s    itReader2.2.1025_Server_x86_e   5%[=>                                             ]   3.53M   888KB/s    eta 97s    tReader2.2.1025_Server_x86_en   7%[==>                                            ]   4.37M  1.06MB/s    eta 54s    Reader2.2.1025_Server_x86_enu   7%[==>                                            ]   4.59M  1.12MB/s    eta 54s    eader2.2.1025_Server_x86_enu_   8%[==>                                            ]   4.77M  1.16MB/s    eta 54s    ader2.2.1025_Server_x86_enu_S   8%[==>                                            ]   5.02M  1.26MB/s    eta 54s    der2.2.1025_Server_x86_enu_Se   9%[===>                                           ]   5.38M  1.33MB/s    eta 54s    er2.2.1025_Server_x86_enu_Set   9%[===>                                           ]   5.79M  1.47MB/s    eta 50s    r2.2.1025_Server_x86_enu_Setu  10%[===>                                           ]   6.18M  1.55MB/s    eta 50s    2.2.1025_Server_x86_enu_Setup  11%[====>                                          ]   6.62M  1.63MB/s    eta 50s    .2.1025_Server_x86_enu_Setup.  11%[====>                                          ]   6.96M  1.66MB/s    eta 50s    2.1025_Server_x86_enu_Setup.r  12%[=====>                                         ]   7.70M  1.80MB/s    eta 50s    .1025_Server_x86_enu_Setup.ru  13%[=====>                                         ]   7.92M  1.79MB/s    eta 42s    1025_Server_x86_enu_Setup.run  13%[=====>                                         ]   8.20M  1.78MB/s    eta 42s    025_Server_x86_enu_Setup.run.  14%[=====>                                         ]   8.51M  1.75MB/s    eta 42s    25_Server_x86_enu_Setup.run.t  14%[======>                                        ]   8.84M  1.71MB/s    eta 42s    5_Server_x86_enu_Setup.run.ta  15%[======>                                        ]   9.19M  1.67MB/s    eta 42s    _Server_x86_enu_Setup.run.tar  16%[======>                                        ]   9.51M  1.58MB/s    eta 40s    Server_x86_enu_Setup.run.tar.  16%[======>                                        ]   9.84M  1.59MB/s    eta 40s    erver_x86_enu_Setup.run.tar.g  17%[=======>                                       ]  10.19M  1.63MB/s    eta 40s    rver_x86_enu_Setup.run.tar.gz  17%[=======>                                       ]  10.55M  1.69MB/s    eta 40s    ver_x86_enu_Setup.run.tar.gz   18%[=======>                                       ]  10.88M  1.71MB/s    eta 40s    er_x86_enu_Setup.run.tar.gz    18%[=======>                                       ]  11.14M  1.70MB/s    eta 37s    r_x86_enu_Setup.run.tar.gz     19%[========>                                      ]  11.50M  1.68MB/s    eta 37s    _x86_enu_Setup.run.tar.gz      19%[========>                                      ]  11.87M  1.66MB/s    eta 37s    x86_enu_Setup.run.tar.gz       20%[========>                                      ]  12.24M  1.65MB/s    eta 37s    86_enu_Setup.run.tar.gz        21%[========>                                      ]  12.62M  1.72MB/s    eta 37s    6_enu_Setup.run.tar.gz         21%[=========>                                     ]  13.00M  1.63MB/s    eta 34s    _enu_Setup.run.tar.gz          22%[=========>                                     ]  13.37M  1.67MB/s    eta 34s    enu_Setup.run.tar.gz           23%[=========>                                     ]  13.76M  1.69MB/s    eta 34s    nu_Setup.run.tar.gz            23%[==========>                                    ]  14.16M  1.72MB/s    eta 34s    u_Setup.run.tar.gz             24%[==========>                                    ]  14.48M  1.73MB/s    eta 34s    _Setup.run.tar.gz              25%[==========>                                    ]  14.89M  1.75MB/s    eta 32s    Setup.run.tar.gz               25%[===========>                                   ]  15.28M  1.75MB/s    eta 32s    etup.run.tar.gz                26%[===========>                                   ]  15.67M  1.77MB/s    eta 32s    tup.run.tar.gz                 27%[===========>                                   ]  16.03M  1.79MB/s    eta 32s    up.run.tar.gz                  27%[============>                                  ]  16.41M  1.82MB/s    eta 32s    p.run.tar.gz                   28%[============>                                  ]  16.80M  1.83MB/s    eta 29s    .run.tar.gz                    28%[============>                                  ]  17.18M  1.82MB/s    eta 29s    run.tar.gz                     29%[============>                                  ]  17.42M  1.70MB/s    eta 29s    un.tar.gz                      29%[============>                                  ]  17.49M  1.59MB/s    eta 29s    n.tar.gz                       30%[=============>                                 ]  18.28M  1.73MB/s    eta 29s    .tar.gz                        31%[=============>                                 ]  18.46M  1.66MB/s    eta 29s    tar.gz                         31%[=============>                                 ]  18.64M  1.60MB/s    eta 29s    ar.gz                          31%[=============>                                 ]  18.84M  1.54MB/s    eta 29s    r.gz                           32%[==============>                                ]  19.02M  1.45MB/s    eta 29s    .gz                            32%[==============>                                ]  19.14M  1.15MB/s    eta 31s    gz                             32%[==============>                                ]  19.26M   994KB/s    eta 31s    z                              32%[==============>                                ]  19.26M   845KB/s    eta 34s                                   32%[==============>                                ]  19.35M   709KB/s    eta 36s                                F  32%[==============>                                ]  19.36M   632KB/s    eta 36s                               Fo  32%[==============>                                ]  19.37M   567KB/s    eta 38s                              Fox  32%[==============>                                ]  19.38M   507KB/s    eta 38s                             Foxi  32%[==============>                                ]  19.38M   459KB/s    eta 42s                            Foxit  32%[==============>                                ]  19.43M   401KB/s    eta 44s                           FoxitR  32%[==============>                                ]  19.43M   362KB/s    eta 44s                          FoxitRe  32%[==============>                                ]  19.46M   325KB/s    eta 46s                         FoxitRea  32%[==============>                                ]  19.51M   305KB/s    eta 46s                        FoxitRead  32%[==============>                                ]  19.52M   276KB/s    eta 49s                       FoxitReade  32%[==============>                                ]  19.56M   245KB/s    eta 49s                      FoxitReader  32%[==============>                                ]  19.58M   230KB/s    eta 52s                     FoxitReader2  33%[==============>                                ]  19.58M   205KB/s    eta 52s                    FoxitReader2.  33%[==============>                                ]  19.68M   186KB/s    eta 54s                   FoxitReader2.2  33%[==============>                                ]  19.70M   164KB/s    eta 54s                  FoxitReader2.2.  33%[==============>                                ]  20.13M   180KB/s    eta 55s                 FoxitReader2.2.1  33%[==============>                                ]  20.14M   170KB/s    eta 55s                FoxitReader2.2.10  34%[===============>                               ]  20.23M   167KB/s    eta 57s               FoxitReader2.2.102  34%[===============>                               ]  20.31M   163KB/s    eta 57s              FoxitReader2.2.1025  34%[===============>                               ]  20.46M   119KB/s    eta 58s             FoxitReader2.2.1025_  34%[===============>                               ]  20.49M   114KB/s    eta 58s            FoxitReader2.2.1025_S  34%[===============>                               ]  20.49M   104KB/s    eta 61s           FoxitReader2.2.1025_Se  34%[===============>                               ]  20.53M  99.0KB/s    eta 61s          FoxitReader2.2.1025_Ser  34%[===============>                               ]  20.56M  95.8KB/s    eta 63s         FoxitReader2.2.1025_Serv  34%[===============>                               ]  20.56M  85.3KB/s    eta 63s        FoxitReader2.2.1025_Serve  34%[===============>                               ]  20.60M  77.0KB/s    eta 65s       FoxitReader2.2.1025_Server  34%[===============>                               ]  20.62M  74.5KB/s    eta 65s      FoxitReader2.2.1025_Server_  34%[===============>                               ]  20.63M  70.7KB/s    eta 68s     FoxitReader2.2.1025_Server_x  34%[===============>                               ]  20.68M  72.1KB/s    eta 68s    FoxitReader2.2.1025_Server_x8  34%[===============>                               ]  20.73M  71.6KB/s    eta 70s    oxitReader2.2.1025_Server_x86  34%[===============>                               ]  20.74M  70.9KB/s    eta 70s    xitReader2.2.1025_Server_x86_  34%[===============>                               ]  20.76M  70.8KB/s    eta 72s    itReader2.2.1025_Server_x86_e  34%[===============>                               ]  20.77M  67.8KB/s    eta 72s    tReader2.2.1025_Server_x86_en  34%[===============>                               ]  20.77M  64.9KB/s    eta 75s    Reader2.2.1025_Server_x86_enu  35%[===============>                               ]  20.80M  69.0KB/s    eta 77s    eader2.2.1025_Server_x86_enu_  35%[===============>                               ]  20.80M  66.0KB/s    eta 77s    ader2.2.1025_Server_x86_enu_S  35%[===============>                               ]  20.83M  66.8KB/s    eta 81s    der2.2.1025_Server_x86_enu_Se  35%[===============>                               ]  20.83M  63.9KB/s    eta 81s    er2.2.1025_Server_x86_enu_Set  35%[===============>                               ]  20.88M  63.6KB/s    eta 84s    r2.2.1025_Server_x86_enu_Setu  35%[===============>                               ]  20.88M  61.0KB/s    eta 84s    2.2.1025_Server_x86_enu_Setup  35%[===============>                               ]  20.94M  61.8KB/s    eta 87s    .2.1025_Server_x86_enu_Setup.  35%[===============>                               ]  20.94M  59.3KB/s    eta 87s    2.1025_Server_x86_enu_Setup.r  35%[===============>                               ]  21.02M  59.7KB/s    eta 90s    .1025_Server_x86_enu_Setup.ru  35%[===============>                               ]  21.02M  57.5KB/s    eta 90s    1025_Server_x86_enu_Setup.run  35%[===============>                               ]  21.07M  59.6KB/s    eta 94s    025_Server_x86_enu_Setup.run.  35%[===============>                               ]  21.08M  56.0KB/s    eta 94s    25_Server_x86_enu_Setup.run.t  35%[===============>                               ]  21.11M  56.5KB/s    eta 95s    5_Server_x86_enu_Setup.run.ta  35%[===============>                               ]  21.24M  59.7KB/s    eta 95s    _Server_x86_enu_Setup.run.tar  36%[===============>                               ]  21.38M  49.0KB/s    eta 97s    Server_x86_enu_Setup.run.tar.  36%[===============>                               ]  21.41M  46.0KB/s    eta 99s    erver_x86_enu_Setup.run.tar.g  36%[===============>                               ]  21.42M  43.4KB/s    eta 99s    rver_x86_enu_Setup.run.tar.gz  36%[================>                              ]  21.51M  41.5KB/s    eta 1m 40s ver_x86_enu_Setup.run.tar.gz   36%[================>                              ]  21.56M  41.8KB/s    eta 1m 40s er_x86_enu_Setup.run.tar.gz    36%[================>                              ]  21.57M  42.2KB/s    eta 1m 42s r_x86_enu_Setup.run.tar.gz     36%[================>                              ]  21.58M  41.4KB/s    eta 1m 42s _x86_enu_Setup.run.tar.gz      36%[================>                              ]  21.60M  40.5KB/s    eta 1m 44s x86_enu_Setup.run.tar.gz       36%[================>                              ]  21.60M  40.9KB/s    eta 1m 44s 86_enu_Setup.run.tar.gz        36%[================>                              ]  21.61M  39.7KB/s    eta 1m 46s 6_enu_Setup.run.tar.gz         36%[================>                              ]  21.64M  39.2KB/s    eta 1m 46s _enu_Setup.run.tar.gz          36%[================>                              ]  21.65M  39.9KB/s    eta 1m 48s enu_Setup.run.tar.gz           36%[================>                              ]  21.73M  41.4KB/s    eta 1m 48s nu_Setup.run.tar.gz            42%[==================>                            ]  25.22M   185KB/s    eta 1m 48s u_Setup.run.tar.gz             42%[==================>                            ]  25.25M   188KB/s    eta 1m 48s _Setup.run.tar.gz              42%[===================>                           ]  25.29M   204KB/s    eta 85s    Setup.run.tar.gz               42%[===================>                           ]  25.37M   244KB/s    eta 85s    etup.run.tar.gz                42%[===================>                           ]  25.44M   271KB/s    eta 85s    tup.run.tar.gz                 43%[===================>                           ]  25.53M   305KB/s    eta 85s    up.run.tar.gz                  43%[===================>                           ]  25.61M   345KB/s    eta 85s    p.run.tar.gz                   43%[===================>                           ]  25.70M   385KB/s    eta 84s    .run.tar.gz                    43%[===================>                           ]  25.81M   402KB/s    eta 84s    run.tar.gz                     43%[===================>                           ]  25.92M   427KB/s    eta 84s    un.tar.gz                      43%[===================>                           ]  26.03M   530KB/s    eta 84s    n.tar.gz                       44%[===================>                           ]  26.16M   551KB/s    eta 84s    .tar.gz                        44%[===================>                           ]  26.27M   654KB/s    eta 83s    tar.gz                         44%[===================>                           ]  26.38M   880KB/s    eta 83s    ar.gz                          44%[===================>                           ]  26.50M   944KB/s    eta 83s    r.gz                           44%[====================>                          ]  26.63M  1.39MB/s    eta 83s    .gz                            45%[====================>                          ]  26.76M   452KB/s    eta 83s    gz                             45%[====================>                          ]  26.88M   475KB/s    eta 80s    z                              45%[====================>                          ]  26.97M   492KB/s    eta 80s                                   45%[====================>                          ]  27.09M   511KB/s    eta 80s                                F  45%[====================>                          ]  27.22M   527KB/s    eta 80s                               Fo  46%[====================>                          ]  27.33M   531KB/s    eta 80s                              Fox  46%[====================>                          ]  27.44M   537KB/s    eta 79s                             Foxi  46%[====================>                          ]  27.50M   504KB/s    eta 79s                            Foxit  46%[====================>                          ]  27.67M   521KB/s    eta 79s                           FoxitR  46%[====================>                          ]  27.72M   511KB/s    eta 79s                          FoxitRe  46%[=====================>                         ]  27.80M   501KB/s    eta 79s                         FoxitRea  46%[=====================>                         ]  27.88M   499KB/s    eta 78s                        FoxitRead  47%[=====================>                         ]  27.96M   489KB/s    eta 78s                       FoxitReade  47%[=====================>                         ]  28.06M   468KB/s    eta 78s                      FoxitReader  47%[=====================>                         ]  28.17M   469KB/s    eta 78s                     FoxitReader2  47%[=====================>                         ]  28.28M   469KB/s    eta 78s                    FoxitReader2.  47%[=====================>                         ]  28.40M   472KB/s    eta 76s                   FoxitReader2.2  48%[=====================>                         ]  28.51M   474KB/s    eta 76s                  FoxitReader2.2.  48%[=====================>                         ]  28.62M   474KB/s    eta 76s                 FoxitReader2.2.1  48%[=====================>                         ]  28.73M   467KB/s    eta 76s                FoxitReader2.2.10  48%[=====================>                         ]  28.85M   468KB/s    eta 76s               FoxitReader2.2.102  48%[=====================>                         ]  28.95M   472KB/s    eta 75s              FoxitReader2.2.1025  49%[======================>                        ]  29.08M   474KB/s    eta 75s             FoxitReader2.2.1025_  49%[======================>                        ]  29.20M   474KB/s    eta 75s            FoxitReader2.2.1025_S  49%[======================>                        ]  29.20M   379KB/s    eta 75s           FoxitReader2.2.1025_Se  49%[======================>                        ]  29.20M   315KB/s    eta 75s          FoxitReader2.2.1025_Ser  49%[======================>                        ]  29.20M   270KB/s    eta 77s         FoxitReader2.2.1025_Serv  49%[======================>                        ]  29.20M   236KB/s    eta 77s        FoxitReader2.2.1025_Serve  49%[======================>                        ]  29.20M   210KB/s    eta 79s       FoxitReader2.2.1025_Server  49%[======================>                        ]  29.20M  --.-KB/s    eta 79s      FoxitReader2.2.1025_Server_  49%[======================>                        ]  29.20M  --.-KB/s    eta 81s     FoxitReader2.2.1025_Server_x  49%[======================>                        ]  29.20M  --.-KB/s    eta 81s    FoxitReader2.2.1025_Server_x8  49%[======================>                        ]  29.20M  --.-KB/s    eta 83s    oxitReader2.2.1025_Server_x86  49%[======================>                        ]  29.20M  --.-KB/s    eta 83s    xitReader2.2.1025_Server_x86_  49%[======================>                        ]  29.20M  --.-KB/s    eta 85s    itReader2.2.1025_Server_x86_e  49%[======================>                        ]  29.20M  --.-KB/s    eta 85s    tReader2.2.1025_Server_x86_en  49%[======================>                        ]  29.20M  --.-KB/s    eta 87s    Reader2.2.1025_Server_x86_enu  49%[======================>                        ]  29.20M  1.41KB/s    eta 87s    eader2.2.1025_Server_x86_enu_  49%[======================>                        ]  29.21M  7.23KB/s    eta 87s    ader2.2.1025_Server_x86_enu_S  49%[======================>                        ]  29.23M  16.3KB/s    eta 88s    der2.2.1025_Server_x86_enu_Se  49%[======================>                        ]  29.26M  29.4KB/s    eta 88s    er2.2.1025_Server_x86_enu_Set  49%[======================>                        ]  29.29M  41.3KB/s    eta 88s    r2.2.1025_Server_x86_enu_Setu  49%[======================>                        ]  29.34M  55.0KB/s    eta 88s    2.2.1025_Server_x86_enu_Setup  49%[======================>                        ]  29.41M  78.3KB/s    eta 88s    .2.1025_Server_x86_enu_Setup.  49%[======================>                        ]  29.48M  95.7KB/s    eta 88s    2.1025_Server_x86_enu_Setup.r  49%[======================>                        ]  29.56M   116KB/s    eta 88s    .1025_Server_x86_enu_Setup.ru  49%[======================>                        ]  29.65M   133KB/s    eta 88s    1025_Server_x86_enu_Setup.run  50%[======================>                        ]  29.74M   150KB/s    eta 88s    025_Server_x86_enu_Setup.run.  50%[======================>                        ]  29.84M   169KB/s    eta 86s    25_Server_x86_enu_Setup.run.t  50%[======================>                        ]  29.95M   186KB/s    eta 86s    5_Server_x86_enu_Setup.run.ta  50%[======================>                        ]  30.05M   202KB/s    eta 86s    _Server_x86_enu_Setup.run.tar  50%[======================>                        ]  30.16M   216KB/s    eta 86s    Server_x86_enu_Setup.run.tar.  51%[======================>                        ]  30.29M   294KB/s    eta 86s    erver_x86_enu_Setup.run.tar.g  51%[=======================>                       ]  30.39M   320KB/s    eta 84s    rver_x86_enu_Setup.run.tar.gz  51%[=======================>                       ]  30.52M   352KB/s    eta 84s    ver_x86_enu_Setup.run.tar.gz   51%[=======================>                       ]  30.66M   398KB/s    eta 84s    er_x86_enu_Setup.run.tar.gz    51%[=======================>                       ]  30.79M   428KB/s    eta 84s    r_x86_enu_Setup.run.tar.gz     52%[=======================>                       ]  30.94M   464KB/s    eta 84s    _x86_enu_Setup.run.tar.gz      52%[=======================>                       ]  31.10M   495KB/s    eta 81s    x86_enu_Setup.run.tar.gz       52%[=======================>                       ]  31.25M   527KB/s    eta 81s    86_enu_Setup.run.tar.gz        52%[=======================>                       ]  31.41M   557KB/s    eta 81s    6_enu_Setup.run.tar.gz         53%[========================>                      ]  31.59M   590KB/s    eta 81s    _enu_Setup.run.tar.gz          53%[========================>                      ]  31.76M   617KB/s    eta 81s    enu_Setup.run.tar.gz           53%[========================>                      ]  31.96M   646KB/s    eta 77s    nu_Setup.run.tar.gz            54%[========================>                      ]  32.15M   685KB/s    eta 77s    u_Setup.run.tar.gz             54%[========================>                      ]  32.32M   704KB/s    eta 77s    _Setup.run.tar.gz              54%[========================>                      ]  32.57M   743KB/s    eta 77s    Setup.run.tar.gz               55%[========================>                      ]  32.79M   793KB/s    eta 77s    etup.run.tar.gz                55%[=========================>                     ]  33.03M   831KB/s    eta 73s    tup.run.tar.gz                 56%[=========================>                     ]  33.31M   875KB/s    eta 73s    up.run.tar.gz                  56%[=========================>                     ]  33.53M   903KB/s    eta 73s    p.run.tar.gz                   56%[=========================>                     ]  33.78M   933KB/s    eta 73s    .run.tar.gz                    57%[=========================>                     ]  34.08M   982KB/s    eta 73s    run.tar.gz                     57%[==========================>                    ]  34.36M  1.02MB/s    eta 67s    un.tar.gz                      58%[==========================>                    ]  34.68M  1.07MB/s    eta 67s    n.tar.gz                       58%[==========================>                    ]  34.98M  1.11MB/s    eta 67s    .tar.gz                        59%[==========================>                    ]  35.33M  1.16MB/s    eta 67s    tar.gz                         60%[===========================>                   ]  35.70M  1.24MB/s    eta 67s    ar.gz                          60%[===========================>                   ]  36.05M  1.30MB/s    eta 60s    r.gz                           61%[===========================>                   ]  36.44M  1.35MB/s    eta 60s    .gz                            62%[============================>                  ]  36.84M  1.44MB/s    eta 60s    gz                             62%[============================>                  ]  37.24M  1.49MB/s    eta 60s    z                              63%[============================>                  ]  37.67M  1.55MB/s    eta 60s                                   64%[=============================>                 ]  38.14M  1.66MB/s    eta 52s                                F  65%[=============================>                 ]  38.62M  1.73MB/s    eta 52s                               Fo  65%[=============================>                 ]  39.11M  1.81MB/s    eta 52s                              Fox  66%[==============================>                ]  39.60M  1.88MB/s    eta 52s                             Foxi  67%[==============================>                ]  40.13M  1.97MB/s    eta 52s                            Foxit  68%[===============================>               ]  40.72M  2.08MB/s    eta 44s                           FoxitR  69%[===============================>               ]  41.24M  2.15MB/s    eta 44s                          FoxitRe  69%[===============================>               ]  41.35M  2.06MB/s    eta 44s                         FoxitRea  71%[================================>              ]  42.32M  2.26MB/s    eta 44s                        FoxitRead  71%[================================>              ]  42.56M  2.20MB/s    eta 44s                       FoxitReade  72%[================================>              ]  42.78M  2.17MB/s    eta 37s                      FoxitReader  72%[=================================>             ]  43.07M  2.17MB/s    eta 37s                     FoxitReader2  73%[=================================>             ]  43.34M  2.11MB/s    eta 37s                    FoxitReader2.  73%[=================================>             ]  43.52M  2.04MB/s    eta 37s                   FoxitReader2.2  73%[=================================>             ]  43.84M  2.03MB/s    eta 37s                  FoxitReader2.2.  74%[=================================>             ]  44.03M  1.94MB/s    eta 34s                 FoxitReader2.2.1  75%[==================================>            ]  44.61M  1.97MB/s    eta 34s                FoxitReader2.2.10  75%[==================================>            ]  44.79M  1.89MB/s    eta 34s               FoxitReader2.2.102  75%[==================================>            ]  45.00M  1.83MB/s    eta 34s              FoxitReader2.2.1025  76%[==================================>            ]  45.25M  1.74MB/s    eta 34s             FoxitReader2.2.1025_  76%[===================================>           ]  45.53M  1.69MB/s    eta 30s            FoxitReader2.2.1025_S  77%[===================================>           ]  45.82M  1.64MB/s    eta 30s           FoxitReader2.2.1025_Se  77%[===================================>           ]  46.13M  1.54MB/s    eta 30s          FoxitReader2.2.1025_Ser  78%[===================================>           ]  46.43M  1.45MB/s    eta 30s         FoxitReader2.2.1025_Serv  78%[====================================>          ]  46.75M  1.50MB/s    eta 30s        FoxitReader2.2.1025_Serve  79%[====================================>          ]  47.07M  1.31MB/s    eta 26s       FoxitReader2.2.1025_Server  79%[====================================>          ]  47.41M  1.34MB/s    eta 26s      FoxitReader2.2.1025_Server_  80%[====================================>          ]  47.62M  1.30MB/s    eta 26s     FoxitReader2.2.1025_Server_x  81%[=====================================>         ]  48.10M  1.36MB/s    eta 26s    FoxitReader2.2.1025_Server_x8  81%[=====================================>         ]  48.27M  1.34MB/s    eta 26s    oxitReader2.2.1025_Server_x86  81%[=====================================>         ]  48.45M  1.29MB/s    eta 23s    xitReader2.2.1025_Server_x86_  82%[=====================================>         ]  48.67M  1.32MB/s    eta 23s    itReader2.2.1025_Server_x86_e  82%[=====================================>         ]  48.92M  1.23MB/s    eta 23s    tReader2.2.1025_Server_x86_en  82%[=====================================>         ]  49.17M  1.23MB/s    eta 23s    Reader2.2.1025_Server_x86_enu  83%[======================================>        ]  49.43M  1.25MB/s    eta 23s    eader2.2.1025_Server_x86_enu_  83%[======================================>        ]  49.69M  1.22MB/s    eta 20s    ader2.2.1025_Server_x86_enu_S  84%[======================================>        ]  49.97M  1.23MB/s    eta 20s    der2.2.1025_Server_x86_enu_Se  84%[======================================>        ]  50.12M  1.14MB/s    eta 20s    er2.2.1025_Server_x86_enu_Set  85%[======================================>        ]  50.48M  1.15MB/s    eta 20s    r2.2.1025_Server_x86_enu_Setu  85%[=======================================>       ]  50.65M  1.12MB/s    eta 20s    2.2.1025_Server_x86_enu_Setup  85%[=======================================>       ]  50.70M  1.08MB/s    eta 18s    .2.1025_Server_x86_enu_Setup.  85%[=======================================>       ]  50.82M  1.03MB/s    eta 18s    2.1025_Server_x86_enu_Setup.r  85%[=======================================>       ]  50.96M  1001KB/s    eta 18s    .1025_Server_x86_enu_Setup.ru  86%[=======================================>       ]  51.11M  1007KB/s    eta 18s    1025_Server_x86_enu_Setup.run  86%[=======================================>       ]  51.23M   913KB/s    eta 18s    025_Server_x86_enu_Setup.run.  86%[=======================================>       ]  51.39M   895KB/s    eta 16s    25_Server_x86_enu_Setup.run.t  87%[=======================================>       ]  51.68M   929KB/s    eta 16s    5_Server_x86_enu_Setup.run.ta  87%[========================================>      ]  51.81M   894KB/s    eta 16s    _Server_x86_enu_Setup.run.tar  87%[========================================>      ]  51.93M   876KB/s    eta 16s    Server_x86_enu_Setup.run.tar.  87%[========================================>      ]  52.07M   846KB/s    eta 16s    erver_x86_enu_Setup.run.tar.g  87%[========================================>      ]  52.22M   806KB/s    eta 14s    rver_x86_enu_Setup.run.tar.gz  88%[========================================>      ]  52.37M   789KB/s    eta 14s    ver_x86_enu_Setup.run.tar.gz   88%[========================================>      ]  52.52M   754KB/s    eta 14s    er_x86_enu_Setup.run.tar.gz    88%[========================================>      ]  52.69M   730KB/s    eta 14s    r_x86_enu_Setup.run.tar.gz     88%[========================================>      ]  52.80M   726KB/s    eta 14s    _x86_enu_Setup.run.tar.gz      89%[========================================>      ]  52.97M   749KB/s    eta 13s    x86_enu_Setup.run.tar.gz       89%[=========================================>     ]  53.14M   686KB/s    eta 13s    86_enu_Setup.run.tar.gz        89%[=========================================>     ]  53.28M   704KB/s    eta 13s    6_enu_Setup.run.tar.gz         90%[=========================================>     ]  53.46M   733KB/s    eta 13s    _enu_Setup.run.tar.gz          90%[=========================================>     ]  53.64M   752KB/s    eta 13s    enu_Setup.run.tar.gz           90%[=========================================>     ]  53.79M   751KB/s    eta 11s    nu_Setup.run.tar.gz            90%[=========================================>     ]  53.99M   773KB/s    eta 11s    u_Setup.run.tar.gz             91%[=========================================>     ]  54.15M   728KB/s    eta 11s    _Setup.run.tar.gz              91%[==========================================>    ]  54.32M   741KB/s    eta 11s    Setup.run.tar.gz               91%[==========================================>    ]  54.49M   757KB/s    eta 11s    etup.run.tar.gz                92%[==========================================>    ]  54.64M   765KB/s    eta 9s     tup.run.tar.gz                 92%[==========================================>    ]  54.81M   772KB/s    eta 9s     up.run.tar.gz                  92%[==========================================>    ]  54.97M   788KB/s    eta 9s     p.run.tar.gz                   92%[==========================================>    ]  55.13M   787KB/s    eta 9s     .run.tar.gz                    93%[==========================================>    ]  55.31M   788KB/s    eta 9s     run.tar.gz                     93%[==========================================>    ]  55.48M   804KB/s    eta 8s     un.tar.gz                      93%[===========================================>   ]  55.62M   782KB/s    eta 8s     n.tar.gz                       94%[===========================================>   ]  55.80M   802KB/s    eta 8s     .tar.gz                        94%[===========================================>   ]  55.98M   816KB/s    eta 8s     tar.gz                         94%[===========================================>   ]  56.14M   793KB/s    eta 8s     ar.gz                          94%[===========================================>   ]  56.31M   788KB/s    eta 6s     r.gz                           95%[===========================================>   ]  56.48M   794KB/s    eta 6s     .gz                            95%[===========================================>   ]  56.62M   794KB/s    eta 6s     gz                             95%[===========================================>   ]  56.81M   811KB/s    eta 6s     z                              96%[============================================>  ]  56.97M   809KB/s    eta 6s                                    96%[============================================>  ]  57.17M   817KB/s    eta 4s                                 F  96%[============================================>  ]  57.35M   822KB/s    eta 4s                                Fo  96%[============================================>  ]  57.54M   824KB/s    eta 4s                               Fox  97%[============================================>  ]  57.75M   838KB/s    eta 4s                              Foxi  97%[============================================>  ]  57.88M   838KB/s    eta 4s                             Foxit  97%[=============================================> ]  58.09M   851KB/s    eta 2s                            FoxitR  98%[=============================================> ]  58.29M   860KB/s    eta 2s                           FoxitRe  98%[=============================================> ]  58.48M   867KB/s    eta 2s                          FoxitRea  98%[=============================================> ]  58.66M   875KB/s    eta 2s                         FoxitRead  99%[=============================================> ]  58.89M   881KB/s    eta 2s                        FoxitReade  99%[=============================================> ]  59.04M   871KB/s    eta 1s                       FoxitReader  99%[=============================================> ]  59.04M   787KB/s    eta 1s     FoxitReader2.2.1025_Server_x8 100%[==============================================>]  59.34M   862KB/s    in 1m 54s  
-
-2016-11-19 17:06:12 (532 KB/s) - ‘FoxitReader2.2.1025_Server_x86_enu_Setup.run.tar.gz’ saved [62222993/62222993]
-
-[0;32m[foxit setup] [0mtar -zxvf FoxitReader*.tar.gz
-
-[1;33m[warning][0m Please follow the GUI's instructions and install Foxit PDF Reader into /opt/foxitsoftware/foxitreader
-
-[0;32m[foxit setup] [0msudo ./'FoxitReader.enu.setup.2.2.1025(r231871).x86.run'
-[0;32m[foxit setup] [0mrm -rf 'FoxitReader2.2.1025_Server_x86_enu_Setup.run.tar.gz'
-[0;32m[foxit setup] [0mrm -rf 'FoxitReader.enu.setup.2.2.1025(r231871).x86.run'
-[0;32m[foxit setup] [0mWill now disable Foxit PDF Reader's cloud tools, which can needlessly consume a lot of CPU.
-[0;32m[foxit setup] [0mmv /opt/foxitsoftware/foxitreader/fxplugins /opt/foxitsoftware/foxitreader/fxplugins_old
-[0;32m[foxit setup] [0mmkdir -p /opt/foxitsoftware/foxitreader/fxplugins
-[0;32m[foxit setup] [0mchown -R danylo:danylo /opt/foxitsoftware/foxitreader
-[0;32m[main setup] [0mapt-get --assume-yes autoremove
-
-[0;32m[main setup] [0mfinished with [1;33m2 warnings[0m and [1;31m0 errors[0m
-
-[1;36m[user input] [0mRecommended to restart, do it [now/later]? later
-]0;danylo@danylo-VirtualBox ~/Downloads/dotfiles[01;32mdanylo@danylo-VirtualBox[00m [01;34m~/Downloads/dotfiles $[00m eit[K[Kxit
-exit
-
-Script done on Sat 19 Nov 2016 05:07:10 PM CET

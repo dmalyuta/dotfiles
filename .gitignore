@@ -10,23 +10,11 @@
 # add emacs config directory
 !/.emacs.d
 
-# add i3 window manager config directory
-!/.i3
-!.Xresources
-!.dmrc
-
-# add fonts directory
-!/.fonts
-
-# config files (themes, icons, system font)
-!/.gtkrc-2.0
+# terminator config file
 !/.config
 /.config/*
-!/.config/gtk-3.0
 !/.config/terminator
-/.config/gtk-3.0/*
 /.config/terminator/*
-!/.config/gtk-3.0/settings.ini
 !/.config/terminator/config
 
 # whitelist github files

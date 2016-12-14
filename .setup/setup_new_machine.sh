@@ -21,7 +21,6 @@ programs_list=(
     "bin"
     "git"
     "emacs"
-    "i3"
     "terminator"
     "powerline"
     "chrome"
@@ -32,14 +31,6 @@ programs_list=(
 
 dependencies_bin=(".bin")
 dependencies_emacs=(".emacs.d")
-dependencies_i3=(
-    ".fonts"
-    ".i3"
-    ".Xresources"
-    ".gtkrc-2.0"
-    ".config/gtk-3.0/settings.ini"
-    ".dmrc"
-)
 dependencies_terminator=(".config/terminator/config")
 
 # question to ask user when determining which programs to install
@@ -48,11 +39,10 @@ declare -A dotfiles_prompt
 dotfiles_prompt["${programs_list[0]}"]="Do you want to install the .bin directory [Yn]? "
 dotfiles_prompt["${programs_list[1]}"]="Do you want to install Git [Yn]? "
 dotfiles_prompt["${programs_list[2]}"]="Do you want to install Emacs [Yn]? "
-dotfiles_prompt["${programs_list[3]}"]="Do you want to install the i3 window manager and associated themes [yN]? "
-dotfiles_prompt["${programs_list[4]}"]="Do you want to install the terminator terminal emulator [Yn]? "
-dotfiles_prompt["${programs_list[5]}"]="Do you want to install powerline [Yn]? "
-dotfiles_prompt["${programs_list[6]}"]="Do you want to install Google Chrome [Yn]? "
-dotfiles_prompt["${programs_list[7]}"]="Do you want to install Foxit PDF Reader [Yn]? "
+dotfiles_prompt["${programs_list[3]}"]="Do you want to install the terminator terminal emulator [Yn]? "
+dotfiles_prompt["${programs_list[4]}"]="Do you want to install powerline [Yn]? "
+dotfiles_prompt["${programs_list[5]}"]="Do you want to install Google Chrome [Yn]? "
+dotfiles_prompt["${programs_list[6]}"]="Do you want to install Foxit PDF Reader [Yn]? "
 
 ########## global variables
 
@@ -176,10 +166,6 @@ install_program "git" install_git.sh
 ########## Emacs
 
 install_program "emacs" install_emacs.sh
-
-########## i3 window manager
-
-install_program "i3" install_i3.sh
 
 ########## terminator (terminal)
 

@@ -418,7 +418,7 @@
 
 (setq make-backup-files nil) ;; stop creating backup ~ files
 (toggle-scroll-bar -1) ;; no scrollbar
-(tool-bar-mode -1) ;; no toolbar
+;;(tool-bar-mode -1) ;; no toolbar
 (setq inhibit-splash-screen t)
 (setq inhibit-startup-message t)
 (setq initial-scratch-message ";; Change The World")

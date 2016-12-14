@@ -48,8 +48,7 @@ When you open Emacs for the first time, all required packages will be automatica
 
 ## Known issues
 
- 1. When in its first run Emacs auto-installs [pdf-tools](https://github.com/politza/pdf-tools), the error ``Error (use-package): pdf-tools :config: No executable `epdfinfo' found`` might be thrown. Then you just need to restart Emacs. The error will never appear again.
- 2. Sometimes weird errors come up in the first run of Emacs when all packages are being auto-installed (e.g. sometimes I get an `Assertion failed: (or (= (buffer-size tar-data-buffer) (buffer-size)) ...)`). Then just restart Emacs - the error will go away and the auto-installation will proceed.
+ 1. In case weird errors come up in the first run of Emacs when all packages are being auto-installed, just restart Emacs - the error will go away and the auto-installation will proceed.
  3. For Ubuntu 14.04: an error may be thrown during installation is `apt-get update` fails due to a "Hash Sum mismatch". The solution is to run `sudo rm -vf /var/lib/apt/lists/* && sudo apt-get clean && sudo apt-get update` (possible several times until the "Hash Sum mismatch" warning disappears), then running the installation script again.
 
 ## TODO

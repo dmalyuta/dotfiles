@@ -4,15 +4,12 @@
 
 A set of dotfiles and a setup script to hit the ground running on a vanilla Ubuntu-based Linux installation for C/C++ developers. The objective is to have a no-questions-asked, robust and fully automated way of taking you from a fresh install to a fully configured system on which you can immediately get to work.
 
-![screenshot](http://i.imgur.com/K0yYU1j.jpg)
+![screenshot](http://i.imgur.com/DwRMi2l.jpg)
 
 ## Features
 
-* [Emacs](https://www.gnu.org/software/emacs/) configuration suitable for C/C++ and LaTeX
-* [Powerline](https://github.com/powerline/powerline) for bash
-* [i3](http://i3wm.org/) tiling window manager
-  * [Rofi](https://github.com/DaveDavenport/rofi) application launcher
-  * [Numix](https://github.com/numixproject/numix-icon-theme) theme and icon set
+* [Emacs 25.1](https://www.gnu.org/software/emacs/), configured for C/C++ and LaTeX
+* [Powerline](https://github.com/powerline/powerline) for the terminal (bash)
 * [Automated backup](https://github.com/danyloM/dotfiles/blob/master/.bin/make_snapshot.sh) using `rsync`, `cron` and `anacron` with support for grandfather-father-son backup scheme
 * [Google Chrome](https://www.google.com/chrome/) web browser
 * [Foxit Reader](https://www.foxitsoftware.com/products/pdf-reader/) software for standards-compliant reading and annotation of PDFs
@@ -31,10 +28,10 @@ You should be running a Ubuntu-based Linux operating system. You can run the ins
 
 ### Supported Distributions
 
-- Linux Mint 18 MATE 64-bit
-- Ubuntu 14.04.5 Desktop 64-bit
+- Ubuntu 14.04.5 Desktop 64-bit (*official*)
+- Linux Mint 18 MATE 64-bit (*used in the past*)
 
-Other distributions may very well work, but I did not explicitly test them yet. If you try this repository on an OS that is not in the above list, please report what you find and submit pull requests with tweaks for that OS, if you can.
+Other distributions may work, but I did not explicitly test them yet. If you try this repository on an OS that is not in the above list, please report what you find and submit pull requests with tweaks for that OS, if you can.
 
 ### Instructions
 
@@ -42,8 +39,6 @@ Other distributions may very well work, but I did not explicitly test them yet. 
 2. Move into `DIR` with `cd DIR`;
 3. To view a dry-run simulation of the installation (without actually doing anything), use `sudo .setup/setup_new_machine.sh -d`. Note that since folders aren't copied or moved in this simulation, you will see some "couldn't find folder" warnings that will not be present in the actual installation;
 4. To run the installation, use `sudo .setup/setup_new_machine.sh`. The install script will prompt you for what specific programs and to install and will give you instructions when manual work is needed (such as during the Foxit PDF Reader installation, if you choose to install it). The aim is to safely deploy this repository partially or fully to your computer. You are recommended to reboot after the installation is finished. If any errors come up and the installation halts, fix them and simply run the installation again.
-
-> A recording of a sample setup on a vanilla install of Linux Mint 18 MATE 64-bit can be found in `.setup/sample/`. You can either view the whole output at once using `cat sample_setup_output.log` or play back the installation as it happened using `scriptreplay --timing=sample_setup_time.txt --divisor=<number> sample_setup_output.log` where `<number>` speeds up the playback by *number* of times (use `--divisor=1` for real time).
 
 > **Advice**: to build confidence in the install script's functionality for your specific OS, use either the dry-run simulation and/or install a copy of you OS in [VirtualBox](https://www.virtualbox.org/wiki/Downloads) and run the full installation there.
 
@@ -59,8 +54,8 @@ When you open Emacs for the first time, all required packages will be automatica
 
 ## TODO
 
-* Test install script on more Linux distributions (priority: Ubuntu-based distributions)
 * Create an uninstall script to revert changes made by `.setup/setup_new_machine.sh` install script
+* Test install script on more Linux distributions (priority: Ubuntu-based distributions)
 
 ## License
 

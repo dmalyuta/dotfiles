@@ -105,7 +105,9 @@
    ("C-x C-n" . company-select-next)
    ("C-x C-p" . company-select-previous))
   :init
-  (add-hook 'after-init-hook 'global-company-mode)
+  ;;(add-hook 'after-init-hook 'global-company-mode)
+  (add-hook 'c-mode-hook 'company-mode)
+  (add-hook 'emacs-lisp-mode-hook 'company-mode)
   :config
   (setq company-backends (delete 'company-semantic company-backends))
   ;; use C++11 by default
@@ -299,6 +301,22 @@
   :config
   (add-hook 'c-mode-common-hook 'google-set-c-style))
 
+(use-package flycheck-google-cpplint
+  ;; Add Google C++ Style checker for Flycheck
+  :ensure t
+  :demand
+  :config
+  (require 'flycheck-google-cpplint)
+  (require 'flycheck-irony)
+  (with-eval-after-load 'flycheck
+    ;; Chain javascript-jscs to run after javascript-jshint.
+    (flycheck-add-next-checker 'irony '(t . c/c++-googlelint)))
+  (custom-set-variables
+   '(flycheck-c/c++-googlelint-executable "/usr/local/bin/cpplint")
+   '(flycheck-googlelint-verbose "3")
+   '(flycheck-googlelint-filter "-whitespace,+whitespace/braces")
+   '(flycheck-googlelint-linelength "120")))
+
 (use-package nyan-mode
   ;; adorable cat showing progress in document
   :ensure t
@@ -359,6 +377,10 @@
     (require 'wgrep-helm)
     (setq wgrep-auto-save-buffer t)))
 
+(use-package realgud
+  ;; A extensible, modular GNU Emacs front-end for interacting with external debuggers
+  :ensure t)
+
 ;;;;;;;;;;;;;;;;; PERSONAL PACKAGES
 
 (use-package setup-helm
@@ -417,32 +439,51 @@
 ;;;;;;;;;;;;;;;;; OTHER STUFF
 
 (setq make-backup-files nil) ;; stop creating backup ~ files
+
 (toggle-scroll-bar -1) ;; no scrollbar
+
 ;;(tool-bar-mode -1) ;; no toolbar
+
+(setq gdb-many-windows t) ;; run GDB with many windows view by default
+
 (setq inhibit-splash-screen t)
+
 (setq inhibit-startup-message t)
+
 (setq initial-scratch-message ";; Change The World")
+
 (setq ring-bell-function 'ignore) ;; Disable system sounds
+
 (global-set-key (kbd "C-x C-;") 'comment-region) ;; Comment region in Lisp
+
 (add-to-list 'auto-mode-alist '("\\.launch?\\'" . xml-mode)) ;; xml-mode for .launch files (xml)
+
 (define-key global-map (kbd "RET") 'newline-and-indent)
+
 (put 'downcase-region 'disabled nil)
+
 ;; scroll one line at a time (less "jumpy" than defaults)
 ;; (setq mouse-wheel-scroll-amount '(1 ((shift) . 1))) ;; one line at a time
 ;; (setq mouse-wheel-progressive-speed nil) ;; don't accelerate scrolling
 ;; (setq mouse-wheel-follow-mouse 't) ;; scroll window under mouse
 ;; (setq scroll-step 1) ;; keyboard scroll one line at a time
+
 ;; Save/load window configurations
 (global-set-key (kbd "<f10>") '(lambda () (interactive) (jump-to-register 9)
                                 (message "Windows disposition loaded"))) ;; load window config
 (global-set-key (kbd "<f9>") '(lambda () (interactive) (window-configuration-to-register 9)
 				(message "Windows disposition saved"))) ;; save window config
-
-;;;;;;;;;;;;;;;;; NOT USED
-
-(use-package solarized-theme
-  ;; theme
-  :ensure t
-  :disabled
-  :config
-  (load-theme 'solarized-dark t))
+(custom-set-variables
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(package-selected-packages
+   (quote
+    (realgud zenburn-theme yaml-mode wgrep-helm use-package srefactor pdf-tools nyan-mode multiple-cursors mic-paren helm-swoop helm-projectile helm-gtags google-c-style flycheck-irony dired+ company-irony-c-headers company-irony auctex))))
+(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ )

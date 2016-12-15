@@ -27,8 +27,8 @@
 #
 # /root/backup localhost(secure,ro,no_root_squash)
 #
-# Then, you can run `mkdir /mnt/backup` and to view read-only the
-# backup drive run:
+# Restart the computer. Now you can run `mkdir /mnt/backup` and to
+# view read-only the backup drive run:
 #
 # sudo mount localhost:/root/backup /mnt/backup
 #
@@ -50,23 +50,49 @@
 # This will allow you to setup the desired backup scheme. I have for
 # example:
 #
-# ######## cron
-#   # full-system backup
-#   # NB: mail requires to have installed
-#   #  sudo apt-get install ssmtp
-#   #  sudo apt-get install mailutils
+# ######## ssmtp (for mailing backup output)
+#
+# First run
+#   sudo apt-get install ssmtp
+#   sudo apt-get install mailutils
+# Now put into the /etc/smmtp/ssmtp.conf file:
+#
+#   # Config file for sSMTP sendmail
+#   #
+#   # The person who gets all mail for userids < 1000
+#   # Make this empty to disable rewriting.
+#   root=mylinuxnotifications@gmail.com
+#
+#   # The place where the mail goes. The actual machine name is required no 
+#   # MX records are consulted. Commonly mailhosts are named mail.domain.com
+#   mailhub=smtp.gmail.com:587
+#
+#   # Where will the mail seem to come from?
+#   rewriteDomain=gmail.com
+#
+#   # Are users allowed to set their own From: address?
+#   # YES - Allow the user to specify their own From: address
+#   # NO - Use the system generated From: address
+#   #FromLineOverride=YES
+#   UseSTARTTLS=YES
+#   AuthUser=mylinuxnotifications
+#   AuthPass=aBcD1234
+#
+# ######## cron (sudo crontab -e)
+#
 #   # hourly backup: every 4th hour on the hour, keep 6 snapshots
-#   0 */4 * * * /usr/bin/flock -w 10800 /var/lock/my_cron_backup.lock /home/danylo/.bin/make_snapshot.sh -m -p hourly -d 6 2>&1 | mail -s "Cron job: hourly backup" "danylo.malyuta@gmail.com"
+#   0 */4 * * * /usr/bin/flock -w 10800 /var/lock/my_cron_backup.lock /home/danylo/.bin/make_snapshot.sh -m -p hourly -d 6 2>&1 | mail -s "[linux-automation] hourly backup" "danylo.malyuta@gmail.com"
 #   # daily, weekly and monthly backups done by anacrontab (see /etc/anacrontab and /var/spool/anacron/)
 #
-# ######## anacron (backup.* files in /var/spool/anacron/)
+# ######## anacron (backup.* files in /var/spool/anacron/, edit /etc/anacrontab)
+#
 #   # backups
 #   # daily with history of 6
-#   1	5	backup.daily	/usr/bin/flock -w 10800 /var/lock/my_cron_backup.lock /home/danylo/.bin/make_snapshot.sh -p daily -d 6 2>&1 | mail -s "Cron job: daily backup" "danylo.malyuta@gmail.com"
+#   1	5	backup.daily	/usr/bin/flock -w 10800 /var/lock/my_cron_backup.lock /home/danylo/.bin/make_snapshot.sh -p daily -d 6 2>&1 | mail -s "[linux-automation] daily backup" "danylo.malyuta@gmail.com"
 #   # weekly backup with history of 4
-#   7	25	backup.weekly	/usr/bin/flock -w 10800 /var/lock/my_cron_backup.lock /home/danylo/.bin/make_snapshot.sh -p weekly -d 4 2>&1 | mail -s "Cron job: weekly backup" "danylo.malyuta@gmail.com"
+#   7	25	backup.weekly	/usr/bin/flock -w 10800 /var/lock/my_cron_backup.lock /home/danylo/.bin/make_snapshot.sh -p weekly -d 4 2>&1 | mail -s "[linux-automation] weekly backup" "danylo.malyuta@gmail.com"
 #   # monthly backup with history of 12
-#   30	45	backup.monthly	/usr/bin/flock -w 10800 /var/lock/my_cron_backup.lock /home/danylo/.bin/make_snapshot.sh -p monthly -d 12 2>&1 | mail -s "Cron job: monthly backup" "danylo.malyuta@gmail.com"
+#   30	45	backup.monthly	/usr/bin/flock -w 10800 /var/lock/my_cron_backup.lock /home/danylo/.bin/make_snapshot.sh -p monthly -d 12 2>&1 | mail -s "[linux-automation] monthly backup" "danylo.malyuta@gmail.com"
 #
 # The advantage of anacron is that it ensures that daily, weekly and
 # monthly backups are made as soon as the computer is turned on after

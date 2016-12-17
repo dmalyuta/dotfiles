@@ -22,16 +22,6 @@
    ("C-s-p" . windmove-up)
    ("C-s-n" . windmove-down)))
 
-(use-package ansi-term
-  :config
-  ;; fix the problem of moving cursor left/right being captured by emacs instead
-  ;; of underlying terminal, leading to jumbling when jumping words then editing
-  ;; the middle of a command
-  (defun term-send-Cright () (interactive) (term-send-raw-string "\e[1;5C"))
-  (defun term-send-Cleft  () (interactive) (term-send-raw-string "\e[1;5D"))
-  (define-key term-raw-map (kbd "C-<right>")      'term-send-Cright)
-  (define-key term-raw-map (kbd "C-<left>")       'term-send-Cleft))
-
 (use-package buffer-menu
   ;; show all current buffers
   :init
@@ -106,7 +96,7 @@
    ("C-x C-p" . company-select-previous))
   :init
   ;;(add-hook 'after-init-hook 'global-company-mode)
-  (add-hook 'c-mode-hook 'company-mode)
+  (add-hook 'c-mode-common-hook 'company-mode)
   (add-hook 'emacs-lisp-mode-hook 'company-mode)
   :config
   (setq company-backends (delete 'company-semantic company-backends))
@@ -381,6 +371,17 @@
   ;; A extensible, modular GNU Emacs front-end for interacting with external debuggers
   :ensure t)
 
+(use-package org
+  ;; Org mode is for keeping notes, maintaining TODO lists, planning projects, and authoring documents with a fast and effective plain-text system.
+  :ensure t
+  :config
+  (require 'org)
+  (define-key global-map "\C-cl" 'org-store-link)
+  (define-key global-map "\C-ca" 'org-agenda)
+  (setq org-log-done t)
+  (setq org-agenda-files (list "~/Dropbox/shared_files/org/work.org"
+			       "~/Dropbox/shared_files/org/home.org")))
+
 ;;;;;;;;;;;;;;;;; PERSONAL PACKAGES
 
 (use-package setup-helm
@@ -474,16 +475,44 @@
 (global-set-key (kbd "<f9>") '(lambda () (interactive) (window-configuration-to-register 9)
 				(message "Windows disposition saved"))) ;; save window config
 (custom-set-variables
- ;; custom-set-variables was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
+ ;; custom-set-variables was added by Custom.  If you edit it by hand,
+ ;; you could mess it up, so be careful.  Your init file should
+ ;; contain only one such instance.  If there is more than one, they
+ ;; won't work right.
  '(package-selected-packages
    (quote
     (realgud zenburn-theme yaml-mode wgrep-helm use-package srefactor pdf-tools nyan-mode multiple-cursors mic-paren helm-swoop helm-projectile helm-gtags google-c-style flycheck-irony dired+ company-irony-c-headers company-irony auctex))))
 (custom-set-faces
- ;; custom-set-faces was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
+ ;; custom-set-faces was added by Custom.  If you edit it by hand, you
+ ;; could mess it up, so be careful.  Your init file should contain
+ ;; only one such instance.  If there is more than one, they won't
+ ;; work right.
  )
+
+;; fix the problem of moving cursor left/right being captured by emacs
+;; instead of underlying terminal, leading to jumbling when jumping
+;; words then editing the middle of a command. Same for deleting
+;; backward/forward whole words.
+(eval-after-load "term"
+  '(progn
+     (define-key term-raw-map (kbd "C-<right>") 'term-send-Cright)
+     (define-key term-raw-map (kbd "C-<left>") 'term-send-Cleft)
+     (define-key term-raw-map (kbd "C-w") 'term-send-Mbackspace)
+     (define-key term-raw-map (kbd "M-<backspace>") 'term-send-Mbackspace)
+     (defun term-send-Cright () (interactive) (term-send-raw-string "\e[1;5C"))
+     (defun term-send-Cleft  () (interactive) (term-send-raw-string "\e[1;5D"))
+     (defun term-send-Mbackspace () (interactive)(term-send-raw-string "\e\d"))
+     ))
+
+;; fix Semantic package issue of uncompressing/parsing tons of .eg.gz
+;; files when editing certain buffers (primarily Emacs-Lisp, but also
+;; the GDB buffer, for instance)
+(eval-after-load 'semantic
+  (add-hook 'semantic-mode-hook
+	    (lambda ()
+	      (dolist (x (default-value 'completion-at-point-functions))
+		(when (string-prefix-p "semantic-" (symbol-name x))
+		  (remove-hook 'completion-at-point-functions x))))))
+
+;; remove a significant contributor to line scan slowness
+(setq bidi-display-reordering nil)

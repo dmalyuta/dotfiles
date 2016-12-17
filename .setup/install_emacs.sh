@@ -33,6 +33,9 @@ if program_not_installed "emacs"; then
     else
 	# install emacs with apt-get install
 	apt_get_install_pkg emacs
+
+	# add alias to bash to start Emacs as fast as vim!
+	runcmd "eval builtin echo \"alias em='emacs'\" >> ${home}/.bashrc" nonull
     fi
 fi
 

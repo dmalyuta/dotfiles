@@ -454,6 +454,7 @@
 ;;;;;;;;;;;;;;;;; OTHER STUFF
 
 (setq make-backup-files nil) ;; stop creating backup ~ files
+(setq backup-by-copying t) ;; do not break hard links
 
 (toggle-scroll-bar -1) ;; no scrollbar
 

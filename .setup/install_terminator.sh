@@ -19,10 +19,10 @@ apt_get_install_pkg terminator
 
 # update .bashrc to include an indication of which Git branch user is on
 append_string=false
-if ! grep -q "parse_return_codes" .bashrc; then
+if ! grep -q "parse_return_codes" "${home}/.bashrc"; then
     append_string=true
 fi
-if ! grep -q "parse_fit_branch" .bashrc; then
+if ! grep -q "parse_fit_branch" "${home}/.bashrc"; then
     append_string=true
 fi
 if $append_string; then

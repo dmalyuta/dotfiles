@@ -19,7 +19,6 @@ cd "$realdir"
 
 programs_list=(
     "bin"
-    "git"
     "emacs"
     "terminator"
     "chrome"
@@ -36,11 +35,10 @@ dependencies_terminator=(".config/terminator/config")
 
 declare -A dotfiles_prompt
 dotfiles_prompt["${programs_list[0]}"]="Do you want to install the .bin directory [Yn]? "
-dotfiles_prompt["${programs_list[1]}"]="Do you want to install Git [Yn]? "
-dotfiles_prompt["${programs_list[2]}"]="Do you want to install Emacs [Yn]? "
-dotfiles_prompt["${programs_list[3]}"]="Do you want to install the terminator terminal emulator [Yn]? "
-dotfiles_prompt["${programs_list[4]}"]="Do you want to install Google Chrome [Yn]? "
-dotfiles_prompt["${programs_list[5]}"]="Do you want to install Foxit PDF Reader [Yn]? "
+dotfiles_prompt["${programs_list[1]}"]="Do you want to install Emacs [Yn]? "
+dotfiles_prompt["${programs_list[2]}"]="Do you want to install the terminator terminal [Yn]? "
+dotfiles_prompt["${programs_list[3]}"]="Do you want to install Google Chrome [Yn]? "
+dotfiles_prompt["${programs_list[4]}"]="Do you want to install Foxit PDF Reader [Yn]? "
 
 ########## global variables
 
@@ -154,10 +152,6 @@ for foo in "${install_dotfiles_list[@]}"
 do
     copy_foo "$foo" "$dir" "$home"
 done
-
-########## git
-
-install_program "git" install_git.sh
 
 ########## Emacs
 

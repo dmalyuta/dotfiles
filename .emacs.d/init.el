@@ -1,3 +1,7 @@
+;; Top priority
+(setq backup-by-copying t) ;; make sure Emacs doesn't break hard links (before doing anything else)
+(setq make-backup-files nil) ;; stop creating backup ~ files
+
 ;; MELPA
 (require 'package)
 (setq package-enable-at-startup nil)
@@ -452,9 +456,6 @@
   (autoload 'ros-cmake-mode "lisp/ros-cmake-mode.el" t))
 
 ;;;;;;;;;;;;;;;;; OTHER STUFF
-
-(setq make-backup-files nil) ;; stop creating backup ~ files
-(setq backup-by-copying t) ;; do not break hard links
 
 (toggle-scroll-bar -1) ;; no scrollbar
 

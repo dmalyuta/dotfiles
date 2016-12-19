@@ -102,18 +102,18 @@ copy_foo()
 	fi
 
 	# make the full path of files to be copied
+	home_foo_parent_dir="$(dirname "$home_foo")"
 	if [ -d "$git_foo" ]; then
 	    # if foo is a folder, prepare the folder
 	    makefolder "$home_foo"
 	else
 	    # if foo is a file, prepare its parent folder
-	    home_foo_parent_dir="$(dirname "$home_foo")"
 	    makefolder "$home_foo_parent_dir"
 	fi
 	
 	# hard link git repo folder to home (preserves permissions,
 	# makes changes synchronized between original and copied file)
-	runcmd "cp -al $git_foo $home_foo"
+	runcmd "cp -al $git_foo $home_foo_parent_dir"
     else
 	echoerr "couldn't find $git_foo"
 	exit 1

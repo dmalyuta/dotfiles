@@ -22,7 +22,6 @@ programs_list=(
     "git"
     "emacs"
     "terminator"
-    "powerline"
     "chrome"
     "foxit"
 )
@@ -40,9 +39,8 @@ dotfiles_prompt["${programs_list[0]}"]="Do you want to install the .bin director
 dotfiles_prompt["${programs_list[1]}"]="Do you want to install Git [Yn]? "
 dotfiles_prompt["${programs_list[2]}"]="Do you want to install Emacs [Yn]? "
 dotfiles_prompt["${programs_list[3]}"]="Do you want to install the terminator terminal emulator [Yn]? "
-dotfiles_prompt["${programs_list[4]}"]="Do you want to install powerline [Yn]? "
-dotfiles_prompt["${programs_list[5]}"]="Do you want to install Google Chrome [Yn]? "
-dotfiles_prompt["${programs_list[6]}"]="Do you want to install Foxit PDF Reader [Yn]? "
+dotfiles_prompt["${programs_list[4]}"]="Do you want to install Google Chrome [Yn]? "
+dotfiles_prompt["${programs_list[5]}"]="Do you want to install Foxit PDF Reader [Yn]? "
 
 ########## global variables
 
@@ -138,26 +136,24 @@ builtin echo
 ########## make backups of existing dotfiles
 
 echo "moving dotfiles to $home"
-if [ "$dir" != "$home" ]; then
-    # create backup folder
-    backup_folder="${home}/dotfile_backup_$date"
-    temp="$backup_folder"
-    counter=0
-    while [ -d "$backup_folder" ]
-    do
-	((counter++))
-	backup_folder="${temp}_$counter"
-    done
-    runcmd "sudo -u $SUDO_USER mkdir $backup_folder"
-    echo "any existing dotfiles in $home will be moved to $backup_folder"
-    # loop through each dotfile/folder and back them up
-    for foo in "${install_dotfiles_list[@]}"
-    do
-	copy_foo "$foo" "$dir" "$home"
-    done
-else
-    echowarn "already in $home so will not move/backup anything"
-fi
+
+# create backup folder
+backup_folder="${home}/dotfile_backup_$date"
+temp="$backup_folder"
+counter=0
+while [ -d "$backup_folder" ]
+do
+    ((counter++))
+    backup_folder="${temp}_$counter"
+done
+runcmd "sudo -u $SUDO_USER mkdir $backup_folder"
+echo "any existing dotfiles in $home will be moved to $backup_folder"
+
+# loop through each dotfile/folder and back them up
+for foo in "${install_dotfiles_list[@]}"
+do
+    copy_foo "$foo" "$dir" "$home"
+done
 
 ########## git
 
@@ -170,10 +166,6 @@ install_program "emacs" install_emacs.sh
 ########## terminator (terminal)
 
 install_program "terminator" install_terminator.sh
-
-########## powerline for bash
-
-install_program "powerline" install_powerline.sh 
 
 ########## Google Chrome
 

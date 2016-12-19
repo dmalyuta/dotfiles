@@ -230,6 +230,20 @@
   ;;  C-c p s g : find a word/string in project files  (using grep), autofill with symbol at point
   :ensure t
   :config
+  (setq projectile-enable-caching nil)
+  (setq projectile-indexing-method 'native) ;;(setq projectile-use-native-indexing t)
+  (setq projectile-require-project-root nil)
+  (setq projectile-project-root-files-functions nil)
+  (setq projectile-globally-ignored-directories (append '(
+							  ".svn"
+							  ".git"
+							  )
+							projectile-globally-ignored-directories))
+  (setq projectile-globally-ignored-files (append '(
+						    ".DS_Store"
+						    ".gitignore"
+						    )
+						  projectile-globally-ignored-files))
   (projectile-global-mode)
   (use-package helm-projectile
     ;; Helm UI for Projectile
@@ -502,6 +516,9 @@
      (defun term-send-Cright () (interactive) (term-send-raw-string "\e[1;5C"))
      (defun term-send-Cleft  () (interactive) (term-send-raw-string "\e[1;5D"))
      (defun term-send-Mbackspace () (interactive)(term-send-raw-string "\e\d"))
+     (define-key term-raw-map (kbd "C-k") 'term-send-raw)
+     (define-key term-raw-map (kbd "C-y") 'term-send-raw)
+     (define-key term-raw-map (kbd "C-c C-y") 'term-paste)
      ))
 
 ;; fix Semantic package issue of uncompressing/parsing tons of .eg.gz

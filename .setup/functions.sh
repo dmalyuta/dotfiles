@@ -87,29 +87,36 @@ apt_get_install_pkg()
 
 copy_foo()
 {
-    local foo="$1"
-    local dir="$2"
-    local dest="$3"
-    
+    local foo="$1" # file or folder name
+    local dir="$2" # root directory of dotfiles folder
+    local home="$3" # home directory
+
     local git_foo="${dir}/$foo" # new folder from repository
-    local home_foo="${dest}/$foo" # existing folder in ${HOME}
+    local home_foo="${home}/$foo" # existing folder in ${HOME}
+    
     if [ -e "$git_foo" ]; then
 	# move existing foo to backup folder
 	if [ -e "$home_foo" ]; then
+	    # backup $home_foo
 	    runcmd "mv $home_foo $backup_folder"
-	else
-	    # make the parent directory of the file/folder to be
-	    # copied if it does not exist already
-	    home_foo_parent_dir="$(dirname "$home_foo")"
-	    if [ ! -e "$home_foo_parent_dir" ]; then
-		runcmd "mkdir -p $home_foo_parent_dir"
-	    fi
 	fi
-	# copy git repo folder to home, preserving permissions
-	makefolder "$dest"
-	runcmd "cp -rp $git_foo $home_foo"
+
+	# make the full path of files to be copied
+	if [ -d "$git_foo" ]; then
+	    # if foo is a folder, prepare the folder
+	    makefolder "$home_foo"
+	else
+	    # if foo is a file, prepare its parent folder
+	    home_foo_parent_dir="$(dirname "$home_foo")"
+	    makefolder "$home_foo_parent_dir"
+	fi
+	
+	# hard link git repo folder to home (preserves permissions,
+	# makes changes synchronized between original and copied file)
+	runcmd "cp -al $git_foo $home_foo"
     else
-	echowarn "couldn't find $git_foo"
+	echoerr "couldn't find $git_foo"
+	exit 1
     fi
 }
 

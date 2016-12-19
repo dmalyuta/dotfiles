@@ -17,6 +17,7 @@
 /.config/terminator/*
 !/.config/terminator/config
 
-# whitelist github files
+# whitelist other files
 !.gitignore
+!/.bashrc_additions
 !README.md

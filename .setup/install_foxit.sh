@@ -45,8 +45,8 @@ if program_not_installed "FoxitReader"; then
     installer_exit_status=$?
 
     # delete the installer and tarball
-    runcmd "rm -rf '$foxit_tar_gz_name'"
-    runcmd "rm -rf '$foxit_installer_name'"
+    runcmd "rm -rf ${dir}/.setup/$foxit_tar_gz_name"
+    runcmd "rm -rf ${dir}/.setup/$foxit_installer_name"
 
     if [[ $installer_exit_status -eq 0 ]]; then
 	# installation finished successfully (i.e. user did not quit it)

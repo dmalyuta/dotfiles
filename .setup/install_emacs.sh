@@ -25,9 +25,9 @@ if program_not_installed "emacs"; then
 	runcmd "apt-get --assume-yes build-dep emacs24" nonull
 
 	# download source, build and install Emacs 24.5.1
-	runcmd "wget http://ftp.gnu.org/gnu/emacs/emacs-25.1.tar.gz"
-	runcmd "tar -zxvf emacs-25.1.tar.gz"
-	(runcmd "cd emacs-25.1/" && configure_make_install)
+	runcmd "wget http://ftp.gnu.org/gnu/emacs/emacs-24.5.tar.gz"
+	runcmd "tar -zxvf emacs-24.5.tar.gz"
+	(runcmd "cd emacs-24.5/" && configure_make_install)
 	subshell_check $?
 	runcmd "rm -rf emacs*"
     else

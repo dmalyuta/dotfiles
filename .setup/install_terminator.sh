@@ -28,7 +28,7 @@ fi
 if $append_string; then
     # append this functionality to the .bashrc file
 
-    runcmd "cat ${dir}/.bashrc_additions/bash_prompt >> ${home}/.bashrc" nonull
+    runcmd "eval cat ${dir}/.bashrc_additions/bash_prompt >> ${home}/.bashrc" nonull
 fi
 
 echo_prefix="$echo_prefix_temp"

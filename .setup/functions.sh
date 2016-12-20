@@ -126,10 +126,10 @@ copy_foo()
 	# back up existing (destination) foo
 	if [ -e "$destination_foo" ]; then
 	    # backup $home_foo
-	    runcmd "mv $home_foo $backup_folder"
+	    runcmd "mv $destination_foo $backup_folder"
 	fi
 	# copy or symlink the git file to the place in $HOME
-	make_symlink "$foo" "$dir" "$home" $do_symlink
+	make_symlink "$foo" "$origin" "$destination" $do_symlink
     else
 	echoerr "couldn't find $git_foo"
 	exit 1

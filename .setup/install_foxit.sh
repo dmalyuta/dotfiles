@@ -40,12 +40,12 @@ if program_not_installed "FoxitReader"; then
 	
     # install Foxit PDF Reader
     echowarn "Please follow the GUI's instructions and install Foxit PDF Reader into /opt/foxitsoftware/foxitreader"
-    runcmd "eval ${home}/Downloads/'${foxit_installer_name}'"
+    runcmd "eval '${foxit_installer_name}'"
     installer_exit_status=$?
 
     # delete the installer and tarball
-    runcmd "rm -rf ${home}/Downloads/$foxit_tar_gz_name"
-    runcmd "rm -rf ${home}/Downloads/$foxit_installer_name"
+    runcmd "rm -rf $foxit_tar_gz_name"
+    runcmd "rm -rf $foxit_installer_name"
 
     if [[ $installer_exit_status -eq 0 ]]; then
 	# installation finished successfully (i.e. user did not quit it)

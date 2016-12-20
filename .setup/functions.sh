@@ -149,12 +149,16 @@ wget_targz_install()
 {
     local name="$1"
     local url="$2"
-        
-    runcmd "wget $url"
-    runcmd "tar -zxvf ${name}.tar.gz"
-    runcmd "rm -rf ${name}.tar.gz"
-    (runcmd "cd ${name}/" && configure_make_install)
-    runcmd "rm -rf ${name}/"
+
+    # download and install
+    runcmd "wget $url -P ${home}/Downloads/"
+    runcmd "tar -zxvf ${home}/Downloads/${name}.tar.gz"
+    (runcmd "cd ${home}/Downloads/${name}/" && configure_make_install)
+    subshell_check $?
+
+    # remove downloaded files
+    runcmd "rm -rf ${home}/Downloads/${name}.tar.gz"
+    runcmd "rm -rf ${home}/Downloads/${name}/"
 }
 
 program_not_installed()

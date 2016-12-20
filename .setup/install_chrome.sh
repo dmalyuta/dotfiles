@@ -23,9 +23,11 @@ if program_not_installed "google-chrome"; then
     apt_get_install_pkg libindicator7
 
     # install Chrome itself
-    runcmd "wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb"
-    runcmd "dpkg -i google-chrome*.deb"
-    runcmd "rm -rf google-chrome*.deb"
+    runcmd "wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb -P ${home}/Downloads/"
+    runcmd "dpkg -i ${home}/Downloads/google-chrome*.deb"
+
+    # remove install file
+    runcmd "rm -rf ${home}/Downloads/google-chrome*.deb"
 fi
 
 echo_prefix="$echo_prefix_temp"

@@ -1,4 +1,5 @@
 ;; Top priority
+;;(setq backup-inhibited t) ;; disable backup
 (setq backup-by-copying t) ;; make sure Emacs doesn't break hard links (before doing anything else)
 (setq make-backup-files nil) ;; stop creating backup ~ files
 

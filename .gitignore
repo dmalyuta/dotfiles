@@ -19,5 +19,6 @@
 
 # whitelist other files
 !.gitignore
+!symlink_update.sh
 !/.bashrc_additions
 !README.md

@@ -28,7 +28,7 @@ programs_list=(
 # associated dotfile dependencies for each program
 
 dependencies_bin=(".bin")
-dependencies_emacs=(".emacs.d")
+dependencies_emacs=(".emacs.d/init.el" ".emacs.d/lisp")
 dependencies_terminator=(".config/terminator/config")
 
 # question to ask user when determining which programs to install

@@ -34,6 +34,9 @@ make_symlink()
     original_version="${home}/$name"
     if [ ! -e "$original_version" ]; then
 	echoerr "couldn't find $original_version"
+	builtin echo
+	echo_warnings_errors
+	builtin echo
 	exit 1
     fi
     git_version_parent_dir="$(dirname "$git_version")"
@@ -55,5 +58,9 @@ make_symlink ".emacs.d/lisp"
 make_symlink ".config/terminator/config"
 
 ########## closing actions
+
+builtin echo
+echo_warnings_errors
+builtin echo
 
 exit 0

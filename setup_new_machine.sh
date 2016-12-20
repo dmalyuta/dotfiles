@@ -151,19 +151,19 @@ done
 
 ########## Emacs
 
-install_program "emacs" install_emacs.sh
+install_program "emacs" .setup/install_emacs.sh
 
 ########## terminator (terminal)
 
-install_program "terminator" install_terminator.sh
+install_program "terminator" .setup/install_terminator.sh
 
 ########## Google Chrome
 
-install_program "chrome" install_chrome.sh
+install_program "chrome" .setup/install_chrome.sh
 
 ########## Foxit PDF Reader
 
-install_program "foxit" install_foxit.sh
+install_program "foxit" .setup/install_foxit.sh
 
 ########## closing actions
 

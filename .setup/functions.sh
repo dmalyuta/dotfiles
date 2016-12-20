@@ -125,8 +125,9 @@ copy_foo()
     if [ -e "$origin_foo" ]; then
 	# back up existing (destination) foo
 	if [ -e "$destination_foo" ]; then
-	    # backup $home_foo
-	    runcmd "mv $destination_foo $backup_folder"
+	    # backup $destination_foo
+	    runcmd "cp -aLr $destination_foo $backup_folder"
+	    runcmd "rm -rf $destination_foo"
 	fi
 	# copy or symlink the git file to the place in $HOME
 	make_symlink "$foo" "$origin" "$destination" $do_symlink

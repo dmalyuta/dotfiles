@@ -4,12 +4,12 @@
 
 A set of dotfiles and a setup script to hit the ground running on a vanilla Ubuntu-based Linux installation for C/C++ developers. The objective is to have a no-questions-asked, robust and fully automated way of taking you from a fresh install to a fully configured system on which you can immediately get to work.
 
-![screenshot](http://i.imgur.com/DwRMi2l.jpg)
+![screenshot](http://i.imgur.com/2tAtrGW.jpg)
 
 ## Features
 
-* [Emacs 25.1](https://www.gnu.org/software/emacs/), configured for C/C++ and LaTeX
-* [Powerline](https://github.com/powerline/powerline) for the terminal (bash)
+* [Emacs 24.5](https://www.gnu.org/software/emacs/), configured for C/C++ and LaTeX
+* Custom bash prompt showing the current user, current directory, non-zero exit code of last command and current Git branch
 * [Automated backup](https://github.com/danyloM/dotfiles/blob/master/.bin/make_snapshot.sh) using `rsync`, `cron` and `anacron` with support for grandfather-father-son backup scheme
 * [Google Chrome](https://www.google.com/chrome/) web browser
 * [Foxit Reader](https://www.foxitsoftware.com/products/pdf-reader/) software for standards-compliant reading and annotation of PDFs
@@ -37,10 +37,12 @@ Other distributions may work, but I did not explicitly test them yet. If you try
 
 1. Clone this repository into any directory `DIR` you wish with `git clone https://github.com/danyloM/dotfiles DIR`;
 2. Move into `DIR` with `cd DIR`;
-3. To view a dry-run simulation of the installation (without actually doing anything), use `sudo .setup/setup_new_machine.sh -d`. Note that since folders aren't copied or moved in this simulation, you will see some "couldn't find folder" warnings that will not be present in the actual installation;
-4. To run the installation, use `sudo .setup/setup_new_machine.sh`. The install script will prompt you for what specific programs and to install and will give you instructions when manual work is needed (such as during the Foxit PDF Reader installation, if you choose to install it). The aim is to safely deploy this repository partially or fully to your computer. You are recommended to reboot after the installation is finished. If any errors come up and the installation halts, fix them and simply run the installation again.
+3. To view a dry-run simulation of the installation (without actually doing anything), use `sudo ./setup_new_machine.sh -d`. Note that since folders aren't copied or moved in this simulation, you will see some "couldn't find folder" warnings that will not be present in the actual installation;
+4. If you wish to have your dotfiles symlinked to this Git repo's dotfiles (such that you can auto-update your dotfiles via `git pull`), install with `sudo ./setup_new_machine.sh -s`. Otherwise, install with `sudo ./setup_new_machine.sh`. The install script will prompt you for what specific parts of this repository you want to install and will give you instructions when manual work is needed (such as during the Foxit PDF Reader installation, if you choose to install it). The aim is to safely deploy this repository partially or fully to your computer. You are recommended to reboot after the installation is finished. If any errors come up and the installation halts, fix them and simply run the installation again.
+  - If you subsequenly move `DIR` to another place, the symlinks from the dotfiles in `$HOME` to those in `DIR` will break. Simply `cd DIR && ./symlinks_update.sh -s` to fix this.
+  - If you ever wish to unlink the dotfiles in your `$HOME` from the ones in `DIR`, run `cd DIR && ./symlinks_update.sh`.
 
-> **Advice**: to build confidence in the install script's functionality for your specific OS, use either the dry-run simulation and/or install a copy of you OS in [VirtualBox](https://www.virtualbox.org/wiki/Downloads) and run the full installation there.
+> **Advice**: to build confidence in the install script's functionality for your specific OS, use the dry-run option and/or install a copy of you OS in [VirtualBox](https://www.virtualbox.org/wiki/Downloads) and run the full installation there.
 
 Note that the automated backup solution needs you to configure `cron` and `anacron` manually. See the starting comment block of the [backup script](https://github.com/danyloM/dotfiles/blob/master/.bin/make_snapshot.sh) to learn how. It would not be good to automate this step as it should be your choice on how, if at all, to run backups.
 

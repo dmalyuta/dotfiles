@@ -7,12 +7,6 @@
 #
 # ----------------------------------------------------------------------
 
-########## go to directory where setup_new_machine.sh actually is
-# necessary in case script is called from another directory
-
-realdir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-cd "$realdir"
-
 ########## list of dotfiles(folders) to install
 
 # list of possible programs to install
@@ -42,7 +36,9 @@ dotfiles_prompt["${programs_list[4]}"]="Do you want to install Foxit PDF Reader 
 
 ########## global variables
 
-dir="$(dirname "$realdir")"
+dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+cd "$dir"
+
 home="${HOME}"
 dryrun=false
 green="\e[0;32m"
@@ -59,7 +55,7 @@ os_version=$(lsb_release -sr)
 
 ########## functions
 
-source functions.sh
+source .setup/functions.sh
 
 ########## check that run as root
 

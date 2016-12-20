@@ -20,5 +20,6 @@
 # whitelist other files
 !.gitignore
 !symlink_update.sh
+!setup_new_machine.sh
 !/.bashrc_additions
 !README.md

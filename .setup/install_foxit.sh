@@ -33,9 +33,8 @@ if program_not_installed "FoxitReader"; then
     fi
 
     # unpack the installer
-    runcmd "tar -zxvf ${home}/Downloads/FoxitReader*.tar.gz"
-
-    # get name of tarball and installer
+    runcmd "tar -zxvf ${home}/Downloads/FoxitReader*.tar.gz -C ${home}/Downloads"
+    
     foxit_tar_gz_name=$(ls ~/Downloads/FoxitReader*.tar.gz)
     foxit_installer_name=$(ls ~/Downloads/FoxitReader*.run)
 	

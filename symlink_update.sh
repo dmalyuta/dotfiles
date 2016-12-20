@@ -13,6 +13,7 @@ cd "$dir"
 
 home="${HOME}" # home directory
 dryrun=false
+symlink=false
 green="\e[0;32m"
 cyanbold="\e[1;36m"
 yellowbold="\e[1;33m"
@@ -22,43 +23,40 @@ echo_prefix="[default] "
 number_warnings=0
 number_errors=0
 
-########## basic functions
+########## functions
 
 source .setup/functions.sh
 
-########## specialized functions
+########## accept command line arguments
 
-make_symlink()
-{
-    local name="$1"
-    
-    echo_prefix="[${name}] "
-    git_version="${dir}/$name"
-    original_version="${home}/$name"
-    if [ ! -e "$git_version" ]; then
-	echoerr "couldn't find $git_version"
+while getopts ::s option
+do
+    case $option in
+	s)
+	    echo "symlinks enabled"
+	    symlink=true;;
+	?)
 	builtin echo
-	echo_warnings_errors
+	builtin echo "Possible command line arguments:"
 	builtin echo
-	exit 1
-    fi
-    home_version_parent_dir="$(dirname "$git_version")"
-    makefolder "$home_version_parent_dir"
-    runcmd "eval /bin/cp -asrf \"$git_version\" \"${home_version_parent_dir}\""
-}
+	builtin echo "-s      symlink dotfiles in \$HOME to those of the git repository"
+	builtin echo
+	exit 0;;
+    esac
+done
 
 ########## .bin directory
 
-make_symlink ".bin"
+make_symlink ".bin" "$dir" "$home" $symlink
 
 ########## Emacs
 
-make_symlink ".emacs.d/init.el"
-make_symlink ".emacs.d/lisp"
+make_symlink ".emacs.d/init.el" "$dir" "$home" $symlink
+make_symlink ".emacs.d/lisp" "$dir" "$home" $symlink
 
 ########## Terminator
 
-make_symlink ".config/terminator/config"
+make_symlink ".config/terminator/config" "$dir" "$home" $symlink
 
 ########## closing actions
 

@@ -41,6 +41,7 @@ cd "$dir"
 
 home="${HOME}"
 dryrun=false
+symlink=false
 green="\e[0;32m"
 cyanbold="\e[1;36m"
 yellowbold="\e[1;33m"
@@ -67,11 +68,23 @@ fi
 
 ########## accept command line arguments
 
-while getopts ::d option
+while getopts ::ds option
 do
     case $option in
-	d) echo "dry-run mode enabled"
-	   dryrun=true;;
+	d)
+	    echo "dry-run mode enabled"
+	    dryrun=true;;
+	s)
+	    echo "symlinks enabled"
+	    symlink=true;;
+	?)
+	builtin echo
+	builtin echo "Possible command line arguments:"
+	builtin echo
+	builtin echo "-d      do a dry-run simulation (shows close to expected output, but does not alter any files)"
+	builtin echo "-s      symlink dotfiles in \$HOME to those of the git repository"
+	builtin echo
+	exit 0;;
     esac
 done
 
@@ -146,7 +159,7 @@ echo "any existing dotfiles in $home will be moved to $backup_folder"
 # loop through each dotfile/folder and back them up
 for foo in "${install_dotfiles_list[@]}"
 do
-    copy_foo "$foo" "$dir" "$home"
+    copy_foo "$foo" "$dir" "$home" $symlink
 done
 
 ########## Emacs

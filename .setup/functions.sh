@@ -85,35 +85,51 @@ apt_get_install_pkg()
     runcmd "apt-get --assume-yes install $pkg"
 }
 
+make_symlink()
+{
+    local name="$1"
+    local origin="$2"
+    local destination="$3"
+    local do_symlink=$4 # whether to copy or create symlink
+    
+    origin_version="${origin}/$name"
+    destination_version="${destination}/$name"
+    if [ ! -e "$origin_version" ]; then
+	echoerr "couldn't find $origin_version"
+	builtin echo
+	echo_warnings_errors
+	builtin echo
+	exit 1
+    fi
+    destination_version_parent_dir="$(dirname "$destination_version")"
+    makefolder "$destination_version_parent_dir"
+    if $do_symlink; then
+	# create a symlink in destination, instead of copying
+	runcmd "eval /bin/cp -asrf --remove-destination \"$origin_version\" \"${destination_version_parent_dir}\""
+    else
+	# copy to destination
+	runcmd "eval /bin/cp -arf --remove-destination \"$origin_version\" \"${destination_version_parent_dir}\""
+    fi
+}
+
 copy_foo()
 {
     local foo="$1" # file or folder name
-    local dir="$2" # root directory of dotfiles folder
-    local home="$3" # home directory
+    local origin="$2" # origin directory
+    local destination="$3" # destination directory
+    local do_symlink=$4 # whether to copy or create symlink
 
-    local git_foo="${dir}/$foo" # new folder from repository
-    local home_foo="${home}/$foo" # existing folder in ${HOME}
+    local origin_foo="${origin}/$foo"
+    local destination_foo="${destination}/$foo"
     
-    if [ -e "$git_foo" ]; then
-	# move existing foo to backup folder
-	if [ -e "$home_foo" ]; then
+    if [ -e "$origin_foo" ]; then
+	# back up existing (destination) foo
+	if [ -e "$destination_foo" ]; then
 	    # backup $home_foo
 	    runcmd "mv $home_foo $backup_folder"
 	fi
-
-	# make the full path of files to be copied
-	home_foo_parent_dir="$(dirname "$home_foo")"
-	if [ -d "$git_foo" ]; then
-	    # if foo is a folder, prepare the folder
-	    makefolder "$home_foo"
-	else
-	    # if foo is a file, prepare its parent folder
-	    makefolder "$home_foo_parent_dir"
-	fi
-	
-	# hard link git repo folder to home (preserves permissions,
-	# makes changes synchronized between original and copied file)
-	runcmd "cp -al $git_foo $home_foo_parent_dir"
+	# copy or symlink the git file to the place in $HOME
+	make_symlink "$foo" "$dir" "$home" $do_symlink
     else
 	echoerr "couldn't find $git_foo"
 	exit 1
@@ -134,7 +150,7 @@ move_foo()
     local source="$2"
     local destination="$3"
 
-    copy_foo "$foo" "$source" "$destination"
+    copy_foo "$foo" "$source" "$destination" false
     runcmd "rm -rf ${source}/${foo}"
 }
 
@@ -152,7 +168,7 @@ wget_targz_install()
 
     # download and install
     runcmd "wget $url -P ${home}/Downloads/"
-    runcmd "tar -zxvf ${home}/Downloads/${name}.tar.gz"
+    runcmd "tar -zxvf ${home}/Downloads/${name}.tar.gz -C ${home}/Downloads"
     (runcmd "cd ${home}/Downloads/${name}/" && configure_make_install)
     subshell_check $?
 

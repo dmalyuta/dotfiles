@@ -1,7 +1,10 @@
 #!/bin/bash
 # ----------------------------------------------------------------------
 #
-# Verify and update symlinks to all dotfiles
+# Verify and update symlinks of $HOME dotfiles to this Git
+# repository's dotfiles. Use-case: use has moved the this Git
+# repoistory's folder to a different folder, now symlinks of $HOME
+# dotfiles are broken
 #
 # ----------------------------------------------------------------------
 
@@ -32,16 +35,16 @@ make_symlink()
     echo_prefix="[${name}] "
     git_version="${dir}/$name"
     original_version="${home}/$name"
-    if [ ! -e "$original_version" ]; then
-	echoerr "couldn't find $original_version"
+    if [ ! -e "$git_version" ]; then
+	echoerr "couldn't find $git_version"
 	builtin echo
 	echo_warnings_errors
 	builtin echo
 	exit 1
     fi
-    git_version_parent_dir="$(dirname "$git_version")"
-    makefolder "$git_version_parent_dir"
-    runcmd "eval /bin/cp -asrf \"$original_version\" \"${git_version_parent_dir}\""
+    home_version_parent_dir="$(dirname "$git_version")"
+    makefolder "$home_version_parent_dir"
+    runcmd "eval /bin/cp -asrf \"$git_version\" \"${home_version_parent_dir}\""
 }
 
 ########## .bin directory

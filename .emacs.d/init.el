@@ -1,8 +1,3 @@
-;; Top priority
-;;(setq backup-inhibited t) ;; disable backup
-(setq backup-by-copying t) ;; make sure Emacs doesn't break hard links (before doing anything else)
-(setq make-backup-files nil) ;; stop creating backup ~ files
-
 ;; MELPA
 (require 'package)
 (setq package-enable-at-startup nil)
@@ -61,7 +56,10 @@
   ;; theme
   :ensure t
   :config
-  (load-theme 'zenburn t))
+  (load-theme 'zenburn t)
+  ;; stylize the mode line
+  (set-face-attribute 'mode-line nil :box nil)
+  (set-face-attribute 'mode-line-inactive nil :box nil))
 
 (use-package dired+
   ;; advanced Dired functionality
@@ -86,7 +84,7 @@
   :ensure t
   :defer t
   :init
-  (add-hook 'c++-mode-hook 'flycheck-mode)
+  (add-hook 'c-mode-common-hook 'flycheck-mode)
   (add-hook 'sh-mode-hook 'flycheck-mode)
   :config
   ;; Check buffer on save and immediately after opening buffer
@@ -236,9 +234,6 @@
   :ensure t
   :config
   (setq projectile-enable-caching nil)
-  (setq projectile-indexing-method 'native) ;;(setq projectile-use-native-indexing t)
-  (setq projectile-require-project-root nil)
-  (setq projectile-project-root-files-functions nil)
   (setq projectile-globally-ignored-directories (append '(
 							  ".svn"
 							  ".git"
@@ -312,6 +307,7 @@
 
 (use-package flycheck-google-cpplint
   ;; Add Google C++ Style checker for Flycheck
+  :disabled t ;; don't use google cpplint for now... annoying warnings
   :ensure t
   :demand
   :config
@@ -403,6 +399,12 @@
 
 ;;;;;;;;;;;;;;;;; PERSONAL PACKAGES
 
+(use-package c-block-comment
+  ;; automatically type C-style block comments
+  ;; Use M-; to insert /* */ around the point
+  ;; Use M-j to go to next line in a multi-line block comment
+  :load-path "lisp/")
+
 (use-package setup-helm
   ;; https://github.com/tuhdo/emacs-c-ide-demo/blob/master/custom/setup-helm.el
   :load-path "lisp/")
@@ -458,11 +460,17 @@
 
 ;;;;;;;;;;;;;;;;; OTHER STUFF
 
-(toggle-scroll-bar -1) ;; no scrollbar
+(setq backup-inhibited t) ;; disable backup
+(setq backup-by-copying t) ;; make sure Emacs doesn't break hard links (before doing anything else)
+(setq make-backup-files nil) ;; stop creating backup ~ files
 
 ;;(tool-bar-mode -1) ;; no toolbar
 
+(setq bookmark-save-flag 1) ; everytime bookmark is changed, automatically save it
+
 (setq gdb-many-windows t) ;; run GDB with many windows view by default
+
+(setq gdb-non-stop-setting nil) ;; run GDB in all-stop mode by default (i.e. all threads stopped at breakpoint)
 
 (setq inhibit-splash-screen t)
 
@@ -479,6 +487,14 @@
 (define-key global-map (kbd "RET") 'newline-and-indent)
 
 (put 'downcase-region 'disabled nil)
+
+;; remove scrollbar in current and any new frames
+(toggle-scroll-bar -1) ;; no scrollbar
+(defun my/disable-scroll-bars (frame)
+  (modify-frame-parameters frame
+                           '((vertical-scroll-bars . nil)
+                             (horizontal-scroll-bars . nil))))
+(add-hook 'after-make-frame-functions 'my/disable-scroll-bars)
 
 ;; scroll one line at a time (less "jumpy" than defaults)
 ;; (setq mouse-wheel-scroll-amount '(1 ((shift) . 1))) ;; one line at a time
@@ -512,17 +528,25 @@
 ;; backward/forward whole words.
 (eval-after-load "term"
   '(progn
+     ;; move by whole words fix
      (define-key term-raw-map (kbd "C-<right>") 'term-send-Cright)
      (define-key term-raw-map (kbd "C-<left>") 'term-send-Cleft)
-     (define-key term-raw-map (kbd "C-w") 'term-send-Mbackspace)
-     (define-key term-raw-map (kbd "M-<backspace>") 'term-send-Mbackspace)
      (defun term-send-Cright () (interactive) (term-send-raw-string "\e[1;5C"))
      (defun term-send-Cleft  () (interactive) (term-send-raw-string "\e[1;5D"))
      (defun term-send-Mbackspace () (interactive)(term-send-raw-string "\e\d"))
+
+     ;; word deletion fix
+     (define-key term-raw-map (kbd "C-w") 'term-send-Mbackspace)
+     (define-key term-raw-map (kbd "M-<backspace>") 'term-send-Mbackspace)     
+     
+     ;; switch between char and line mode with logical keystrokes
+     (add-hook 'term-mode-hook (lambda () (local-set-key (kbd "C-c t c") 'term-char-mode)))
+     (define-key term-raw-map (kbd "C-c t l") 'term-line-mode)
+
+     ;; copy/paste native Emacs keystrokes
      (define-key term-raw-map (kbd "C-k") 'term-send-raw)
      (define-key term-raw-map (kbd "C-y") 'term-send-raw)
-     (define-key term-raw-map (kbd "C-c C-y") 'term-paste)
-     ))
+     (define-key term-raw-map (kbd "C-c C-y") 'term-paste)))
 
 ;; fix Semantic package issue of uncompressing/parsing tons of .eg.gz
 ;; files when editing certain buffers (primarily Emacs-Lisp, but also

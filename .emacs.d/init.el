@@ -48,18 +48,22 @@
   (require 'semantic)
   (semantic-mode 1)
   (global-semanticdb-minor-mode 1)
-  (global-semantic-idle-scheduler-mode 1))
+  (global-semantic-idle-scheduler-mode 1)
+  (add-hook 'c-mode-hook (lambda () (global-semantic-idle-summary-mode 1)))
+  (add-hook 'c++-mode-hook (lambda () (global-semantic-idle-summary-mode 0))))
 
 ;;;;;;;;;;;;;;;;; MELPA PACKAGES
 
-(use-package zenburn-theme
-  ;; theme
-  :ensure t
-  :config
-  (load-theme 'zenburn t)
-  ;; stylize the mode line
-  (set-face-attribute 'mode-line nil :box nil)
-  (set-face-attribute 'mode-line-inactive nil :box nil))
+(if (display-graphic-p)
+    ;; use custom theme only if Emacs run in GUI mode (and not 'emacs -nw')
+    (use-package zenburn-theme
+      ;; the best theme there is!
+      :ensure t
+      :config
+      (load-theme 'zenburn t)
+      ;; stylize the mode line
+      (set-face-attribute 'mode-line nil :box nil)
+      (set-face-attribute 'mode-line-inactive nil :box nil)))
 
 (use-package dired+
   ;; advanced Dired functionality
@@ -191,20 +195,18 @@
 
 (use-package helm-gtags
   ;; GNU GLOBAL helm interface
-  ;; Linux Mint:
-  ;;  cd ~/Downloads/
-  ;;  wget -O gnu_global.tar.gz "http://tamacom.com/global/global-6.5.5.tar.gz" # or whatever the latest version is
-  ;;  tar -zxvf gnu_global.tar.gz && rm gnu_global.tar.gz
-  ;;  cd global-6.5.5/ # or whatever version you downloaded with wget
-  ;;  sudo ./configure && sudo make && sudo make install
-  ;;  rm -R ~/Downloads/gnu_global && rm -R
-  ;;  cd ~/Downloads/ && rm -R global-6.5.5/
+  ;; Useful keys:
+  ;; C-c g a : helm-gtags-tags-in-this-function, finds functions that current function calls
+  ;; M-.     : helm-gtags-dwim, execute actions based on context (where point currently is)
+  ;; M-,     : tags-loop-continue, go back (after pressing M-.)
+  ;; C-c g h : show chronological history of tags visited (instead of pressing M-, repeatedly)
   :ensure t
   :init
   (add-hook 'c-mode-common-hook 'helm-gtags-mode)
   :bind
   (:map c-mode-base-map
 	("C-c g a" . helm-gtags-tags-in-this-function)
+	("C-c g h" . helm-gtags-show-stack)
 	("C-j" . helm-gtags-select)
 	("M-." . helm-gtags-dwim)
 	("M-," . helm-gtags-pop-stack)
@@ -222,14 +224,14 @@
 (use-package projectile
   ;; project interaction library offering tools to operate on a project level
   ;; Useful commands:
-  ;;  C-c p p : the first thing to run when starting to work in a project
-  ;;  C-c p f : find file in current project
-  ;;  C-c p g : find file based on context (can place cursor on header file, executing command will take you to header file)
-  ;;  C-c p d : find directory in current project
-  ;;  C-c p a : switch between files with same name but different extensions (e.g. .cpp and .h)
-  ;;  C-c p i : rebuild cache (otherwise if new files made, old cache causes them to not be seen)
+  ;;  C-c p p   : the first thing to run when starting to work in a project
+  ;;  C-c p f   : find file in current project
+  ;;  C-c p g   : find file based on context (can place cursor on header file, executing command will take you to header file)
+  ;;  C-c p d   : find directory in current project
+  ;;  C-c p a   : switch between files with same name but different extensions (e.g. .cpp and .h)
+  ;;  C-c p i   : rebuild cache (otherwise if new files made, old cache causes them to not be seen)
   ;;  C-c p f, C-SPC, C-f: create a virtual Dired buffer from files selected with C-SPC with C-c p f
-  ;;  C-c p b : switch to open buffer of file/directory that belongs to current project
+  ;;  C-c p b   : switch to open buffer of file/directory that belongs to current project
   ;;  C-c p s g : find a word/string in project files  (using grep), autofill with symbol at point
   :ensure t
   :config
@@ -255,8 +257,6 @@
 
 (use-package tex
   ;; AUCTeX
-  ;; Linux Mint:
-  ;;  sudo apt-get install zathura # PDF output viewer to use
   :ensure auctex
   :init
   (setq TeX-source-correlate-method 'synctex) ;; use SyncTeX for forward/backward search between source/PDF output
@@ -322,13 +322,15 @@
    '(flycheck-googlelint-filter "-whitespace,+whitespace/braces")
    '(flycheck-googlelint-linelength "120")))
 
-(use-package nyan-mode
-  ;; adorable cat showing progress in document
-  :ensure t
-  :config
-  (nyan-mode 1)
-  (setq nyan-wavy-trail nil)
-  (setq nyan-animate-nyancat t))
+(if (display-graphic-p)
+    ;; use nyan mode only if Emacs run in GUI mode (and not 'emacs -nw')
+    (use-package nyan-mode
+      ;; adorable cat showing progress in document
+      :ensure t
+      :config
+      (nyan-mode 1)
+      (setq nyan-wavy-trail nil)
+      (setq nyan-animate-nyancat t)))
 
 (use-package srefactor
   ;; C/C++ refactoring tool based on Semantic parser framework
@@ -391,11 +393,27 @@
   :ensure t
   :config
   (require 'org)
+  (add-hook 'org-mode-hook 'turn-on-auto-fill)
   (define-key global-map "\C-cl" 'org-store-link)
   (define-key global-map "\C-ca" 'org-agenda)
   (setq org-log-done t)
   (setq org-agenda-files (list "~/Dropbox/shared_files/org/work.org"
 			       "~/Dropbox/shared_files/org/home.org")))
+
+(use-package ecb
+  ;; Emacs Code Browser
+  :ensure t
+  :config
+  (require 'ecb)
+  (setq ecb-auto-activate t) ;; auto-activate ECB at startup
+  (setq ecb-layout-name "left11") ;; set ECB layout
+  (setq ecb-tip-of-the-day nil) ;; turn off ECB tip of the day message
+  ;; line wrap
+  (setq truncate-partial-width-windows nil))
+
+(use-package rainbow-mode
+  ;; A minor mode for Emacs which displays strings representing colors with the color they represent as background
+  :ensure t)
 
 ;;;;;;;;;;;;;;;;; PERSONAL PACKAGES
 
@@ -460,6 +478,9 @@
 
 ;;;;;;;;;;;;;;;;; OTHER STUFF
 
+;; default font and font size
+(add-to-list 'default-frame-alist '(font . "DejaVu Sans Mono-10"))
+
 (setq backup-inhibited t) ;; disable backup
 (setq backup-by-copying t) ;; make sure Emacs doesn't break hard links (before doing anything else)
 (setq make-backup-files nil) ;; stop creating backup ~ files
@@ -507,20 +528,6 @@
                                 (message "Windows disposition loaded"))) ;; load window config
 (global-set-key (kbd "<f9>") '(lambda () (interactive) (window-configuration-to-register 9)
 				(message "Windows disposition saved"))) ;; save window config
-(custom-set-variables
- ;; custom-set-variables was added by Custom.  If you edit it by hand,
- ;; you could mess it up, so be careful.  Your init file should
- ;; contain only one such instance.  If there is more than one, they
- ;; won't work right.
- '(package-selected-packages
-   (quote
-    (realgud zenburn-theme yaml-mode wgrep-helm use-package srefactor pdf-tools nyan-mode multiple-cursors mic-paren helm-swoop helm-projectile helm-gtags google-c-style flycheck-irony dired+ company-irony-c-headers company-irony auctex))))
-(custom-set-faces
- ;; custom-set-faces was added by Custom.  If you edit it by hand, you
- ;; could mess it up, so be careful.  Your init file should contain
- ;; only one such instance.  If there is more than one, they won't
- ;; work right.
- )
 
 ;; fix the problem of moving cursor left/right being captured by emacs
 ;; instead of underlying terminal, leading to jumbling when jumping
@@ -560,3 +567,42 @@
 
 ;; remove a significant contributor to line scan slowness
 (setq bidi-display-reordering nil)
+
+;; auto-fill comments in programming modes
+;; if you want to have automatic auto-fill:
+;; (defun comment-auto-fill ()
+;;       (setq-local comment-auto-fill-only-comments t)
+;;       (auto-fill-mode 1))
+;; (add-hook 'c-mode-common-hook (lambda () (comment-auto-fill)))
+;; if you want to manually auto-fill (M-q), but for that to only apply to comments
+(add-hook 'c-mode-common-hook (lambda () (setq-local comment-auto-fill-only-comments t)))
+
+;; Set custom variables:
+;;   - make man page appear in current window
+;;   - set ECB left sidebar width
+;;   - wrap lines in the ECB History and Methods buffers
+(custom-set-variables
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(Man-notify-method (quote pushy))
+ '(ecb-layout-window-sizes
+   (quote
+    (("left11"
+      (ecb-methods-buffer-name 0.17901234567901234 . 0.7)
+      (ecb-history-buffer-name 0.17901234567901234 . 0.275)))))
+ '(ecb-options-version "2.50")
+ '(ecb-tree-truncate-lines
+   (quote
+    (ecb-directories-buffer-name ecb-sources-buffer-name ecb-analyse-buffer-name))))
+
+;; set some ECB faces
+;; see http://ecb.sourceforge.net/docs/ecb_002dfaces.html for descriptions
+(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(ecb-default-highlight-face ((((class color) (background dark)) (:background "yellow" :foreground "black"))))
+ '(ecb-tag-header-face ((((class color) (background dark)) (:background "yellow" :foreground "black")))))

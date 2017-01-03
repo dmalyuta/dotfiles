@@ -16,6 +16,7 @@
 
 (use-package windmove
   ;; move cursor between windows
+  :demand
   :bind
   (("C-s-b" . windmove-left)
    ("C-s-f" . windmove-right)
@@ -49,8 +50,9 @@
   (semantic-mode 1)
   (global-semanticdb-minor-mode 1)
   (global-semantic-idle-scheduler-mode 1)
-  (add-hook 'c-mode-hook (lambda () (global-semantic-idle-summary-mode 1)))
-  (add-hook 'c++-mode-hook (lambda () (global-semantic-idle-summary-mode 0))))
+  ;; (add-hook 'c-mode-hook (lambda () (global-semantic-idle-summary-mode 1)))
+  ;; (add-hook 'c++-mode-hook (lambda () (global-semantic-idle-summary-mode 0)))
+  )
 
 ;;;;;;;;;;;;;;;;; MELPA PACKAGES
 
@@ -315,12 +317,7 @@
   (require 'flycheck-irony)
   (with-eval-after-load 'flycheck
     ;; Chain javascript-jscs to run after javascript-jshint.
-    (flycheck-add-next-checker 'irony '(t . c/c++-googlelint)))
-  (custom-set-variables
-   '(flycheck-c/c++-googlelint-executable "/usr/local/bin/cpplint")
-   '(flycheck-googlelint-verbose "3")
-   '(flycheck-googlelint-filter "-whitespace,+whitespace/braces")
-   '(flycheck-googlelint-linelength "120")))
+    (flycheck-add-next-checker 'irony '(t . c/c++-googlelint))))
 
 (if (display-graphic-p)
     ;; use nyan mode only if Emacs run in GUI mode (and not 'emacs -nw')
@@ -408,8 +405,8 @@
   (setq ecb-auto-activate t) ;; auto-activate ECB at startup
   (setq ecb-layout-name "left11") ;; set ECB layout
   (setq ecb-tip-of-the-day nil) ;; turn off ECB tip of the day message
-  ;; line wrap
-  (setq truncate-partial-width-windows nil))
+  ;; also see custom-set-variables and custom-set-faces below
+  )
 
 (use-package rainbow-mode
   ;; A minor mode for Emacs which displays strings representing colors with the color they represent as background
@@ -481,11 +478,21 @@
 ;; default font and font size
 (add-to-list 'default-frame-alist '(font . "DejaVu Sans Mono-10"))
 
-(setq backup-inhibited t) ;; disable backup
-(setq backup-by-copying t) ;; make sure Emacs doesn't break hard links (before doing anything else)
-(setq make-backup-files nil) ;; stop creating backup ~ files
+;; rename buffer shortcut
+(global-set-key (kbd "C-c r") 'rename-buffer)
+
+;; backup behaviour: store everything in single location
+(setq backup-directory-alist '(("." . "~/.emacs.d/backups/")))
+;;(setq backup-inhibited t) ;; disable backup
+(setq backup-by-copying t) ;; make sure Emacs doesn't break hard links
+;;(setq make-backup-files nil) ;; stop creating backup ~ files
 
 ;;(tool-bar-mode -1) ;; no toolbar
+
+;; show tooltips in echo area
+(tooltip-mode -1)
+(setq tooltip-use-echo-area t)
+(global-set-key (kbd "C-x t") 'display-local-help) ;; show tooltip
 
 (setq bookmark-save-flag 1) ; everytime bookmark is changed, automatically save it
 
@@ -535,6 +542,14 @@
 ;; backward/forward whole words.
 (eval-after-load "term"
   '(progn
+     ;; rename buffer
+     (define-key term-raw-map (kbd "C-c r") 'rename-buffer)
+     
+     ;; make sure typical key combos work in term-char-mode
+     (define-key term-raw-map (kbd "M-x") 'nil)
+     (define-key term-raw-map (kbd "M-&") 'nil)
+     (define-key term-raw-map (kbd "M-!") 'nil)
+     
      ;; move by whole words fix
      (define-key term-raw-map (kbd "C-<right>") 'term-send-Cright)
      (define-key term-raw-map (kbd "C-<left>") 'term-send-Cleft)
@@ -553,7 +568,14 @@
      ;; copy/paste native Emacs keystrokes
      (define-key term-raw-map (kbd "C-k") 'term-send-raw)
      (define-key term-raw-map (kbd "C-y") 'term-send-raw)
-     (define-key term-raw-map (kbd "C-c C-y") 'term-paste)))
+     (define-key term-raw-map (kbd "C-c C-y") 'term-paste)
+
+     ;; ensure that scrolling doesn't break on output
+     ;;(setq term-scroll-show-maximum-output t)
+     (setq term-scroll-to-bottom-on-output t)
+
+     ;; max history (# lines) to keep (0 == keep everything)
+     (setq term-buffer-maximum-size 50000)))
 
 ;; fix Semantic package issue of uncompressing/parsing tons of .eg.gz
 ;; files when editing certain buffers (primarily Emacs-Lisp, but also
@@ -577,25 +599,23 @@
 ;; if you want to manually auto-fill (M-q), but for that to only apply to comments
 (add-hook 'c-mode-common-hook (lambda () (setq-local comment-auto-fill-only-comments t)))
 
-;; Set custom variables:
-;;   - make man page appear in current window
-;;   - set ECB left sidebar width
-;;   - wrap lines in the ECB History and Methods buffers
+;; Set custom variables
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  '(Man-notify-method (quote pushy))
+ '(ecb-auto-expand-tag-tree (quote expand-spec))
+ '(ecb-auto-expand-tag-tree-collapse-other (quote always))
+ '(ecb-highlight-tag-with-point (quote highlight-scroll))
+ '(ecb-highlight-tag-with-point-delay 0.25)
  '(ecb-layout-window-sizes
    (quote
     (("left11"
       (ecb-methods-buffer-name 0.17901234567901234 . 0.7)
       (ecb-history-buffer-name 0.17901234567901234 . 0.275)))))
- '(ecb-options-version "2.50")
- '(ecb-tree-truncate-lines
-   (quote
-    (ecb-directories-buffer-name ecb-sources-buffer-name ecb-analyse-buffer-name))))
+ '(ecb-options-version "2.50"))
 
 ;; set some ECB faces
 ;; see http://ecb.sourceforge.net/docs/ecb_002dfaces.html for descriptions

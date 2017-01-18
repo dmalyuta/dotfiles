@@ -481,6 +481,11 @@
 ;; rename buffer shortcut
 (global-set-key (kbd "C-c r") 'rename-buffer)
 
+;; winner-mode, which lets you go back (C-c <left>) and forward (C-c <right>) in window layout history
+;; NOT COMPATIBLE WITH ECB :'(
+;; (when (fboundp 'winner-mode)
+;;   (winner-mode 1))
+
 ;; backup behaviour: store everything in single location
 (setq backup-directory-alist '(("." . "~/.emacs.d/backups/")))
 ;;(setq backup-inhibited t) ;; disable backup
@@ -488,6 +493,9 @@
 ;;(setq make-backup-files nil) ;; stop creating backup ~ files
 
 ;;(tool-bar-mode -1) ;; no toolbar
+
+;; do not truncate windows that are too narrow
+(setq truncate-partial-width-windows nil)
 
 ;; show tooltips in echo area
 (tooltip-mode -1)
@@ -607,7 +615,7 @@
  ;; If there is more than one, they won't work right.
  '(Man-notify-method (quote pushy))
  '(ecb-auto-expand-tag-tree (quote expand-spec))
- '(ecb-auto-expand-tag-tree-collapse-other (quote always))
+ '(ecb-auto-expand-tag-tree-collapse-other nil)
  '(ecb-highlight-tag-with-point (quote highlight-scroll))
  '(ecb-highlight-tag-with-point-delay 0.25)
  '(ecb-layout-window-sizes

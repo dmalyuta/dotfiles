@@ -634,3 +634,11 @@
  ;; If there is more than one, they won't work right.
  '(ecb-default-highlight-face ((((class color) (background dark)) (:background "yellow" :foreground "black"))))
  '(ecb-tag-header-face ((((class color) (background dark)) (:background "yellow" :foreground "black")))))
+
+;; /*  */ style comments with C-x M-; in c++-mode
+(defun my-block-comment ()
+  (interactive)
+  (let ((comment-start "/* ")
+	(comment-end " */"))
+    (comment-dwim nil)))
+(add-hook 'c++-mode-hook (lambda () (local-set-key (kbd "C-x M-;") 'my-block-comment)))

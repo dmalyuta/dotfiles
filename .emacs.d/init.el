@@ -177,7 +177,8 @@
   (require 'helm)
   (require 'helm-config)
   (helm-mode 1)
-  (add-to-list 'helm-sources-using-default-as-input 'helm-source-man-pages))
+  (add-to-list 'helm-sources-using-default-as-input 'helm-source-man-pages)
+  (setq helm-buffer-max-length nil))
 
 (use-package helm-swoop
   ;; Helm version of C-s (I-search) and C-r (I-search backward)

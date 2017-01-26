@@ -166,6 +166,7 @@
   ;;  C-c h i : find major definitions (e.g. of functions and variables) in C/C++, Lisp and a ton of other languages
   ;;  C-M-a and C-M-e : jump to beginning/end of function definition
   ;;  C-c h m : open man pages for symbol at point or search
+  ;;  C-] : toggle to show only file names in helm buffer
   :ensure t
   :demand
   :bind
@@ -178,7 +179,8 @@
   (require 'helm-config)
   (helm-mode 1)
   (add-to-list 'helm-sources-using-default-as-input 'helm-source-man-pages)
-  (setq helm-buffer-max-length nil))
+  (setq helm-buffer-max-length 30) ;; nil to show full name always
+  (setq helm-buffers-truncate-lines nil))
 
 (use-package helm-swoop
   ;; Helm version of C-s (I-search) and C-r (I-search backward)

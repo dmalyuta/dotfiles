@@ -417,6 +417,16 @@
   ;; A minor mode for Emacs which displays strings representing colors with the color they represent as background
   :ensure t)
 
+(use-package tramp-term
+  ;; Provides a quick way to launch an ssh session in an ansi-term
+  ;; with directory tracking pre-configured. This makes opening remote
+  ;; files via TRAMP directly from the ssh session as easy as C-x C-f.
+  ;;
+  ;; Launch with M-x tramp-term (this opens an ssh session in normal ansi-term)
+  :ensure t
+  :config
+  (require 'tramp-term))
+
 ;;;;;;;;;;;;;;;;; PERSONAL PACKAGES
 
 (use-package c-block-comment

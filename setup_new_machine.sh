@@ -12,6 +12,7 @@
 # list of possible programs to install
 
 programs_list=(
+    "home_dotfiles"
     "bin"
     "emacs"
     "terminator"
@@ -21,6 +22,7 @@ programs_list=(
 
 # associated dotfile dependencies for each program
 
+dependencies_home_dotfiles=(".bash_profile")
 dependencies_bin=(".bin")
 dependencies_emacs=(".emacs.d/init.el" ".emacs.d/lisp")
 dependencies_terminator=(".config/terminator/config")
@@ -28,11 +30,12 @@ dependencies_terminator=(".config/terminator/config")
 # question to ask user when determining which programs to install
 
 declare -A dotfiles_prompt
-dotfiles_prompt["${programs_list[0]}"]="Do you want to install the .bin directory [Yn]? "
-dotfiles_prompt["${programs_list[1]}"]="Do you want to install Emacs [Yn]? "
-dotfiles_prompt["${programs_list[2]}"]="Do you want to install the terminator terminal [Yn]? "
-dotfiles_prompt["${programs_list[3]}"]="Do you want to install Google Chrome [Yn]? "
-dotfiles_prompt["${programs_list[4]}"]="Do you want to install Foxit PDF Reader [Yn]? "
+dotfiles_prompt["${programs_list[0]}"]="Do you want to install the dotfiles that go in $HOME directory [Yn]? "
+dotfiles_prompt["${programs_list[1]}"]="Do you want to install the .bin directory [Yn]? "
+dotfiles_prompt["${programs_list[2]}"]="Do you want to install Emacs [Yn]? "
+dotfiles_prompt["${programs_list[3]}"]="Do you want to install the terminator terminal [Yn]? "
+dotfiles_prompt["${programs_list[4]}"]="Do you want to install Google Chrome [Yn]? "
+dotfiles_prompt["${programs_list[5]}"]="Do you want to install Foxit PDF Reader [Yn]? "
 
 ########## global variables
 
@@ -140,11 +143,11 @@ do
 done
 builtin echo
 
-########## make backups of existing dotfiles
+########## move the dotfiles to user computer
 
 echo "moving dotfiles to $home"
 
-# create backup folder
+### create backups of existing dotfiles in one backup folder
 backup_folder="${home}/dotfile_backup_$date"
 temp="$backup_folder"
 counter=0
@@ -156,7 +159,7 @@ done
 runcmd "sudo -u $SUDO_USER mkdir $backup_folder"
 echo "any existing dotfiles in $home will be moved to $backup_folder"
 
-# loop through each dotfile/folder and back them up
+### loop through each dotfile/folder and put it on the user computer, if requested
 for foo in "${install_dotfiles_list[@]}"
 do
     copy_foo "$foo" "$dir" "$home" $symlink

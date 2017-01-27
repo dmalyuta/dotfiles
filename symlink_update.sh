@@ -45,6 +45,10 @@ do
     esac
 done
 
+########## dotfiles that go into $HOME directory
+
+make_symlink ".bash_profile" "$dir" "$home" $symlink
+
 ########## .bin directory
 
 make_symlink ".bin" "$dir" "$home" $symlink

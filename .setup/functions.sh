@@ -107,12 +107,12 @@ make_symlink()
 	# create a symlink in destination, instead of copying
 	runcmd "eval /bin/cp -asrf --remove-destination \"$origin_version\" \"${destination_version_parent_dir}\""
 	# make sure permissions are set to the user's (and not to root)
-	runcmd "chown -R ${SUDO_USER:-$USER}:${SUDO_USER:-$USER} \"${destination_version}\""
+	runcmd "eval chown -R ${SUDO_USER:-$USER}:${SUDO_USER:-$USER} \"${destination_version}\""
     else
 	# copy to destination
 	runcmd "eval /bin/cp -arf --remove-destination \"$origin_version\" \"${destination_version_parent_dir}\""
 	# make sure permissions are set to the user's (and not to root)
-	runcmd "chown -R ${SUDO_USER:-$USER}:${SUDO_USER:-$USER} \"${destination_version}\""
+	runcmd "eval chown -R ${SUDO_USER:-$USER}:${SUDO_USER:-$USER} \"${destination_version}\""
     fi
 }
 

@@ -417,16 +417,6 @@
   ;; A minor mode for Emacs which displays strings representing colors with the color they represent as background
   :ensure t)
 
-(use-package tramp-term
-  ;; Provides a quick way to launch an ssh session in an ansi-term
-  ;; with directory tracking pre-configured. This makes opening remote
-  ;; files via TRAMP directly from the ssh session as easy as C-x C-f.
-  ;;
-  ;; Launch with M-x tramp-term (this opens an ssh session in normal ansi-term)
-  :ensure t
-  :config
-  (require 'tramp-term))
-
 ;;;;;;;;;;;;;;;;; PERSONAL PACKAGES
 
 (use-package c-block-comment
@@ -560,8 +550,8 @@
 				(message "Windows disposition saved"))) ;; save window config
 
 ;;;;;; Improving ansi-term
-;; make that C-c t launches an ansi-term buffer in the current window
-(global-set-key (kbd "C-c t") 'ansi-term)
+;; make that C-c t e launches an ansi-term buffer in the current window
+(global-set-key (kbd "C-c t e") 'ansi-term)
 ;; avoid ansi-term asking always which shell to run (always run bash)
 (defvar my-term-shell "/bin/bash")
 (defadvice ansi-term (before force-bash)
@@ -597,6 +587,10 @@
      (define-key term-raw-map (kbd "M-x") 'nil)
      (define-key term-raw-map (kbd "M-&") 'nil)
      (define-key term-raw-map (kbd "M-!") 'nil)
+
+     ;; make sure C-c t e launches a new ansi-term buffer when current
+     ;; buffer is also ansi-term
+     (define-key term-raw-map (kbd "C-c t e") 'nil)
      
      ;; move by whole words fix
      (define-key term-raw-map (kbd "C-<right>") 'term-send-Cright)

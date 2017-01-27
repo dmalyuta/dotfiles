@@ -167,6 +167,8 @@
   ;;  C-M-a and C-M-e : jump to beginning/end of function definition
   ;;  C-c h m : open man pages for symbol at point or search
   ;;  C-] : toggle to show only file names in helm buffer
+  ;;  C-c r : open a file with sudo permissions
+  ;;  *<STUFF> : substring search major mode in helm-mini (i.e. after C-x b)
   :ensure t
   :demand
   :bind
@@ -547,6 +549,31 @@
 (global-set-key (kbd "<f9>") '(lambda () (interactive) (window-configuration-to-register 9)
 				(message "Windows disposition saved"))) ;; save window config
 
+;;;;;; Improving ansi-term
+;; make that C-c t launches an ansi-term buffer in the current window
+(global-set-key (kbd "C-c t") 'ansi-term)
+;; avoid ansi-term asking always which shell to run (always run bash)
+(defvar my-term-shell "/bin/bash")
+(defadvice ansi-term (before force-bash)
+  (interactive (list my-term-shell)))
+(ad-activate 'ansi-term)
+;; display of certain characters and control codes to UTF-8
+(defun my-term-use-utf8 ()
+  (set-buffer-process-coding-system 'utf-8-unix 'utf-8-unix))
+(add-hook 'term-exec-hook 'my-term-use-utf8)
+;; clickable URLs
+(defun my-term-hook ()
+  (goto-address-mode))
+(add-hook 'term-mode-hook 'my-term-hook)
+;; make that typing exit in ansi-term (which exits the shell) also
+;; closes the buffer
+(defadvice term-sentinel (around my-advice-term-sentinel (proc msg))
+  (if (memq (process-status proc) '(signal exit))
+      (let ((buffer (process-buffer proc)))
+        ad-do-it
+        (kill-buffer buffer))
+    ad-do-it))
+(ad-activate 'term-sentinel)
 ;; fix the problem of moving cursor left/right being captured by emacs
 ;; instead of underlying terminal, leading to jumbling when jumping
 ;; words then editing the middle of a command. Same for deleting
@@ -578,8 +605,7 @@
 
      ;; copy/paste native Emacs keystrokes
      (define-key term-raw-map (kbd "C-k") 'term-send-raw)
-     (define-key term-raw-map (kbd "C-y") 'term-send-raw)
-     (define-key term-raw-map (kbd "C-c C-y") 'term-paste)
+     (define-key term-raw-map (kbd "C-y") 'term-paste)
 
      ;; ensure that scrolling doesn't break on output
      ;;(setq term-scroll-show-maximum-output t)

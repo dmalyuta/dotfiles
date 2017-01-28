@@ -57,19 +57,55 @@ if program_not_installed "global"; then
     wget_targz_install "global-6.5.5" "ftp://ftp.gnu.org/pub/gnu/global/global-6.5.5.tar.gz"
 fi
 
-# rosemacs (ROS tools for Emacs)
-# printf_prompt "Do you want to install ROS tools for Emacs (must have ROS installed) [yN]? "
-# read -r -p "" user_response
-# if [[ $user_response =~ ^[yY]$ ]]; then
-#     # answers yes --> install rosemacs (ROS tools for Emacs)
-#     if [[ ! -d "/opt/ros/indigo" ]] ; then
-# 	# ROS indigo seems to not be installed
-# 	echoerr "Setup configured only for ROS indigo installed in /opt/ros/indigo directory. This seems to not be the case for you... please do the installation manually by following the steps on http://wiki.ros.org/rosemacs"
-#     else
-# 	runcmd "apt-get download ros-indigo-rosemacs"
-# 	runcmd "dpkg --force-all -i ros*.deb"
-# 	runcmd "rm -rf ros*.deb"
-#     fi
-# fi
+# helm-ros (an Emacs package that interfaces ROS with the helm completion facilities)
+printf_prompt "Do you want to install helm-ros for Emacs (you should have ROS installed) [yN]? "
+read -r -p "" user_response
+if [[ $user_response =~ ^[yY]$ ]]; then
+    # answers yes --> install helm-ros
+    runcmd "eval echo $'\n' >> ${home}/.profile" nonull
+    runcmd "eval echo \"# ROS setup\" >> ${home}/profile" nonull
+
+    # source ROS's own setup.bash file
+    if [[ -f "/opt/ros/indigo/setup.bash" ]]; then
+	runcmd "eval echo \"source /opt/ros/indigo/setup.bash\" >> ${home}/.profile" nonull
+    else
+	echowarn "Couldn't find the file /opt/ros/indigo/setup.bash."
+	printf_prompt "Specify full file path of ROS's setup.bash file or press Enter to skip: "
+	while true
+	do
+	    read -r -e -p "" user_response
+	    if [[ -z "$user_response" ]]; then
+		break
+	    fi
+	    if [[ -f "$user_response" ]]; then
+		runcmd "eval echo \"source ${user_response}\" >> ${home}/.profile" nonull
+		break
+	    else
+		echowarn "Entered a bad filepath (${user_response} is not a valid file), please enter a valid complete file path to ROS's setup.bash or press the Enter key to skip"
+	    fi
+	done
+    fi
+
+    # source user's personal setup.bash file
+    if [[ -f "${home}/catkin_ws/devel/setup.bash" ]]; then
+	runcmd "eval echo \"source ${home}/catkin_ws/devel/setup.bash\" >> ${home}/.profile" nonull
+    else
+	echowarn "Couldn't find the file /opt/ros/indigo/setup.bash."
+	printf_prompt "Specify full file path of ROS's setup.bash file or press Enter to skip: "
+	while true
+	do
+	    read -r -e -p "" user_response
+	    if [[ -z "$user_response" ]]; then
+		break
+	    fi
+	    if [[ -f "$user_response" ]]; then
+		runcmd "eval echo \"source ${user_response}\" >> ${home}/.profile" nonull
+		break
+	    else
+		echowarn "Entered a bad filepath (${user_response} is not a valid file), please enter a valid complete file path to ROS's setup.bash or press the Enter key to skip"
+	    fi
+	done
+    fi
+fi
 
 echo_prefix="$echo_prefix_temp"

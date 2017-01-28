@@ -27,7 +27,6 @@ if ! grep -q "parse_fit_branch" "${home}/.bashrc"; then
 fi
 if $append_string; then
     # append this functionality to the .bashrc file
-
     runcmd "eval cat ${dir}/.bashrc_additions/bash_prompt >> ${home}/.bashrc" nonull
 fi
 

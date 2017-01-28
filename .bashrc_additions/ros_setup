@@ -1,8 +1,0 @@
-# ROS setup
-# paste something like this at bottom of your ~/.bashrc file
-source /opt/ros/indigo/setup.bash
-source ~/catkin_ws/devel/setup.bash
-
-export ROS_HOSTNAME=<local_IP_address (AAA.BBB.C.DDD)>
-export ROS_IP=<local_IP_address (AAA.BBB.C.DDD)>
-export ROS_MASTER_URI=<master_URI (http:///EEE.FFF.H.III):JKLMN>

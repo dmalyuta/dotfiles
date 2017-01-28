@@ -1,4 +1,10 @@
-#Emacs ansi-term directory tracking
+# source .bashrc
+# see http://stackoverflow.com/questions/820517/bashrc-at-ssh-login
+if [ -f ~/.bashrc ]; then
+  . ~/.bashrc
+fi
+
+# Emacs ansi-term directory tracking
 # track directory, username, and cwd for remote logons
 if [ $TERM = eterm-color ]; then
     function eterm-set-cwd {

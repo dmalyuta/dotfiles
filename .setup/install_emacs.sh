@@ -57,4 +57,19 @@ if program_not_installed "global"; then
     wget_targz_install "global-6.5.5" "ftp://ftp.gnu.org/pub/gnu/global/global-6.5.5.tar.gz"
 fi
 
+# rosemacs (ROS tools for Emacs)
+# printf_prompt "Do you want to install ROS tools for Emacs (must have ROS installed) [yN]? "
+# read -r -p "" user_response
+# if [[ $user_response =~ ^[yY]$ ]]; then
+#     # answers yes --> install rosemacs (ROS tools for Emacs)
+#     if [[ ! -d "/opt/ros/indigo" ]] ; then
+# 	# ROS indigo seems to not be installed
+# 	echoerr "Setup configured only for ROS indigo installed in /opt/ros/indigo directory. This seems to not be the case for you... please do the installation manually by following the steps on http://wiki.ros.org/rosemacs"
+#     else
+# 	runcmd "apt-get download ros-indigo-rosemacs"
+# 	runcmd "dpkg --force-all -i ros*.deb"
+# 	runcmd "rm -rf ros*.deb"
+#     fi
+# fi
+
 echo_prefix="$echo_prefix_temp"

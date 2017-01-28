@@ -195,7 +195,7 @@ fi
 # remove not needed packages
 
 if [ ${#install_programs_list[@]} -ne 0 ]; then
-    runcmd "apt-get --assume-yes autoremove"
+    runcmd "apt-get --assume-yes -f autoremove"
 fi
 
 # prompt for restart

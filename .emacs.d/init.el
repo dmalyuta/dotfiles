@@ -417,6 +417,26 @@
   ;; A minor mode for Emacs which displays strings representing colors with the color they represent as background
   :ensure t)
 
+(use-package exec-path-from-shell
+  :ensure t
+  :config
+  (exec-path-from-shell-copy-env "ROS_ROOT")
+  (exec-path-from-shell-copy-env "ROS_PACKAGE_PATH")
+  (exec-path-from-shell-copy-env "ROS_MASTER_URI")
+  (exec-path-from-shell-copy-env "ROS_HOSTNAME")
+  (exec-path-from-shell-copy-env "ROSLISP_PACKAGE_DIRECTORIES")
+  (exec-path-from-shell-copy-env "ROS_DISTRO")
+  (exec-path-from-shell-copy-env "ROS_IP")
+  (exec-path-from-shell-copy-env "ROS_ETC_DIR")
+  (exec-path-from-shell-initialize))
+
+;;;;;;;;;;;;;;;;; NON-MELPA PACKAGES
+
+;; rosemacs: a collection of packages to work on ROS-based software
+;; from Emacs.
+(add-to-list 'load-path "/opt/ros/indigo/share/emacs/site-lisp")
+(require 'rosemacs-config)
+
 ;;;;;;;;;;;;;;;;; PERSONAL PACKAGES
 
 (use-package c-block-comment

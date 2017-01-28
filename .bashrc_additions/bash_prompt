@@ -1,4 +1,3 @@
-
 # display git branch and a failed command's error code in the bash
 # prompt
 parse_git_branch() {

@@ -1,0 +1,11 @@
+# ROS setup
+#
+# make sure this is at the top of ~/.bash_rc
+# such that it comes BEFORE whatever code following the vanilla
+# .bashrc comment "#If not running interactively, don't do anything"
+source /opt/ros/indigo/setup.bash
+source ~/catkin_ws/devel/setup.bash
+
+export ROS_HOSTNAME=192.168.1.200
+export ROS_IP=192.168.1.200
+export ROS_MASTER_URI=http://192.168.1.166:11311

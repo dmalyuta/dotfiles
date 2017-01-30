@@ -241,8 +241,9 @@
   ;;   q : Closes the buffer.
   :ensure t
   :config
-  (require 'helm-ros)
-  (global-helm-ros-mode t))
+  ;;(require 'helm-ros)
+  ;;(global-helm-ros-mode t)
+  )
 
 (use-package projectile
   ;; project interaction library offering tools to operate on a project level

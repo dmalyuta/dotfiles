@@ -58,16 +58,17 @@ if program_not_installed "global"; then
 fi
 
 # helm-ros (an Emacs package that interfaces ROS with the helm completion facilities)
+# XXX create check so that lines below are not added to ~/.profile if they already exist there
 printf_prompt "Do you want to install helm-ros for Emacs (you should have ROS installed) [yN]? "
 read -r -p "" user_response
 if [[ $user_response =~ ^[yY]$ ]]; then
     # answers yes --> install helm-ros
-    runcmd "eval echo $'\n' >> ${home}/.profile" nonull
-    runcmd "eval echo \"# ROS setup\" >> ${home}/profile" nonull
+    runcmd "eval builtin echo \"\" >> ${home}/.profile" nonull
+    runcmd "eval builtin echo \"# ROS setup\" >> ${home}/.profile" nonull
 
     # source ROS's own setup.bash file
     if [[ -f "/opt/ros/indigo/setup.bash" ]]; then
-	runcmd "eval echo \"source /opt/ros/indigo/setup.bash\" >> ${home}/.profile" nonull
+	runcmd "eval builtin echo \"source /opt/ros/indigo/setup.bash\" >> ${home}/.profile" nonull
     else
 	echowarn "Couldn't find the file /opt/ros/indigo/setup.bash."
 	printf_prompt "Specify full file path of ROS's setup.bash file or press Enter to skip: "
@@ -78,7 +79,7 @@ if [[ $user_response =~ ^[yY]$ ]]; then
 		break
 	    fi
 	    if [[ -f "$user_response" ]]; then
-		runcmd "eval echo \"source ${user_response}\" >> ${home}/.profile" nonull
+		runcmd "eval builtin echo \"source ${user_response}\" >> ${home}/.profile" nonull
 		break
 	    else
 		echowarn "Entered a bad filepath (${user_response} is not a valid file), please enter a valid complete file path to ROS's setup.bash or press the Enter key to skip"
@@ -88,7 +89,7 @@ if [[ $user_response =~ ^[yY]$ ]]; then
 
     # source user's personal setup.bash file
     if [[ -f "${home}/catkin_ws/devel/setup.bash" ]]; then
-	runcmd "eval echo \"source ${home}/catkin_ws/devel/setup.bash\" >> ${home}/.profile" nonull
+	runcmd "eval builtin echo \"source ${home}/catkin_ws/devel/setup.bash\" >> ${home}/.profile" nonull
     else
 	echowarn "Couldn't find the file /opt/ros/indigo/setup.bash."
 	printf_prompt "Specify full file path of ROS's setup.bash file or press Enter to skip: "
@@ -99,7 +100,7 @@ if [[ $user_response =~ ^[yY]$ ]]; then
 		break
 	    fi
 	    if [[ -f "$user_response" ]]; then
-		runcmd "eval echo \"source ${user_response}\" >> ${home}/.profile" nonull
+		runcmd "eval builtin echo \"source ${user_response}\" >> ${home}/.profile" nonull
 		break
 	    else
 		echowarn "Entered a bad filepath (${user_response} is not a valid file), please enter a valid complete file path to ROS's setup.bash or press the Enter key to skip"

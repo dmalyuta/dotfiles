@@ -228,22 +228,26 @@
   (setq helm-gtags-prefix-key "\C-cg")
   (setq helm-gtags-suggested-key-mapping t))
 
-(use-package helm-ros
-  ;; An Emacs package that interfaces ROS with the helm completion facilities.
-  ;; Keybindings:
-  ;;   C-x C-r h : Starts helm-ros with all available sources.
-  ;;   C-x C-r m : Start a roscore.
-  ;;   C-x C-r i : Invalidate helm-ros cache (if you create a new file).
-  ;;
-  ;; In ros-process buffers, you can use the following keybindings:
-  ;;   c : Interrupts the ROS process associated with the buffer.
-  ;;   k : Kills the ROS process associated with the buffer.
-  ;;   q : Closes the buffer.
-  :ensure t
-  :config
-  ;;(require 'helm-ros)
-  ;;(global-helm-ros-mode t)
-  )
+(if (getenv "ROS_ROOT")
+    (progn
+      (message "Loading helm-ros")
+      (use-package helm-ros
+	;; An Emacs package that interfaces ROS with the helm completion facilities.
+	;; Keybindings:
+	;;   C-x C-r h : Starts helm-ros with all available sources.
+	;;   C-x C-r m : Start a roscore.
+	;;   C-x C-r i : Invalidate helm-ros cache (if you create a new file).
+	
+	;; In ros-process buffers, you can use the following keybindings:
+	;;   c : Interrupts the ROS process associated with the buffer.
+	;;   k : Kills the ROS process associated with the buffer.
+	;;   q : Closes the buffer.
+	:ensure t
+	:config
+	(require 'helm-ros)
+	(global-helm-ros-mode t)
+	))
+  (message "ROS environment variables not defined, won't load helm-ros"))
 
 (use-package projectile
   ;; project interaction library offering tools to operate on a project level

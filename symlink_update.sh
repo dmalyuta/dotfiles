@@ -48,6 +48,7 @@ done
 ########## dotfiles that go into $HOME directory
 
 make_symlink ".bash_profile" "$dir" "$home" $symlink
+make_symlink ".bash_aliases" "$dir" "$home" $symlink
 
 ########## .bin directory
 

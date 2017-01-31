@@ -702,3 +702,11 @@
 
 ;; Color roslaunch files correctly
 (add-to-list 'auto-mode-alist '("\\.launch$" . xml-mode))
+
+;; ansi-term bi-directional text support problem fix, which seems to
+;; be the cause of text jumbling when going back commands in
+;; ansi-term. This fixes it, yay!
+(add-hook 'term-mode-hook 'my-term-mode-hook)
+(defun my-term-mode-hook ()
+  ;; https://debbugs.gnu.org/cgi/bugreport.cgi?bug=20611
+  (setq bidi-paragraph-direction 'left-to-right))

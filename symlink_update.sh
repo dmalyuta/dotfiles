@@ -49,6 +49,7 @@ done
 
 make_symlink ".bash_profile" "$dir" "$home" $symlink
 make_symlink ".bash_aliases" "$dir" "$home" $symlink
+make_symlink ".local.bashrc" "$dir" "$home" $symlink
 
 ########## .bin directory
 

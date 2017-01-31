@@ -22,7 +22,7 @@ programs_list=(
 
 # associated dotfile dependencies for each program
 
-dependencies_home_dotfiles=(".bash_profile" ".bash_aliases")
+dependencies_home_dotfiles=(".bash_profile" ".bash_aliases" ".local.bashrc")
 dependencies_bin=(".bin")
 dependencies_emacs=(".emacs.d/init.el" ".emacs.d/lisp")
 dependencies_terminator=(".config/terminator/config")

@@ -1,3 +1,5 @@
+# ~/.local.bash: sourced from .bashrc in order to separate default
+# .bashrc file from personal customizations.
 
 # display git branch and a failed command's error code in the bash
 # prompt

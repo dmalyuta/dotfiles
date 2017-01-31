@@ -29,8 +29,6 @@ if $source_local_bashrc; then
     runcmd "eval builtin echo \"if [[ -f ~/.local.bashrc ]]; then\" >> ${home}/.profile" nonull
     runcmd "eval builtin echo \"    source .local.bashrc\" >> ${home}/.profile" nonull
     runcmd "eval builtin echo \"fi\" >> ${home}/.profile" nonull
-    
-    runcmd "eval cat ${dir}/.bashrc_additions/bash_prompt >> ${home}/.bashrc" nonull
 fi
 
 echo_prefix="$echo_prefix_temp"

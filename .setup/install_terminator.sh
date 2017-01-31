@@ -24,11 +24,11 @@ if ! grep -q ".local.bashrc" "${home}/.bashrc"; then
 fi
 if $source_local_bashrc; then
     # source .local.bashrc
-    runcmd "eval builtin echo \"\" >> ${home}/.profile" nonull
-    runcmd "eval builtin echo \"# personal additions to .bashrc\" >> ${home}/.profile" nonull
-    runcmd "eval builtin echo \"if [[ -f ~/.local.bashrc ]]; then\" >> ${home}/.profile" nonull
-    runcmd "eval builtin echo \"    source .local.bashrc\" >> ${home}/.profile" nonull
-    runcmd "eval builtin echo \"fi\" >> ${home}/.profile" nonull
+    runcmd "eval builtin echo \"\" >> ${home}/.bashrc" nonull
+    runcmd "eval builtin echo \"# personal additions to .bashrc\" >> ${home}/.bashrc" nonull
+    runcmd "eval builtin echo \"if [[ -f ~/.local.bashrc ]]; then\" >> ${home}/.bashrc" nonull
+    runcmd "eval builtin echo \"    source .local.bashrc\" >> ${home}/.bashrc" nonull
+    runcmd "eval builtin echo \"fi\" >> ${home}/.bashrc" nonull
 fi
 
 echo_prefix="$echo_prefix_temp"

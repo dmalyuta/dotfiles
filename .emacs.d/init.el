@@ -680,7 +680,15 @@
     (("left11"
       (ecb-methods-buffer-name 0.17901234567901234 . 0.7)
       (ecb-history-buffer-name 0.17901234567901234 . 0.275)))))
- '(ecb-options-version "2.50"))
+ '(ecb-options-version "2.50")
+ ;; ansi-term stuff
+ ;; from https://snarfed.org/why_i_dont_run_shells_inside_emacs
+ ;; '(comint-scroll-to-bottom-on-input t)  ;; always insert at the bottom
+ ;; '(comint-scroll-to-bottom-on-output t) ;; always add output at the bottom
+ ;; '(comint-scroll-show-maximum-output t) ;; scroll to show max possible output
+ ;; '(comint-completion-autolist t)        ;; show completion list when ambiguous
+ ;; '(comint-input-ignoredups t)           ;; no duplicates in command history
+ )
 
 ;; set some ECB faces
 ;; see http://ecb.sourceforge.net/docs/ecb_002dfaces.html for descriptions

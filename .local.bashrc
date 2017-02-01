@@ -33,3 +33,7 @@ fi
 if [[ -f ~/catkin_ws/devel/setup.bash ]]; then
     source ~/catkin_ws/devel/setup.bash
 fi
+# in ~/.bashrc optionally add the following lines for ROS network setup:
+# export ROS_HOSTNAME=<local_IP_address (AAA.BBB.C.DDD)>
+# export ROS_IP=<local_IP_address (AAA.BBB.C.DDD)>
+# export ROS_MASTER_URI=<master_URI (http://EEE.FFF.H.III:JKLMN)>

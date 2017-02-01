@@ -11,12 +11,12 @@ fi
 
 # add .bin directory to path, which includes custom
 # user scripts
-if [[ -f ~/.bin ]]; then
+if [[ -d ~/.bin ]]; then
     PATH="${HOME}/.bin:$PATH"
 fi
 
 # Emacs ansi-term directory tracking
-if [ $TERM = eterm-color ]; then
+if [ "$TERM" = eterm-color ]; then
     function eterm-set-cwd {
         $@
         echo -e "\033AnSiTc" $(pwd)

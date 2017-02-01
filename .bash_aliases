@@ -6,3 +6,6 @@ alias sudo='sudo '
 # want to delete. Can save from accidentally deleting important
 # files/folders.
 alias rm='rm -i'
+
+# Emacs
+alias em='emacs -nw'

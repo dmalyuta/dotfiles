@@ -27,7 +27,7 @@ if $source_local_bashrc; then
     runcmd "eval builtin echo \"\" >> ${home}/.bashrc" nonull
     runcmd "eval builtin echo \"# personal additions to .bashrc\" >> ${home}/.bashrc" nonull
     runcmd "eval builtin echo \"if [[ -f ~/.local.bashrc ]]; then\" >> ${home}/.bashrc" nonull
-    runcmd "eval builtin echo \"    source .local.bashrc\" >> ${home}/.bashrc" nonull
+    runcmd "eval builtin echo \"    source ~/.local.bashrc\" >> ${home}/.bashrc" nonull
     runcmd "eval builtin echo \"fi\" >> ${home}/.bashrc" nonull
 fi
 

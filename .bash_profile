@@ -36,15 +36,3 @@ if [ $TERM = eterm-color ]; then
     # set hostname, user, and cwd now
     eterm-reset
 fi
-
-# ROS setup
-if [[ -f "/opt/ros/indigo/setup.bash" ]]; then
-   source /opt/ros/indigo/setup.bash
-fi
-if [[ -f "/home/malyutad/catkin_ws/devel/setup.bash" ]]; then
-    source /home/malyutad/catkin_ws/devel/setup.bash
-fi
-export ROS_HOSTNAME=192.168.1.106
-export ROS_IP=192.168.1.106
-#export ROS_MASTER_URI=http://192.168.1.166:11311
-export ROS_MASTER_URI=http://localhost:11311

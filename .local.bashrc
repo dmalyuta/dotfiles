@@ -1,4 +1,4 @@
-# ~/.local.bash: sourced from .bashrc in order to separate default
+# ~/.local.bashrc: sourced from .bashrc in order to separate default
 # .bashrc file from personal customizations.
 
 # display git branch and a failed command's error code in the bash
@@ -25,3 +25,11 @@ parse_ssh() {
     fi    
 }
 export PS1="$(parse_ssh)\u \[\033[32m\]\w\[\033[1;31m\]\$(parse_return_code)\[\033[0;33m\]\$(parse_git_branch)\[\033[00m\] $ "
+
+# ROS setup
+if [[ -f "/opt/ros/indigo/setup.bash" ]]; then
+   source /opt/ros/indigo/setup.bash
+fi
+if [[ -f ~/catkin_ws/devel/setup.bash ]]; then
+    source ~/catkin_ws/devel/setup.bash
+fi

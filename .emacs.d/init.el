@@ -627,9 +627,24 @@
      (define-key term-raw-map (kbd "C-w") 'term-send-Mbackspace)
      (define-key term-raw-map (kbd "M-<backspace>") 'term-send-Mbackspace)     
      
-     ;; switch between char and line mode with logical keystrokes
-     (add-hook 'term-mode-hook (lambda () (local-set-key (kbd "C-c t c") 'term-char-mode)))
-     (define-key term-raw-map (kbd "C-c t l") 'term-line-mode)
+     ;; switch between char and line mode with logical keystrokes make
+     ;; sure that in line mode, the buffer is auto-set to read-only
+     ;; such that I don't accidentally edit the terminal in
+     ;; term-line-mode, thus messing up the command in term-char-mode
+     ;; (the mode in which I normally work, with term-line-mode used
+     ;; for scrolling up/down the buffer)
+     (defun my-switch-to-term-line-mode ()
+       (interactive)
+       (term-line-mode)
+       (if (not buffer-read-only)
+	   (toggle-read-only)))
+     (defun my-switch-to-term-char-mode ()
+       (interactive)
+       (term-char-mode)
+       (if buffer-read-only
+	   (toggle-read-only)))
+     (add-hook 'term-mode-hook (lambda () (local-set-key (kbd "C-c t c") 'my-switch-to-term-char-mode)))
+     (define-key term-raw-map (kbd "C-c t l") 'my-switch-to-term-line-mode)
 
      ;; copy/paste native Emacs keystrokes
      (define-key term-raw-map (kbd "C-k") 'term-send-raw)

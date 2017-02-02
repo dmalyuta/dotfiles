@@ -25,3 +25,15 @@ parse_ssh() {
     fi    
 }
 export PS1="$(parse_ssh)\u \[\033[32m\]\w\[\033[1;31m\]\$(parse_return_code)\[\033[0;33m\]\$(parse_git_branch)\[\033[00m\] $ "
+
+# ROS setup
+if [ -f "/opt/ros/indigo/setup.bash" ]; then
+    . /opt/ros/indigo/setup.bash
+fi
+if [ -f ~/catkin_ws/devel/setup.bash ]; then
+    . ~/catkin_ws/devel/setup.bash
+fi
+# in ~/.local.bashrc optionally add the following lines for ROS network setup:
+# export ROS_HOSTNAME=<local_IP_address (AAA.BBB.C.DDD)>
+# export ROS_IP=<local_IP_address (AAA.BBB.C.DDD)>
+# export ROS_MASTER_URI=<master_URI (http://EEE.FFF.H.III:JKLMN)>

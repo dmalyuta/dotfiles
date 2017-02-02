@@ -5,13 +5,18 @@
 
 # source .bashrc
 # see http://stackoverflow.com/questions/820517/bashrc-at-ssh-login
-if [[ -f ~/.bashrc ]]; then
+if [ -f ~/.bashrc ]; then
     . ~/.bashrc
+fi
+
+# personal additions to .bashrc
+if [ -f ~/.local.bashrc ]; then
+    . ~/.local.bashrc
 fi
 
 # add .bin directory to path, which includes custom
 # user scripts
-if [[ -d ~/.bin ]]; then
+if [ -d ~/.bin ]; then
     PATH="${HOME}/.bin:$PATH"
 fi
 
@@ -37,14 +42,6 @@ fi
 #     eterm-reset
 # fi
 
-# ROS setup
-if [[ -f "/opt/ros/indigo/setup.bash" ]]; then
-   . /opt/ros/indigo/setup.bash
-fi
-if [[ -f ~/catkin_ws/devel/setup.bash ]]; then
-    . ~/catkin_ws/devel/setup.bash
-fi
-# in ~/.bashrc optionally add the following lines for ROS network setup:
-# export ROS_HOSTNAME=<local_IP_address (AAA.BBB.C.DDD)>
-# export ROS_IP=<local_IP_address (AAA.BBB.C.DDD)>
-# export ROS_MASTER_URI=<master_URI (http://EEE.FFF.H.III:JKLMN)>
+# if [ -f ~/.local.bashrc ]; then
+#     . ~/.local.bashrc
+# fi

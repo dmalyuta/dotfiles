@@ -718,3 +718,19 @@
 (defun my-term-mode-hook ()
   ;; https://debbugs.gnu.org/cgi/bugreport.cgi?bug=20611
   (setq bidi-paragraph-direction 'left-to-right))
+
+(eval-after-load 'term
+  '(progn
+    (defun my-term-send-delete-word-forward () (interactive) (term-send-raw-string "\ed"))
+    (defun my-term-send-delete-word-backward () (interactive) (term-send-raw-string "\e\C-h"))
+    (define-key term-raw-map [C-delete] 'my-term-send-delete-word-forward)
+    (define-key term-raw-map [C-backspace] 'my-term-send-delete-word-backward)
+    (defun my-term-send-forward-word () (interactive) (term-send-raw-string "\ef"))
+    (defun my-term-send-backward-word () (interactive) (term-send-raw-string "\eb"))
+    (define-key term-raw-map [C-left] 'my-term-send-backward-word)
+    (define-key term-raw-map [C-right] 'my-term-send-forward-word)
+    (defun my-term-send-m-right () (interactive) (term-send-raw-string "\e[1;3C"))
+    (defun my-term-send-m-left () (interactive) (term-send-raw-string "\e[1;3D"))
+    (define-key term-raw-map [M-right] 'my-term-send-m-right)
+    (define-key term-raw-map [M-left] 'my-term-send-m-left)
+    ))

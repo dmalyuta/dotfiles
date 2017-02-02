@@ -1,3 +1,7 @@
+(menu-bar-mode -1)  ;; disable menubar
+(tool-bar-mode -1) ;; disable toolbar
+(toggle-scroll-bar -1) ;; disable scrollbar
+
 ;; MELPA
 (require 'package)
 (setq package-enable-at-startup nil)
@@ -431,7 +435,7 @@
   :ensure t
   :config
   (require 'ecb)
-  (setq ecb-auto-activate t) ;; auto-activate ECB at startup
+  ;;(setq ecb-auto-activate t) ;; auto-activate ECB at startup
   (setq ecb-layout-name "left11") ;; set ECB layout
   (setq ecb-tip-of-the-day nil) ;; turn off ECB tip of the day message
   ;; also see custom-set-variables and custom-set-faces below
@@ -521,8 +525,6 @@
 (setq backup-by-copying t) ;; make sure Emacs doesn't break hard links
 ;;(setq make-backup-files nil) ;; stop creating backup ~ files
 
-;;(tool-bar-mode -1) ;; no toolbar
-
 ;; do not truncate windows that are too narrow
 (setq truncate-partial-width-windows nil)
 
@@ -553,8 +555,7 @@
 
 (put 'downcase-region 'disabled nil)
 
-;; remove scrollbar in current and any new frames
-(toggle-scroll-bar -1) ;; no scrollbar
+;; remove scrollbar any new frames
 (defun my/disable-scroll-bars (frame)
   (modify-frame-parameters frame
                            '((vertical-scroll-bars . nil)

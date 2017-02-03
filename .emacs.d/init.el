@@ -515,9 +515,9 @@
 (global-set-key (kbd "C-c r") 'rename-buffer)
 
 ;; winner-mode, which lets you go back (C-c <left>) and forward (C-c <right>) in window layout history
-;; NOT COMPATIBLE WITH ECB :'(
-;; (when (fboundp 'winner-mode)
-;;   (winner-mode 1))
+;; NB: NOT COMPATIBLE WITH ECB :'(
+(when (fboundp 'winner-mode)
+  (winner-mode 1))
 
 ;; backup behaviour: store everything in single location
 (setq backup-directory-alist '(("." . "~/.emacs.d/backups/")))

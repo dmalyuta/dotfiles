@@ -29,6 +29,7 @@
     (package-install 'use-package))
   (eval-when-compile
     (require 'use-package))
+  (setq personal-keybindings) ;; so that byte compiler does not complain about void-variable
 
 ;;;;;;;;;;;;;;;;; EMACS BUILT-IN
 
@@ -39,7 +40,8 @@
     (("C-<left>" . windmove-left)
      ("C-<right>" . windmove-right)
      ("C-<up>" . windmove-up)
-     ("C-<down>" . windmove-down)))
+     ("C-<down>" . windmove-down))
+    )
 
   (use-package buffer-menu
     ;; show all current buffers
@@ -459,6 +461,18 @@
     ;; A minor mode for Emacs which displays strings representing colors with the color they represent as background
     :ensure t)
 
+  (use-package auto-compile
+    ;; Provides two minor modes which automatically recompile Emacs Lisp source files. Together these modes guarantee that Emacs never loads outdated byte code files.
+    :ensure t
+    :config
+    ;;; init.el --- user init file      -*- no-byte-compile: t -*-
+    (setq load-prefer-newer t)
+    (package-initialize)
+    (require 'auto-compile)
+    (auto-compile-on-load-mode)
+    (auto-compile-on-save-mode)
+    )
+
 ;;;;;;;;;;;;;;;;; PERSONAL PACKAGES
 
   (use-package c-block-comment
@@ -764,4 +778,12 @@
        (define-key term-raw-map [M-right] 'my-term-send-m-right)
        (define-key term-raw-map [M-left] 'my-term-send-m-left)
        ))
+
+  ;; byte-compilation for performance boost
+  (defun byte-compile-init-dir ()
+    "Byte-compile all your dotfiles."
+    (interactive)
+    (byte-recompile-file "~/.emacs.d/init.el" nil 0) ;; byte-compile init file
+    (byte-recompile-directory "~/.emacs.d/lisp" 0) ;; byte-compile personal custom lisp code
+    )
 )

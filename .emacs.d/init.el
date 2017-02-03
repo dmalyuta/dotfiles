@@ -36,10 +36,10 @@
     ;; move cursor between windows
     :demand
     :bind
-    (("C-s-b" . windmove-left)
-     ("C-s-f" . windmove-right)
-     ("C-s-p" . windmove-up)
-     ("C-s-n" . windmove-down)))
+    (("C-<left>" . windmove-left)
+     ("C-<right>" . windmove-right)
+     ("C-<up>" . windmove-up)
+     ("C-<down>" . windmove-down)))
 
   (use-package buffer-menu
     ;; show all current buffers

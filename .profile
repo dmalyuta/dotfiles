@@ -45,3 +45,6 @@ fi
 # if [ -f ~/.local.bashrc ]; then
 #     . ~/.local.bashrc
 # fi
+
+export EDITOR=$(type -P emacs || type -P nano)
+export VISUAL=$EDITOR

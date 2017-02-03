@@ -40,8 +40,7 @@
     (("C-<left>" . windmove-left)
      ("C-<right>" . windmove-right)
      ("C-<up>" . windmove-up)
-     ("C-<down>" . windmove-down))
-    )
+     ("C-<down>" . windmove-down)))
 
   (use-package buffer-menu
     ;; show all current buffers
@@ -640,6 +639,12 @@
        (define-key term-raw-map (kbd "M-x") 'nil)
        (define-key term-raw-map (kbd "M-&") 'nil)
        (define-key term-raw-map (kbd "M-!") 'nil)
+
+       ;; make sure window movement keys are not captured by terminal
+       (define-key term-raw-map (kbd "C-<left>") 'nil)
+       (define-key term-raw-map (kbd "C-<right>") 'nil)
+       (define-key term-raw-map (kbd "C-<up>") 'nil)
+       (define-key term-raw-map (kbd "C-<down>") 'nil)
 
        ;; make sure C-c t e launches a new ansi-term buffer when current
        ;; buffer is also ansi-term

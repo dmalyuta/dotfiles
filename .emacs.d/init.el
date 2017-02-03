@@ -651,8 +651,6 @@
        (define-key term-raw-map (kbd "C-c t e") 'nil)
        
        ;; move by whole words fix
-       (define-key term-raw-map (kbd "C-<right>") 'term-send-Cright)
-       (define-key term-raw-map (kbd "C-<left>") 'term-send-Cleft)
        (defun term-send-Cright () (interactive) (term-send-raw-string "\e[1;5C"))
        (defun term-send-Cleft  () (interactive) (term-send-raw-string "\e[1;5D"))
        (defun term-send-Mbackspace () (interactive)(term-send-raw-string "\e\d"))

@@ -29,7 +29,7 @@
     (package-install 'use-package))
   (eval-when-compile
     (require 'use-package))
-  (setq personal-keybindings) ;; so that byte compiler does not complain about void-variable
+  (setq personal-keybindings ()) ;; so that byte compiler does not complain about void-variable
 
 ;;;;;;;;;;;;;;;;; EMACS BUILT-IN
 

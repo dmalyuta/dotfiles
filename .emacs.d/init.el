@@ -75,16 +75,27 @@
 
 ;;;;;;;;;;;;;;;;; MELPA PACKAGES
 
-  (if (display-graphic-p)
-      ;; use custom theme only if Emacs run in GUI mode (and not 'emacs -nw')
-      (use-package zenburn-theme
-	;; the best theme there is!
-	:ensure t
-	:config
-	(load-theme 'zenburn t)
-	;; stylize the mode line
-	(set-face-attribute 'mode-line nil :box nil)
-	(set-face-attribute 'mode-line-inactive nil :box nil)))
+  (use-package material-theme
+    ;; Custom theme, only used in GUI mode (i.e. not for 'emacs -nw')
+    :ensure t
+    :if window-system ;; load only when GUI
+    :config
+    (load-theme 'material t)
+    ;; stylize the mode line
+    (set-face-attribute 'mode-line nil :box nil)
+    (set-face-attribute 'mode-line-inactive nil :box nil))
+
+  ;; (if (display-graphic-p)
+  ;;     ;; use custom theme only if Emacs run in GUI mode (and not 'emacs -nw')
+  ;; (use-package zenburn-theme
+  ;;   ;; the best theme there is!
+  ;;   :ensure t
+  ;;   :config
+  ;;   (load-theme 'zenburn t)
+  ;;   ;; stylize the mode line
+  ;;   (set-face-attribute 'mode-line nil :box nil)
+  ;;   (set-face-attribute 'mode-line-inactive nil :box nil))
+  ;;   )
 
   (use-package dired+
     ;; advanced Dired functionality
@@ -790,3 +801,29 @@
     (byte-recompile-directory "~/.emacs.d/lisp" 0) ;; byte-compile personal custom lisp code
     )
 )
+(custom-set-variables
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(Man-notify-method (quote pushy))
+ '(ecb-auto-expand-tag-tree (quote expand-spec))
+ '(ecb-auto-expand-tag-tree-collapse-other nil)
+ '(ecb-highlight-tag-with-point (quote highlight-scroll))
+ '(ecb-highlight-tag-with-point-delay 0.25)
+ '(ecb-layout-window-sizes
+   (quote
+    (("left11"
+      (ecb-methods-buffer-name 0.17901234567901234 . 0.7)
+      (ecb-history-buffer-name 0.17901234567901234 . 0.275)))))
+ '(ecb-options-version "2.50")
+ '(package-selected-packages
+   (quote
+    (material-theme auto-compile rainbow-mode ecb realgud wgrep-helm wgrep multiple-cursors srefactor nyan-mode google-c-style yaml-mode mic-paren pdf-tools auctex helm-projectile projectile helm-ros helm-gtags helm-swoop helm company-irony-c-headers company-irony flycheck-irony irony company flycheck dired+ zenburn-theme use-package))))
+(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(ecb-default-highlight-face ((((class color) (background dark)) (:background "yellow" :foreground "black"))))
+ '(ecb-tag-header-face ((((class color) (background dark)) (:background "yellow" :foreground "black")))))

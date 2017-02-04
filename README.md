@@ -51,7 +51,8 @@ When you open Emacs for the first time, all required packages will be automatica
 ## Known issues
 
  1. In case weird errors come up in the first run of Emacs when all packages are being auto-installed, just restart Emacs - the error will go away and the auto-installation will proceed.
- 3. For Ubuntu 14.04: an error may be thrown during installation is `apt-get update` fails due to a "Hash Sum mismatch". The solution is to run `sudo rm -vf /var/lib/apt/lists/* && sudo apt-get clean && sudo apt-get update` (possible several times until the "Hash Sum mismatch" warning disappears), then running the installation script again.
+ 2. For Ubuntu 14.04: an error may be thrown during installation is `apt-get update` fails due to a "Hash Sum mismatch". The solution is to run `sudo rm -vf /var/lib/apt/lists/* && sudo apt-get clean && sudo apt-get update` (possible several times until the "Hash Sum mismatch" warning disappears), then running the installation script again.
+ 3. If you have "package not found" error when `use-package` auto-installs packages for Emacs, execute `M-x package-refresh-contents` and restart Emacs. This should make the error go away.
 
 ## TODO
 

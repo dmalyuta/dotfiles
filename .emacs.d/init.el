@@ -1,16 +1,5 @@
-(let ((gc-cons-threshold most-positive-fixnum)
+(let ((gc-cons-threshold most-positive-fixnum) ;; better garbage collection
       (file-name-handler-alist nil))
-  ;; better garbage collection
-  ;; http://bling.github.io/blog/2016/01/18/why-are-you-changing-gc-cons-threshold/
-  (defun my-minibuffer-setup-hook ()
-    (setq gc-cons-threshold most-positive-fixnum))
-
-  (defun my-minibuffer-exit-hook ()
-    (setq gc-cons-threshold 800000))
-
-  (add-hook 'minibuffer-setup-hook #'my-minibuffer-setup-hook)
-  (add-hook 'minibuffer-exit-hook #'my-minibuffer-exit-hook)
-
   ;; sensible GUI
   (menu-bar-mode -1)  ;; disable menubar
   (tool-bar-mode -1) ;; disable toolbar
@@ -85,17 +74,15 @@
     (set-face-attribute 'mode-line nil :box nil)
     (set-face-attribute 'mode-line-inactive nil :box nil))
 
-  ;; (if (display-graphic-p)
-  ;;     ;; use custom theme only if Emacs run in GUI mode (and not 'emacs -nw')
   ;; (use-package zenburn-theme
   ;;   ;; the best theme there is!
   ;;   :ensure t
+  ;;   :if window-system ;; load only when GUI
   ;;   :config
   ;;   (load-theme 'zenburn t)
   ;;   ;; stylize the mode line
   ;;   (set-face-attribute 'mode-line nil :box nil)
   ;;   (set-face-attribute 'mode-line-inactive nil :box nil))
-  ;;   )
 
   (use-package dired+
     ;; advanced Dired functionality
@@ -179,7 +166,9 @@
       (add-hook 'irony-mode-hook 'company-irony-setup-begin-commands)
       (eval-after-load 'company '(add-to-list 'company-backends 'company-irony))
       :config
-      (setq company-idle-delay 0))
+      (setq company-idle-delay 0.05)
+      (setq company-async-timeout 10) ;; set timeout to 10 seconds
+      )
     ;; enable C/C++ header completion
     (use-package company-irony-c-headers
       :ensure t
@@ -651,12 +640,6 @@
        (define-key term-raw-map (kbd "M-&") 'nil)
        (define-key term-raw-map (kbd "M-!") 'nil)
 
-       ;; make sure window movement keys are not captured by terminal
-       (define-key term-raw-map (kbd "C-<left>") 'nil)
-       (define-key term-raw-map (kbd "C-<right>") 'nil)
-       (define-key term-raw-map (kbd "C-<up>") 'nil)
-       (define-key term-raw-map (kbd "C-<down>") 'nil)
-
        ;; make sure C-c t e launches a new ansi-term buffer when current
        ;; buffer is also ansi-term
        (define-key term-raw-map (kbd "C-c t e") 'nil)
@@ -699,6 +682,13 @@
 
        ;; max history (# lines) to keep (0 == keep everything)
        (setq term-buffer-maximum-size 50000)))
+  ;; make sure window movement keys are not captured by terminal
+  (add-hook 'term-mode-hook
+	    (lambda ()
+	      (define-key term-raw-map (kbd "C-<up>") 'nil)
+	      (define-key term-raw-map (kbd "C-<down>") 'nil)
+	      (define-key term-raw-map (kbd "C-<left>") 'nil)
+	      (define-key term-raw-map (kbd "C-<right>") 'nil)))
 
   ;; fix Semantic package issue of uncompressing/parsing tons of .eg.gz
   ;; files when editing certain buffers (primarily Emacs-Lisp, but also

@@ -64,6 +64,12 @@
 
 ;;;;;;;;;;;;;;;;; MELPA PACKAGES
 
+  (use-package rainbow-delimiters
+    ;; highlights delimiters such as parentheses, brackets or braces according to their depth.
+    :ensure t
+    :config
+    (add-hook 'prog-mode-hook #'rainbow-delimiters-mode))
+
   (use-package material-theme
     ;; Custom theme, only used in GUI mode (i.e. not for 'emacs -nw')
     :ensure t
@@ -418,7 +424,7 @@
     ;;       Way 2: Do grep on certain files of your choice using M-x rgrep
     ;;    2) In the grep buffer, active wgrep with "C-c C-p"
     ;;    3) Rename whatever you want by editing the names (e.g. use replace-string or multiple-curscors (see above))
-    ;;    4) "C-c C-e" to save changes to "C-c C-k" to discard changes of "C-x C-q" to exit wgrep
+    ;;    4) "C-c C-e" to save changes or "C-c C-k" to discard changes or "C-x C-q" to exit wgrep
     ;;       and prompt whether to save changes
     :ensure t
     :config
@@ -809,7 +815,7 @@
  '(ecb-options-version "2.50")
  '(package-selected-packages
    (quote
-    (material-theme auto-compile rainbow-mode ecb realgud wgrep-helm wgrep multiple-cursors srefactor nyan-mode google-c-style yaml-mode mic-paren pdf-tools auctex helm-projectile projectile helm-ros helm-gtags helm-swoop helm company-irony-c-headers company-irony flycheck-irony irony company flycheck dired+ zenburn-theme use-package))))
+    (rainbow-delimiters material-theme auto-compile rainbow-mode ecb realgud wgrep-helm wgrep multiple-cursors srefactor nyan-mode google-c-style yaml-mode mic-paren pdf-tools auctex helm-projectile projectile helm-ros helm-gtags helm-swoop helm company-irony-c-headers company-irony flycheck-irony irony company flycheck dired+ zenburn-theme use-package))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.

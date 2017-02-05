@@ -24,14 +24,11 @@ if program_not_installed "emacs"; then
 	# install dependencies
 	runcmd "apt-get --assume-yes build-dep emacs24" nonull
 
-	# download source, build and install Emacs 24.5.1
-	wget_targz_install "emacs-24.5" "http://ftp.gnu.org/gnu/emacs/emacs-24.5.tar.gz"
+	# download source, build and install Emacs 25.1
+	wget_targz_install "emacs-25.1" "https://ftp.gnu.org/gnu/emacs/emacs-25.1.tar.gz"
     else
 	# install emacs with apt-get install
 	apt_get_install_pkg emacs
-
-	# add alias to bash to start Emacs as fast as vim!
-	runcmd "eval builtin echo \"alias em='emacs'\" >> ${home}/.bashrc" nonull
     fi
 fi
 

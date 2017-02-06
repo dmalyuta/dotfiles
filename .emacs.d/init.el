@@ -680,6 +680,9 @@
     '(progn
        ;; rename buffer
        (define-key term-raw-map (kbd "C-c r") 'rename-buffer)
+
+       ;; unbind C-z, which minimizes current frame
+       (define-key term-raw-map (kbd "C-z") 'nil)
        
        ;; make sure typical key combos work in term-char-mode
        (define-key term-raw-map (kbd "M-x") 'nil)

@@ -99,27 +99,28 @@
     ;; highlights delimiters such as parentheses, brackets or braces according to their depth.
     :ensure t
     :config
-    (add-hook 'prog-mode-hook #'rainbow-delimiters-mode))
+    (require 'rainbow-delimiters)
+    (add-hook 'prog-mode-hook 'rainbow-delimiters-mode))
 
-  (use-package material-theme
-    ;; Custom theme, only used in GUI mode (i.e. not for 'emacs -nw')
-    :ensure t
-    :if window-system ;; load only when GUI
-    :config
-    (load-theme 'material t)
-    ;; stylize the mode line
-    (set-face-attribute 'mode-line nil :box nil)
-    (set-face-attribute 'mode-line-inactive nil :box nil))
-
-  ;; (use-package zenburn-theme
-  ;;   ;; the best theme there is!
+  ;; (use-package material-theme
+  ;;   ;; Custom theme, only used in GUI mode (i.e. not for 'emacs -nw')
   ;;   :ensure t
   ;;   :if window-system ;; load only when GUI
   ;;   :config
-  ;;   (load-theme 'zenburn t)
+  ;;   (load-theme 'material t)
   ;;   ;; stylize the mode line
   ;;   (set-face-attribute 'mode-line nil :box nil)
   ;;   (set-face-attribute 'mode-line-inactive nil :box nil))
+
+  (use-package zenburn-theme
+    ;; the best theme there is!
+    :ensure t
+    :if window-system ;; load only when GUI
+    :config
+    (load-theme 'zenburn t)
+    ;; stylize the mode line
+    (set-face-attribute 'mode-line nil :box nil)
+    (set-face-attribute 'mode-line-inactive nil :box nil))
 
   (use-package dired+
     ;; advanced Dired functionality
@@ -509,6 +510,14 @@
     (auto-compile-on-save-mode)
     )
 
+  ;; (use-package smart-mode-line
+  ;;   ;; A sexy mode-line for Emacs. It aims to be easy to read from small to large monitors by using colors, a prefix feature, and smart truncation.
+  ;;   :ensure t
+  ;;   :config
+  ;;   (setq sml/no-confirm-load-theme t)
+  ;;   ;;(setq sml/theme 'dark)
+  ;;   (sml/setup))
+
 ;;;;;;;;;;;;;;;;; PERSONAL PACKAGES
 
   (use-package c-block-comment
@@ -827,30 +836,14 @@
     (byte-recompile-file "~/.emacs.d/init.el" nil 0) ;; byte-compile init file
     (byte-recompile-directory "~/.emacs.d/lisp" 0) ;; byte-compile personal custom lisp code
     )
+
+  ;; Open ROS .msg, .srv and .action files in gdb-script-mode for syntax highlighting
+  (add-to-list 'auto-mode-alist '("\\.msg\\'" . gdb-script-mode))
+  (add-to-list 'auto-mode-alist '("\\.srv\\'" . gdb-script-mode))
+  (add-to-list 'auto-mode-alist '("\\.action\\'" . gdb-script-mode))
+
+  ;; Highlight matching parentheses
+  (require 'paren)
+  (show-paren-mode 1)
+  (setq show-paren-delay 0)
 )
-(custom-set-variables
- ;; custom-set-variables was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(Man-notify-method (quote pushy))
- '(ecb-auto-expand-tag-tree (quote expand-spec))
- '(ecb-auto-expand-tag-tree-collapse-other nil)
- '(ecb-highlight-tag-with-point (quote highlight-scroll))
- '(ecb-highlight-tag-with-point-delay 0.25)
- '(ecb-layout-window-sizes
-   (quote
-    (("left11"
-      (ecb-methods-buffer-name 0.17901234567901234 . 0.7)
-      (ecb-history-buffer-name 0.17901234567901234 . 0.275)))))
- '(ecb-options-version "2.50")
- '(package-selected-packages
-   (quote
-    (rainbow-delimiters material-theme auto-compile rainbow-mode ecb realgud wgrep-helm wgrep multiple-cursors srefactor nyan-mode google-c-style yaml-mode mic-paren pdf-tools auctex helm-projectile projectile helm-ros helm-gtags helm-swoop helm company-irony-c-headers company-irony flycheck-irony irony company flycheck dired+ zenburn-theme use-package))))
-(custom-set-faces
- ;; custom-set-faces was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(ecb-default-highlight-face ((((class color) (background dark)) (:background "yellow" :foreground "black"))))
- '(ecb-tag-header-face ((((class color) (background dark)) (:background "yellow" :foreground "black")))))

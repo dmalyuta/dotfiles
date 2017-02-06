@@ -26,6 +26,13 @@ parse_ssh() {
 }
 export PS1="$(parse_ssh)\u \[\033[32m\]\w\[\033[1;31m\]\$(parse_return_code)\[\033[0;33m\]\$(parse_git_branch)\[\033[00m\] $ "
 
+# Terminator title settings with set_title <TITLE>
+set_title() {
+    ORIG=$PS1
+    TITLE="\e]2;$*\a"
+    PS1=${ORIG}${TITLE}
+}
+
 # ROS setup
 if [ -f "/opt/ros/indigo/setup.bash" ]; then
     . /opt/ros/indigo/setup.bash

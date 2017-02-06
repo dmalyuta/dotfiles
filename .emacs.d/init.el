@@ -847,29 +847,3 @@
   (show-paren-mode 1)
   (setq show-paren-delay 0)
 )
-(custom-set-variables
- ;; custom-set-variables was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(Man-notify-method (quote pushy))
- '(ecb-auto-expand-tag-tree (quote expand-spec))
- '(ecb-auto-expand-tag-tree-collapse-other nil)
- '(ecb-highlight-tag-with-point (quote highlight-scroll))
- '(ecb-highlight-tag-with-point-delay 0.25)
- '(ecb-layout-window-sizes
-   (quote
-    (("left11"
-      (ecb-methods-buffer-name 0.17901234567901234 . 0.7)
-      (ecb-history-buffer-name 0.17901234567901234 . 0.275)))))
- '(ecb-options-version "2.50")
- '(package-selected-packages
-   (quote
-    (rainbow-delimiters sr-speedbar zenburn-theme yaml-mode wgrep-helm use-package srefactor realgud rainbow-mode pdf-tools nyan-mode multiple-cursors mic-paren helm-swoop helm-ros helm-projectile helm-gtags google-c-style flycheck-irony ecb dired+ company-irony-c-headers company-irony auto-compile auctex))))
-(custom-set-faces
- ;; custom-set-faces was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(ecb-default-highlight-face ((((class color) (background dark)) (:background "yellow" :foreground "black"))))
- '(ecb-tag-header-face ((((class color) (background dark)) (:background "yellow" :foreground "black")))))

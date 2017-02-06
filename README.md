@@ -8,7 +8,7 @@ A set of dotfiles and a setup script to hit the ground running on a vanilla Ubun
 
 ## Features
 
-* [Emacs 24.5](https://www.gnu.org/software/emacs/), configured for C/C++ and LaTeX
+* [Emacs 25.1](https://www.gnu.org/software/emacs/), configured for C/C++ and LaTeX
 * Custom bash prompt showing the current user, current directory, non-zero exit code of last command and current Git branch
 * [Automated backup](https://github.com/danyloM/dotfiles/blob/master/.bin/make_snapshot.sh) using `rsync`, `cron` and `anacron` with support for grandfather-father-son backup scheme
 * [Google Chrome](https://www.google.com/chrome/) web browser

@@ -1,5 +1,16 @@
-(let ((gc-cons-threshold most-positive-fixnum) ;; better garbage collection
+(let ((gc-cons-threshold most-positive-fixnum)
       (file-name-handler-alist nil))
+  ;; better garbage collection
+  ;; http://bling.github.io/blog/2016/01/18/why-are-you-changing-gc-cons-threshold/
+  (defun my-minibuffer-setup-hook ()
+    (setq gc-cons-threshold most-positive-fixnum))
+
+  (defun my-minibuffer-exit-hook ()
+    (setq gc-cons-threshold 800000))
+
+  (add-hook 'minibuffer-setup-hook #'my-minibuffer-setup-hook)
+  (add-hook 'minibuffer-exit-hook #'my-minibuffer-exit-hook)
+
   ;; sensible GUI
   (menu-bar-mode -1)  ;; disable menubar
   (tool-bar-mode -1) ;; disable toolbar
@@ -18,7 +29,7 @@
     (package-install 'use-package))
   (eval-when-compile
     (require 'use-package))
-  (setq personal-keybindings ()) ;; so that byte compiler does not complain about void-variable
+  (setq personal-keybindings) ;; so that byte compiler does not complain about void-variable
 
 ;;;;;;;;;;;;;;;;; EMACS BUILT-IN
 
@@ -54,73 +65,26 @@
     :config
     (require 'cc-mode)
     ;; Semantic
-    ;; Useful commands:
-    ;;   M-x company-semantic
-    ;;   M-x semantic-ia-complete-symbol
     (require 'semantic)
+    (semantic-mode 1)
     (global-semanticdb-minor-mode 1)
     (global-semantic-idle-scheduler-mode 1)
-    (semantic-mode 1)
-    (add-hook 'c-mode-hook (lambda () (global-semantic-idle-summary-mode 1)))
-    (add-hook 'c++-mode-hook (lambda () (global-semantic-idle-summary-mode 1)))
-    (semantic-add-system-include "/usr/include/boost")
-    (semantic-add-system-include "/usr/include/eigen3")
-    (semantic-add-system-include "/usr/include/pcl-1.7/")
-    ;; SpeedBar
-    (use-package sr-speedbar
-      ;; Show speedbar in the same frame
-      :ensure t
-      :if window-system ;; only use in GUI
-      :demand
-      :bind
-      (("C-c C-s" . sr-speedbar-toggle)
-       :map c-mode-base-map
-	    ("C-c C-s" . sr-speedbar-toggle))
-      :config
-      (require 'sr-speedbar)
-      (setq sr-speedbar-width 30)
-      (setq sr-speedbar-right-side nil)
-      ;;(sr-speedbar-open)
-      (defun sb-expand-curren-file ()
-	"Expand current file in speedbar buffer"  
-	(interactive)
-	(setq current-file (buffer-file-name))
-	(sr-speedbar-refresh)
-	(switch-to-buffer-other-frame "*SPEEDBAR*")
-	(speedbar-find-selected-file current-file)
-	(speedbar-expand-line))
-      )
-    (which-function-mode 1) ;; show which function the cursor is in
+    ;; (add-hook 'c-mode-hook (lambda () (global-semantic-idle-summary-mode 1)))
+    ;; (add-hook 'c++-mode-hook (lambda () (global-semantic-idle-summary-mode 0)))
     )
 
 ;;;;;;;;;;;;;;;;; MELPA PACKAGES
 
-  (use-package rainbow-delimiters
-    ;; highlights delimiters such as parentheses, brackets or braces according to their depth.
-    :ensure t
-    :config
-    (require 'rainbow-delimiters)
-    (add-hook 'prog-mode-hook 'rainbow-delimiters-mode))
-
-  ;; (use-package material-theme
-  ;;   ;; Custom theme, only used in GUI mode (i.e. not for 'emacs -nw')
-  ;;   :ensure t
-  ;;   :if window-system ;; load only when GUI
-  ;;   :config
-  ;;   (load-theme 'material t)
-  ;;   ;; stylize the mode line
-  ;;   (set-face-attribute 'mode-line nil :box nil)
-  ;;   (set-face-attribute 'mode-line-inactive nil :box nil))
-
-  (use-package zenburn-theme
-    ;; the best theme there is!
-    :ensure t
-    :if window-system ;; load only when GUI
-    :config
-    (load-theme 'zenburn t)
-    ;; stylize the mode line
-    (set-face-attribute 'mode-line nil :box nil)
-    (set-face-attribute 'mode-line-inactive nil :box nil))
+  (if (display-graphic-p)
+      ;; use custom theme only if Emacs run in GUI mode (and not 'emacs -nw')
+      (use-package zenburn-theme
+	;; the best theme there is!
+	:ensure t
+	:config
+	(load-theme 'zenburn t)
+	;; stylize the mode line
+	(set-face-attribute 'mode-line nil :box nil)
+	(set-face-attribute 'mode-line-inactive nil :box nil)))
 
   (use-package dired+
     ;; advanced Dired functionality
@@ -163,7 +127,9 @@
     (add-hook 'c-mode-common-hook 'company-mode)
     (add-hook 'emacs-lisp-mode-hook 'company-mode)
     :config
-    ;;(setq company-backends (delete 'company-semantic company-backends))
+    (setq company-backends (delete 'company-semantic company-backends))
+    (setq company-async-timeout 10) ;; set completion timeout to 10 seconds
+    (setq company-dabbrev-downcase 0)
     ;; use C++11 by default
     (require 'cc-mode)
     (set 'company-clang-arguments (list "-std=c++11")))
@@ -205,8 +171,7 @@
       (eval-after-load 'company '(add-to-list 'company-backends 'company-irony))
       :config
       (setq company-idle-delay 0.05)
-      (setq company-async-timeout 10) ;; set timeout to 10 seconds
-      )
+      (setq process-adaptive-read-buffering nil))
     ;; enable C/C++ header completion
     (use-package company-irony-c-headers
       :ensure t
@@ -456,7 +421,7 @@
     ;;       Way 2: Do grep on certain files of your choice using M-x rgrep
     ;;    2) In the grep buffer, active wgrep with "C-c C-p"
     ;;    3) Rename whatever you want by editing the names (e.g. use replace-string or multiple-curscors (see above))
-    ;;    4) "C-c C-e" to save changes or "C-c C-k" to discard changes or "C-x C-q" to exit wgrep
+    ;;    4) "C-c C-e" to save changes to "C-c C-k" to discard changes of "C-x C-q" to exit wgrep
     ;;       and prompt whether to save changes
     :ensure t
     :config
@@ -509,14 +474,6 @@
     (auto-compile-on-load-mode)
     (auto-compile-on-save-mode)
     )
-
-  ;; (use-package smart-mode-line
-  ;;   ;; A sexy mode-line for Emacs. It aims to be easy to read from small to large monitors by using colors, a prefix feature, and smart truncation.
-  ;;   :ensure t
-  ;;   :config
-  ;;   (setq sml/no-confirm-load-theme t)
-  ;;   ;;(setq sml/theme 'dark)
-  ;;   (sml/setup))
 
 ;;;;;;;;;;;;;;;;; PERSONAL PACKAGES
 
@@ -686,6 +643,12 @@
        (define-key term-raw-map (kbd "M-&") 'nil)
        (define-key term-raw-map (kbd "M-!") 'nil)
 
+       ;; make sure window movement keys are not captured by terminal
+       (define-key term-raw-map (kbd "C-<left>") 'nil)
+       (define-key term-raw-map (kbd "C-<right>") 'nil)
+       (define-key term-raw-map (kbd "C-<up>") 'nil)
+       (define-key term-raw-map (kbd "C-<down>") 'nil)
+
        ;; make sure C-c t e launches a new ansi-term buffer when current
        ;; buffer is also ansi-term
        (define-key term-raw-map (kbd "C-c t e") 'nil)
@@ -728,13 +691,6 @@
 
        ;; max history (# lines) to keep (0 == keep everything)
        (setq term-buffer-maximum-size 50000)))
-  ;; make sure window movement keys are not captured by terminal
-  (add-hook 'term-mode-hook
-	    (lambda ()
-	      (define-key term-raw-map (kbd "C-<up>") 'nil)
-	      (define-key term-raw-map (kbd "C-<down>") 'nil)
-	      (define-key term-raw-map (kbd "C-<left>") 'nil)
-	      (define-key term-raw-map (kbd "C-<right>") 'nil)))
 
   ;; fix Semantic package issue of uncompressing/parsing tons of .eg.gz
   ;; files when editing certain buffers (primarily Emacs-Lisp, but also
@@ -837,39 +793,8 @@
     (byte-recompile-directory "~/.emacs.d/lisp" 0) ;; byte-compile personal custom lisp code
     )
 
-  ;; Open ROS .msg, .srv and .action files in gdb-script-mode for syntax highlighting
-  (add-to-list 'auto-mode-alist '("\\.msg\\'" . gdb-script-mode))
-  (add-to-list 'auto-mode-alist '("\\.srv\\'" . gdb-script-mode))
-  (add-to-list 'auto-mode-alist '("\\.action\\'" . gdb-script-mode))
-
-  ;; Highlight matching parentheses
-  (require 'paren)
-  (show-paren-mode 1)
-  (setq show-paren-delay 0)
+  ;; disable backtrace buffer occasionally popping up
+  (setq debug-on-error nil)
+  (setq debug-on-quit nil)
+  (setq inhibit-debugger t)
 )
-(custom-set-variables
- ;; custom-set-variables was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(Man-notify-method (quote pushy))
- '(ecb-auto-expand-tag-tree (quote expand-spec))
- '(ecb-auto-expand-tag-tree-collapse-other nil)
- '(ecb-highlight-tag-with-point (quote highlight-scroll))
- '(ecb-highlight-tag-with-point-delay 0.25)
- '(ecb-layout-window-sizes
-   (quote
-    (("left11"
-      (ecb-methods-buffer-name 0.17901234567901234 . 0.7)
-      (ecb-history-buffer-name 0.17901234567901234 . 0.275)))))
- '(ecb-options-version "2.50")
- '(package-selected-packages
-   (quote
-    (rainbow-delimiters sr-speedbar zenburn-theme yaml-mode wgrep-helm use-package srefactor realgud rainbow-mode pdf-tools nyan-mode multiple-cursors mic-paren helm-swoop helm-ros helm-projectile helm-gtags google-c-style flycheck-irony ecb dired+ company-irony-c-headers company-irony auto-compile auctex))))
-(custom-set-faces
- ;; custom-set-faces was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(ecb-default-highlight-face ((((class color) (background dark)) (:background "yellow" :foreground "black"))))
- '(ecb-tag-header-face ((((class color) (background dark)) (:background "yellow" :foreground "black")))))

@@ -3,7 +3,7 @@
 #
 # Verify and update symlinks of $HOME dotfiles to this Git
 # repository's dotfiles. Use-case: use has moved the this Git
-# repoistory's folder to a different folder, now symlinks of $HOME
+# repository's folder to a different folder, now symlinks of $HOME
 # dotfiles are broken
 #
 # ----------------------------------------------------------------------
@@ -54,11 +54,6 @@ make_symlink ".local.bashrc" "$dir" "$home" $symlink
 ########## .bin directory
 
 make_symlink ".bin" "$dir" "$home" $symlink
-
-########## Emacs
-
-make_symlink ".emacs.d/init.el" "$dir" "$home" $symlink
-make_symlink ".emacs.d/lisp" "$dir" "$home" $symlink
 
 ########## Terminator
 

@@ -2,8 +2,7 @@
 # ----------------------------------------------------------------------
 #
 # Install script for setting up my working environment on a new Linux
-# computer. Tested with: Linux Mint 18 MATE 64-bit. Works also for
-# existing installations.
+# computer.
 #
 # ----------------------------------------------------------------------
 
@@ -14,17 +13,13 @@
 programs_list=(
     "home_dotfiles"
     "bin"
-    "emacs"
     "terminator"
-    "chrome"
-    "foxit"
 )
 
 # associated dotfile dependencies for each program
 
 dependencies_home_dotfiles=(".profile" ".bash_aliases" ".local.bashrc")
 dependencies_bin=(".bin")
-dependencies_emacs=(".emacs.d/init.el" ".emacs.d/lisp")
 dependencies_terminator=(".config/terminator/config")
 
 # question to ask user when determining which programs to install
@@ -32,10 +27,7 @@ dependencies_terminator=(".config/terminator/config")
 declare -A dotfiles_prompt
 dotfiles_prompt["${programs_list[0]}"]="Do you want to install the dotfiles that go in $HOME directory [Yn]? "
 dotfiles_prompt["${programs_list[1]}"]="Do you want to install the .bin directory [Yn]? "
-dotfiles_prompt["${programs_list[2]}"]="Do you want to install Emacs [Yn]? "
-dotfiles_prompt["${programs_list[3]}"]="Do you want to install the terminator terminal [Yn]? "
-dotfiles_prompt["${programs_list[4]}"]="Do you want to install Google Chrome [Yn]? "
-dotfiles_prompt["${programs_list[5]}"]="Do you want to install Foxit PDF Reader [Yn]? "
+dotfiles_prompt["${programs_list[2]}"]="Do you want to install the terminator terminal [Yn]? "
 
 ########## global variables
 
@@ -165,21 +157,9 @@ do
     copy_foo "$foo" "$dir" "$home" $symlink
 done
 
-########## Emacs
-
-install_program "emacs" .setup/install_emacs.sh
-
-########## terminator (terminal)
+########## Installation: terminator (terminal)
 
 install_program "terminator" .setup/install_terminator.sh
-
-########## Google Chrome
-
-install_program "chrome" .setup/install_chrome.sh
-
-########## Foxit PDF Reader
-
-install_program "foxit" .setup/install_foxit.sh
 
 ########## closing actions
 

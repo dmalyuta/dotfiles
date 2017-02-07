@@ -44,3 +44,8 @@ fi
 # export ROS_HOSTNAME=<local_IP_address (AAA.BBB.C.DDD)>
 # export ROS_IP=<local_IP_address (AAA.BBB.C.DDD)>
 # export ROS_MASTER_URI=<master_URI (http://EEE.FFF.H.III:JKLMN)>
+
+# Private bashrc file
+if [ -f ~/.local.bashrc.private ]; then
+    . ~/.local.bashrc.private
+fi

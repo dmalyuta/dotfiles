@@ -9,3 +9,8 @@ alias rm='rm -i'
 
 # Emacs
 alias em='emacs -nw'
+
+# JetBrains products
+alias clion='clion.sh & &>/dev/null'
+alias pycharm='pycharm.sh & &>/dev/null'
+alias idea='idea.sh & &>/dev/null'

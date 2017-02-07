@@ -20,6 +20,20 @@ if [ -d ~/.bin ]; then
     PATH="${HOME}/.bin:$PATH"
 fi
 
+# add other things to PATH
+if [ -d ~/.jetbrains/clion-2016.3.2/bin ]; then
+    # Add CLion IDE to PATH
+    PATH="${HOME}/.jetbrains/clion-2016.3.2/bin:$PATH"
+fi
+if [ -d ~/.jetbrains/pycharm-2016.3.2/bin ]; then
+    # Add PyCharm IDE to PATH
+    PATH="${HOME}/.jetbrains/pycharm-2016.3.2/bin:$PATH"
+fi
+if [ -d ~/.jetbrains/idea-IU-163.12024.16/bin ]; then
+    # Add IntelliJ IDEA IDE to PATH
+    PATH="${HOME}/.jetbrains/idea-IU-163.12024.16/bin:$PATH"
+fi
+
 # Emacs ansi-term directory tracking
 # if [ "$TERM" = eterm-color ]; then
 #     function eterm-set-cwd {

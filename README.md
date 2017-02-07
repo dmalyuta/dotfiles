@@ -2,17 +2,25 @@
 
 ## Description
 
-A set of dotfiles and a setup script to hit the ground running on a vanilla Ubuntu-based Linux installation for C/C++ developers. The objective is to have a no-questions-asked, robust and fully automated way of taking you from a fresh install to a fully configured system on which you can immediately get to work.
-
-![screenshot](http://i.imgur.com/2tAtrGW.jpg)
+A set of dotfiles and a setup script for dotfiles from my Ubuntu Linux home directory. This is a way of keeping my dotfiles in sync across computers.
 
 ## Features
 
-* [Emacs 25.1](https://www.gnu.org/software/emacs/), configured for C/C++ and LaTeX
 * Custom bash prompt showing the current user, current directory, non-zero exit code of last command and current Git branch
-* [Automated backup](https://github.com/danyloM/dotfiles/blob/master/.bin/make_snapshot.sh) using `rsync`, `cron` and `anacron` with support for grandfather-father-son backup scheme
-* [Google Chrome](https://www.google.com/chrome/) web browser
-* [Foxit Reader](https://www.foxitsoftware.com/products/pdf-reader/) software for standards-compliant reading and annotation of PDFs
+* [Automated backup](https://github.com/dmalyuta/dotfiles/blob/master/.bin/make_snapshot.sh) using `rsync`, `cron` and `anacron` with support for grandfather-father-son backup scheme
+
+### Recommended software
+
+Other software I'm using, but which this repository does not install:
+
+* C/C++ development: [CLion](https://www.jetbrains.com/clion/)
+* Python development: [PyCharm](https://www.jetbrains.com/pycharm/)
+* Java development: [IntelliJ IDEA](https://www.jetbrains.com/idea)
+* R development: [RStudio](https://www.rstudio.com/)
+* Scientific computing: [MATLAB](https://www.mathworks.com/products/matlab.html) and [Mathematica](https://www.wolfram.com/mathematica/)
+* Version control and file sharing: [Dropbox](https://www.dropbox.com/login) and [Git](https://git-scm.com/)
+* Web browsing: [Google Chrome](https://www.google.com/chrome/)
+* PDF reading/editing: [Foxit Reader](https://www.foxitsoftware.com/products/pdf-reader/)
 
 ## Contributing
 
@@ -24,7 +32,7 @@ If you are having problems, please submit an issue - I will respond right away!
 
 ### Requirements
 
-You should be running a Ubuntu-based Linux operating system. You can run the installation either on a completely fresh or an already used OS. You should also be connected to the Internet throughout the installation, since the install script downloads a few files. Note that the script is smart enough to backup any existing dotfiles to a directory `~/dotfile_backup_ddmmYYYY_THHMMSS/` (where the second half of the folder name is the current date and time) before overwriting any dotfile with one from this repository.
+You should be running a Ubuntu-based Linux operating system. You can run the installation either on a completely fresh or an already used OS. Note that the script is smart enough to backup any existing dotfiles to a directory `~/dotfile_backup_ddmmYYYY_THHMMSS/` (where the second half of the folder name is the current date and time) before overwriting any dotfile with one from this repository.
 
 ### Supported Distributions
 
@@ -35,7 +43,7 @@ Other distributions may work, but I did not explicitly test them yet. If you try
 
 ### Instructions
 
-1. Clone this repository into any directory `DIR` you wish with `git clone https://github.com/danyloM/dotfiles DIR`;
+1. Clone this repository into any directory `DIR` you wish with `git clone https://github.com/dmalyuta/dotfiles DIR`;
 2. Move into `DIR` with `cd DIR`;
 3. To view a dry-run simulation of the installation (without actually doing anything), use `sudo ./setup_new_machine.sh -d`. Note that since folders aren't copied or moved in this simulation, you will see some "couldn't find folder" warnings that will not be present in the actual installation;
 4. If you wish to have your dotfiles symlinked to this Git repo's dotfiles (such that you can auto-update your dotfiles via `git pull`), install with `sudo ./setup_new_machine.sh -s`. Otherwise, install with `sudo ./setup_new_machine.sh`. The install script will prompt you for what specific parts of this repository you want to install and will give you instructions when manual work is needed (such as during the Foxit PDF Reader installation, if you choose to install it). The aim is to safely deploy this repository partially or fully to your computer. You are recommended to reboot after the installation is finished. If any errors come up and the installation halts, fix them and simply run the installation again.
@@ -44,15 +52,11 @@ Other distributions may work, but I did not explicitly test them yet. If you try
 
 > **Advice**: to build confidence in the install script's functionality for your specific OS, use the dry-run option and/or install a copy of you OS in [VirtualBox](https://www.virtualbox.org/wiki/Downloads) and run the full installation there.
 
-Note that the automated backup solution needs you to configure `cron` and `anacron` manually. See the starting comment block of the [backup script](https://github.com/danyloM/dotfiles/blob/master/.bin/make_snapshot.sh) to learn how. It would not be good to automate this step as it should be your choice on how, if at all, to run backups.
-
-When you open Emacs for the first time, all required packages will be automatically downloaded thanks to [use-package](https://github.com/jwiegley/use-package). You will need to run `M-x irony-install-server` after opening a C/C++ file for the very first time inside Emacs.
+Note that the automated backup solution needs you to configure `cron` and `anacron` manually. See the starting comment block of the [backup script](https://github.com/dmalyuta/dotfiles/blob/master/.bin/make_snapshot.sh) to learn how. It would not be good to automate this step as it should be your choice on how, if at all, to run backups.
 
 ## Known issues
 
- 1. In case weird errors come up in the first run of Emacs when all packages are being auto-installed, just restart Emacs - the error will go away and the auto-installation will proceed.
- 2. For Ubuntu 14.04: an error may be thrown during installation is `apt-get update` fails due to a "Hash Sum mismatch". The solution is to run `sudo rm -vf /var/lib/apt/lists/* && sudo apt-get clean && sudo apt-get update` (possible several times until the "Hash Sum mismatch" warning disappears), then running the installation script again.
- 3. If you have "package not found" error when `use-package` auto-installs packages for Emacs, execute `M-x package-refresh-contents` and restart Emacs. This should make the error go away.
+ 1. For Ubuntu 14.04: an error may be thrown during installation is `apt-get update` fails due to a "Hash Sum mismatch". The solution is to run `sudo rm -vf /var/lib/apt/lists/* && sudo apt-get clean && sudo apt-get update` (possible several times until the "Hash Sum mismatch" warning disappears), then running the installation script again.
 
 ## TODO
 
@@ -61,6 +65,6 @@ When you open Emacs for the first time, all required packages will be automatica
 
 ## License
 
-The code is available under the [MIT license](https://github.com/danyloM/dotfiles/blob/master/LICENSE).
+The code is available under the [MIT license](https://github.com/dmalyuta/dotfiles/blob/master/LICENSE).
 
 Everything here is put with the best of my intentions. I am not a lawyer, however, so if there are any legal issues with parts of this repository please submit an issue and I will correct the problem!

@@ -163,10 +163,12 @@
     (add-hook 'c-mode-common-hook 'company-mode)
     (add-hook 'emacs-lisp-mode-hook 'company-mode)
     :config
+    (setq company-async-timeout 10) ;; set timeout to 10 seconds
     ;;(setq company-backends (delete 'company-semantic company-backends))
     ;; use C++11 by default
-    (require 'cc-mode)
-    (set 'company-clang-arguments (list "-std=c++11")))
+    ;; (require 'cc-mode)
+    ;; (set 'company-clang-arguments (list "-std=c++11"))
+    )
 
   (use-package irony
     ;; asynchronous capabilities (improces C/C++ editing experience)
@@ -203,9 +205,8 @@
       :init
       (add-hook 'irony-mode-hook 'company-irony-setup-begin-commands)
       (eval-after-load 'company '(add-to-list 'company-backends 'company-irony))
-      :config
-      (setq company-idle-delay 0.05)
-      (setq company-async-timeout 10) ;; set timeout to 10 seconds
+      ;; :config
+      ;; (setq company-idle-delay 0.05)
       )
     ;; enable C/C++ header completion
     (use-package company-irony-c-headers
@@ -517,6 +518,23 @@
   ;;   (setq sml/no-confirm-load-theme t)
   ;;   ;;(setq sml/theme 'dark)
   ;;   (sml/setup))
+
+  (use-package ess
+    ;; ESS (Emacs Speaks Statistics)
+    ;; for R language (and others...)
+    ;; Useful keyboard commands:
+    ;;   M-x R : start the R process in an (inferior) buffer
+    ;;   TAB : completion at point
+    ;;   C-c C-v <NAME> : get documentation about NAME
+    :ensure t
+    :config
+    (require 'ess-site)
+    (add-to-list 'auto-mode-alist '("\\.R$" . R-mode))
+    (add-to-list 'auto-mode-alist '("\\.r$" . R-mode))
+    (use-package ess-R-data-view
+      :ensure t
+      )
+    )
 
 ;;;;;;;;;;;;;;;;; PERSONAL PACKAGES
 
@@ -845,8 +863,37 @@
   (add-to-list 'auto-mode-alist '("\\.srv\\'" . gdb-script-mode))
   (add-to-list 'auto-mode-alist '("\\.action\\'" . gdb-script-mode))
 
+  ;; Enable C++ mode by default for .h header files
+  (add-to-list 'auto-mode-alist '("\\.h\\'" . c++-mode))
+
   ;; Highlight matching parentheses
   (require 'paren)
   (show-paren-mode 1)
   (setq show-paren-delay 0)
 )
+(custom-set-variables
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(Man-notify-method (quote pushy))
+ '(ecb-auto-expand-tag-tree (quote expand-spec))
+ '(ecb-auto-expand-tag-tree-collapse-other nil)
+ '(ecb-highlight-tag-with-point (quote highlight-scroll))
+ '(ecb-highlight-tag-with-point-delay 0.25)
+ '(ecb-layout-window-sizes
+   (quote
+    (("left11"
+      (ecb-methods-buffer-name 0.17901234567901234 . 0.7)
+      (ecb-history-buffer-name 0.17901234567901234 . 0.275)))))
+ '(ecb-options-version "2.50")
+ '(package-selected-packages
+   (quote
+    (ess-R-data-view zenburn-theme yaml-mode wgrep-helm use-package srefactor sr-speedbar realgud rainbow-mode rainbow-delimiters pdf-tools nyan-mode multiple-cursors mic-paren helm-swoop helm-ros helm-projectile helm-gtags google-c-style flycheck-irony ess ecb dired+ company-irony-c-headers company-irony auto-compile auctex))))
+(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(ecb-default-highlight-face ((((class color) (background dark)) (:background "yellow" :foreground "black"))))
+ '(ecb-tag-header-face ((((class color) (background dark)) (:background "yellow" :foreground "black")))))

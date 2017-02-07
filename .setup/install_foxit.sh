@@ -105,7 +105,7 @@ if program_not_installed "FoxitReader"; then
 
 	    # give ownership of Foxit PDF Reader to the normal user
 	    foxit_base_install_dir="$(dirname "$fxplugins_dir")"
-	    runcmd "chown -R ${SUDO_USER}:${SUDO_USER} $foxit_base_install_dir"
+	    runcmd "eval chown -R ${SUDO_USER}:${SUDO_USER} $foxit_base_install_dir"
 	else
 	    echoerr "Failed to disable Foxit PDF Reader's cloud tools. Beware: these may consume a lot of CPU! You are advised to remove them."
 	    echoerr "Failed to give ownership of Foxit PDF Reader to the normal user. You have to manually run \`sudo chown -R ${SUDO_USER}:${SUDO_USER} <foxit reader install directory>\` to make the program work normally."

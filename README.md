@@ -13,12 +13,13 @@ A set of dotfiles and a setup script for dotfiles from my Ubuntu Linux home dire
 
 Other software I'm using, but which this repository does not install:
 
-* C/C++ development: [CLion](https://www.jetbrains.com/clion/)
+* C/C++ development: [CLion](https://www.jetbrains.com/clion/), [Eclipse CDT](http://www.eclipse.org/cdt/)
 * Python development: [PyCharm](https://www.jetbrains.com/pycharm/)
 * Java development: [IntelliJ IDEA](https://www.jetbrains.com/idea)
 * R development: [RStudio](https://www.rstudio.com/)
 * Scientific computing: [MATLAB](https://www.mathworks.com/products/matlab.html) and [Mathematica](https://www.wolfram.com/mathematica/)
-* Version control and file sharing: [Dropbox](https://www.dropbox.com/login) and [Git](https://git-scm.com/)
+* Version control and file sharing: [Git](https://git-scm.com/) and [Dropbox](https://www.dropbox.com/login)
+* LaTeX publishing: [TeXlipse](http://texlipse.sourceforge.net/)
 * Web browsing: [Google Chrome](https://www.google.com/chrome/)
 * PDF reading/editing: [Foxit Reader](https://www.foxitsoftware.com/products/pdf-reader/)
 

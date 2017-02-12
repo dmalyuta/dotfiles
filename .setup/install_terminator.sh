@@ -31,4 +31,7 @@ if $source_local_bashrc; then
     runcmd "eval builtin echo \"fi\" >> ${home}/.bashrc" nonull
 fi
 
+# Fix Unity bug that Ctrl-Alt-T creates a new icon in the Unity Dash
+runcmd "gsettings set org.gnome.desktop.default-applications.terminal exec 'terminator'"
+
 echo_prefix="$echo_prefix_temp"

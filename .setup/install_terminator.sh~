@@ -15,7 +15,7 @@ echo_prefix_temp="$echo_prefix"
 echo_prefix="[terminator setup] "
 
 # install terminator
-runcmd "sudo add-apt-repository ppa:gnome-terminator -y"
+runcmd "sudo add-apt-repository --assume-yes ppa:gnome-terminator"
 runcmd "apt-get update"
 apt_get_install_pkg terminator
 

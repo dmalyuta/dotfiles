@@ -47,17 +47,33 @@ done
 
 ########## dotfiles that go into $HOME directory
 
-make_symlink ".profile" "$dir" "$home" $symlink
-make_symlink ".bash_aliases" "$dir" "$home" $symlink
-make_symlink ".local.bashrc" "$dir" "$home" $symlink
+if [ -e "${home}/.profile" ]; then
+    make_symlink ".profile" "$dir" "$home" $symlink
+fi
+if [ -e "${home}/.bash_aliases" ]; then
+    make_symlink ".bash_aliases" "$dir" "$home" $symlink
+fi
+if [ -e "${home}/.local.bashrc" ]; then
+    make_symlink ".local.bashrc" "$dir" "$home" $symlink
+fi
 
 ########## .bin directory
 
-make_symlink ".bin" "$dir" "$home" $symlink
+if [ -e "${home}/.bin" ]; then
+    make_symlink ".bin" "$dir" "$home" $symlink
+fi
 
 ########## Terminator
 
-make_symlink ".config/terminator/config" "$dir" "$home" $symlink
+if [ -e "${home}/.config/terminator/config" ]; then
+    make_symlink ".config/terminator/config" "$dir" "$home" $symlink
+fi
+
+########## JetBrains IDE settings
+
+if [ -e "${home}/.jetbrains/settings" ]; then
+    make_symlink ".jetbrains/settings" "$dir" "$home" $symlink
+fi
 
 ########## closing actions
 

@@ -10,6 +10,7 @@ A set of dotfiles and a setup script for dotfiles from my Ubuntu Linux home dire
 * Personalized `.bashrc` and `.profile` files
 * Personalized [Terminator](https://launchpad.net/terminator) (multiple window terminal emulator)
 * [Automated backup](https://github.com/dmalyuta/dotfiles/blob/master/.bin/make_snapshot.sh) using `rsync`, `cron` and `anacron` with support for grandfather-father-son backup scheme
+* Personalized settings for the JetBrains IDEs (CLion in particular, but others should also work).
 
 ### Recommended software
 
@@ -56,6 +57,8 @@ Other distributions may work, but I did not explicitly test them yet. If you try
 > **Advice**: to build confidence in the install script's functionality for your specific OS, use the dry-run option and/or install a copy of you OS in [VirtualBox](https://www.virtualbox.org/wiki/Downloads) and run the full installation there.
 
 Note that the automated backup solution needs you to configure `cron` and `anacron` manually. See the starting comment block of the [backup script](https://github.com/dmalyuta/dotfiles/blob/master/.bin/make_snapshot.sh) to learn how. It would not be good to automate this step as it should be your choice on how, if at all, to run backups.
+
+Finally, settings syncing across JetBrains IDEs can be automated via the [Settings Repository](https://github.com/develar/settings-repository) plugin by installing it in the IDEs and pointing it to the `DIR/.jetbrains/settings` folder.
 
 ## Known issues
 

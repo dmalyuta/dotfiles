@@ -1,14 +1,15 @@
 [global_config]
   suppress_multiple_term_dialog = True
 [keybindings]
+  edit_window_title = <Primary>t
   next_tab = <Alt>Right
   go_up = <Primary>Up
   group_tab = <Alt>t
   paste = <Primary>v
-  move_tab_left = <Primary><Alt>Left
+  move_tab_left = <Shift><Alt>Left
   close_window = <Shift><Alt>q
   split_horiz = <Alt>h
-  move_tab_right = <Primary><Alt>Right
+  move_tab_right = <Shift><Alt>Right
   prev_tab = <Alt>Left
   go_down = <Primary>Down
   close_term = <Alt>w

@@ -104,6 +104,7 @@ make_symlink()
     fi
     destination_version_parent_dir="$(dirname "$destination_version")"
     makefolder "$destination_version_parent_dir"
+    runcmd "eval rm -rf \"${destination_version}\""
     if $do_symlink; then
 	# create a symlink in destination, instead of copying
         if $symlink_individual_files ; then

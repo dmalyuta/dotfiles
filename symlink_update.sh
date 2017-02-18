@@ -72,7 +72,7 @@ fi
 ########## JetBrains IDE settings
 
 if [ -e "${home}/.jetbrains/settings" ]; then
-    make_symlink ".jetbrains/settings" "$dir" "$home" $symlink
+    make_symlink ".jetbrains/settings" "$dir" "$home" $symlink false
 fi
 
 ########## closing actions

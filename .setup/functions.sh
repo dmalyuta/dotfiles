@@ -91,6 +91,7 @@ make_symlink()
     local origin="$2"
     local destination="$3"
     local do_symlink=$4 # whether to copy or create symlink
+    local symlink_individual_files=$5 # whether to symlink directory or files in directory (default when omitted: true, i.e. symlink files in directory)
     
     origin_version="${origin}/$name"
     destination_version="${destination}/$name"
@@ -105,7 +106,12 @@ make_symlink()
     makefolder "$destination_version_parent_dir"
     if $do_symlink; then
 	# create a symlink in destination, instead of copying
-	runcmd "eval /bin/cp -asrf --remove-destination \"$origin_version\" \"${destination_version_parent_dir}\""
+        if $symlink_individual_files ; then
+	    runcmd "eval /bin/cp -asrf --remove-destination \"$origin_version\" \"${destination_version_parent_dir}\""
+        else
+            # symlink the whole directory
+            runcmd "eval ln -s \"$origin_version\" \"${destination_version}\""
+        fi
 	# make sure permissions are set to the user's (and not to root)
 	runcmd "eval chown -R ${SUDO_USER:-$USER}:${SUDO_USER:-$USER} \"${destination_version}\""
     else
@@ -122,6 +128,7 @@ copy_foo()
     local origin="$2" # origin directory
     local destination="$3" # destination directory
     local do_symlink=$4 # whether to copy or create symlink
+    local symlink_individual_files=$5 # whether to symlink directory or files in directory (default when omitted: true, i.e. symlink files in directory)
 
     local origin_foo="${origin}/$foo"
     local destination_foo="${destination}/$foo"
@@ -134,7 +141,7 @@ copy_foo()
 	    runcmd "rm -rf $destination_foo"
 	fi
 	# copy or symlink the git file to the place in $HOME
-	make_symlink "$foo" "$origin" "$destination" $do_symlink
+	make_symlink "$foo" "$origin" "$destination" $do_symlink $symlink_individual_files
     else
 	echoerr "couldn't find $git_foo"
 	exit 1

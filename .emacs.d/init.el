@@ -66,8 +66,8 @@
     (global-semanticdb-minor-mode 1)
     (global-semantic-idle-scheduler-mode 1)
     (semantic-mode 1)
-    (add-hook 'c-mode-hook (lambda () (global-semantic-idle-summary-mode 1)))
-    (add-hook 'c++-mode-hook (lambda () (global-semantic-idle-summary-mode 1)))
+    ;;(add-hook 'c-mode-hook (lambda () (global-semantic-idle-summary-mode 1)))
+    ;;(add-hook 'c++-mode-hook (lambda () (global-semantic-idle-summary-mode 1)))
     (semantic-add-system-include "/usr/include/boost")
     (semantic-add-system-include "/usr/include/eigen3")
     (semantic-add-system-include "/usr/include/pcl-1.7/")
@@ -905,30 +905,11 @@
   (require 'paren)
   (show-paren-mode 1)
   (setq show-paren-delay 0)
+
+  ;; Highlight comments like TODO
+  (add-hook 'c-mode-common-hook
+	    (lambda ()
+	      (font-lock-add-keywords nil
+				      '(("\\<\\(FIXME\\|TODO\\|BUG\\):" 1 font-lock-warning-face t)))))
+  
 )
-(custom-set-variables
- ;; custom-set-variables was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(Man-notify-method (quote pushy))
- '(ecb-auto-expand-tag-tree (quote expand-spec))
- '(ecb-auto-expand-tag-tree-collapse-other nil)
- '(ecb-highlight-tag-with-point (quote highlight-scroll))
- '(ecb-highlight-tag-with-point-delay 0.25)
- '(ecb-layout-window-sizes
-   (quote
-    (("left11"
-      (ecb-methods-buffer-name 0.17901234567901234 . 0.7)
-      (ecb-history-buffer-name 0.17901234567901234 . 0.275)))))
- '(ecb-options-version "2.50")
- '(package-selected-packages
-   (quote
-    (flycheck-ycmd zenburn-theme yaml-mode wgrep-helm use-package srefactor sr-speedbar realgud rainbow-mode rainbow-delimiters pdf-tools nyan-mode multiple-cursors mic-paren helm-swoop helm-ros helm-projectile helm-gtags google-c-style flycheck-irony ess-R-data-view ecb dired+ company-ycmd company-irony-c-headers company-irony auto-compile auctex))))
-(custom-set-faces
- ;; custom-set-faces was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(ecb-default-highlight-face ((((class color) (background dark)) (:background "yellow" :foreground "black"))))
- '(ecb-tag-header-face ((((class color) (background dark)) (:background "yellow" :foreground "black")))))

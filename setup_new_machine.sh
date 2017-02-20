@@ -15,6 +15,7 @@ programs_list=(
     "bin"
     "terminator"
     "jetbrains"
+    "emacs"
 )
 
 # associated dotfile dependencies for each program
@@ -23,6 +24,7 @@ dependencies_home_dotfiles=(".profile" ".bash_aliases" ".local.bashrc")
 dependencies_bin=(".bin")
 dependencies_terminator=(".config/terminator/config")
 dependencies_jetbrains=(".jetbrains/settings")
+dependencies_emacs=(".emacs.d/init.el" ".emacs.d/lisp")
 
 # question to ask user when determining which programs to install
 
@@ -31,6 +33,7 @@ dotfiles_prompt["${programs_list[0]}"]="Do you want to install the dotfiles that
 dotfiles_prompt["${programs_list[1]}"]="Do you want to install the .bin directory [Yn]? "
 dotfiles_prompt["${programs_list[2]}"]="Do you want to install the terminator terminal [Yn]? "
 dotfiles_prompt["${programs_list[3]}"]="Do you want to install the JetBrains IDE settings [Yn]? "
+dotfiles_prompt["${programs_list[4]}"]="Do you want to install Emacs [Yn]? "
 
 ########## global variables
 
@@ -164,6 +167,10 @@ do
         copy_foo "$foo" "$dir" "$home" $symlink
     fi
 done
+
+########## Emacs
+
+install_program "emacs" .setup/install_emacs.sh
 
 ########## Installation: terminator (terminal)
 

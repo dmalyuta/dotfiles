@@ -14,3 +14,12 @@ alias em='emacs -nw'
 alias clion='clion.sh & &>/dev/null'
 alias pycharm='pycharm.sh & &>/dev/null'
 alias idea='idea.sh & &>/dev/null'
+
+# Clipboard
+alias copy='xargs echo -n | xclip -selection clipboard'
+
+# ROS stuff
+alias catkin_make_debug='catkin_make -DCMAKE_BUILD_TYPE=Debug'
+alias catkin_make_release='catkin_make -DCMAKE_BUILD_TYPE=Release'
+alias catkin_make_release_debug='catkin_make -DCMAKE_BUILD_TYPE=RelWithDebInfo'
+

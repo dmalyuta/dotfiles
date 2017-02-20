@@ -11,12 +11,13 @@ A set of dotfiles and a setup script for dotfiles from my Ubuntu Linux home dire
 * Personalized [Terminator](https://launchpad.net/terminator) (multiple window terminal emulator)
 * [Automated backup](https://github.com/dmalyuta/dotfiles/blob/master/.bin/make_snapshot.sh) using `rsync`, `cron` and `anacron` with support for grandfather-father-son backup scheme
 * Personalized settings for the JetBrains IDEs (CLion in particular, but others should also work).
+* Emacs 24.5
 
 ### Recommended software
 
 Other software I'm using, but which this repository does not install:
 
-* C/C++ development: [CLion](https://www.jetbrains.com/clion/), [Eclipse CDT](http://www.eclipse.org/cdt/)
+* C/C++ development: [CLion](https://www.jetbrains.com/clion/), [Eclipse CDT](http://www.eclipse.org/cdt/), [Emacs 24.5](https://www.gnu.org/software/emacs/)
 * Python development: [PyCharm](https://www.jetbrains.com/pycharm/)
 * Java development: [IntelliJ IDEA](https://www.jetbrains.com/idea)
 * R development: [RStudio](https://www.rstudio.com/)
@@ -63,6 +64,7 @@ Finally, settings syncing across JetBrains IDEs can be automated via the [Settin
 ## Known issues
 
  1. For Ubuntu 14.04: an error may be thrown during installation is `apt-get update` fails due to a "Hash Sum mismatch". The solution is to run `sudo rm -vf /var/lib/apt/lists/* && sudo apt-get clean && sudo apt-get update` (possible several times until the "Hash Sum mismatch" warning disappears), then running the installation script again.
+ 2. If there are any errors during Emacs package auto-install (when you open Emacs for the first time), restarting Emacs solves every issue I've encountered so far.
 
 ## TODO
 

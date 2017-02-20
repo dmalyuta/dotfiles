@@ -5,6 +5,11 @@
   (tool-bar-mode -1) ;; disable toolbar
   (toggle-scroll-bar -1) ;; disable scrollbar
 
+  ;; Comint unset C-up C-down
+  (global-unset-key (kbd "C-<up>"))
+  (global-unset-key (kbd "C-<down>"))
+
+
   ;; MELPA
   (require 'package)
   (setq package-enable-at-startup nil)
@@ -30,7 +35,7 @@
      ("C-<right>" . windmove-right)
      ("C-<up>" . windmove-up)
      ("C-<down>" . windmove-down)))
-
+  
   (use-package buffer-menu
     ;; show all current buffers
     :init
@@ -170,71 +175,71 @@
     ;; (set 'company-clang-arguments (list "-std=c++11"))
     )
 
-  (use-package ycmd
-    :ensure t
-    :config
-    (require 'ycmd)
-    (add-hook 'after-init-hook #'global-ycmd-mode)
-    (set-variable 'ycmd-server-command '("python" "/home/danylo/Downloads/ycmd/ycmd"))
-    (use-package company-ycmd
-      ;; company (autocompletion)
-      :ensure t
-      :config
-      (require 'company-ycmd)
-      (company-ycmd-setup)
-      )
-    (use-package flycheck-ycmd
-      ;; flycheck (syntax highlighting)
-      :ensure t
-      :config
-      (require 'flycheck-ycmd)
-      (flycheck-ycmd-setup)
-      )
-    )
-
-  ;; (use-package irony
-  ;;   ;; asynchronous capabilities (improces C/C++ editing experience)
-  ;;   ;; Linux Mint:
-  ;;   ;;  sudo apt-get install g++ clang libclang-dev
-  ;;   ;;  M-x irony-install-server # when in c-mode or c++-mode
+  ;; (use-package ycmd
   ;;   :ensure t
-  ;;   :defer t
-  ;;   :init
-  ;;   (add-hook 'c-mode-common-hook 'irony-mode)
   ;;   :config
-  ;;   ;; replace completion-at-point and complete-symbol by irony-mode's asynchronous functions
-  ;;   (defun my-irony-mode-hook ()
-  ;;     (define-key irony-mode-map [remap completion-at-point]
-  ;; 	'irony-completion-at-point-async)
-  ;;     (define-key irony-mode-map [remap complete-symbol]
-  ;; 	'irony-completion-at-point-async))
-  ;;   (add-hook 'irony-mode-hook 'my-irony-mode-hook)
-  ;;   (add-hook 'irony-mode-hook 'irony-cdb-autosetup-compile-options)
-  ;;   (setq irony-additional-clang-options '(;; use C++11
-  ;; 					   "-std=c++11"))
-  ;;   ;; additional include paths
-  ;;   ;;					 "-I/home/danylo/catkin_ws/devel/include/"
-  ;;   ;;					 "-I/opt/ros/kinetic/include/"))
-  ;;   ;; asynchronous code linting
-  ;;   (use-package flycheck-irony
+  ;;   (require 'ycmd)
+  ;;   (add-hook 'after-init-hook #'global-ycmd-mode)
+  ;;   (set-variable 'ycmd-server-command '("python" "/home/danylo/Downloads/ycmd/ycmd"))
+  ;;   (use-package company-ycmd
+  ;;     ;; company (autocompletion)
   ;;     :ensure t
   ;;     :config
-  ;;     ;; Enable Irony for Flycheck
-  ;;     (eval-after-load 'flycheck '(add-hook 'flycheck-mode-hook #'flycheck-irony-setup)))
-  ;;   ;; asynchronous completion
-  ;;   (use-package company-irony
-  ;;     :ensure t
-  ;;     :init
-  ;;     (add-hook 'irony-mode-hook 'company-irony-setup-begin-commands)
-  ;;     (eval-after-load 'company '(add-to-list 'company-backends 'company-irony))
-  ;;     ;; :config
-  ;;     ;; (setq company-idle-delay 0.05)
+  ;;     (require 'company-ycmd)
+  ;;     (company-ycmd-setup)
   ;;     )
-  ;;   ;; enable C/C++ header completion
-  ;;   (use-package company-irony-c-headers
+  ;;   (use-package flycheck-ycmd
+  ;;     ;; flycheck (syntax highlighting)
   ;;     :ensure t
   ;;     :config
-  ;;     (eval-after-load 'company '(add-to-list 'company-backends '(company-irony-c-headers company-irony)))))
+  ;;     (require 'flycheck-ycmd)
+  ;;     (flycheck-ycmd-setup)
+  ;;     )
+  ;;   )
+
+  (use-package irony
+    ;; asynchronous capabilities (improces C/C++ editing experience)
+    ;; Linux Mint:
+    ;;  sudo apt-get install g++ clang libclang-dev
+    ;;  M-x irony-install-server # when in c-mode or c++-mode
+    :ensure t
+    :defer t
+    :init
+    (add-hook 'c-mode-common-hook 'irony-mode)
+    :config
+    ;; replace completion-at-point and complete-symbol by irony-mode's asynchronous functions
+    (defun my-irony-mode-hook ()
+      (define-key irony-mode-map [remap completion-at-point]
+  	'irony-completion-at-point-async)
+      (define-key irony-mode-map [remap complete-symbol]
+  	'irony-completion-at-point-async))
+    (add-hook 'irony-mode-hook 'my-irony-mode-hook)
+    (add-hook 'irony-mode-hook 'irony-cdb-autosetup-compile-options)
+    (setq irony-additional-clang-options '(;; use C++11
+  					   "-std=c++11"))
+    ;; additional include paths
+    ;;					 "-I/home/danylo/catkin_ws/devel/include/"
+    ;;					 "-I/opt/ros/kinetic/include/"))
+    ;; asynchronous code linting
+    (use-package flycheck-irony
+      :ensure t
+      :config
+      ;; Enable Irony for Flycheck
+      (eval-after-load 'flycheck '(add-hook 'flycheck-mode-hook #'flycheck-irony-setup)))
+    ;; asynchronous completion
+    (use-package company-irony
+      :ensure t
+      :init
+      (add-hook 'irony-mode-hook 'company-irony-setup-begin-commands)
+      (eval-after-load 'company '(add-to-list 'company-backends 'company-irony))
+      ;; :config
+      ;; (setq company-idle-delay 0.05)
+      )
+    ;; enable C/C++ header completion
+    (use-package company-irony-c-headers
+      :ensure t
+      :config
+      (eval-after-load 'company '(add-to-list 'company-backends '(company-irony-c-headers company-irony)))))
 
   (use-package helm
     ;; incremental completion and selection narrowing framework
@@ -778,6 +783,14 @@
 	      (define-key term-raw-map (kbd "C-<down>") 'nil)
 	      (define-key term-raw-map (kbd "C-<left>") 'nil)
 	      (define-key term-raw-map (kbd "C-<right>") 'nil)))
+
+  ;; make sure window movement keys are not captured by GUD's comint
+  (add-hook 'comint-mode-hook
+	    (lambda ()
+	      (define-key comint-mode-map (kbd "C-<up>") 'nil)
+	      (define-key comint-mode-map (kbd "C-<down>") 'nil)
+	      (define-key comint-mode-map (kbd "C-<left>") 'nil)
+	      (define-key comint-mode-map (kbd "C-<right>") 'nil)))
 
   ;; fix Semantic package issue of uncompressing/parsing tons of .eg.gz
   ;; files when editing certain buffers (primarily Emacs-Lisp, but also

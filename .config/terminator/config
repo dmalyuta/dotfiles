@@ -1,34 +1,29 @@
 [global_config]
   suppress_multiple_term_dialog = True
 [keybindings]
-  edit_window_title = <Primary>t
-  next_tab = <Alt>Right
-  go_up = <Primary>Up
-  group_tab = <Alt>t
-  paste = <Primary>v
-  move_tab_left = <Shift><Alt>Left
-  close_window = <Shift><Alt>q
-  split_horiz = <Alt>h
-  move_tab_right = <Shift><Alt>Right
-  prev_tab = <Alt>Left
-  go_down = <Primary>Down
   close_term = <Alt>w
-  split_vert = <Alt>v
-  go_right = <Primary>Right
-  go_left = <Primary>Left
-  ungroup_tab = <Shift><Alt>t
+  close_window = <Shift><Alt>q
   copy = <Primary>c
-  group_all = <Alt>g
-  ungroup_all = <Shift><Alt>g
-[profiles]
-  [[default]]
-    palette = "#000000:#cd0000:#00cd00:#cdcd00:#0000ee:#cd00cd:#00cdcd:#e5e5e5:#7f7f7f:#ff0000:#00ff00:#ffff00:#5c5cff:#ff00ff:#00ffff:#ffffff"
-    background_darkness = 0.88
-    background_type = transparent
-    background_image = None
-    foreground_color = "#839496"
-    background_color = "#002b36"
-    scrollback_infinite = True
+  edit_window_title = <Primary>t
+  go_down = <Primary>Down
+  go_left = <Primary>Left
+  go_right = <Primary>Right
+  go_up = <Primary>Up
+  group_all = <Primary>g
+  group_tab = <Primary>t
+  line_down = <Shift><Alt>Down
+  line_up = <Shift><Alt>Up
+  move_tab_left = <Shift><Alt>Left
+  move_tab_right = <Shift><Alt>Right
+  next_tab = <Alt>Right
+  page_down = Page_Down
+  page_up = Page_Up
+  paste = <Primary>v
+  prev_tab = <Alt>Left
+  split_horiz = <Alt>h
+  split_vert = <Alt>v
+  ungroup_all = <Shift>g
+  ungroup_tab = <Shift>t
 [layouts]
   [[default]]
     [[[child1]]]
@@ -38,3 +33,12 @@
       parent = ""
       type = Window
 [plugins]
+[profiles]
+  [[default]]
+    background_color = "#002b36"
+    background_darkness = 0.88
+    background_image = None
+    background_type = transparent
+    foreground_color = "#839496"
+    palette = "#000000:#cd0000:#00cd00:#cdcd00:#0000ee:#cd00cd:#00cdcd:#e5e5e5:#7f7f7f:#ff0000:#00ff00:#ffff00:#5c5cff:#ff00ff:#00ffff:#ffffff"
+    scrollback_infinite = True

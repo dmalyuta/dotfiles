@@ -19,10 +19,13 @@ alias idea='idea.sh & &>/dev/null'
 alias copy='xargs echo -n | xclip -selection clipboard'
 
 # Directory making
-now() { echo $(date "+%d%m%YT%H%M%S"); } # shortcut for timestamps
+now() { date "+%d%m%YT%H%M%S"; } # shortcut for timestamps
+
+# Grep contents of files in <dir> for <pattern>
+alias greptext='grep -rnw'
 
 # ROS stuff
 alias catkin_make_debug='catkin_make -DCMAKE_BUILD_TYPE=Debug'
 alias catkin_make_release='catkin_make -DCMAKE_BUILD_TYPE=Release'
 alias catkin_make_release_debug='catkin_make -DCMAKE_BUILD_TYPE=RelWithDebInfo'
-cmake_compile_commands_json='-DCMAKE_EXPORT_COMPILE_COMMANDS=ON'
+export CMake_compile_commands_json='-DCMAKE_EXPORT_COMPILE_COMMANDS=ON' # generate compile_commands.json for use with Emacs irony mode via 'M-x irony-cdb-json-add-compile-commands-path' (syntax check, autocompletion)

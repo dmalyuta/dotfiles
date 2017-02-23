@@ -637,11 +637,12 @@
   (when (fboundp 'winner-mode)
     (winner-mode 1))
 
-  ;; backup behaviour: store everything in single location
-  (setq backup-directory-alist '(("." . "~/.emacs.d/backups/")))
   ;;(setq backup-inhibited t) ;; disable backup
-  (setq backup-by-copying t) ;; make sure Emacs doesn't break hard links
   ;;(setq make-backup-files nil) ;; stop creating backup ~ files
+  (setq backup-by-copying t) ;; make sure Emacs doesn't break hard links
+  ;; backup behaviour: store everything in single location
+  (defvar backup-dir "~/.emacs.d/backups/")
+  (setq backup-directory-alist (list (cons "." backup-dir)))
 
   ;; do not truncate windows that are too narrow
   (setq truncate-partial-width-windows nil)
@@ -911,5 +912,19 @@
 	    (lambda ()
 	      (font-lock-add-keywords nil
 				      '(("\\<\\(FIXME\\|TODO\\|BUG\\):" 1 font-lock-warning-face t)))))
-  
+
+  ;; Rename current file and buffer
+  (defun rename-file-and-buffer ()
+    "Rename the current buffer and file it is visiting."
+    (interactive)
+    (let ((filename (buffer-file-name)))
+      (if (not (and filename (file-exists-p filename)))
+	  (message "Buffer is not visiting a file!")
+	(let ((new-name (read-file-name "New name: " filename)))
+	  (cond
+	   ((vc-backend filename) (vc-rename-file filename new-name))
+	   (t
+	    (rename-file filename new-name t)
+	    (set-visited-file-name new-name t t)))))))
+  (global-set-key (kbd "C-c f r")  'rename-file-and-buffer)
 )

@@ -22,8 +22,8 @@
   prev_tab = <Alt>Left
   split_horiz = <Alt>h
   split_vert = <Alt>v
-  ungroup_all = <Shift>g
-  ungroup_tab = <Shift>t
+  ungroup_all = F1
+  ungroup_tab = F2
 [layouts]
   [[default]]
     [[[child1]]]

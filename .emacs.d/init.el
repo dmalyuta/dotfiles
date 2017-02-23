@@ -563,6 +563,15 @@
       )
     )
 
+  (use-package markdown-mode
+    ;; Major mode for editing Markdown-formatted text
+    :ensure t
+    :commands (markdown-mode gfm-mode)
+    :mode (("README\\.md\\'" . gfm-mode)
+	   ("\\.md\\'" . markdown-mode)
+	   ("\\.markdown\\'" . markdown-mode))
+    :init (setq markdown-command "multimarkdown"))
+
 ;;;;;;;;;;;;;;;;; PERSONAL PACKAGES
 
   (use-package c-block-comment

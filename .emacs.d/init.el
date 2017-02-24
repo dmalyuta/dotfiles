@@ -633,6 +633,10 @@
     (add-to-list 'auto-mode-alist '("CMakeLists\\.txt\\'" . ros-cmake-mode))
     (autoload 'ros-cmake-mode "lisp/ros-cmake-mode.el" t))
 
+  (use-package gdb-setup
+    ;; customize GDB layout and functionality
+    :load-path "lisp/")
+
 ;;;;;;;;;;;;;;;;; OTHER STUFF
 
   ;; default font and font size
@@ -662,8 +666,6 @@
   (global-set-key (kbd "C-x t") 'display-local-help) ;; show tooltip
 
   (setq bookmark-save-flag 1) ; everytime bookmark is changed, automatically save it
-
-  (setq gdb-many-windows t) ;; run GDB with many windows view by default
 
   (setq gdb-non-stop-setting nil) ;; run GDB in all-stop mode by default (i.e. all threads stopped at breakpoint)
 
@@ -936,87 +938,5 @@
 	    (rename-file filename new-name t)
 	    (set-visited-file-name new-name t t)))))))
   (global-set-key (kbd "C-c f r")  'rename-file-and-buffer)
-
-  ;; Highlight current GDB line
-  (defvar gud-overlay
-    (let* ((ov (make-overlay (point-min) (point-min))))
-      (overlay-put ov 'face 'secondary-selection)
-      ov)
-    "Overlay variable for GUD highlighting.")
-
-  (defadvice gud-display-line (after my-gud-highlight act)
-    "Highlight current line."
-    (let* ((ov gud-overlay)
-	   (bf (gud-find-file true-file)))
-      (save-excursion
-	(set-buffer bf)
-	(move-overlay ov (line-beginning-position) (line-end-position)
-		      (current-buffer)))))
-  (defun gud-kill-buffer ()
-    (if (eq major-mode 'gud-mode)
-	(delete-overlay gud-overlay)))
-  (add-hook 'kill-buffer-hook 'gud-kill-buffer)
-
-  ;; GDB select different windows
-  ;; For the consistency of gdb-select-window's calling convention...
-  (defun gdb-comint-buffer-name ()
-    (buffer-name gud-comint-buffer))
-  (defun gdb-source-buffer-name ()
-    (buffer-name (window-buffer gdb-source-window)))
-
-  (defun gdb-select-window (header)
-    "Switch directly to the specified GDB window.
-Moves the cursor to the requested window, switching between
-`gdb-many-windows' \"tabs\" if necessary in order to get there.
-
-Recognized window header names are: 'comint, 'locals, 'registers,
-'stack, 'breakpoints, 'threads, and 'source."
-
-    (interactive "Sheader: ")
-
-    (let* ((header-alternate (case header
-			       ('locals      'registers)
-			       ('registers   'locals)
-			       ('breakpoints 'threads)
-			       ('threads     'breakpoints)))
-	   (buffer (intern (concat "gdb-" (symbol-name header) "-buffer")))
-	   (buffer-names (mapcar (lambda (header)
-				   (funcall (intern (concat "gdb-"
-							    (symbol-name header)
-							    "-buffer-name"))))
-				 (if (null header-alternate)
-				     (list header)
-				   (list header header-alternate))))
-	   (window (if (eql header 'source)
-		       gdb-source-window
-		     (or (get-buffer-window (car buffer-names))
-			 (when (not (null (cadr buffer-names)))
-			   (get-buffer-window (cadr buffer-names)))))))
-
-      (when (not (null window))
-	(let ((was-dedicated (window-dedicated-p window)))
-	  (select-window window)
-	  (set-window-dedicated-p window nil)
-	  (when (member header '(locals registers breakpoints threads))
-	    (switch-to-buffer (gdb-get-buffer-create buffer))
-	    (setq header-line-format (gdb-set-header buffer)))
-	  (set-window-dedicated-p window was-dedicated))
-	t)))
-
-  ;; Use global keybindings for the window selection functions so that they
-  ;; work from the source window too...
-  (mapcar (lambda (setting)
-	    (lexical-let ((key    (car setting))
-			  (header (cdr setting)))
-	      (global-set-key (concat "\C-c\C-g" key) #'(lambda ()
-							  (interactive)
-							  (gdb-select-window header)))))
-	  '(("c" . comint)
-	    ("l" . locals)
-	    ("r" . registers)
-	    ("u" . source)
-	    ("s" . stack)
-	    ("b" . breakpoints)
-	    ("t" . threads)))
   
 )

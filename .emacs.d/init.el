@@ -15,6 +15,7 @@
   (setq package-enable-at-startup nil)
   (setq package-check-signature nil)
   (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/"))
+  (add-to-list 'package-archives '("elpy" . "https://jorgenschaefer.github.io/packages/"))
   (package-initialize)
 
   ;; boostrap 'use-package'
@@ -167,6 +168,7 @@
     ;;(add-hook 'after-init-hook 'global-company-mode)
     (add-hook 'c-mode-common-hook 'company-mode)
     (add-hook 'emacs-lisp-mode-hook 'company-mode)
+    ;;(add-hook 'python-mode-hook 'company-mode)
     :config
     (setq company-async-timeout 10) ;; set timeout to 10 seconds
     ;;(setq company-backends (delete 'company-semantic company-backends))
@@ -174,6 +176,36 @@
     ;; (require 'cc-mode)
     ;; (set 'company-clang-arguments (list "-std=c++11"))
     )
+
+  ;; (use-package pyvenv
+  ;;   :ensure t)
+  
+  ;; (use-package elpy
+  ;;   :ensure t
+  ;;   :config
+  ;;   (elpy-enable)
+  ;;   )
+  
+  ;; (use-package company-jedi
+  ;;   ;; python auto-completion package for emacs. it aims at helping
+  ;;   ;; your python coding in a non-destructive way. it also helps
+  ;;   ;; you to find information about python objects, such as
+  ;;   ;; docstring, function arguments and code location.
+  ;;   :ensure t
+  ;;   :init
+  ;;   (add-hook 'python-mode-hook 'jedi-mode)
+  ;;   :demand
+  ;;   ;;:bind
+  ;;   ;;(:map python-mode-map
+  ;;   ;;      ("m-." . jedi:goto-definition)
+  ;;   ;;	    ("m-," . jedi:goto-definition-pop-marker))
+  ;;   :config
+  ;;   (defun my/python-mode-hook ()
+  ;;     (add-to-list 'company-backends '(company-jedi company-files)))
+  ;;   (add-hook 'python-mode-hook 'my/python-mode-hook)
+  ;;   (setq jedi:use-shortcuts t) ;; sets m-. for m-x jedi:goto-definition
+  ;;                               ;;      m-, for m-x jedi:goto-definition-pop-marker
+  ;;   )
 
   ;; (use-package ycmd
   ;;   :ensure t
@@ -939,27 +971,9 @@
 	    (set-visited-file-name new-name t t)))))))
   (global-set-key (kbd "C-c f r")  'rename-file-and-buffer)
 
-  ;;;;;;;;;;;;;;;;;;;;;;;; Python
-
   (use-package elpy
     :ensure t
     :config
-    (elpy-enable)
-    (when (require 'flycheck nil t)
-      (setq elpy-modules (delq 'elpy-module-flymake elpy-modules))
-      (add-hook 'elpy-mode-hook 'flycheck-mode))
-    (setq elpy-rpc-backend "jedi"))
-
-  
-
-
-
-
-
-
-
-
-
-  
+    (elpy-enable))
   
 )

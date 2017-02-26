@@ -938,5 +938,28 @@
 	    (rename-file filename new-name t)
 	    (set-visited-file-name new-name t t)))))))
   (global-set-key (kbd "C-c f r")  'rename-file-and-buffer)
+
+  ;;;;;;;;;;;;;;;;;;;;;;;; Python
+
+  (use-package elpy
+    :ensure t
+    :config
+    (elpy-enable)
+    (when (require 'flycheck nil t)
+      (setq elpy-modules (delq 'elpy-module-flymake elpy-modules))
+      (add-hook 'elpy-mode-hook 'flycheck-mode))
+    (setq elpy-rpc-backend "jedi"))
+
+  
+
+
+
+
+
+
+
+
+
+  
   
 )

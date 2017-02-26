@@ -971,9 +971,30 @@
 	    (set-visited-file-name new-name t t)))))))
   (global-set-key (kbd "C-c f r")  'rename-file-and-buffer)
 
-  (use-package elpy
+  ;; (use-package elpy
+  ;;   :ensure t
+  ;;   :config
+  ;;   (elpy-enable))
+
+  (use-package jedi
     :ensure t
     :config
-    (elpy-enable))
+    )
+
+  (use-package anaconda-mode
+    :ensure t
+    :config
+    (add-hook 'python-mode-hook 'anaconda-mode)
+    (add-hook 'python-mode-hook 'anaconda-eldoc-mode)
+    (add-to-list 'python-shell-extra-pythonpaths "/home/danylo/kalibr_ws/src/kalibr/aslam_offline_calibration/kalibr/python")
+    
+    (use-package company-anaconda
+      :ensure t
+      :config
+      (eval-after-load "company"
+	'(add-to-list 'company-backends 'company-anaconda))
+      (add-hook 'python-mode-hook 'anaconda-mode)
+      (eval-after-load "company"
+	'(add-to-list 'company-backends '(company-anaconda :with company-capf)))))
   
 )

@@ -32,17 +32,17 @@ if program_not_installed "emacs"; then
     fi
 fi
 
-# irony-mode
+# [C/C++] irony-mode
 
 apt_get_install_pkg build-essential
 apt_get_install_pkg clang
 apt_get_install_pkg libclang-dev
 
-# # Python Jedi
+# [Python] JEDI
 
-# apt_get_install_pkg python-pip
-# runcmd "pip install virtualenv"
-# runcmd "eval builtin echo 'export PATH=\$PATH'\":$(which virtualenv) # Python virtualenv path\" >> ${HOME}/.bashrc" nonull # add the virtualenv path to the PATH
+apt_get_install_pkg python-pip
+runcmd "pip install virtualenv"
+runcmd "eval builtin echo 'export PATH=\$PATH'\":$(which virtualenv) # Python virtualenv path\" >> ${HOME}/.bashrc" nonull # add the virtualenv path to the PATH
 
 # flycheck in shell-script-mode
 

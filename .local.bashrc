@@ -47,3 +47,15 @@ fi
 if [ -f ~/.local.bashrc.private ]; then
     . ~/.local.bashrc.private
 fi
+
+# checksum check
+checksum_check() {
+    local file="$1"
+    local checksum="$2"
+
+    if [ "$(md5sum "$file")" == "$checksum" ]; then
+	echo "OK"
+    else
+	echo "FAIL"
+    fi
+}

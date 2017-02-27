@@ -38,11 +38,16 @@ apt_get_install_pkg build-essential
 apt_get_install_pkg clang
 apt_get_install_pkg libclang-dev
 
-# [Python] JEDI
+# [Python] JEDI auto-completion
 
 apt_get_install_pkg python-pip
-runcmd "pip install virtualenv"
+runcmd "pip install virtualenv jedi"
 runcmd "eval builtin echo 'export PATH=\$PATH'\":$(which virtualenv) # Python virtualenv path\" >> ${HOME}/.bashrc" nonull # add the virtualenv path to the PATH
+
+# [Python] Flake8 linting
+
+runcmd "python -m pip install flake8"
+
 
 # flycheck in shell-script-mode
 

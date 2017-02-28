@@ -38,9 +38,9 @@ May be necessary for some GUI environments (e.g., Mac OS X)")
     (setq exec-path (split-string path-from-shell path-separator))))
 
 ;; Package specific initialization
-(add-hook
- 'after-init-hook
- '(lambda ()
+;; (add-hook
+;;  'after-init-hook
+;;  '(lambda ()
 
     ;; Uncomment next line if you like the menu right away
     (setq ac-show-menu-immediately-on-auto-complete t)
@@ -168,7 +168,7 @@ May be necessary for some GUI environments (e.g., Mac OS X)")
     ;; Use custom keybinds
     (add-hook 'python-mode-hook 'jedi-config:setup-keys)
 
-    ))
+;;    ))
 
 (provide 'jedi-configuration)
 ;;; jedi-configuration.el ends here

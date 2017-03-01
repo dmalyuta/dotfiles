@@ -666,6 +666,9 @@
   ;; do not truncate windows that are too narrow
   (setq truncate-partial-width-windows nil)
 
+  ;; highlight current line
+  (global-hl-line-mode +1)
+
   ;; show tooltips in echo area
   (tooltip-mode -1)
   (setq tooltip-use-echo-area t)

@@ -19,6 +19,7 @@ runcmd "sudo add-apt-repository ppa:gnome-terminator -y"
 runcmd "apt-get update"
 apt_get_install_pkg terminator
 apt_get_install_pkg aptitude
+apt_get_install_pkg xclip
 
 # update .bashrc to include an indication of which Git branch user is on
 source_local_bashrc=false

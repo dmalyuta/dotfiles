@@ -25,12 +25,6 @@
 		    ;;(move-overlay ov (line-beginning-position) (line-end-position)
 		    (current-buffer)))))
 
-(defun gud-kill-buffer ()
-  (if (derived-mode-p 'gud-mode)
-      (delete-overlay gud-overlay)))
-
-(add-hook 'kill-buffer-hook 'gud-kill-buffer)
-
 ;; GDB custom layout setup
 (defun set-gdb-layout(&optional c-buffer)
   (if (not c-buffer)
@@ -77,7 +71,10 @@
 (defadvice gdb-reset (around args activate)
   "Change the way to gdb exit."
   ad-do-it
-  (set-window-configuration global-config-editing))
+  ;; reset window layout back to what it was when gdb was started
+  (set-window-configuration global-config-editing)
+  ;; un-highlight current debugging line
+  (delete-overlay gud-overlay))
 
 (provide 'gdb-setup)
 ;;; gdb-setup.el ends here

@@ -22,7 +22,7 @@ apt_get_install_pkg aptitude
 apt_get_install_pkg xclip
 apt_get_install_pkg silversearcher-ag
 runcmd "apt-get --assume-yes install python3-dev python3-pip"
-runcmd "-H pip3 install thefuck"
+runcmd "sudo -H pip3 install thefuck"
 apt_get_install_pkg screen
 apt_get_install_pkg sshpass
 

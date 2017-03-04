@@ -667,7 +667,14 @@
   (setq truncate-partial-width-windows nil)
 
   ;; highlight current line
-  (global-hl-line-mode +1)
+  (add-hook 'c-mode-common-hook 'hl-line-mode)
+  (add-hook 'python-mode-hook 'hl-line-mode)
+  (add-hook 'sh-mode-hook 'hl-line-mode)
+  (add-hook 'emacs-lisp-mode-hook 'hl-line-mode)
+  ;;(global-hl-line-mode +1)
+
+  ;; require file ending with a newline
+  (setq require-final-newline t)
 
   ;; show tooltips in echo area
   (tooltip-mode -1)

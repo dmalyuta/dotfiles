@@ -56,6 +56,9 @@ fi
 if [ -e "${home}/.local.bashrc" ]; then
     make_symlink ".local.bashrc" "$dir" "$home" $symlink
 fi
+if [ -e "${home}/.screenrc" ]; then
+    make_symlink ".screenrc" "$dir" "$home" $symlink
+fi
 
 ########## .bin directory
 

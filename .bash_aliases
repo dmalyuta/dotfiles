@@ -32,3 +32,8 @@ compile_commands_json() { echo "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON"; } # generat
 
 # Fix typos in previous bash command
 eval "$(thefuck --alias)"
+
+# Screen
+killscreens () {
+    screen -ls | grep Detached | cut -d. -f1 | awk '{print $1}' | xargs kill
+}

@@ -169,7 +169,7 @@
     ;;(add-hook 'after-init-hook 'global-company-mode)
     (add-hook 'c-mode-common-hook 'company-mode)
     (add-hook 'emacs-lisp-mode-hook 'company-mode)
-    (add-hook 'sh-mode-hook 'company-mode)
+    ;;(add-hook 'sh-mode-hook 'company-mode)
     ;;(add-hook 'python-mode-hook 'company-mode)
     :config
     (setq company-async-timeout 10) ;; set timeout to 10 seconds
@@ -177,6 +177,13 @@
     ;; use C++11 by default
     ;; (require 'cc-mode)
     ;; (set 'company-clang-arguments (list "-std=c++11"))
+    )
+
+  (use-package company-shell
+    ;; company mode completion backends for your shell functions:
+    :ensure t
+    :config
+    (add-to-list 'company-backends 'company-shell)
     )
 
   (use-package irony
@@ -563,6 +570,12 @@
     (require 'jedi-configuration)
     )
 
+  (use-package fuzzy
+    :ensure t)
+
+  (use-package popup
+    :ensure t)
+
 ;;;;;;;;;;;;;;;;; PERSONAL PACKAGES
 
   (use-package c-block-comment
@@ -642,6 +655,67 @@
      ("S-C-<left>" . win-resize-enlarge-vert)
      ("S-C-<right>" . win-resize-minimize-vert)
      ))
+
+  ;; Bash scripting
+  (add-hook
+   'sh-mode-hook
+   '(lambda ()
+      (require 'popup)
+      ;;(require 'fuzzy)
+      (require 'auto-complete)
+      (require 'auto-complete-config)
+      ;;(ac-config-default)
+      (global-auto-complete-mode nil)
+      (add-hook 'sh-mode-hook 'auto-complete-mode)  
+      (local-set-key (kbd "S-<SPC>") 'auto-complete)
+      (setq ac-auto-show-menu t)
+      (setq ac-dwim t)
+      (setq ac-use-menu-map t)
+      (setq ac-quick-help-delay 1)
+      (setq ac-quick-help-height 60)
+      (setq ac-disable-inline t)
+      (setq ac-show-menu-immediately-on-auto-complete t)
+      (setq ac-auto-start 0)
+      (setq ac-candidate-menu-min 0)
+      ))
+  (use-package bash-completion
+    :ensure t
+    :config
+    (autoload 'bash-completion-dynamic-complete 
+      "bash-completion"
+      "BASH completion hook")
+    (add-hook 'shell-dynamic-complete-functions
+	      'bash-completion-dynamic-complete)
+
+    (defun ac-bash-candidates ()
+      "This function is a modifed version of
+bash-completion-dynamic-complete from bash-completion.el"
+      (when bash-completion-enabled
+	(let* ( (start (comint-line-beginning-position))
+		(pos (point))
+		(tokens (bash-completion-tokenize start pos))
+		(open-quote (bash-completion-tokenize-open-quote tokens))
+		(parsed (bash-completion-process-tokens tokens pos))
+		(line (cdr (assq 'line parsed)))
+		(point (cdr (assq 'point parsed)))
+		(cword (cdr (assq 'cword parsed)))
+		(words (cdr (assq 'words parsed)))
+		(stub (nth cword words))
+		(completions (bash-completion-comm line point words cword open-quote))
+		;; Override configuration for comint-dynamic-simple-complete.
+		;; Bash adds a space suffix automatically.
+		(comint-completion-addsuffix nil) )
+	  (if completions
+	      completions))))
+    
+    (setq ac-source-bash
+	  '((candidates . ac-bash-candidates)))
+    
+    (add-hook 'shell-mode-hook
+	      (lambda()
+		(setq ac-sources '(ac-source-bash))
+		(auto-complete-mode)))
+    )
 
 ;;;;;;;;;;;;;;;;; OTHER STUFF
 
@@ -956,3 +1030,11 @@
   (global-set-key (kbd "C-c f r")  'rename-file-and-buffer)
   
 )
+
+;;;;;;;;;;;;;;;;;;;;;;; ToDos;
+;; Future things to think about (most important generally up top):
+;;
+;;       . bashdb (use realgud)
+;;       . Python linting
+;;       . Python debugging
+;;       . Python shell

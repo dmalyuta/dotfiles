@@ -25,6 +25,7 @@ runcmd "apt-get --assume-yes install python3-dev python3-pip"
 runcmd "sudo -H pip3 install thefuck"
 apt_get_install_pkg screen
 apt_get_install_pkg sshpass
+apt_get_install_pkg bash-completion
 
 # update .bashrc to include an indication of which Git branch user is on
 source_local_bashrc=false

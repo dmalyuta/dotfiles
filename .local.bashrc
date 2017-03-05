@@ -59,3 +59,12 @@ checksum_check() {
 	echo "FAIL"
     fi
 }
+
+# programmable bash completion, for Emacs
+if [[ ( -z "$INSIDE_EMACS" || "$EMACS_BASH_COMPLETE" = "t" ) &&\
+	  -f /etc/bash_completion ]]; then
+    . /etc/bash_completion
+fi
+# if [ -e /etc/bash_completion ]; then
+#     . /etc/bash_completion
+# fi

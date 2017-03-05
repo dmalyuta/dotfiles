@@ -5,10 +5,18 @@ shell -$SHELL
 termcapinfo xterm* ti@:te@
 
 # Status line
-# Here comes the pain...
-caption always "%{=b dw}:%{-b dw}:%{=b dk}[ %{-b dw}%{-b dg}$USER%{-b dw}@%{-b dg}%H %{=b dk}] [ %= %?%{-b dg}%-Lw%?%{+b dk}(%{+b dw}%n:%t%{+b dk})%?(%u)%?%{-b dw}%?%{-b dg}%+Lw%? %{=b dk}]%{-b dw}:%{+b dw}:"
+hardstatus alwayslastline "%{b kw}%H %{r}%1` %{w}| %{g}%c %{w}| %{y}%d.%m.%Y %{w}| %{g}%l %{w}| %{-b kw}%u %-Lw%{= rW}%50> %n%f %t %{-}%+Lw%<"
 
-backtick 2 5 5 $HOME/.bin/meminfo.sh
-hardstatus alwayslastline "%{+b dw}:%{-b dw}:%{+b dk}[%{-b dg} %0C:%s%a %{=b dk}]-[   %{-b dw}Load%{+b dk}:%{-b dg}%l %{+b dk}] [%{-b dg}%2`%{+b dk}] %=[ %{-b dg}%1`%{=b dk} ]%{-b dw}:%{+b dw}:%<"
+# huge scrollback buffer
+defscrollback 10000
 
-sorendition "-b dw"
+# no welcome message
+startup_message off
+
+# 256 colors
+attrcolor b ".I"
+termcapinfo xterm 'Co#256:AB=\E[48;5;%dm:AF=\E[38;5;%dm'
+defbce on
+
+# mouse tracking allows to switch region focus by clicking
+mousetrack on

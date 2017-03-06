@@ -20,7 +20,7 @@ programs_list=(
 
 # associated dotfile dependencies for each program
 
-dependencies_home_dotfiles=(".profile" ".bash_aliases" ".local.bashrc" ".screenrc")
+dependencies_home_dotfiles=(".profile" ".bash_aliases" ".local.bashrc" ".screenrc" ".tmux.conf")
 dependencies_bin=(".bin")
 dependencies_terminator=(".config/terminator/config")
 dependencies_jetbrains=(".jetbrains/settings")

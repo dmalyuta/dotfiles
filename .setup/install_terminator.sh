@@ -24,6 +24,8 @@ apt_get_install_pkg silversearcher-ag
 runcmd "apt-get --assume-yes install python3-dev python3-pip"
 runcmd "sudo -H pip3 install thefuck"
 apt_get_install_pkg screen
+apt_get_install_pkg tmux
+apt_get_install_pkg htop
 apt_get_install_pkg sshpass
 apt_get_install_pkg bash-completion
 
@@ -45,3 +47,42 @@ fi
 runcmd "gsettings set org.gnome.desktop.default-applications.terminal exec 'terminator'"
 
 echo_prefix="$echo_prefix_temp"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

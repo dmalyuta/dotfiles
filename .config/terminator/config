@@ -1,29 +1,5 @@
 [global_config]
   suppress_multiple_term_dialog = True
-[keybindings]
-  close_term = <Alt>w
-  close_window = <Shift><Alt>q
-  copy = <Primary>c
-  edit_window_title = <Primary>t
-  go_down = <Primary>Down
-  go_left = <Primary>Left
-  go_right = <Primary>Right
-  go_up = <Primary>Up
-  group_all = <Primary>g
-  group_tab = <Primary>t
-  line_down = <Shift><Alt>Down
-  line_up = <Shift><Alt>Up
-  move_tab_left = <Shift><Alt>Left
-  move_tab_right = <Shift><Alt>Right
-  next_tab = <Alt>Right
-  page_down = Page_Down
-  page_up = Page_Up
-  paste = <Primary>v
-  prev_tab = <Alt>Left
-  split_horiz = <Alt>h
-  split_vert = <Alt>v
-  ungroup_all = F1
-  ungroup_tab = F2
 [layouts]
   [[default]]
     [[[child1]]]

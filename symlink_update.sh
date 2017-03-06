@@ -59,6 +59,9 @@ fi
 if [ -e "${home}/.screenrc" ]; then
     make_symlink ".screenrc" "$dir" "$home" $symlink
 fi
+if [ -e "${home}/.tmux.conf" ]; then
+    make_symlink ".tmux.conf" "$dir" "$home" $symlink
+fi
 
 ########## .bin directory
 

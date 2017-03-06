@@ -15,9 +15,9 @@ middle"
 	 (this-window-y-max (nth 3 win-edges))
 	 (fr-height (frame-height)))
     (cond
-     ((eq 0 this-window-y-min) "top")
-     ((eq (- fr-height 1) this-window-y-max) "bot")
-     (t "mid"))))
+     ((eq 0 this-window-y-min) (message "top"))
+     ((< (- fr-height 3) this-window-y-max) (message "bot"))
+     (t (message "mid")))))
 
 (defun win-resize-left-or-right ()
   "Figure out if the current window is to the left, right or in the

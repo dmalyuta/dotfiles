@@ -1,5 +1,15 @@
 [global_config]
   suppress_multiple_term_dialog = True
+[keybindings]
+  go_down = F5
+  go_left = F6
+  go_next = F7
+  go_right = F8
+  go_up = F9
+  resize_down = F1
+  resize_left = F2
+  resize_right = F3
+  resize_up = F4
 [layouts]
   [[default]]
     [[[child1]]]

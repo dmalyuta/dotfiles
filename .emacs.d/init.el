@@ -719,6 +719,11 @@ bash-completion-dynamic-complete from bash-completion.el"
 
 ;;;;;;;;;;;;;;;;; OTHER STUFF
 
+  ;; enable clipboard in emacs
+  (xterm-mouse-mode t)
+  (mouse-wheel-mode t)
+  (setq x-select-enable-clipboard t)
+
   ;; default font and font size
   (add-to-list 'default-frame-alist '(font . "DejaVu Sans Mono-10"))
 

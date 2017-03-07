@@ -7,20 +7,20 @@
 # backups is mounted at /root/backup using the following entry in the
 # /etc/fstab file:
 #
-# UUID=93d50ce0-c86a-41bf-b610-b28654309b0d /root/backup/ ext4 nosuid,nodev,nofail,noauto 0 0
+# UUID=<NUMBER> /root/backup/ ext4 nosuid,nodev,nofail 0 0
 #
-# It can be mounted graphically through Linux Mint 18 MATE's Disks
+# It can be mounted graphically through the Disks
 # utility.  When mounted, the /root/backup directory is read-write for
 # the root user.  The backup partition has a directory layout such
-# that /root/backup/backups/acer_laptop/ is where the full system
-# backups are stored.
+# that /root/backup/backups/<name_of_folder_holding_hour_day_week_month_backups>/
+# is where the full system backups are stored.
 #
 # To safely view the drive, the regular user should see it as
 # read-only (i.e. cannot delete anything by accident). This is
 # achieved using NFS share. To install NFS, run:
 #
 # apt-get install nfs-kernel-server
-# 
+#
 # After installation, in /etc/exports I added the following line as
 # suggested by
 # (http://www.mikerubel.org/computers/rsync_snapshots/#ReadOnly):

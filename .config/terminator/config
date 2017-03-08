@@ -1,6 +1,7 @@
 [global_config]
   suppress_multiple_term_dialog = True
   title_receive_bg_color = "#000000"
+  title_transmit_bg_color = "#000000"
 [keybindings]
   go_down = F5
   go_left = F6

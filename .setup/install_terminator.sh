@@ -29,7 +29,7 @@ apt_get_install_pkg sshpass
 apt_get_install_pkg bash-completion
 
 # tmux
-wget_targz_install "libevent-2.1.8-stable" "https://github.com/libevent/libevent/releases/download/release-2.1.8-stable/libevent-2.1.8-stable.tar.gz"
+apt_get_install_pkg libevent-dev
 wget_targz_install "tmux-2.3" "https://github.com/tmux/tmux/releases/download/2.3/tmux-2.3.tar.gz"
 
 # update .bashrc to include an indication of which Git branch user is on

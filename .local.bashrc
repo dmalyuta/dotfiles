@@ -1,31 +1,6 @@
 # ~/.local.bashrc: sourced from .bashrc in order to separate default
 # .bashrc file from personal customizations.
 
-# display git branch and a failed command's error code in the bash
-# prompt
-parse_git_branch() {
-    git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/ (\1)/'
-}
-parse_return_code() {
-    local last_return_code=$?
-    if [ $last_return_code -ne 0 ]; then
-	echo " [$last_return_code]"
-    else
-	echo ""
-    fi
-}
-parse_ssh() {
-    if [ -n "$SSH_CLIENT" ] || [ -n "$SSH_TTY" ]; then
-	echo "(ssh) "
-	# many other tests omitted
-    else
-	case $(ps -o comm= -p $PPID) in
-	    sshd|*/sshd) echo "(ssh) ";;
-	esac
-    fi    
-}
-export PS1="$(parse_ssh)\u \[\033[32m\]\w\[\033[1;31m\]\$(parse_return_code)\[\033[0;33m\]\$(parse_git_branch)\[\033[00m\] $ "
-
 # Terminator title settings with set_title <TITLE>
 set_title() {
     printf "\e]2;$*\a";
@@ -65,6 +40,35 @@ if [[ ( -z "$INSIDE_EMACS" || "$EMACS_BASH_COMPLETE" = "t" ) &&\
 	  -f /etc/bash_completion ]]; then
     . /etc/bash_completion
 fi
-# if [ -e /etc/bash_completion ]; then
-#     . /etc/bash_completion
-# fi
+
+##################################### BASH PROMPT
+parse_git_branch() {
+    # Display git branch
+    git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/ (\1)/'
+}
+parse_return_code() {
+    # Display return code of last command, if non-zero (i.e. last
+    # command failed)
+    local last_return_code=$?
+    if [ $last_return_code -ne 0 ]; then
+	echo " [$last_return_code]"
+    else
+	echo ""
+    fi
+}
+parse_ssh() {
+    # Print if using computer over ssh
+    if [ -n "$SSH_CLIENT" ] || [ -n "$SSH_TTY" ]; then
+	echo "(ssh) "
+	# many other tests omitted
+    else
+	case $(ps -o comm= -p $PPID) in
+	    sshd|*/sshd) echo "(ssh) ";;
+	esac
+    fi    
+}
+if [ -e ~/.bin/colorizer ]; then
+    . ~/.bin/colorizer/colorizer.sh
+    tmp=$(colorize -p "[<purple>\D{%b %d} \A</purple>] <orange>$(parse_ssh)</orange><white></white>\u <green>\w</green><red>\$(parse_return_code)</red><yellow>\$(parse_git_branch)</yellow>")
+    export PS1="${tmp}\n$ "
+fi

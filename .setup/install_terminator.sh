@@ -28,9 +28,11 @@ apt_get_install_pkg htop
 apt_get_install_pkg sshpass
 apt_get_install_pkg bash-completion
 
-# tmux
-apt_get_install_pkg libevent-dev
-wget_targz_install "tmux-2.3" "https://github.com/tmux/tmux/releases/download/2.3/tmux-2.3.tar.gz"
+# tmux (version 2.3)
+if [ "$(tmux -V)" != "tmux 2.3" ]; then
+    apt_get_install_pkg libevent-dev
+    wget_targz_install "tmux-2.3" "https://github.com/tmux/tmux/releases/download/2.3/tmux-2.3.tar.gz"
+fi
 
 # update .bashrc to include an indication of which Git branch user is on
 source_local_bashrc=false

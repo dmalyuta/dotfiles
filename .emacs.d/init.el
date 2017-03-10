@@ -163,8 +163,8 @@
     :ensure t
     :bind
     (("<S-SPC>" . company-complete)
-     ("C-x C-n" . company-select-next)
-     ("C-x C-p" . company-select-previous))
+     ("M-n" . company-select-next)
+     ("M-p" . company-select-previous))
     :init
     ;;(add-hook 'after-init-hook 'global-company-mode)
     (add-hook 'c-mode-common-hook 'company-mode)
@@ -745,12 +745,16 @@ bash-completion-dynamic-complete from bash-completion.el"
   ;; do not truncate windows that are too narrow
   (setq truncate-partial-width-windows nil)
 
-  ;; highlight current line
-  (add-hook 'c-mode-common-hook 'hl-line-mode)
-  (add-hook 'python-mode-hook 'hl-line-mode)
-  (add-hook 'sh-mode-hook 'hl-line-mode)
-  (add-hook 'emacs-lisp-mode-hook 'hl-line-mode)
-  ;;(global-hl-line-mode +1)
+  ;; highlight current line (only in GUI mode, since it's
+  ;; uncomfortable in the terminal)
+  (if window-system
+      (progn
+	(add-hook 'c-mode-common-hook 'hl-line-mode)
+	(add-hook 'python-mode-hook 'hl-line-mode)
+	(add-hook 'sh-mode-hook 'hl-line-mode)
+	(add-hook 'emacs-lisp-mode-hook 'hl-line-mode)
+	;;(global-hl-line-mode +1)
+      ))
 
   ;; require file ending with a newline
   (setq require-final-newline t)

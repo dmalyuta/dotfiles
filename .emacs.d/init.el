@@ -576,6 +576,56 @@
   (use-package popup
     :ensure t)
 
+  (use-package workgroups
+    ;; Restore layout. I use it for keeping a persistent layout for an
+    ;; emacs --daemon server
+    :ensure t
+    :config
+    (workgroups-mode 1) ;; turn on workgroups mode at the start.
+    (setq wg-morph-on nil) ;; No silly workgroup switching animation
+
+    ;; Start function
+    (defun my-start-emacs ()
+      (interactive)
+      (if (daemonp)
+	  (progn
+	    (if (not (boundp 'server-wg))
+		(progn
+		  (wg-create-workgroup "server")
+		  (setq server-wg (wg-current-workgroup))
+		  )
+	      (progn
+		(setq current-wg (condition-case nil
+				     (wg-current-workgroup)
+				   (error nil)))
+		(if (not current-wg)
+		    (wg-switch-to-workgroup server-wg)
+		  (if (not (eq current-wg server-wg))
+		      (wg-switch-to-workgroup server-wg)
+		    )
+		  )
+		)
+	      )
+	    )
+	)
+      )
+    ;;(add-to-list 'after-make-frame-functions #'my-start-emacs)
+    
+    ;; Exit function
+    (defun my-exit-emacs ()
+      "Leaves session and saves all workgroup states. Will not continue if there is no w\
+orkgroups open."
+      (interactive)
+      (if (daemonp)
+	  (progn
+	    (wg-update-all-workgroups)
+	    (save-buffers-kill-terminal)
+	    )
+	(save-buffers-kill-terminal)
+	))
+    (global-set-key (kbd "C-x C-c") 'my-exit-emacs)
+    )
+
 ;;;;;;;;;;;;;;;;; PERSONAL PACKAGES
 
   (use-package c-block-comment
@@ -718,7 +768,7 @@ bash-completion-dynamic-complete from bash-completion.el"
     )
 
 ;;;;;;;;;;;;;;;;; OTHER STUFF
-
+  
   ;; enable clipboard in emacs
   (xterm-mouse-mode t)
   (mouse-wheel-mode t)

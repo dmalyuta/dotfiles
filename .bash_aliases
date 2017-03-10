@@ -9,6 +9,7 @@ alias sudo='sudo '
 alias rm='rm -i'
 
 # Emacs
+alias emacsclient="emacsclient -e '(my-start-emacs)' " # crucial part of layout persistence across sessions! (must come before below functions!!)
 emacsserverstart() {
     local name="$1"
     if [ ! "$name" ]; then
@@ -93,7 +94,7 @@ emacsserver() {
     emacsserver_usage
     return 1
 }
-alias em='emacs -nw'
+alias em='emacs -nw '
 alias ems='emacsserver '
 
 # JetBrains products

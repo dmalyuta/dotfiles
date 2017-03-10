@@ -6,12 +6,12 @@ A set of dotfiles and a setup script for dotfiles from my Ubuntu Linux home dire
 
 ## Features
 
-* A great and useful bash prompt using [colorizer](https://github.com/jakobwesthoff/colorizer) showing SSH, program return status, Git, etc.
-* Personalized `.bashrc` and `.profile` files
+* Terminal utilities: tmux, GNU Screen, customized bash prompt using [colorizer](https://github.com/jakobwesthoff/colorizer) showing SSH, program return status, Git, etc.
+* Personalized `.bashrc`, `.profile` and `.bash_aliases`
 * Personalized [Terminator](https://launchpad.net/terminator) (multiple window terminal emulator)
 * [Automated backup](https://github.com/dmalyuta/dotfiles/blob/master/.bin/make_snapshot.sh) using `rsync`, `cron` and `anacron` with support for grandfather-father-son backup scheme
 * Personalized settings for the JetBrains IDEs (CLion in particular, but others should also work).
-* Emacs 24.5
+* Emacs 24.5 with bash function `emacsserver` for daemon process management
 
 ### Recommended software
 

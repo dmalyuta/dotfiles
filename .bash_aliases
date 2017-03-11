@@ -136,3 +136,6 @@ eval "$(thefuck --alias)"
 killscreens () {
     screen -ls | grep Detached | cut -d. -f1 | awk '{print $1}' | xargs kill
 }
+
+# Jupyter
+alias venv_jupnb=". ~/.python_venv/jupnb/bin/activate && echo Use \'$ deactivate\' to quit the Jupyter notebook virtualenv"

@@ -24,7 +24,10 @@ apt_get_install_pkg virtualenvwrapper
 apt_get_install_pkg pkg-config
 
 # install python development packages and g++
+apt_get_install_pkg python-dev
+apt_get_install_pkg python-pip
 apt_get_install_pkg python3-dev
+apt_get_install_pkg python3-pip
 apt_get_install_pkg g++
 
 # install dependencies for scipy
@@ -41,36 +44,50 @@ apt_get_install_pkg libjpeg8-dev
 ### Now create and activate virtualenv, install all the packages via pip
 
 # create and activate virtual environment using mkvirtualenv wrapper (env name is jupnb)
-runcmd "mkvirtualenv --no-setuptools --python /usr/bin/python3.4 jupnb"
+# if [ ! -d "${home}/.python_venv/jupnb" ]; then
+#     runcmd "sudo -u ${normal_user} /usr/local/bin/virtualenv --no-setuptools --python /usr/bin/python3.4 ${home}/.python_venv/jupnb"
+# fi
+# runcmd ". ${home}/.python_venv/jupnb/bin/activate"
 
 # install fresh pip
-runcmd "curl https://bootstrap.pypa.io/get-pip.py | python"
+# runcmd "sudo -H python -m pip install --upgrade --force pip"
+# runcmd "sudo -H pip install setuptools==33.1.1"
+# runcmd "eval curl https://bootstrap.pypa.io/get-pip.py | python"
 
 # install fresh setuptools
-runcmd "pip install setuptools distribute"
+runcmd "sudo -u ${normal_user} pip install setuptools distribute"
 
 # install numpy as it is dependecy for many others
-runcmd "pip install numpy"
+runcmd "sudo -u ${normal_user} pip install numpy"
 
 # install scientific packages (seaborn instead of matplotlib for pretty plots)
-runcmd "pip install sympy scipy seaborn pandas jupyter"
+runcmd "sudo -u ${normal_user} pip install sympy scipy seaborn pandas jupyter"
 
 # install scikit-learn separately, it depends on numpy and scipy
-runcmd "pip install scikit-learn"
+runcmd "sudo -u ${normal_user} pip install scikit-learn"
 
-# deactivate venv
+######## Setup virtualenvs
+runcmd "sudo -u ${normal_user} mkdir -p ${home}/.python_venv"
+runcmd "sudo -u ${normal_user} python -m pip install virtualenv --user"
+
+# configure python2 kernel
+runcmd "sudo -u ${normal_user} python -m virtualenv -p python2 ${home}/.python_venv/py2_kernel"
+runcmd ". ${home}/.python_venv/py2_kernel/bin/activate"
+runcmd "sudo -H python -m pip install ipykernel"
+runcmd "ipython kernel install --name py2 --user"
 runcmd "deactivate"
 
-# Configure notebook profile with SSL encryption. Use real ssl
-# certificate instead of self-generated (if you have one). You can use
-# jupyter notebook --generate-config command to create default config
-# with comments about all the options, or use following snippet for
-# minimal config generation:
+# configure python3 kernel
+runcmd "sudo -u ${normal_user} python -m virtualenv -p python3 ${home}/.python_venv/py3_kernel"
+runcmd "source ${home}/.python_venv/py3_kernel/bin/activate"
+runcmd "sudo -H python -m pip install ipykernel"
+runcmd "ipython kernel install --name py3 --user"
+runcmd "deactivate"
 
-runcmd "mkdir -p ~/.jupyter"
-runcmd "cd ~/.jupyter"
-runcmd "jupyter notebook --generate-config"
-runcmd "cd -"
-
+runcmd "sudo -u ${normal_user} mkdir -p ${home}/.jupyter"
+runcmd "cd ${home}/.jupyter"
+runcmd "sudo -u ${normal_user} jupyter notebook --generate-config" nonull
+runcmd "eval chown -R ${normal_user}:${normal_user} \"${home}/.jupyter\""
+runcmd "eval chown -R ${normal_user}:${normal_user} \"${home}/.local/share/jupyter\""
 
 echo_prefix="$echo_prefix_temp"

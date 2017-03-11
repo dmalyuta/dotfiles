@@ -53,6 +53,7 @@ number_warnings=0
 number_errors=0
 os_name=$(lsb_release -si)
 os_version=$(lsb_release -sr)
+normal_user="${SUDO_USER:-$USER}"
 
 ########## functions
 
@@ -161,6 +162,10 @@ for foo in "${install_dotfiles_list[@]}"
 do
     copy_foo "$foo" "$dir" "$home" $symlink
 done
+
+########## Python tools
+
+install_program "python" .setup/install_python.sh
 
 ########## Emacs
 

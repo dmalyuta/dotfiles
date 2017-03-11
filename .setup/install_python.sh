@@ -86,8 +86,8 @@ runcmd "deactivate"
 
 runcmd "sudo -u ${normal_user} mkdir -p ${home}/.jupyter"
 runcmd "cd ${home}/.jupyter"
-runcmd "sudo -u ${normal_user} jupyter notebook --generate-config" nonull
-runcmd "eval chown -R ${normal_user}:${normal_user} \"${home}/.jupyter\""
+#runcmd "sudo -u ${normal_user} jupyter notebook --generate-config" nonull
+#runcmd "eval chown -R ${normal_user}:${normal_user} \"${home}/.jupyter\""
 runcmd "eval chown -R ${normal_user}:${normal_user} \"${home}/.local/share/jupyter\""
 
 echo_prefix="$echo_prefix_temp"

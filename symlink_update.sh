@@ -75,12 +75,6 @@ if [ -e "${home}/.config/terminator/config" ]; then
     make_symlink ".config/terminator/config" "$dir" "$home" $symlink
 fi
 
-########## JetBrains IDE settings
-
-if [ -e "${home}/.jetbrains/settings" ]; then
-    make_symlink ".jetbrains/settings" "$dir" "$home" $symlink false
-fi
-
 ########## Emacs
 
 if [ -e "${home}/.emacs.d/init.el" ]; then
@@ -88,6 +82,12 @@ if [ -e "${home}/.emacs.d/init.el" ]; then
 fi
 if [ -e "${home}/.emacs.d/lisp" ]; then
     make_symlink ".emacs.d/lisp" "$dir" "$home" $symlink
+fi
+
+########## Python
+
+if [ -e "${home}/.jupyter/jupyter_notebook_config.py" ]; then
+    make_symlink ".jupyter/jupyter_notebook_config.py" "$dir" "$home" $symlink
 fi
 
 ########## closing actions

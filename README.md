@@ -10,16 +10,13 @@ A set of dotfiles and a setup script for dotfiles from my Ubuntu Linux home dire
 * Personalized `.bashrc`, `.profile` and `.bash_aliases`
 * Personalized [Terminator](https://launchpad.net/terminator) (multiple window terminal emulator)
 * [Automated backup](https://github.com/dmalyuta/dotfiles/blob/master/.bin/make_snapshot.sh) using `rsync`, `cron` and `anacron` with support for grandfather-father-son backup scheme
-* Personalized settings for the JetBrains IDEs (CLion in particular, but others should also work).
 * Emacs 24.5 with bash function `emacsserver` for daemon process management
 
 ### Recommended software
 
-Other software I'm using, but which this repository does not install:
-
-* C/C++ development: [CLion](https://www.jetbrains.com/clion/), [Eclipse CDT](http://www.eclipse.org/cdt/), [Emacs 24.5](https://www.gnu.org/software/emacs/)
-* Python development: [PyCharm](https://www.jetbrains.com/pycharm/)
-* Java development: [IntelliJ IDEA](https://www.jetbrains.com/idea)
+* C/C++ development: [Emacs 24.5](https://www.gnu.org/software/emacs/), [CLion](https://www.jetbrains.com/clion/), [Eclipse CDT](http://www.eclipse.org/cdt/)
+* Python development: [PyCharm](https://www.jetbrains.com/pycharm/), [Jupyter](http://jupyter.org/)
+* Java development: [IntelliJ IDEA](https://www.jetbrains.com/idea), [Eclipse JDT](https://projects.eclipse.org/projects/eclipse.jdt)
 * R development: [RStudio](https://www.rstudio.com/)
 * Scientific computing: [MATLAB](https://www.mathworks.com/products/matlab.html) and [Mathematica](https://www.wolfram.com/mathematica/)
 * Version control and file sharing: [Git](https://git-scm.com/) and [Dropbox](https://www.dropbox.com/login)

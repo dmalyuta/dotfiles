@@ -23,6 +23,11 @@ apt_get_install_pkg virtualenvwrapper
 # install as workaround for https://github.com/matplotlib/matplotlib/issues/3029/
 apt_get_install_pkg pkg-config
 
+# install fresh pip
+runcmd "sudo -H python -m pip install --upgrade --force pip"
+runcmd "sudo -H pip install setuptools==33.1.1"
+# runcmd "eval curl https://bootstrap.pypa.io/get-pip.py | python"
+
 # install python development packages and g++
 apt_get_install_pkg python-dev
 apt_get_install_pkg python-pip
@@ -49,22 +54,17 @@ apt_get_install_pkg libjpeg8-dev
 # fi
 # runcmd ". ${home}/.python_venv/jupnb/bin/activate"
 
-# install fresh pip
-# runcmd "sudo -H python -m pip install --upgrade --force pip"
-# runcmd "sudo -H pip install setuptools==33.1.1"
-# runcmd "eval curl https://bootstrap.pypa.io/get-pip.py | python"
-
 # install fresh setuptools
-runcmd "sudo -u ${normal_user} pip install setuptools distribute"
+runcmd "sudo -H pip install setuptools distribute"
 
 # install numpy as it is dependecy for many others
-runcmd "sudo -u ${normal_user} pip install numpy"
+runcmd "sudo -H pip install numpy"
 
 # install scientific packages (seaborn instead of matplotlib for pretty plots)
-runcmd "sudo -u ${normal_user} pip install sympy scipy seaborn pandas jupyter"
+runcmd "sudo -H pip install sympy scipy seaborn pandas jupyter"
 
 # install scikit-learn separately, it depends on numpy and scipy
-runcmd "sudo -u ${normal_user} pip install scikit-learn"
+runcmd "sudo -H pip install scikit-learn"
 
 ######## Setup virtualenvs
 runcmd "sudo -u ${normal_user} mkdir -p ${home}/.python_venv"

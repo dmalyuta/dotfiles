@@ -24,6 +24,7 @@ dependencies_home_dotfiles=(".profile" ".bash_aliases" ".local.bashrc" ".screenr
 dependencies_bin=(".bin")
 dependencies_terminator=(".config/terminator/config")
 dependencies_emacs=(".emacs.d/init.el" ".emacs.d/lisp")
+dependencies_python=(".jupyter/jupyter_notebook_config.py")
 
 # question to ask user when determining which programs to install
 

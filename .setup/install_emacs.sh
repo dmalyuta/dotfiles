@@ -40,14 +40,12 @@ apt_get_install_pkg libclang-dev
 
 # [Python] JEDI auto-completion
 
-apt_get_install_pkg python-pip
-runcmd "pip install virtualenv jedi"
+runcmd "sudo -H pip install virtualenv jedi"
 runcmd "eval builtin echo 'export PATH=\$PATH'\":$(which virtualenv) # Python virtualenv path\" >> ${HOME}/.bashrc" nonull # add the virtualenv path to the PATH
 
 # [Python] Flake8 linting
 
-runcmd "python -m pip install flake8"
-
+runcmd "sudo -H python -m pip install flake8"
 
 # flycheck in shell-script-mode
 
@@ -65,3 +63,4 @@ if program_not_installed "global"; then
     wget_targz_install "global-6.5.5" "ftp://ftp.gnu.org/pub/gnu/global/global-6.5.5.tar.gz"
 fi
 
+echo_prefix="$echo_prefix_temp"

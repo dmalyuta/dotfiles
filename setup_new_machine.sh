@@ -166,6 +166,10 @@ done
 
 ########## Python tools
 
+if [[ ! -z ${install_programs_list["python"]} || ! -z ${install_programs_list["emacs"]} ]]; then
+    source .setup/install_python_common.sh
+fi
+
 install_program "python" .setup/install_python.sh
 
 ########## Emacs

@@ -23,16 +23,7 @@ apt_get_install_pkg virtualenvwrapper
 # install as workaround for https://github.com/matplotlib/matplotlib/issues/3029/
 apt_get_install_pkg pkg-config
 
-# install fresh pip
-runcmd "sudo -H python -m pip install --upgrade --force pip"
-runcmd "sudo -H pip install setuptools==33.1.1"
-# runcmd "eval curl https://bootstrap.pypa.io/get-pip.py | python"
-
-# install python development packages and g++
-apt_get_install_pkg python-dev
-apt_get_install_pkg python-pip
-apt_get_install_pkg python3-dev
-apt_get_install_pkg python3-pip
+# install g++
 apt_get_install_pkg g++
 
 # install dependencies for scipy
@@ -84,10 +75,11 @@ runcmd "sudo -H python -m pip install ipykernel"
 runcmd "ipython kernel install --name py3 --user"
 runcmd "deactivate"
 
-runcmd "sudo -u ${normal_user} mkdir -p ${home}/.jupyter"
-runcmd "cd ${home}/.jupyter"
+(runcmd "sudo -u ${normal_user} mkdir -p ${home}/.jupyter" && \
+	runcmd "cd ${home}/.jupyter" && \
+	runcmd "eval chown -R ${normal_user}:${normal_user} \"${home}/.local/share/jupyter\"")
 #runcmd "sudo -u ${normal_user} jupyter notebook --generate-config" nonull
 #runcmd "eval chown -R ${normal_user}:${normal_user} \"${home}/.jupyter\""
-runcmd "eval chown -R ${normal_user}:${normal_user} \"${home}/.local/share/jupyter\""
+ 
 
 echo_prefix="$echo_prefix_temp"

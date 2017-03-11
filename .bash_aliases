@@ -9,7 +9,7 @@ alias sudo='sudo '
 alias rm='rm -i'
 
 # Emacs
-alias emacsclient="emacsclient -e '(my-start-emacs)' " # crucial part of layout persistence across sessions! (must come before below functions!!)
+#alias emacsclient="emacsclient -e '(my-start-emacs)' " # crucial part of layout persistence across sessions! (must come before below functions!!) (fixed, no longer needed I think...)
 emacsserverstart() {
     local name="$1"
     if [ ! "$name" ]; then
@@ -30,15 +30,24 @@ emacsserverkill() {
 }
 emacsserverconnect() {
     local name="$1"
-    local options="${*:2}"
+    local windowtype="$2"
+    local options="${*:3}"
     if [ ! "$name" ]; then
-	echo "Usage: emacsserverconnect <SERVER_NAME> [OPTIONS]"
+	echo "Usage: emacsserverconnect <SERVER_NAME> [w] [OPTIONS]"
+	echo
+	echo "Regular emacsclient OPTIONS are accepted"
+	echo "Pass w option to launch as GUI"
 	return 1
     else
-	if [ "$#" -ne 1 ]; then
-	    emacsclient -s "$name" -nw "$options"
+	if [ "$windowtype" == "w" ]; then
+	    local nwoption="-c"
 	else
-	    emacsclient -s "$name" -nw
+	    local nwoption="-t"
+	fi
+	if [ "$#" -gt 2 ]; then
+	    emacsclient $nwoption -s "$name" "$options"
+	else
+	    emacsclient $nwoption -s "$name"
 	fi
     fi
 }
@@ -74,15 +83,15 @@ emacsserver() {
 		return 0
 		;;
 	    s)
-		emacsserverstart "$options"
+		emacsserverstart $options
 		return 0
 		;;
 	    k)
-		emacsserverkill "$options"
+		emacsserverkill $options
 		return 0
 		;;
 	    c)
-		emacsserverconnect "$options"
+		emacsserverconnect $options
 		return 0
 		;;
 	    *)

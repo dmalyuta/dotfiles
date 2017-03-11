@@ -15,9 +15,9 @@ middle"
 	 (this-window-y-max (nth 3 win-edges))
 	 (fr-height (frame-height)))
     (cond
-     ((eq 0 this-window-y-min) (message "top"))
-     ((< (- fr-height 3) this-window-y-max) (message "bot"))
-     (t (message "mid")))))
+     ((eq 0 this-window-y-min) "top")
+     ((< (- fr-height 3) this-window-y-max) "bot")
+     (t "mid"))))
 
 (defun win-resize-left-or-right ()
   "Figure out if the current window is to the left, right or in the
@@ -27,9 +27,9 @@ middle"
 	 (this-window-x-max (nth 2 win-edges))
 	 (fr-width (frame-width)))
     (cond
-     ((eq 0 this-window-x-min) (message "left"))
-     ((>= this-window-x-max (- fr-width 10)) (message "right"))
-     (t (message "mid")))))
+     ((eq 0 this-window-x-min) "left")
+     ((>= this-window-x-max (- fr-width 10)) "right")
+     (t "mid"))))
 
 (defun win-resize-enlarge-horiz ()
   (interactive)

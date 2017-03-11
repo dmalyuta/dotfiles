@@ -108,25 +108,16 @@
     (require 'rainbow-delimiters)
     (add-hook 'prog-mode-hook 'rainbow-delimiters-mode))
 
-  ;; (use-package material-theme
-  ;;   ;; Custom theme, only used in GUI mode (i.e. not for 'emacs -nw')
-  ;;   :ensure t
-  ;;   :if window-system ;; load only when GUI
-  ;;   :config
-  ;;   (load-theme 'material t)
-  ;;   ;; stylize the mode line
-  ;;   (set-face-attribute 'mode-line nil :box nil)
-  ;;   (set-face-attribute 'mode-line-inactive nil :box nil))
-
   (use-package zenburn-theme
     ;; the best theme there is!
     :ensure t
     :if window-system ;; load only when GUI
     :config
-    (load-theme 'zenburn t)
-    ;; stylize the mode line
-    (set-face-attribute 'mode-line nil :box nil)
-    (set-face-attribute 'mode-line-inactive nil :box nil))
+    ;; (load-theme 'zenburn t)
+    ;; ;; stylize the mode line
+    ;; (set-face-attribute 'mode-line nil :box nil)
+    ;; (set-face-attribute 'mode-line-inactive nil :box nil)
+    )
 
   (use-package dired+
     ;; advanced Dired functionality
@@ -169,6 +160,7 @@
     ;;(add-hook 'after-init-hook 'global-company-mode)
     (add-hook 'c-mode-common-hook 'company-mode)
     (add-hook 'emacs-lisp-mode-hook 'company-mode)
+    (add-hook 'comint-mode-hook 'company-mode)
     ;;(add-hook 'sh-mode-hook 'company-mode)
     ;;(add-hook 'python-mode-hook 'company-mode)
     :config
@@ -422,15 +414,25 @@
   ;;     ;; Chain javascript-jscs to run after javascript-jshint.
   ;;     (flycheck-add-next-checker 'irony '(t . c/c++-googlelint))))
 
-  (if (display-graphic-p)
-      ;; use nyan mode only if Emacs run in GUI mode (and not 'emacs -nw')
-      (use-package nyan-mode
-	;; adorable cat showing progress in document
-	:ensure t
-	:config
-	(nyan-mode 1)
-	(setq nyan-wavy-trail nil)
-	(setq nyan-animate-nyancat t)))
+  (use-package nyan-mode
+    ;; adorable cat showing progress in document
+    :ensure t
+    :config
+    (defun my-nyan-mode-activation (&optional frame)
+      "Activate nyan-mode when emacs is a GUI"
+      (interactive)
+      (if (not (equal frame nil))
+	  (select-frame frame))
+      (if (display-graphic-p)
+	  (progn
+	    (nyan-mode 1)
+	    (setq nyan-wavy-trail nil)
+	    (setq nyan-animate-nyancat t)
+	    ))
+      )
+    (add-hook 'after-make-frame-functions 'my-nyan-mode-activation)
+    (add-hook 'after-init-hook 'my-nyan-mode-activation)
+    )
 
   (use-package srefactor
     ;; C/C++ refactoring tool based on Semantic parser framework
@@ -576,7 +578,7 @@
   (use-package popup
     :ensure t)
 
-  (use-package workgroups
+  (use-package workgroups2
     ;; Restore layout. I use it for keeping a persistent layout for an
     ;; emacs --daemon server
     :ensure t
@@ -585,31 +587,34 @@
     (setq wg-morph-on nil) ;; No silly workgroup switching animation
 
     ;; Start function
-    (defun my-start-emacs ()
+    (defun my-start-emacs (frame)
+      "Switch client frames of an emacs daemon to the 'server' workgroup."
       (interactive)
-      (if (daemonp)
-	  (progn
-	    (if (not (boundp 'server-wg))
+      (with-selected-frame frame
+	(if (daemonp)
+	    (progn
+	      (if (not (boundp 'server-wg))
+		  (progn
+		    (wg-create-workgroup "server")
+		    (setq server-wg (wg-current-workgroup))
+		    )
 		(progn
-		  (wg-create-workgroup "server")
-		  (setq server-wg (wg-current-workgroup))
-		  )
-	      (progn
-		(setq current-wg (condition-case nil
-				     (wg-current-workgroup)
-				   (error nil)))
-		(if (not current-wg)
-		    (wg-switch-to-workgroup server-wg)
-		  (if (not (eq current-wg server-wg))
+		  (setq current-wg (condition-case nil
+				       (wg-current-workgroup)
+				     (error nil)))
+		  (if (not current-wg)
 		      (wg-switch-to-workgroup server-wg)
+		    (if (not (eq current-wg server-wg))
+			(wg-switch-to-workgroup server-wg)
+		      )
 		    )
 		  )
 		)
 	      )
-	    )
+	  )
 	)
       )
-    ;;(add-to-list 'after-make-frame-functions #'my-start-emacs)
+    (add-to-list 'after-make-frame-functions #'my-start-emacs)
     
     ;; Exit function
     (defun my-exit-emacs ()
@@ -618,7 +623,7 @@ orkgroups open."
       (interactive)
       (if (daemonp)
 	  (progn
-	    (wg-update-all-workgroups)
+	    ;;(wg-update-all-workgroups)
 	    (save-buffers-kill-terminal)
 	    )
 	(save-buffers-kill-terminal)
@@ -795,17 +800,6 @@ bash-completion-dynamic-complete from bash-completion.el"
   ;; do not truncate windows that are too narrow
   (setq truncate-partial-width-windows nil)
 
-  ;; highlight current line (only in GUI mode, since it's
-  ;; uncomfortable in the terminal)
-  (if window-system
-      (progn
-	(add-hook 'c-mode-common-hook 'hl-line-mode)
-	(add-hook 'python-mode-hook 'hl-line-mode)
-	(add-hook 'sh-mode-hook 'hl-line-mode)
-	(add-hook 'emacs-lisp-mode-hook 'hl-line-mode)
-	;;(global-hl-line-mode +1)
-      ))
-
   ;; require file ending with a newline
   (setq require-final-newline t)
 
@@ -975,42 +969,6 @@ bash-completion-dynamic-complete from bash-completion.el"
   ;; if you want to manually auto-fill (M-q), but for that to only apply to comments
   (add-hook 'c-mode-common-hook (lambda () (setq-local comment-auto-fill-only-comments t)))
 
-  ;; Set custom variables
-  (custom-set-variables
-   ;; custom-set-variables was added by Custom.
-   ;; If you edit it by hand, you could mess it up, so be careful.
-   ;; Your init file should contain only one such instance.
-   ;; If there is more than one, they won't work right.
-   '(Man-notify-method (quote pushy))
-   '(ecb-auto-expand-tag-tree (quote expand-spec))
-   '(ecb-auto-expand-tag-tree-collapse-other nil)
-   '(ecb-highlight-tag-with-point (quote highlight-scroll))
-   '(ecb-highlight-tag-with-point-delay 0.25)
-   '(ecb-layout-window-sizes
-     (quote
-      (("left11"
-	(ecb-methods-buffer-name 0.17901234567901234 . 0.7)
-	(ecb-history-buffer-name 0.17901234567901234 . 0.275)))))
-   '(ecb-options-version "2.50")
-   ;; ansi-term stuff
-   ;; from https://snarfed.org/why_i_dont_run_shells_inside_emacs
-   ;; '(comint-scroll-to-bottom-on-input t)  ;; always insert at the bottom
-   ;; '(comint-scroll-to-bottom-on-output t) ;; always add output at the bottom
-   ;; '(comint-scroll-show-maximum-output t) ;; scroll to show max possible output
-   ;; '(comint-completion-autolist t)        ;; show completion list when ambiguous
-   ;; '(comint-input-ignoredups t)           ;; no duplicates in command history
-   )
-
-  ;; set some ECB faces
-  ;; see http://ecb.sourceforge.net/docs/ecb_002dfaces.html for descriptions
-  (custom-set-faces
-   ;; custom-set-faces was added by Custom.
-   ;; If you edit it by hand, you could mess it up, so be careful.
-   ;; Your init file should contain only one such instance.
-   ;; If there is more than one, they won't work right.
-   '(ecb-default-highlight-face ((((class color) (background dark)) (:background "yellow" :foreground "black"))))
-   '(ecb-tag-header-face ((((class color) (background dark)) (:background "yellow" :foreground "black")))))
-
   ;; /*  */ style comments with C-x M-; in c++-mode
   (defun my-block-comment ()
     (interactive)
@@ -1087,13 +1045,110 @@ bash-completion-dynamic-complete from bash-completion.el"
 	    (rename-file filename new-name t)
 	    (set-visited-file-name new-name t t)))))))
   (global-set-key (kbd "C-c f r")  'rename-file-and-buffer)
+
+  ;; Theme switching GUI/terminal
+  ;; last t is for NO-ENABLE
+  (load-theme 'zenburn t t)
+  ;;(load-theme 'tsdh-dark t t)
+
+  (defun use-zenburn-theme()
+    (enable-theme 'zenburn)
+    (set-face-attribute 'mode-line nil :box nil)
+    (set-face-attribute 'mode-line-inactive nil :box nil)
+    ;; highlight current line (only in GUI mode, since it's
+    ;; uncomfortable in the terminal)
+    (add-hook 'c-mode-common-hook 'hl-line-mode)
+    (add-hook 'python-mode-hook 'hl-line-mode)
+    (add-hook 'sh-mode-hook 'hl-line-mode)
+    (add-hook 'emacs-lisp-mode-hook 'hl-line-mode)
+    ;;(global-hl-line-mode +1)
+    )
+
+  (defun use-nw-theme()
+    ;; use no theme...
+    ;; (enable-theme 'tsdh-dark)
+    ;; (set-face-attribute 'mode-line nil :box nil)
+    ;; (set-face-attribute 'mode-line-inactive nil :box nil)
+    )
+
+  (defun pick-color-theme (frame)
+    (select-frame frame)
+    (if (window-system frame)
+  	(progn  
+  	  (disable-theme 'tsdh-dark) ; in case it was active
+  	  (use-zenburn-theme))
+      (progn  
+  	(disable-theme 'zenburn) ; in case it was active
+  	(use-nw-theme))))
+  (add-hook 'after-make-frame-functions 'pick-color-theme)
+
+  ;; For when started with emacs or emacs -nw rather than emacs --daemon
+  (if window-system
+      (use-zenburn-theme)
+    (use-nw-theme))
   
 )
 
-;;;;;;;;;;;;;;;;;;;;;;; ToDos;
+;;;;;;;;;;;;;;;;;;;;;;; ToDos
 ;; Future things to think about (most important generally up top):
 ;;
 ;;       . bashdb (use realgud)
 ;;       . Python linting
 ;;       . Python debugging
 ;;       . Python shell
+
+(custom-set-variables
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(Man-notify-method (quote pushy))
+ '(ansi-color-faces-vector
+   [default default default italic underline success warning error])
+ '(ansi-color-names-vector
+   ["#3F3F3F" "#CC9393" "#7F9F7F" "#F0DFAF" "#8CD0D3" "#DC8CC3" "#93E0E3" "#DCDCCC"])
+ '(ecb-auto-expand-tag-tree (quote expand-spec))
+ '(ecb-auto-expand-tag-tree-collapse-other nil)
+ '(ecb-highlight-tag-with-point (quote highlight-scroll))
+ '(ecb-highlight-tag-with-point-delay 0.25)
+ '(ecb-layout-window-sizes
+   (quote
+    (("left11"
+      (ecb-methods-buffer-name 0.17901234567901234 . 0.7)
+      (ecb-history-buffer-name 0.17901234567901234 . 0.275)))))
+ '(ecb-options-version "2.50")
+ '(fci-rule-color "#383838")
+ '(nrepl-message-colors
+   (quote
+    ("#CC9393" "#DFAF8F" "#F0DFAF" "#7F9F7F" "#BFEBBF" "#93E0E3" "#94BFF3" "#DC8CC3")))
+ '(pdf-view-midnight-colors (quote ("#DCDCCC" . "#383838")))
+ '(vc-annotate-background "#2B2B2B")
+ '(vc-annotate-color-map
+   (quote
+    ((20 . "#BC8383")
+     (40 . "#CC9393")
+     (60 . "#DFAF8F")
+     (80 . "#D0BF8F")
+     (100 . "#E0CF9F")
+     (120 . "#F0DFAF")
+     (140 . "#5F7F5F")
+     (160 . "#7F9F7F")
+     (180 . "#8FB28F")
+     (200 . "#9FC59F")
+     (220 . "#AFD8AF")
+     (240 . "#BFEBBF")
+     (260 . "#93E0E3")
+     (280 . "#6CA0A3")
+     (300 . "#7CB8BB")
+     (320 . "#8CD0D3")
+     (340 . "#94BFF3")
+     (360 . "#DC8CC3"))))
+ '(vc-annotate-very-old-color "#DC8CC3"))
+(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(ecb-default-highlight-face ((((class color) (background dark)) (:background "yellow" :foreground "black"))))
+ '(ecb-tag-header-face ((((class color) (background dark)) (:background "yellow" :foreground "black")))))
+

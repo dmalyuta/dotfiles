@@ -62,6 +62,7 @@ Finally, settings syncing across JetBrains IDEs can be automated via the [Settin
 
  1. For Ubuntu 14.04: an error may be thrown during installation is `apt-get update` fails due to a "Hash Sum mismatch". The solution is to run `sudo rm -vf /var/lib/apt/lists/* && sudo apt-get clean && sudo apt-get update` (possible several times until the "Hash Sum mismatch" warning disappears), then running the installation script again.
  2. If there are any errors during Emacs package auto-install (when you open Emacs for the first time), restarting Emacs solves every issue I've encountered so far.
+    * Note: if a "package doesn't exist" error comes up during package auto-install, run `M-x package-refresh-contents` and restart Emacs. This fixes any such issue for me.
 
 ## TODO
 

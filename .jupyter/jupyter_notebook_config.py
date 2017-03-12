@@ -1,14 +1,14 @@
 # Configuration file for jupyter-notebook.
 
-import sys,os,os.path
-from IPython.display import display, Javascript
+#import sys,os,os.path
+#from IPython.display import display, Javascript
 
-def markdown_below():
-    display(Javascript("""
-    IPython.notebook.insert_cell_below('markdown')
-    """));
+#def markdown_below():
+#    display(Javascript("""
+#    IPython.notebook.insert_cell_below('markdown')
+#    """));
 
-markdown_below()
+#markdown_below()
 
 #------------------------------------------------------------------------------
 # Application(SingletonConfigurable) configuration

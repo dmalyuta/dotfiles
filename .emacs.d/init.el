@@ -153,7 +153,7 @@
     ;; complete anything
     :ensure t
     :bind
-    (("<S-SPC>" . company-complete)
+    (("C-:" . company-complete) ;; recommended to use TAB instead (which uses helm-company, see below)
      ("M-n" . company-select-next)
      ("M-p" . company-select-previous))
     :init
@@ -174,6 +174,37 @@
     (setq company-auto-complete nil)
     (set 'company-idle-delay 1)
     (setq company-auto-select-first-candidate nil)
+    )
+
+  (use-package company-quickhelp
+    ;; Documentation popups when idling on a completion candidate
+    :ensure t
+    :config
+    (company-quickhelp-mode 1)
+    (setq company-quickhelp-delay 0.5)
+    (eval-after-load 'company
+      '(define-key company-active-map (kbd "M-h") #'company-quickhelp-manual-begin))
+    )
+
+  (use-package helm-company
+    ;; Helm interface for company-mode
+    :ensure t
+    :config
+    (eval-after-load 'company
+      '(progn
+	 (defun indent-or-complete ()
+	   (interactive)
+	   (if (looking-at "\\_>")
+	       (helm-company)
+	     (indent-according-to-mode)))
+	 ;; Normal completion: complete when at least one character
+	 ;; written, otherwise tab
+	 (define-key company-mode-map (kbd "TAB") 'indent-or-complete)
+	 (define-key company-mode-map (kbd "<tab>") 'indent-or-complete)
+	 ;; Forced completion: complete no matter what
+	 (define-key company-mode-map (kbd "C-TAB") 'helm-company)
+	 (define-key company-mode-map (kbd "C-<tab>") 'helm-company)
+	 ))
     )
 
   (use-package company-shell

@@ -32,6 +32,21 @@ if program_not_installed "emacs"; then
     fi
 fi
 
+# Upgrade GDB to 7.12.1 (latest stable version)
+# Includes many fuxes, of which most important for Emacs is the `set max-completions`
+# (see https://sourceware.org/git/gitweb.cgi?p=binutils-gdb.git;a=blobdiff;f=gdb/NEWS;h=f19577a3a6d0ea9ff1015255eafbd965580afa2d;hp=cba21b6645dd09e83943b71d42ad4c3d3c00cad4;hb=ef0b411a110cd2602cb89c3fb237baf8beb28545;hpb=e11c72c7e4879894b9711b5c0b8247c20c6050f6 and http://stackoverflow.com/questions/20933946/gdb-freezing-when-print-variables-with-tab-completion)
+# Description: Sets the maximum number of candidates to be considered
+# during completion. The default value is 200. This limit allows GDB
+# to avoid generating large completion lists, the computation of which
+# can cause the debugger to become temporarily unresponsive.
+gdbVersion="$(echo $(gdb --version) | cut -d " " -f 4)"
+if [[ "$gdbVersion" != "7.12.1" ]]; then
+    # TODO make check only that $gdbVersion < 7.12.1 (so as not to
+    # downgrade if in the future user has a more recent version
+    # installed)
+    wget_targz_install "gdb-7.12.1" "http://ftp.gnu.org/gnu/gdb/gdb-7.12.1.tar.gz"
+fi
+
 # [C/C++] irony-mode
 
 apt_get_install_pkg build-essential

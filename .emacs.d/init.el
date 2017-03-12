@@ -433,7 +433,8 @@
 	    (nyan-mode 1)
 	    (setq nyan-wavy-trail nil)
 	    (setq nyan-animate-nyancat t)
-	    ))
+	    )
+	(nyan-mode 0))
       )
     (add-hook 'after-make-frame-functions 'my-nyan-mode-activation)
     (add-hook 'after-init-hook 'my-nyan-mode-activation)
@@ -584,11 +585,13 @@
     :ensure t)
 
   (use-package workgroups2
-    ;; Restore layout. I use it for keeping a persistent layout for an
-    ;; emacs --daemon server
+    ;; Restore layout. I use it only for keeping a persistent layout
+    ;; for an emacs --daemon server
     :ensure t
     :config
-    (workgroups-mode 1) ;; turn on workgroups mode at the start.
+    (if (daemonp)
+	(workgroups-mode 1) ;; turn on workgroups mode when running as daemon
+      )
     (setq wg-morph-on nil) ;; No silly workgroup switching animation
 
     ;; Start function
@@ -622,18 +625,18 @@
     (add-to-list 'after-make-frame-functions #'my-start-emacs)
     
     ;; Exit function
-    (defun my-exit-emacs ()
-      "Leaves session and saves all workgroup states. Will not continue if there is no w\
-orkgroups open."
-      (interactive)
-      (if (daemonp)
-	  (progn
-	    ;;(wg-update-all-workgroups)
-	    (save-buffers-kill-terminal)
-	    )
-	(save-buffers-kill-terminal)
-	))
-    (global-set-key (kbd "C-x C-c") 'my-exit-emacs)
+;;     (defun my-exit-emacs ()
+;;       "Leaves session and saves all workgroup states. Will not continue if there is no w\
+;; orkgroups open."
+;;       (interactive)
+;;       (if (daemonp)
+;; 	  (progn
+;; 	    ;;(wg-update-all-workgroups)
+;; 	    (save-buffers-kill-terminal)
+;; 	    )
+;; 	(save-buffers-kill-terminal)
+;; 	))
+;;     (global-set-key (kbd "C-x C-c") 'my-exit-emacs)
     )
 
   ;; Bash scripting
@@ -1060,13 +1063,6 @@ bash-completion-dynamic-complete from bash-completion.el"
     (enable-theme 'zenburn)
     (set-face-attribute 'mode-line nil :box nil)
     (set-face-attribute 'mode-line-inactive nil :box nil)
-    ;; highlight current line (only in GUI mode, since it's
-    ;; uncomfortable in the terminal)
-    (add-hook 'c-mode-common-hook 'hl-line-mode)
-    (add-hook 'python-mode-hook 'hl-line-mode)
-    (add-hook 'sh-mode-hook 'hl-line-mode)
-    (add-hook 'emacs-lisp-mode-hook 'hl-line-mode)
-    ;;(global-hl-line-mode +1)
     )
 
   (defun use-nw-theme()
@@ -1081,9 +1077,21 @@ bash-completion-dynamic-complete from bash-completion.el"
     (if (window-system frame)
   	(progn  
   	  (disable-theme 'tsdh-dark) ; in case it was active
-  	  (use-zenburn-theme))
+  	  (use-zenburn-theme)
+	  ;; highlight current line (only in GUI mode, since it's
+	  ;; uncomfortable in the terminal)
+	  (add-hook 'c-mode-common-hook 'hl-line-mode)
+	  (add-hook 'python-mode-hook 'hl-line-mode)
+	  (add-hook 'sh-mode-hook 'hl-line-mode)
+	  (add-hook 'emacs-lisp-mode-hook 'hl-line-mode)
+	  ;;(global-hl-line-mode +1)
+	  )
       (progn  
   	(disable-theme 'zenburn) ; in case it was active
+	(remove-hook 'c-mode-common-hook 'hl-line-mode)
+	(remove-hook 'python-mode-hook 'hl-line-mode)
+	(remove-hook 'sh-mode-hook 'hl-line-mode)
+	(remove-hook 'emacs-lisp-mode-hook 'hl-line-mode)
   	(use-nw-theme))))
   (add-hook 'after-make-frame-functions 'pick-color-theme)
 

@@ -22,9 +22,6 @@
   (unless (package-installed-p 'use-package)
     (package-refresh-contents)
     (package-install 'use-package))
-  (eval-when-compile
-    (require 'use-package))
-  (setq personal-keybindings ()) ;; so that byte compiler does not complain about void-variable
 
 ;;;;;;;;;;;;;;;;; EMACS BUILT-IN
 
@@ -573,48 +570,47 @@
     (setq wg-morph-on nil) ;; No silly workgroup switching animation
 
     ;; Start function
-    (defun my-start-emacs (frame)
+    (defun my-start-emacs ();;(frame)
       "Switch client frames of an emacs daemon to the 'server' workgroup."
       (interactive)
-      (with-selected-frame frame
-	(if (daemonp)
-	    (progn
-	      (if (not (boundp 'server-wg))
-		  (progn
-		    (wg-create-workgroup "server")
-		    (setq server-wg (wg-current-workgroup))
-		    )
+      ;;(select-frame frame)
+      (if (daemonp)
+	  (progn
+	    (if (not (boundp 'server-wg))
 		(progn
-		  (setq current-wg (condition-case nil
-				       (wg-current-workgroup)
-				     (error nil)))
-		  (if (not current-wg)
+		  (wg-create-workgroup "server")
+		  (setq server-wg (wg-current-workgroup))
+		  )
+	      (progn
+		(setq current-wg (condition-case nil
+				     (wg-current-workgroup)
+				   (error nil)))
+		(if (not current-wg)
+		    (wg-switch-to-workgroup server-wg)
+		  (if (not (eq current-wg server-wg))
 		      (wg-switch-to-workgroup server-wg)
-		    (if (not (eq current-wg server-wg))
-			(wg-switch-to-workgroup server-wg)
-		      )
 		    )
 		  )
 		)
 	      )
-	  )
+	    )
 	)
       )
-    (add-to-list 'after-make-frame-functions #'my-start-emacs)
+    ;;(add-to-list 'after-make-frame-functions #'my-start-emacs)
     
     ;; Exit function
-;;     (defun my-exit-emacs ()
-;;       "Leaves session and saves all workgroup states. Will not continue if there is no w\
-;; orkgroups open."
-;;       (interactive)
-;;       (if (daemonp)
-;; 	  (progn
-;; 	    ;;(wg-update-all-workgroups)
-;; 	    (save-buffers-kill-terminal)
-;; 	    )
-;; 	(save-buffers-kill-terminal)
-;; 	))
-;;     (global-set-key (kbd "C-x C-c") 'my-exit-emacs)
+    (defun my-exit-emacs ()
+      "Leaves session and saves all workgroup states. Will not continue if there is no w\
+orkgroups open."
+      (interactive)
+      (if (daemonp)
+	  (progn
+	    ;;(wg-update-all-workgroups)
+	    (save-buffers-kill-terminal)
+	    )
+	(save-buffers-kill-terminal)
+	))
+    (global-set-key (kbd "C-x C-c") 'my-exit-emacs)
     )
 
   ;; Bash scripting
@@ -757,6 +753,17 @@ bash-completion-dynamic-complete from bash-completion.el"
      ("S-C-<left>" . win-resize-enlarge-vert)
      ("S-C-<right>" . win-resize-minimize-vert)
      ))
+
+  (use-package theme-setup
+    :load-path "lisp/"
+    :config
+    (require 'theme-setup)
+    (add-hook 'after-make-frame-functions 'pick-color-theme)
+    ;; For when started with emacs or emacs -nw rather than emacs --daemon
+    (if window-system
+	(my-gui-config)
+      (my-terminal-config))
+    )
 
 ;;;;;;;;;;;;;;;;; OTHER STUFF
   
@@ -1032,51 +1039,9 @@ bash-completion-dynamic-complete from bash-completion.el"
 	    (set-visited-file-name new-name t t)))))))
   (global-set-key (kbd "C-c f r")  'rename-file-and-buffer)
 
-  ;; Theme switching GUI/terminal
-  ;; last t is for NO-ENABLE
-  (load-theme 'zenburn t t)
-  ;;(load-theme 'tsdh-dark t t)
-
-  (defun use-zenburn-theme()
-    (enable-theme 'zenburn)
-    (set-face-attribute 'mode-line nil :box nil)
-    (set-face-attribute 'mode-line-inactive nil :box nil)
-    )
-
-  (defun use-nw-theme()
-    ;; use no theme...
-    ;; (enable-theme 'tsdh-dark)
-    ;; (set-face-attribute 'mode-line nil :box nil)
-    ;; (set-face-attribute 'mode-line-inactive nil :box nil)
-    )
-
-  (defun pick-color-theme (frame)
-    (select-frame frame)
-    (if (window-system frame)
-  	(progn  
-  	  (disable-theme 'tsdh-dark) ; in case it was active
-  	  (use-zenburn-theme)
-	  ;; highlight current line (only in GUI mode, since it's
-	  ;; uncomfortable in the terminal)
-	  (add-hook 'c-mode-common-hook 'hl-line-mode)
-	  (add-hook 'python-mode-hook 'hl-line-mode)
-	  (add-hook 'sh-mode-hook 'hl-line-mode)
-	  (add-hook 'emacs-lisp-mode-hook 'hl-line-mode)
-	  ;;(global-hl-line-mode +1)
-	  )
-      (progn  
-  	(disable-theme 'zenburn) ; in case it was active
-	(remove-hook 'c-mode-common-hook 'hl-line-mode)
-	(remove-hook 'python-mode-hook 'hl-line-mode)
-	(remove-hook 'sh-mode-hook 'hl-line-mode)
-	(remove-hook 'emacs-lisp-mode-hook 'hl-line-mode)
-  	(use-nw-theme))))
-  (add-hook 'after-make-frame-functions 'pick-color-theme)
-
-  ;; For when started with emacs or emacs -nw rather than emacs --daemon
-  (if window-system
-      (use-zenburn-theme)
-    (use-nw-theme))
+  ;; Mode line customizations
+  (set-face-attribute 'mode-line nil :box nil)
+  (set-face-attribute 'mode-line-inactive nil :box nil)
   
 )
 

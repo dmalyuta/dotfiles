@@ -9,7 +9,7 @@ alias sudo='sudo '
 alias rm='rm -i'
 
 # Emacs
-#alias emacsclient="emacsclient -e '(my-start-emacs)' " # crucial part of layout persistence across sessions! (must come before below functions!!) (fixed, no longer needed I think...)
+alias emacsclient="emacsclient -e '(my-start-emacs)' " # crucial part of layout persistence across sessions! (must come before below functions!!) (fixed, no longer needed I think...)
 emacsserverstart() {
     local name="$1"
     if [ ! "$name" ]; then

@@ -81,18 +81,18 @@
 # ######## cron (sudo crontab -e)
 #
 #   # hourly backup: every 4th hour on the hour, keep 6 snapshots
-#   0 */4 * * * /usr/bin/flock -w 10800 /var/lock/my_cron_backup.lock /home/danylo/.bin/make_snapshot.sh -m -p hourly -d 6 2>&1 | mail -s "[linux-automation] hourly backup" "danylo.malyuta@gmail.com"
+#   0 */4 * * * /usr/bin/flock -w 10800 /var/lock/my_cron_backup.lock /home/danylo/.bin/make_snapshot.sh -m -p hourly -d 6 -f acer_laptop 2>&1 | mail -s "[linux-automation] hourly backup" "danylo.malyuta@gmail.com"
 #   # daily, weekly and monthly backups done by anacrontab (see /etc/anacrontab and /var/spool/anacron/)
 #
 # ######## anacron (backup.* files in /var/spool/anacron/, edit /etc/anacrontab)
 #
 #   # backups
 #   # daily with history of 6
-#   1	5	backup.daily	/usr/bin/flock -w 10800 /var/lock/my_cron_backup.lock /home/danylo/.bin/make_snapshot.sh -p daily -d 6 2>&1 | mail -s "[linux-automation] daily backup" "danylo.malyuta@gmail.com"
+#   1	5	backup.daily	/usr/bin/flock -w 10800 /var/lock/my_cron_backup.lock /home/danylo/.bin/make_snapshot.sh -p daily -d 6 -f acer_laptop 2>&1 | mail -s "[linux-automation] daily backup" "danylo.malyuta@gmail.com"
 #   # weekly backup with history of 4
-#   7	25	backup.weekly	/usr/bin/flock -w 10800 /var/lock/my_cron_backup.lock /home/danylo/.bin/make_snapshot.sh -p weekly -d 4 2>&1 | mail -s "[linux-automation] weekly backup" "danylo.malyuta@gmail.com"
+#   7	25	backup.weekly	/usr/bin/flock -w 10800 /var/lock/my_cron_backup.lock /home/danylo/.bin/make_snapshot.sh -p weekly -d -f acer_laptop 4 2>&1 | mail -s "[linux-automation] weekly backup" "danylo.malyuta@gmail.com"
 #   # monthly backup with history of 12
-#   30	45	backup.monthly	/usr/bin/flock -w 10800 /var/lock/my_cron_backup.lock /home/danylo/.bin/make_snapshot.sh -p monthly -d 12 2>&1 | mail -s "[linux-automation] monthly backup" "danylo.malyuta@gmail.com"
+#   30	45	backup.monthly	/usr/bin/flock -w 10800 /var/lock/my_cron_backup.lock /home/danylo/.bin/make_snapshot.sh -p monthly -d 12 -f acer_laptop 2>&1 | mail -s "[linux-automation] monthly backup" "danylo.malyuta@gmail.com"
 #
 # The advantage of anacron is that it ensures that daily, weekly and
 # monthly backups are made as soon as the computer is turned on after
@@ -103,7 +103,7 @@
 
 ########## some main variables
 
-BACKUP_DIR="/root/backup/backups/acer_laptop/" # directory storing all backups
+BACKUP_DIR="/root/backup/backups/" # base directory of backup storage directory
 SOURCE_DIR="/" # directory to back up
 ABORT_MSG="Will not proceed with backup. Aborting..."
 DATE=$(date +"%d%m%Y_T%H%M%S")
@@ -280,7 +280,8 @@ fi
 # process flags (sets prefix and, optionally, depth and monitoring mode)
 DEPTH=3 # how many snapshots to keep (default)
 WITH_MONITORING=false # if true, then recursively back up any unfinished backups
-while getopts :d:p:m option
+BACKUP_DIR_SPECIFIED=false
+while getopts :d:p:f:m option
 do
     if [[ $option == d ]]; then
 	if [[ $OPTARG -gt 99 ]]; then
@@ -291,6 +292,10 @@ do
 	fi
 	DEPTH=$OPTARG
 	echo "Keeping a $DEPTH snapshot history"
+    elif [[ $option == f ]]; then
+	BACKUP_DIR_SPECIFIED=true
+	BACKUP_DIR="${BACKUP_DIR}${OPTARG}/"
+	echo "Storing backup in ${BACKUP_DIR}"
     elif [[ $option == p ]]; then
 	for element in "${LEVELS[@]}"
 	do
@@ -315,6 +320,13 @@ if [[ -z $PREFIX ]]; then
     exit $UNKNOWN_FLAG
 fi
 
+# check that backup directory was specified
+if ! $BACKUP_DIR_SPECIFIED; then
+    echoerr "Error: backup directory must be specified"
+    echoerr "$ABORT_MSG"
+    exit $BACKUP_DIR_NOT_FOUND
+fi
+
 # check that backup directory exists
 if ! isdir "$BACKUP_DIR"; then
     echoerr "Error: $BACKUP_DIR is not a directory"
@@ -327,7 +339,7 @@ fi
 SPACE_AVAIL_BEFORE=$(get_size "avail")
 SPACE_USED_BEFORE=$(get_size "used")
 if [[ $SPACE_AVAIL_BEFORE -le $CRITICAL_SPACE_LEFT ]]; then
-    echoerr "Only $SPACE_AVAIL_BEFORE GB left on backup media, which is less than $CRITICAL_SPACE_LEFT"
+    echoerr "Only $SPACE_AVAIL_BEFORE GB left on backup media, which is less than the $CRITICAL_SPACE_LEFT GB minimum"
     echoerr "$ABORT_MSG"
     exit $NOT_ENOUGH_SPACE
 fi

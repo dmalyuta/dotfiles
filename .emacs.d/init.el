@@ -46,59 +46,6 @@
     :bind
     (("C-x C-b" . buffer-menu)))
 
-  (use-package cedet
-    ;; collection of Emacs development environment tools
-    :demand
-    :bind
-    (:map c-mode-base-map
-	  ("C-c n" . senator-next-tag)
-	  ("C-c p" . senator-previous-tag)
-	  ("C-c u" . senator-go-to-up-reference)
-	  ("C-c M-w" . senator-copy-tag)
-	  ("C-c C-w" . senator-kill-tag)
-	  ("C-c C-y" . senator-yank-tag))
-    :config
-    (require 'cc-mode)
-    ;; Semantic
-    ;; Useful commands:
-    ;;   M-x company-semantic
-    ;;   M-x semantic-ia-complete-symbol
-    (require 'semantic)
-    (global-semanticdb-minor-mode 1)
-    (global-semantic-idle-scheduler-mode 1)
-    (semantic-mode 1)
-    ;;(add-hook 'c-mode-hook (lambda () (global-semantic-idle-summary-mode 1)))
-    ;;(add-hook 'c++-mode-hook (lambda () (global-semantic-idle-summary-mode 1)))
-    (semantic-add-system-include "/usr/include/boost")
-    (semantic-add-system-include "/usr/include/eigen3")
-    (semantic-add-system-include "/usr/include/pcl-1.7/")
-    ;; SpeedBar
-    (use-package sr-speedbar
-      ;; Show speedbar in the same frame
-      :ensure t
-      :if window-system ;; only use in GUI
-      :demand
-      :bind
-      (("C-c C-s" . sr-speedbar-toggle)
-       :map c-mode-base-map
-	    ("C-c C-s" . sr-speedbar-toggle))
-      :config
-      (require 'sr-speedbar)
-      (setq sr-speedbar-width 30)
-      (setq sr-speedbar-right-side nil)
-      ;;(sr-speedbar-open)
-      (defun sb-expand-curren-file ()
-	"Expand current file in speedbar buffer"  
-	(interactive)
-	(setq current-file (buffer-file-name))
-	(sr-speedbar-refresh)
-	(switch-to-buffer-other-frame "*SPEEDBAR*")
-	(speedbar-find-selected-file current-file)
-	(speedbar-expand-line))
-      )
-    (which-function-mode 1) ;; show which function the cursor is in
-    )
-
 ;;;;;;;;;;;;;;;;; MELPA PACKAGES
 
   (use-package rainbow-delimiters

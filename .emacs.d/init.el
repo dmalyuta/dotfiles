@@ -1,5 +1,9 @@
 (let ((gc-cons-threshold most-positive-fixnum) ;; better garbage collection
       (file-name-handler-alist nil))
+
+;;;;;;;;;;;;;;;;; STUFF THAT NEEDS TO COME FIRST
+               ;; (like mode line, so that we get the customization right away)
+  
   ;; sensible GUI
   (menu-bar-mode -1)  ;; disable menubar
   (tool-bar-mode -1) ;; disable toolbar
@@ -9,6 +13,7 @@
   (global-unset-key (kbd "C-<up>"))
   (global-unset-key (kbd "C-<down>"))
 
+;;;;;;;;;;;;;;;;; PACKAGE MANAGEMENT
 
   ;; MELPA
   (require 'package)
@@ -55,12 +60,7 @@
   (use-package zenburn-theme
     ;; the best theme there is!
     :ensure t
-    :if window-system ;; load only when GUI
-    :config
-    ;; (load-theme 'zenburn t)
-    ;; ;; stylize the mode line
-    ;; (set-face-attribute 'mode-line nil :box nil)
-    ;; (set-face-attribute 'mode-line-inactive nil :box nil)
+    :defer t
     )
 
   (use-package dired+
@@ -133,6 +133,9 @@
   (use-package helm-company
     ;; Helm interface for company-mode
     :ensure t
+    :bind
+    (("C-;" . helm-company))
+    :demand
     :config
     (eval-after-load 'company
       '(progn
@@ -141,13 +144,6 @@
 	   (if (looking-at "\\_>")
 	       (helm-company)
 	     (indent-according-to-mode)))
-	 ;; Normal completion: complete when at least one character
-	 ;; written, otherwise tab
-	 (define-key company-mode-map (kbd "TAB") 'indent-or-complete)
-	 (define-key company-mode-map (kbd "<tab>") 'indent-or-complete)
-	 ;; Forced completion: complete no matter what
-	 (define-key company-mode-map (kbd "C-TAB") 'helm-company)
-	 (define-key company-mode-map (kbd "C-<tab>") 'helm-company)
 	 ))
     )
 
@@ -600,8 +596,7 @@
     
     ;; Exit function
     (defun my-exit-emacs ()
-      "Leaves session and saves all workgroup states. Will not continue if there is no w\
-orkgroups open."
+      "Leaves session and saves all workgroup states. Will not continue if there is no workgroups open."
       (interactive)
       (if (daemonp)
 	  (progn
@@ -756,13 +751,12 @@ bash-completion-dynamic-complete from bash-completion.el"
 
   (use-package theme-setup
     :load-path "lisp/"
+    :demand
     :config
-    (require 'theme-setup)
-    (add-hook 'after-make-frame-functions 'pick-color-theme)
     ;; For when started with emacs or emacs -nw rather than emacs --daemon
-    (if window-system
-	(my-gui-config)
-      (my-terminal-config))
+    (add-hook 'after-init-hook 'my-normal-startup-pick-color-theme)
+    ;; For when started as emacs --daemon
+    (add-hook 'after-make-frame-functions 'pick-color-theme)
     )
 
 ;;;;;;;;;;;;;;;;; OTHER STUFF
@@ -1038,10 +1032,6 @@ bash-completion-dynamic-complete from bash-completion.el"
 	    (rename-file filename new-name t)
 	    (set-visited-file-name new-name t t)))))))
   (global-set-key (kbd "C-c f r")  'rename-file-and-buffer)
-
-  ;; Mode line customizations
-  (set-face-attribute 'mode-line nil :box nil)
-  (set-face-attribute 'mode-line-inactive nil :box nil)
   
 )
 

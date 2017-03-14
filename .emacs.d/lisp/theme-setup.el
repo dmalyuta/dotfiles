@@ -1,8 +1,16 @@
-;; Theme switching GUI/terminal
+;;; theme-setup.el --- 
+
+;;; Commentary:
+
+;;; Theme switching GUI/terminal
+
+;;; Code:
 
 (defun use-zenburn-theme()
   (load-theme 'zenburn t t) ;; last t is for NO-ENABLE
   (enable-theme 'zenburn)
+  (set-face-attribute 'mode-line nil :box nil)
+  (set-face-attribute 'mode-line-inactive nil :box nil)
   )
 
 (defun use-nw-theme()
@@ -13,7 +21,7 @@
 
 (defun my-gui-config ()
   (interactive)
-  (disable-theme 'tsdh-dark) ; in case it was active
+  ;;(disable-theme 'tsdh-dark) ; in case it was active
   (use-zenburn-theme)
   ;; highlight current line (only in GUI mode, since it's
   ;; uncomfortable in the terminal)
@@ -35,10 +43,19 @@
   )
 
 (defun pick-color-theme (frame)
+  (interactive)
   (select-frame frame)
-  (if (window-system frame)
+  (if (window-system)
+      (my-gui-config)
+    (my-terminal-config))
+  )
+
+(defun my-normal-startup-pick-color-theme ()
+  (interactive)
+  (if (window-system)
       (my-gui-config)
     (my-terminal-config))
   )
 
 (provide 'theme-setup)
+;;; theme-setup.el ends here

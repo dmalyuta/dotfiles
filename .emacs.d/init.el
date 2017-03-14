@@ -61,6 +61,8 @@
     ;; the best theme there is!
     :ensure t
     :defer t
+    ;;:config
+    ;;(load-theme 'zenburn t t) ;; last t is for NO-ENABLE
     )
 
   (use-package dired+

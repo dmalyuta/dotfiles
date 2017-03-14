@@ -14,9 +14,10 @@
   )
 
 (defun use-nw-theme()
-  ;; use no theme...
-  ;; (load-theme 'tsdh-dark t t) ;; last t is for NO-ENABLE
-  ;; (enable-theme 'tsdh-dark)
+  ;; Zenburn works well with TERM=xterm-256-color
+  ;; otherwise just comment out - no theme at all is next-best
+  ;; alternative I think
+  (use-zenburn-theme)
   )
 
 (defun my-gui-config ()

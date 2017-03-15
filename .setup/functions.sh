@@ -82,7 +82,11 @@ install_program()
 apt_get_install_pkg()
 { # install package with apt-get
     local pkg="$1"
-    runcmd "apt-get --assume-yes install $pkg"
+    if [ "$#" -gt 1 ]; then
+	runcmd "apt-get --assume-yes install $pkg" nonull
+    else
+	runcmd "apt-get --assume-yes install $pkg"
+    fi
 }
 
 make_symlink()

@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Eclipse
+Type=Application
+Exec=/home/danylo/.eclipse/eclipse/eclipse
+Terminal=false
+Icon=/home/danylo/.eclipse/eclipse/icon.xpm
+Comment=Integrated Development Environment
+NoDisplay=false
+Categories=Development;IDE;
+Name[en]=Eclipse

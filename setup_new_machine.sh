@@ -14,8 +14,9 @@ programs_list=(
     "home_dotfiles"
     "bin"
     "terminator"
-    "emacs"
     "python"
+    "latex"
+    "eclipse"
 )
 
 # associated dotfile dependencies for each program
@@ -23,8 +24,8 @@ programs_list=(
 dependencies_home_dotfiles=(".profile" ".bash_aliases" ".local.bashrc" ".screenrc" ".tmux.conf")
 dependencies_bin=(".bin")
 dependencies_terminator=(".config/terminator/config")
-dependencies_emacs=(".emacs.d/init.el" ".emacs.d/lisp")
 dependencies_python=(".jupyter/jupyter_notebook_config.py")
+dependencies_eclipse=(".local/share/applications/eclipse.desktop")
 
 # question to ask user when determining which programs to install
 
@@ -32,8 +33,9 @@ declare -A dotfiles_prompt
 dotfiles_prompt["${programs_list[0]}"]="Do you want to install the dotfiles that go in $HOME directory [Yn]? "
 dotfiles_prompt["${programs_list[1]}"]="Do you want to install the .bin directory [Yn]? "
 dotfiles_prompt["${programs_list[2]}"]="Do you want to install the terminator terminal [Yn]? "
-dotfiles_prompt["${programs_list[3]}"]="Do you want to install Emacs [Yn]? "
-dotfiles_prompt["${programs_list[4]}"]="Do you want to install tools for Python [Yn]? "
+dotfiles_prompt["${programs_list[3]}"]="Do you want to install tools for Python [Yn]? "
+dotfiles_prompt["${programs_list[4]}"]="Do you want to install LaTeX and TeXstudio editor [Yn]? "
+dotfiles_prompt["${programs_list[5]}"]="Do you want to install Eclipse IDE [Yn]? "
 
 ########## global variables
 
@@ -164,21 +166,24 @@ do
     copy_foo "$foo" "$dir" "$home" $symlink
 done
 
+########## Terminator (terminal)
+
+install_program "terminator" .setup/install_terminator.sh
+
 ########## Python tools
 
 if [[ ! -z ${install_programs_list["python"]} || ! -z ${install_programs_list["emacs"]} ]]; then
     source .setup/install_python_common.sh
 fi
-
 install_program "python" .setup/install_python.sh
 
-########## Emacs
+########## LaTeX
 
-install_program "emacs" .setup/install_emacs.sh
+install_program "latex" .setup/install_latex.sh
 
-########## Installation: terminator (terminal)
+########## Eclipse
 
-install_program "terminator" .setup/install_terminator.sh
+install_program "eclipse" .setup/install_eclipse.sh
 
 ########## closing actions
 

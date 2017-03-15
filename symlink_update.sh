@@ -75,15 +75,6 @@ if [ -e "${home}/.config/terminator/config" ]; then
     make_symlink ".config/terminator/config" "$dir" "$home" $symlink
 fi
 
-########## Emacs
-
-if [ -e "${home}/.emacs.d/init.el" ]; then
-    make_symlink ".emacs.d/init.el" "$dir" "$home" $symlink
-fi
-if [ -e "${home}/.emacs.d/lisp" ]; then
-    make_symlink ".emacs.d/lisp" "$dir" "$home" $symlink
-fi
-
 ########## Python
 
 if [ -e "${home}/.jupyter/jupyter_notebook_config.py" ]; then

@@ -10,19 +10,13 @@ A set of dotfiles and a setup script for dotfiles from my Ubuntu Linux home dire
 * Personalized `.bashrc`, `.profile` and `.bash_aliases`
 * Personalized [Terminator](https://launchpad.net/terminator) (multiple window terminal emulator)
 * [Automated backup](https://github.com/dmalyuta/dotfiles/blob/master/.bin/make_snapshot.sh) using `rsync`, `cron` and `anacron` with support for grandfather-father-son backup scheme
-* Emacs 24.5 with bash function `emacsserver` for daemon process management
 
-### Recommended software
+### Used software
 
-* C/C++ development: [Emacs 24.5](https://www.gnu.org/software/emacs/), [CLion](https://www.jetbrains.com/clion/), [Eclipse CDT](http://www.eclipse.org/cdt/)
-* Python development: [PyCharm](https://www.jetbrains.com/pycharm/), [Jupyter](http://jupyter.org/)
-* Java development: [IntelliJ IDEA](https://www.jetbrains.com/idea), [Eclipse JDT](https://projects.eclipse.org/projects/eclipse.jdt)
-* R development: [RStudio](https://www.rstudio.com/)
-* Scientific computing: [MATLAB](https://www.mathworks.com/products/matlab.html) and [Mathematica](https://www.wolfram.com/mathematica/)
+* C/C++/Python: [Eclipse](http://www.eclipse.org/), [Jupyter](http://jupyter.org/)
+* Scientific computing: [MATLAB](https://www.mathworks.com/products/matlab.html), [Mathematica](https://www.wolfram.com/mathematica/), [RStudio](https://www.rstudio.com/)
 * Version control and file sharing: [Git](https://git-scm.com/) and [Dropbox](https://www.dropbox.com/login)
-* LaTeX publishing: [TeXlipse](http://texlipse.sourceforge.net/)
-* Web browsing: [Google Chrome](https://www.google.com/chrome/)
-* PDF reading/editing: [Foxit Reader](https://www.foxitsoftware.com/products/pdf-reader/)
+* LaTeX publishing: [TeXstudio](http://www.texstudio.org/)
 
 ## Contributing
 
@@ -56,13 +50,9 @@ Other distributions may work, but I did not explicitly test them yet. If you try
 
 Note that the automated backup solution needs you to configure `cron` and `anacron` manually. See the starting comment block of the [backup script](https://github.com/dmalyuta/dotfiles/blob/master/.bin/make_snapshot.sh) to learn how. It would not be good to automate this step as it should be your choice on how, if at all, to run backups.
 
-Finally, settings syncing across JetBrains IDEs can be automated via the [Settings Repository](https://github.com/develar/settings-repository) plugin by installing it in the IDEs and pointing it to the `DIR/.jetbrains/settings` folder.
-
 ## Known issues
 
  1. For Ubuntu 14.04: an error may be thrown during installation is `apt-get update` fails due to a "Hash Sum mismatch". The solution is to run `sudo rm -vf /var/lib/apt/lists/* && sudo apt-get clean && sudo apt-get update` (possible several times until the "Hash Sum mismatch" warning disappears), then running the installation script again.
- 2. If there are any errors during Emacs package auto-install (when you open Emacs for the first time), restarting Emacs solves every issue I've encountered so far.
-    * Note: if a "package doesn't exist" error comes up during package auto-install, run `M-x package-refresh-contents` and restart Emacs. This fixes any such issue for me.
 
 ## TODO
 

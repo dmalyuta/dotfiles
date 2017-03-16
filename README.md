@@ -13,7 +13,7 @@ A set of dotfiles and a setup script for dotfiles from my Ubuntu Linux home dire
 
 ### Used software
 
-* C/C++/Python: [Eclipse](http://www.eclipse.org/), [Jupyter](http://jupyter.org/)
+* C/C++/Python: [Qt Creator](https://www.qt.io/ide/), [Jupyter](http://jupyter.org/)
 * Scientific computing: [MATLAB](https://www.mathworks.com/products/matlab.html), [Mathematica](https://www.wolfram.com/mathematica/), [RStudio](https://www.rstudio.com/)
 * Version control and file sharing: [Git](https://git-scm.com/) and [Dropbox](https://www.dropbox.com/login)
 * LaTeX publishing: [TeXstudio](http://www.texstudio.org/)

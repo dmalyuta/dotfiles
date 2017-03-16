@@ -26,11 +26,11 @@ runcmd "add-apt-repository ppa:levi-armstrong/ppa -y"
 runcmd "apt-get update"
 apt_get_install_pkg qt57creator-plugin-ros
 
-# Install StarUML
+# Install Modelio
 # UML modelling software
-runcmd "wget http://staruml.io/download/release/v2.8.0/StarUML-v2.8.0-64-bit.deb -P ${home}/Downloads/"
-runcmd "dpkg -i ${home}/Downloads/StarUML-v2.8.0-64-bit.deb"
+runcmd "wget https://sourceforge.net/projects/modeliouml/files/3.6.1/modelio-open-source-3.6.1_amd64.deb/download -P ${home}/Downloads/"
+runcmd "dpkg -i ${home}/Downloads/modelio-open-source-3.6.1_amd64.deb"
 runcmd "apt-get --assume-yes install -f"
-runcmd "rm -f ${home}/Downloads/StarUML-v2.8.0-64-bit.deb"
+runcmd "rm -f ${home}/Downloads/modelio-open-source-3.6.1_amd64.deb"
 
 echo_prefix="$echo_prefix_temp"

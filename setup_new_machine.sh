@@ -17,6 +17,7 @@ programs_list=(
     "python"
     "latex"
     "eclipse"
+    "inkscape"
 )
 
 # associated dotfile dependencies for each program
@@ -36,6 +37,7 @@ dotfiles_prompt["${programs_list[2]}"]="Do you want to install the terminator te
 dotfiles_prompt["${programs_list[3]}"]="Do you want to install tools for Python [Yn]? "
 dotfiles_prompt["${programs_list[4]}"]="Do you want to install LaTeX and TeXstudio editor [Yn]? "
 dotfiles_prompt["${programs_list[5]}"]="Do you want to install Eclipse IDE [Yn]? "
+dotfiles_prompt["${programs_list[6]}"]="Do you want to install Inkscape [Yn]? "
 
 ########## global variables
 
@@ -184,6 +186,10 @@ install_program "latex" .setup/install_latex.sh
 ########## Eclipse
 
 install_program "eclipse" .setup/install_eclipse.sh
+
+########## Inkscape
+
+install_program "inkscape" .setup/install_inkscape.sh
 
 ########## closing actions
 

@@ -10,9 +10,9 @@ set_title() {
 if [ -f "/opt/ros/indigo/setup.bash" ]; then
     . /opt/ros/indigo/setup.bash
 fi
-if [ -f ~/catkin_ws/devel/setup.bash ]; then
-    . ~/catkin_ws/devel/setup.bash
-fi
+#if [ -f ~/catkin_ws/devel/setup.bash ]; then
+#    . ~/catkin_ws/devel/setup.bash
+#fi
 # in ~/.local.bashrc optionally add the following lines for ROS network setup:
 # export ROS_HOSTNAME=<local_IP_address (AAA.BBB.C.DDD)>
 # export ROS_IP=<local_IP_address (AAA.BBB.C.DDD)>

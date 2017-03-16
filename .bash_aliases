@@ -8,6 +8,9 @@ alias sudo='sudo '
 # files/folders.
 alias rm='rm -i'
 
+# Eclipse
+alias eclipse="bash -i -c ~/.eclipse/eclipse/eclipse"
+
 # Emacs
 alias emacsclient="emacsclient -e '(my-start-emacs)' " # crucial part of layout persistence across sessions! (must come before below functions!!) (fixed, no longer needed I think...)
 emacsserverstart() {

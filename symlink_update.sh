@@ -81,6 +81,12 @@ if [ -e "${home}/.jupyter/jupyter_notebook_config.py" ]; then
     make_symlink ".jupyter/jupyter_notebook_config.py" "$dir" "$home" $symlink
 fi
 
+########## Development tools
+
+if [ -e "${home}/.local/share/applications/staruml.desktop" ]; then
+    make_symlink ".local/share/applications/staruml.desktop" "$dir" "$home" $symlink
+fi
+
 ########## closing actions
 
 builtin echo

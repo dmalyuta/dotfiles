@@ -13,10 +13,9 @@
 programs_list=(
     "home_dotfiles"
     "bin"
-    "terminator"
+    "dev_tools"
     "python"
     "latex"
-    "dev_tools"
     "inkscape"
 )
 
@@ -24,20 +23,18 @@ programs_list=(
 
 dependencies_home_dotfiles=(".profile" ".bash_aliases" ".local.bashrc" ".screenrc" ".tmux.conf")
 dependencies_bin=(".bin")
-dependencies_terminator=(".config/terminator/config")
+dependencies_dev_tools=(".config/terminator/config" ".local/share/applications/eclipse.desktop")
 dependencies_python=(".jupyter/jupyter_notebook_config.py")
-dependencies_dev_tools=(".local/share/applications/eclipse.desktop")
 
 # question to ask user when determining which programs to install
 
 declare -A dotfiles_prompt
 dotfiles_prompt["${programs_list[0]}"]="Do you want to install the dotfiles that go in $HOME directory [Yn]? "
 dotfiles_prompt["${programs_list[1]}"]="Do you want to install the .bin directory [Yn]? "
-dotfiles_prompt["${programs_list[2]}"]="Do you want to install the terminator terminal [Yn]? "
+dotfiles_prompt["${programs_list[2]}"]="Do you want to install software development tools [Yn]? "
 dotfiles_prompt["${programs_list[3]}"]="Do you want to install tools for Python [Yn]? "
 dotfiles_prompt["${programs_list[4]}"]="Do you want to install LaTeX and TeXstudio editor [Yn]? "
-dotfiles_prompt["${programs_list[5]}"]="Do you want to install development tools (Eclipse, Modelio) [Yn]? "
-dotfiles_prompt["${programs_list[6]}"]="Do you want to install Inkscape [Yn]? "
+dotfiles_prompt["${programs_list[5]}"]="Do you want to install Inkscape [Yn]? "
 
 ########## global variables
 
@@ -167,10 +164,6 @@ for foo in "${install_dotfiles_list[@]}"
 do
     copy_foo "$foo" "$dir" "$home" $symlink
 done
-
-########## Terminator (terminal)
-
-install_program "terminator" .setup/install_terminator.sh
 
 ########## Development tools
 

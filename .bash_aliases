@@ -9,7 +9,8 @@ alias sudo='sudo '
 alias rm='rm -i'
 
 # Eclipse
-alias eclipse="bash -i -c ${HOME}/.eclipse/eclipse/eclipse"
+alias eclipse_cdt="bash -i -c ${HOME}/.eclipse/eclipse/eclipse"
+alias eclipse_modeling_tools="${HOME}/.eclipse/eclipse_modeling_tools/eclipse"
 
 # Clipboard
 alias copy='xargs echo -n | xclip -selection clipboard'

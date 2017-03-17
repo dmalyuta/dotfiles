@@ -2,7 +2,8 @@
 
 ## Description
 
-A set of dotfiles and a setup script for dotfiles from my Ubuntu Linux home directory. This is a way of keeping my dotfiles in sync across computers.
+* Target OS: Ubuntu 14.04.5 Desktop 64-bit
+* Purpose: keep my dotfiles synced across my computers.
 
 ## Features
 
@@ -13,9 +14,9 @@ A set of dotfiles and a setup script for dotfiles from my Ubuntu Linux home dire
 
 ### Used software
 
-* C/C++/Python: [Qt Creator](https://www.qt.io/ide/), [Jupyter](http://jupyter.org/)
+* C/C++/Python: [Eclipse CDT (Kepler)](https://eclipse.org/cdt/), [Jupyter](http://jupyter.org/)
 * Scientific computing: [MATLAB](https://www.mathworks.com/products/matlab.html), [Mathematica](https://www.wolfram.com/mathematica/), [RStudio](https://www.rstudio.com/)
-* Software design: [StarUML](http://staruml.io/)
+* Software design: [Eclipse Modeling Tools Papyrus (Kepler)](http://www.eclipse.org/downloads/packages/eclipse-modeling-tools/keplersr2), [Stateflow](https://www.mathworks.com/products/stateflow.html)
 * Version control and file sharing: [Git](https://git-scm.com/) and [Dropbox](https://www.dropbox.com/login)
 * LaTeX publishing: [TeXstudio](http://www.texstudio.org/)
 

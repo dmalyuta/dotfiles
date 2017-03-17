@@ -30,6 +30,7 @@ apt_get_install_pkg bash-completion
 # tmux (version 2.3)
 if [ "$(tmux -V)" != "tmux 2.3" ]; then
     apt_get_install_pkg libevent-dev
+    apt_get_install_pkg libncurses5-dev
     wget_targz_install "tmux-2.3" "https://github.com/tmux/tmux/releases/download/2.3/tmux-2.3.tar.gz"
 fi
 

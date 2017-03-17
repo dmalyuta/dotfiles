@@ -26,7 +26,7 @@ dependencies_home_dotfiles=(".profile" ".bash_aliases" ".local.bashrc" ".screenr
 dependencies_bin=(".bin")
 dependencies_terminator=(".config/terminator/config")
 dependencies_python=(".jupyter/jupyter_notebook_config.py")
-dependencies_dev_tools=(".local/share/applications/staruml.desktop")
+dependencies_dev_tools=(".local/share/applications/eclipse.desktop")
 
 # question to ask user when determining which programs to install
 
@@ -36,7 +36,7 @@ dotfiles_prompt["${programs_list[1]}"]="Do you want to install the .bin director
 dotfiles_prompt["${programs_list[2]}"]="Do you want to install the terminator terminal [Yn]? "
 dotfiles_prompt["${programs_list[3]}"]="Do you want to install tools for Python [Yn]? "
 dotfiles_prompt["${programs_list[4]}"]="Do you want to install LaTeX and TeXstudio editor [Yn]? "
-dotfiles_prompt["${programs_list[5]}"]="Do you want to install development tools (Qt Creator, StarUML) [Yn]? "
+dotfiles_prompt["${programs_list[5]}"]="Do you want to install development tools (Eclipse, Modelio) [Yn]? "
 dotfiles_prompt["${programs_list[6]}"]="Do you want to install Inkscape [Yn]? "
 
 ########## global variables
@@ -172,6 +172,10 @@ done
 
 install_program "terminator" .setup/install_terminator.sh
 
+########## Development tools
+
+install_program "dev_tools" .setup/install_dev_tools.sh
+
 ########## Python tools
 
 if [[ ! -z ${install_programs_list["python"]} ]]; then
@@ -182,10 +186,6 @@ install_program "python" .setup/install_python.sh
 ########## LaTeX
 
 install_program "latex" .setup/install_latex.sh
-
-########## Eclipse
-
-install_program "dev_tools" .setup/install_dev_tools.sh
 
 ########## Inkscape
 

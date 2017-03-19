@@ -140,16 +140,16 @@ copy_foo()
     
     if [ -e "$origin_foo" ]; then
 	# back up existing (destination) foo
-	if [ -e "$destination_foo" ]; then
-	    # backup $destination_foo
-	    runcmd "cp -aLr $destination_foo $backup_folder"
-	    runcmd "rm -rf $destination_foo"
-	fi
-	# copy or symlink the git file to the place in $HOME
-	make_symlink "$foo" "$origin" "$destination" $do_symlink $symlink_individual_files
+	    if [ -e "$destination_foo" ]; then
+	        # backup $destination_foo
+	        runcmd "cp -aLr $destination_foo $backup_folder"
+	        runcmd "rm -rf $destination_foo"
+	    fi
+	    # copy or symlink the git file to the place in $HOME
+	    make_symlink "$foo" "$origin" "$destination" $do_symlink $symlink_individual_files
     else
-	echoerr "couldn't find $git_foo"
-	exit 1
+	    echoerr "couldn't find $origin_foo"
+	    exit 1
     fi
 }
 
@@ -233,10 +233,6 @@ determine_install() {
     if ! $program_exists || $do_reinstall; then
         do_install=0 # do install (Bash 0 means TRUE, 1 means FALSE...)
     fi
-    
-    echo $program_exists
-    echo $do_reinstall
-    echo $do_install
     
     return $do_install
 }

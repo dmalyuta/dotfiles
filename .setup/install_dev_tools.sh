@@ -64,7 +64,12 @@ if determine_install "Eclipse CDT (Kepler)" "yN" "${home}/.eclipse/eclipse_cdt";
     runcmd "rm -rf ${home}/Downloads/eclipse_cdt"
     runcmd "mkdir -p ${home}/Downloads/eclipse_cdt"
     runcmd "tar zxf ${home}/Downloads/eclipse_cdt.tar.gz --strip 1 -C ${home}/Downloads/eclipse_cdt"
-    copy_foo "eclipse_cdt" "${home}/Downloads" "${home}/.eclipse"
+    
+    runcmd "mkdir -p ${home}/.eclipse"
+    runcmd "rm -rf ${home}/.eclipse/eclipse_cdt"
+    runcmd "mv ${home}/Downloads/eclipse_cdt ${home}/.eclipse/"
+    runcmd "eval chown -R ${SUDO_USER:-$USER}:${SUDO_USER:-$USER} ${home}/.eclipse/eclipse_cdt"
+
     runcmd "rm -f ${home}/Downloads/eclipse_cdt.tar.gz"
     runcmd "desktop-file-install ${dir}/.eclipse/eclipse_cdt.desktop"
 fi
@@ -76,8 +81,12 @@ if determine_install "Eclipse Modeling Tools (Kepler)" "yN" "${home}/.eclipse/ec
     runcmd "rm -rf ${home}/Downloads/eclipse_modeling_tools"
     runcmd "mkdir -p ${home}/Downloads/eclipse_modeling_tools"
     runcmd "tar zxf ${home}/Downloads/eclipse_modeling_tools.tar.gz --strip 1 -C ${home}/Downloads/eclipse_modeling_tools"
-    copy_foo "eclipse_modeling_tools" "${home}/Downloads" "${home}/.eclipse"
-    copy_foo "papyrus-logo.png" "${dir}/.eclipse" "${home}/.eclipse/eclipse_modeling_tools"
+    
+    runcmd "mkdir -p ${home}/.eclipse"
+    runcmd "rm -rf ${home}/.eclipse/eclipse_modeling_tools"
+    runcmd "mv ${home}/Downloads/eclipse_modeling_tools ${home}/.eclipse/"
+    runcmd "eval chown -R ${SUDO_USER:-$USER}:${SUDO_USER:-$USER} ${home}/.eclipse/eclipse_modeling_tools"
+    
     runcmd "rm -f ${home}/Downloads/eclipse_modeling_tools.tar.gz"
     runcmd "desktop-file-install ${dir}/.eclipse/eclipse_modeling_tools.desktop"
 fi

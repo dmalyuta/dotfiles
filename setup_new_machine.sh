@@ -23,7 +23,7 @@ programs_list=(
 
 dependencies_home_dotfiles=(".profile" ".bash_aliases" ".local.bashrc" ".screenrc" ".tmux.conf")
 dependencies_bin=(".bin")
-dependencies_dev_tools=(".config/terminator/config" ".icons/eclipse_modeling_tools_icon.png")
+dependencies_dev_tools=(".config/terminator/config" ".icons/eclipse_cdt_icon.xpm" ".icons/eclipse_modeling_tools_icon.png" ".icons/matlab_icon.png")
 dependencies_python=(".jupyter/jupyter_notebook_config.py")
 
 # question to ask user when determining which programs to install

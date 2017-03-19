@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Eclipse Modeling Tools
+Type=Application
+Exec=bash -i -c "UBUNTU_MENUPROXY=0 ~/.eclipse/eclipse_modeling_tools/eclipse"
+Terminal=false
+Icon=eclipse_modeling_tools_icon
+Comment=Integrated Development Environment
+NoDisplay=false
+Categories=Development;IDE;
+Name[en]=Eclipse Modeling Tools

@@ -207,3 +207,36 @@ flush_stdin()
 	read -r
     done
 }
+
+determine_install() {
+    local program="$1"
+    local choice="$2" # yN or Yn
+    local install_dir="$3"
+    
+    local program_exists=false
+    local do_reinstall=false
+    if [ -d "$install_dir" ]; then
+        program_exists=true
+        prompt_msg="Do you want to reinstall ${program} [${choice}]? "
+        printf_prompt "$prompt_msg"
+	    read -r -p "" user_response
+	    if [[ $user_response =~ ^[yY]$ ]] || ( [[ -z $user_response ]] && [[ ${prompt_msg: -5:1} == Y ]] ); then
+	        # answered yes or pressed RET and yes is the default option
+	        do_reinstall=true
+	    elif [[ $user_response =~ ^[nN]$ ]] || ( [[ -z $user_response ]] && [[ ${prompt_msg: -4:1} == N ]] ); then
+	        # answered no or pressed RET and no is the default option
+	        do_reinstall=false
+	    fi
+    fi
+    
+    local do_install=1 # do not install by default
+    if ! $program_exists || $do_reinstall; then
+        do_install=0 # do install (Bash 0 means TRUE, 1 means FALSE...)
+    fi
+    
+    echo $program_exists
+    echo $do_reinstall
+    echo $do_install
+    
+    return $do_install
+}

@@ -1,9 +1,9 @@
 [Desktop Entry]
 Name=Eclipse
 Type=Application
-Exec=~/.eclipse/eclipse/eclipse
+Exec=bash -i -c "UBUNTU_MENUPROXY=0 ~/.eclipse/eclipse_cdt/eclipse"
 Terminal=false
-Icon=~/.eclipse/eclipse/icon.xpm
+Icon=eclipse_cdt_icon
 Comment=Integrated Development Environment
 NoDisplay=false
 Categories=Development;IDE;

@@ -8,8 +8,15 @@
 echo_prefix_temp="$echo_prefix"
 echo_prefix="[dev tools setup] "
 
+# Build tools like gcc, g++
 apt_get_install_pkg build-essential
-apt_get_install_pkg default-jre
+
+# Java 8
+apt_get_install_pkg python-software-properties
+runcmd "add-apt-repository ppa:webupd8team/java -y"
+runcmd "apt-get update"
+apt_get_install_pkg oracle-java8-installer 
+apt_get_install_pkg oracle-java8-set-default
 
 # Terminator
 # Terminal emulator
@@ -52,19 +59,28 @@ runcmd "gsettings set org.gnome.desktop.default-applications.terminal exec 'term
 
 # Eclipse CDT (Kepler)
 # C/C++ programming
-runcmd "wget http://www.eclipse.org/downloads/download.php?file=/technology/epp/downloads/release/kepler/SR2/eclipse-cpp-kepler-SR2-linux-gtk-x86_64.tar.gz&r=1 -O ${home}/Downloads/eclipse.tar.gz"
-runcmd "tar zxf ${home}/Downloads/eclipse.tar.gz -C ${home}/Downloads/"
-copy_foo "eclipse" "${home}/Downloads" "${home}/.eclipse"
-runcmd "rm -f ${home}/Downloads/eclipse.tar.gz"
+if determine_install "Eclipse CDT (Kepler)" "yN" "${home}/.eclipse/eclipse_cdt"; then
+    runcmd "wget http://www.eclipse.org/downloads/download.php?file=/technology/epp/downloads/release/kepler/SR2/eclipse-cpp-kepler-SR2-linux-gtk-x86_64.tar.gz&r=1 -O ${home}/Downloads/eclipse_cdt.tar.gz"
+    runcmd "rm -rf ${home}/Downloads/eclipse_cdt"
+    runcmd "mkdir -p ${home}/Downloads/eclipse_cdt"
+    runcmd "tar zxf ${home}/Downloads/eclipse_cdt.tar.gz --strip 1 -C ${home}/Downloads/eclipse_cdt"
+    copy_foo "eclipse_cdt" "${home}/Downloads" "${home}/.eclipse"
+    runcmd "rm -f ${home}/Downloads/eclipse_cdt.tar.gz"
+    runcmd "desktop-file-install ${dir}/.eclipse/eclipse_cdt.desktop"
+fi
 
 # Eclipse Modeling Tools (Kepler)
 # (UML software)
-runcmd "wget http://www.eclipse.org/downloads/download.php?file=/technology/epp/downloads/release/kepler/SR2/eclipse-modeling-kepler-SR2-linux-gtk-x86_64.tar.gz&r=1 -O ${home}/Downloads/eclipse_modeling_tools.tar.gz"
-runcmd "rm -rf ${home}/Downloads/eclipse_modeling_tools"
-runcmd "mkdir -p ${home}/Downloads/eclipse_modeling_tools"
-runcmd "tar zxf ${home}/Downloads/eclipse_modeling_tools.tar.gz --strip 1 -C ${home}/Downloads/eclipse_modeling_tools"
-copy_foo "eclipse_modeling_tools" "${home}/Downloads" "${home}/.eclipse"
-runcmd "rm -f ${home}/Downloads/eclipse_modeling_tools.tar.gz"
+if determine_install "Eclipse Modeling Tools (Kepler)" "yN" "${home}/.eclipse/eclipse_modeling_tools"; then
+    runcmd "wget http://www.eclipse.org/downloads/download.php?file=/technology/epp/downloads/release/kepler/SR2/eclipse-modeling-kepler-SR2-linux-gtk-x86_64.tar.gz&r=1 -O ${home}/Downloads/eclipse_modeling_tools.tar.gz"
+    runcmd "rm -rf ${home}/Downloads/eclipse_modeling_tools"
+    runcmd "mkdir -p ${home}/Downloads/eclipse_modeling_tools"
+    runcmd "tar zxf ${home}/Downloads/eclipse_modeling_tools.tar.gz --strip 1 -C ${home}/Downloads/eclipse_modeling_tools"
+    copy_foo "eclipse_modeling_tools" "${home}/Downloads" "${home}/.eclipse"
+    copy_foo "papyrus-logo.png" "${dir}/.eclipse" "${home}/.eclipse/eclipse_modeling_tools"
+    runcmd "rm -f ${home}/Downloads/eclipse_modeling_tools.tar.gz"
+    runcmd "desktop-file-install ${dir}/.eclipse/eclipse_modeling_tools.desktop"
+fi
 
 
 echo_prefix="$echo_prefix_temp"

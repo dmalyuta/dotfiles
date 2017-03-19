@@ -69,22 +69,19 @@ if [ -e "${home}/.bin" ]; then
     make_symlink ".bin" "$dir" "$home" $symlink
 fi
 
-########## Terminator
+########## Development tools
 
 if [ -e "${home}/.config/terminator/config" ]; then
     make_symlink ".config/terminator/config" "$dir" "$home" $symlink
+fi
+if [ -e "${home}/.icons/eclipse_modeling_tools_icon.png" ]; then
+    make_symlink ".icons/eclipse_modeling_tools_icon.png" "$dir" "$home" $symlink
 fi
 
 ########## Python
 
 if [ -e "${home}/.jupyter/jupyter_notebook_config.py" ]; then
     make_symlink ".jupyter/jupyter_notebook_config.py" "$dir" "$home" $symlink
-fi
-
-########## Development tools
-
-if [ -e "${home}/.local/share/applications/staruml.desktop" ]; then
-    make_symlink ".local/share/applications/staruml.desktop" "$dir" "$home" $symlink
 fi
 
 ########## closing actions

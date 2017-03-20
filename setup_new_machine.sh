@@ -23,7 +23,7 @@ programs_list=(
 
 dependencies_home_dotfiles=(".profile" ".bash_aliases" ".local.bashrc" ".screenrc" ".tmux.conf")
 dependencies_bin=(".bin")
-dependencies_dev_tools=(".config/terminator/config" ".icons/eclipse_modeling_tools_icon.png")
+dependencies_dev_tools=(".config/terminator/config" ".icons/matlab_icon.png")
 dependencies_python=(".jupyter/jupyter_notebook_config.py")
 
 # question to ask user when determining which programs to install
@@ -33,7 +33,7 @@ dotfiles_prompt["${programs_list[0]}"]="Do you want to install the dotfiles that
 dotfiles_prompt["${programs_list[1]}"]="Do you want to install the .bin directory [Yn]? "
 dotfiles_prompt["${programs_list[2]}"]="Do you want to install software development tools [Yn]? "
 dotfiles_prompt["${programs_list[3]}"]="Do you want to install tools for Python [Yn]? "
-dotfiles_prompt["${programs_list[4]}"]="Do you want to install LaTeX and TeXstudio editor [Yn]? "
+dotfiles_prompt["${programs_list[4]}"]="Do you want to install LaTeX [Yn]? "
 dotfiles_prompt["${programs_list[5]}"]="Do you want to install Inkscape [Yn]? "
 
 ########## global variables

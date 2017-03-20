@@ -8,10 +8,6 @@ alias sudo='sudo '
 # files/folders.
 alias rm='rm -i'
 
-# Eclipse
-alias eclipse_cdt='bash -i -c "UBUNTU_MENUPROXY=0 ${HOME}/.eclipse/eclipse_cdt/eclipse"'
-alias eclipse_modeling_tools="UBUNTU_MENUPROXY=0 ${HOME}/.eclipse/eclipse_modeling_tools/eclipse"
-
 # Clipboard
 alias copy='xargs echo -n | xclip -selection clipboard'
 

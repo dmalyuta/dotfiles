@@ -234,9 +234,5 @@ determine_install() {
         do_install=0 # do install (Bash 0 means TRUE, 1 means FALSE...)
     fi
     
-    echo $program_exists
-    echo $do_reinstall
-    echo $do_install
-    
     return $do_install
 }

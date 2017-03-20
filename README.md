@@ -15,7 +15,7 @@
 ### Used software
 
 * C/C++/Python: [Eclipse CDT (Kepler)](https://eclipse.org/cdt/), [Jupyter](http://jupyter.org/)
-  - I install the following Eclipse plugins (on top of CDT): [CMake Editor](https://marketplace.eclipse.org/content/cmake-editor), [TM Terminal](https://marketplace.eclipse.org/content/tm-terminal)
+  - I install the following Eclipse plugins (on top of CDT): [CMake Editor](https://marketplace.eclipse.org/content/cmake-editor), [TM Terminal](https://marketplace.eclipse.org/content/tm-terminal), [Rinzo XML Editor](http://editorxml.sourceforge.net/)
 * Scientific computing: [MATLAB](https://www.mathworks.com/products/matlab.html), [Mathematica](https://www.wolfram.com/mathematica/), [RStudio](https://www.rstudio.com/)
 * Software design: [Eclipse Modeling Tools Papyrus (Kepler)](http://www.eclipse.org/downloads/packages/eclipse-modeling-tools/keplersr2), [Stateflow](https://www.mathworks.com/products/stateflow.html)
 * Version control and file sharing: [Git](https://git-scm.com/) and [Dropbox](https://www.dropbox.com/login)

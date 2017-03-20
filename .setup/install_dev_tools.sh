@@ -63,7 +63,7 @@ if determine_install "Qt Creator 5.7" "yN" "/opt/qt57"; then
     runcmd "wget http://download.qt.io/archive/qt/5.7/5.7.0/qt-opensource-linux-x64-5.7.0.run -P ${home}/Downloads/"
     runcmd "chmod +x ${home}/Downloads/qt-opensource-linux-x64-5.7.0.run"
     runcmd "${home}/Downloads/qt-unified-linux-x64-online.run"
-runcmd "rm -f ${home}/Downloads/qt-opensource-linux-x64-5.7.0.run"
+    runcmd "rm -f ${home}/Downloads/qt-opensource-linux-x64-5.7.0.run"
 fi
 
 # Install ROS plugin for QtCreator
@@ -71,6 +71,7 @@ runcmd "add-apt-repository ppa:levi-armstrong/qt-libraries-trusty -y"
 runcmd "add-apt-repository ppa:levi-armstrong/ppa -y"
 runcmd "apt-get update"
 apt_get_install_pkg qt57creator-plugin-ros
+
 
 
 echo_prefix="$echo_prefix_temp"

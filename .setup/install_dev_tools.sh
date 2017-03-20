@@ -59,7 +59,7 @@ fi
 runcmd "gsettings set org.gnome.desktop.default-applications.terminal exec 'terminator'"
 
 # Install QtCreator
-if determine_install "Qt Creator 5.7" "yN" "/opt/qt57"; then
+if determine_install_with_type "qmake" "yN"; then
     runcmd "wget http://download.qt.io/archive/qt/5.7/5.7.0/qt-opensource-linux-x64-5.7.0.run -P ${home}/Downloads/"
     runcmd "chmod +x ${home}/Downloads/qt-opensource-linux-x64-5.7.0.run"
     runcmd "${home}/Downloads/qt-unified-linux-x64-online.run"

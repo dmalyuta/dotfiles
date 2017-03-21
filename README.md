@@ -14,7 +14,7 @@
 
 ### Used software
 
-* C/C++/Python: [Qt Creator](https://www.qt.io/ide/), [Jupyter](http://jupyter.org/)
+* C/C++/Python: [CLion](https://www.jetbrains.com/clion/?fromMenu), [Jupyter](http://jupyter.org/)
 * Scientific computing: [MATLAB](https://www.mathworks.com/products/matlab.html), [Mathematica](https://www.wolfram.com/mathematica/), [RStudio](https://www.rstudio.com/)
 * Software design: [Astah Professional](http://astah.net/editions/professional), [Stateflow](https://www.mathworks.com/products/stateflow.html)
 * Version control and file sharing: [Git](https://git-scm.com/) and [Dropbox](https://www.dropbox.com/login)

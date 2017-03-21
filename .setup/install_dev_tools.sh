@@ -58,19 +58,14 @@ fi
 # Fix Unity bug that Ctrl-Alt-T creates a new icon in the Unity Dash
 runcmd "gsettings set org.gnome.desktop.default-applications.terminal exec 'terminator'"
 
-# Install QtCreator
-if determine_install_with_type "qmake" "yN"; then
-    runcmd "wget http://download.qt.io/archive/qt/5.7/5.7.0/qt-opensource-linux-x64-5.7.0.run -P ${home}/Downloads/"
-    runcmd "chmod +x ${home}/Downloads/qt-opensource-linux-x64-5.7.0.run"
-    runcmd "${home}/Downloads/qt-unified-linux-x64-online.run"
-    runcmd "rm -f ${home}/Downloads/qt-opensource-linux-x64-5.7.0.run"
+# Install Jetbrains CLion 
+if determine_install_with_dir "Jetbrains CLion" "yN" "${home}/.jetbrains/clion"; then
+    runcmd "wget https://download.jetbrains.com/cpp/CLion-2016.3.4.tar.gz -P ${home}/Downloads/"
+    runcmd "rm -rf ${home}/.jetbrains/clion"
+    runcmd "mkdir -p ${home}/.jetbrains/clion"
+    runcmd "tar zxf ${home}/Downloads/CLion-2016.3.4.tar.gz --strip 1 -C ${home}/.jetbrains/clion"
+    runcmd "rm -f ${home}/Downloads/CLion-2016.3.4.tar.gz"
 fi
-
-# Install ROS plugin for QtCreator
-runcmd "add-apt-repository ppa:levi-armstrong/qt-libraries-trusty -y"
-runcmd "add-apt-repository ppa:levi-armstrong/ppa -y"
-runcmd "apt-get update"
-apt_get_install_pkg qt57creator-plugin-ros
 
 
 

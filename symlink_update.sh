@@ -74,14 +74,11 @@ fi
 if [ -e "${home}/.config/terminator/config" ]; then
     make_symlink ".config/terminator/config" "$dir" "$home" $symlink
 fi
-if [ -e "${home}/.icons/eclipse_cdt_icon.png" ]; then
-    make_symlink ".icons/eclipse_cdt_icon.png" "$dir" "$home" $symlink
-fi
-if [ -e "${home}/.icons/eclipse_modeling_tools_icon.png" ]; then
-    make_symlink ".icons/eclipse_modeling_tools_icon.png" "$dir" "$home" $symlink
-fi
 if [ -e "${home}/.icons/matlab_icon.png" ]; then
     make_symlink ".icons/matlab_icon.png" "$dir" "$home" $symlink
+fi
+if [ -e "${home}/.jetbrains/settings" ]; then
+    make_symlink ".jetbrains/settings" "$dir" "$home" $symlink false
 fi
 
 ########## Python

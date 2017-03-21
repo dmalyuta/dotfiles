@@ -23,7 +23,7 @@ programs_list=(
 
 dependencies_home_dotfiles=(".profile" ".bash_aliases" ".local.bashrc" ".screenrc" ".tmux.conf")
 dependencies_bin=(".bin")
-dependencies_dev_tools=(".config/terminator/config" ".icons/matlab_icon.png")
+dependencies_dev_tools=(".config/terminator/config" ".jetbrains/settings" ".icons/matlab_icon.png")
 dependencies_python=(".jupyter/jupyter_notebook_config.py")
 
 # question to ask user when determining which programs to install
@@ -162,7 +162,12 @@ echo "any existing dotfiles in $home will be moved to $backup_folder"
 ### loop through each dotfile/folder and put it on the user computer, if requested
 for foo in "${install_dotfiles_list[@]}"
 do
-    copy_foo "$foo" "$dir" "$home" $symlink
+    if [ "$foo" == ".jetbrains/settings" ]; then
+        # symlink the whole settings folder got JetBrains' IDE settings
+        copy_foo "$foo" "$dir" "$home" $symlink false
+    else
+        copy_foo "$foo" "$dir" "$home" $symlink
+    fi
 done
 
 ########## Development tools

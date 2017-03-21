@@ -243,7 +243,7 @@ determine_install_with_dir() {
     
     local program_exists=false
     local do_reinstall=false
-    if [ -d "$c_dir" ]; then
+    if [ -d "$install_dir" ]; then
         program_exists=true
         prompt_msg="Do you want to reinstall ${program} [${choice}]? "
         printf_prompt "$prompt_msg"

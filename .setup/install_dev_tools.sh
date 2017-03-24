@@ -1,7 +1,7 @@
 #!/bin/bash
 # ----------------------------------------------------------------------
 #
-# Installation of Eclipse IDE.
+# Installation of tools for software development.
 #
 # ----------------------------------------------------------------------
 
@@ -15,7 +15,7 @@ apt_get_install_pkg build-essential
 apt_get_install_pkg python-software-properties
 runcmd "add-apt-repository ppa:webupd8team/java -y"
 runcmd "apt-get update"
-apt_get_install_pkg oracle-java8-installer 
+apt_get_install_pkg oracle-java8-installer nonull
 apt_get_install_pkg oracle-java8-set-default
 
 # Terminator

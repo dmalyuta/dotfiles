@@ -100,30 +100,30 @@ make_symlink()
     origin_version="${origin}/$name"
     destination_version="${destination}/$name"
     if [ ! -e "$origin_version" ]; then
-	echoerr "couldn't find $origin_version"
-	builtin echo
-	echo_warnings_errors
-	builtin echo
-	exit 1
+        echoerr "couldn't find $origin_version"
+        builtin echo
+        echo_warnings_errors
+        builtin echo
+        exit 1
     fi
     destination_version_parent_dir="$(dirname "$destination_version")"
     makefolder "$destination_version_parent_dir"
     runcmd "eval rm -rf \"${destination_version}\""
     if $do_symlink; then
-	# create a symlink in destination, instead of copying
+	    # create a symlink in destination, instead of copying
         if $symlink_individual_files ; then
-	    runcmd "eval /bin/cp -asrf --remove-destination \"$origin_version\" \"${destination_version_parent_dir}\""
+	        runcmd "eval /bin/cp -asrf --remove-destination \"$origin_version\" \"${destination_version_parent_dir}\""
         else
             # symlink the whole directory
             runcmd "eval ln -s \"$origin_version\" \"${destination_version}\""
         fi
-	# make sure permissions are set to the user's (and not to root)
-	runcmd "eval chown -R ${SUDO_USER:-$USER}:${SUDO_USER:-$USER} \"${destination_version}\""
+	    # make sure permissions are set to the user's (and not to root)
+	    runcmd "eval chown -R ${SUDO_USER:-$USER}:${SUDO_USER:-$USER} \"${destination_version}\""
     else
-	# copy to destination
-	runcmd "eval /bin/cp -arf --remove-destination \"$origin_version\" \"${destination_version_parent_dir}\""
-	# make sure permissions are set to the user's (and not to root)
-	runcmd "eval chown -R ${SUDO_USER:-$USER}:${SUDO_USER:-$USER} \"${destination_version}\""
+	    # copy to destination
+	    runcmd "eval /bin/cp -arf --remove-destination \"$origin_version\" \"${destination_version_parent_dir}\""
+	    # make sure permissions are set to the user's (and not to root)
+	    runcmd "eval chown -R ${SUDO_USER:-$USER}:${SUDO_USER:-$USER} \"${destination_version}\""
     fi
 }
 

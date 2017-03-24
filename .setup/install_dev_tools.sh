@@ -64,6 +64,7 @@ if determine_install_with_dir "Jetbrains CLion" "yN" "${home}/.jetbrains/clion";
     runcmd "rm -rf ${home}/.jetbrains/clion"
     runcmd "mkdir -p ${home}/.jetbrains/clion"
     runcmd "tar zxf ${home}/Downloads/CLion-2016.3.4.tar.gz --strip 1 -C ${home}/.jetbrains/clion"
+    runcmd "eval chown -R ${SUDO_USER:-$USER}:${SUDO_USER:-$USER} ${home}/.jetbrains/clion"
     runcmd "rm -f ${home}/Downloads/CLion-2016.3.4.tar.gz"
 fi
 

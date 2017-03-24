@@ -110,6 +110,7 @@ alias em='emacs -nw '
 alias ems='emacsserver '
 
 # MATLAB terminal
+alias matlab='matlab -softwareopengl & 2&>/dev/null && disown'
 alias matlabterminal='matlab -nodesktop -nosplash'
 
 # Directory making

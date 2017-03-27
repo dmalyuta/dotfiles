@@ -1,0 +1,221 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+	<title>Download Visual Paradigm Community Edition</title>
+	<meta name="description" content="Download FREE UML tool - Visual Paradigm Community Edition. No risk and no obligation to try. One stop for uml diagram, SysML diagram and ERD. Run on Windows, Mac OS X and Linux." />
+	<meta name="keywords" content="visual paradigm,download,free trial,windows,linux,mac,unix" />
+	<meta name="robots" content="all" />
+<link rel="canonical" href="/download/community.jsp" /><meta http-equiv="imagetoolbar" content="false" />
+	<meta http-equiv="Pragma" content="no-cache" />
+	<meta http-equiv="Expires" content="-1" />
+<link rel="stylesheet" href="/pageres/344/vp2009.css" />
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Roboto:300,400,500,700" />
+<link rel="stylesheet" href="/pageres/344/downloads.css" />
+<link rel="stylesheet" href="/pageres/344/vpuml.css" />
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Raleway:200" />
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Alegreya+Sans:400" />
+<script type="text/javascript" src="/script/jquery-1.8.3.min.js"></script>
+<script type="text/javascript" src="/pageres/toolbar_344.js"></script>
+<script type="text/javascript" src="/pageres/downloads_344.js"></script>
+<script type="text/javascript" src="/pageres/jquery.extends_344.js"></script>
+<script type="text/javascript" src="/pageres/utils_344.js"></script>
+</head>
+<body class="style5">
+	<div class="section-header">
+<div id="header" class="pageSection scroll-collapse-header">
+	<a class="pm-home" href="/">Visual Paradigm</a>
+	<ul class="headerMenu">
+<li><a class="pm-whats headerItem" href="/whats-new/">What's New</a></li>
+<li><a class="pm-features headerItem" href="/features/">Features</a></li>
+<li><a class="pm-learning headerItem" href="/learning/">Learning</a></li>
+<li><a class="pm-support headerItem" href="/support/">Support</a></li>
+<li><a class="pm-pricing headerItem" href="/shop/">Pricing</a></li>
+<li><a class="pm-try headerItem selected" href="/download/">Try Now</a></li>
+<li><a class="pm-request headerItem" href="/demo/request.jsp">Request Demo</a></li>
+<li><div class="search-box" id="search-box-container">
+<script>
+  (function() {
+    var cx = '003804233899660490967:di3myyv14jk';
+    var gcse = document.createElement('script');
+    gcse.type = 'text/javascript';
+    gcse.async = true;
+    gcse.src = '//cse.google.com/cse.js?cx=' + cx;
+    var s = document.getElementsByTagName('script')[0];
+    s.parentNode.insertBefore(gcse, s);
+  })();
+</script>
+       	<gcse:searchbox-only resultsUrl="/search/" enableHistory="true" ></gcse:searchbox-only>
+    </div></li>
+	</ul>
+</div>
+</div><div id="container" class="page-download-index">
+<div class="pageSection pageSection-noShadow" style="margin-top: 54px;">
+		<h1>Download Visual Paradigm Community Edition</h1>
+		<p class="sub-title">
+FREE for non-commercial use only</p>
+		<p class="build"><span class="version">Version: 14.0</span><br/>Build number: 20170302</p>
+<div style="width: 280px; margin: 6px auto 24px;">
+			<a href="/download/community.jsp?platform=linux&arch=32bit" class="download-btn">Download Visual Paradigm<br/><span style="font-size: 24px;">
+	Community Edition</span></a>
+			<div style="overflow-y: auto; margin-top: 4px;">
+				<div class="icon-secure">SSL Secure Connection</div>
+			</div>
+		</div>
+		<p class="platform">For
+Linux 32bit</p>
+		<ul class="misc-links">
+			<li style="border: none;"><a class="show-options-block" data-value="download-packs">More Options</a></li>
+			<li><a class="show-options-block" data-value="system-requirements">System Requirements</a></li>
+			<li><a class="layer-inline iframe" layerheight="480" layerwidth="700" href="/product/licenseagreement.jsp?product=vpce&edition=ce" >End User License Agreement</a></li>
+		</ul>
+		<div class="options-block download-packs">
+			<p style="text-align: center;"><span style="text-transform: capitalize">linux</span></p>
+<p style="margin-top: 6px;">64 Bit</p><table class="download-links-grid" style="width: 100%; line-height: 20px;">
+		<colgroup>
+			<col width="*"/>
+			<col width="100px"/>
+		</colgroup>
+		<tr>
+			<td><a href="/download/community.jsp?platform=linux&arch=64bit">
+Installer</a></td>
+			<td align="right" style="color: #606060">[372MB]</td>
+		</tr>
+		<tr>
+			<td><a href="/download/community.jsp?platform=linux&arch=64bit&install=no">
+InstallFree</a></td>
+			<td align="right" style="color: #606060">[372MB]</td>
+		</tr>
+		</table>
+	<p style="margin-top: 6px;">32 Bit</p><table class="download-links-grid" style="width: 100%; line-height: 20px;">
+		<colgroup>
+			<col width="*"/>
+			<col width="100px"/>
+		</colgroup>
+		<tr>
+			<td><a href="/download/community.jsp?platform=linux&arch=32bit">
+Installer</a></td>
+			<td align="right" style="color: #606060">[373MB]</td>
+		</tr>
+		<tr>
+			<td><a href="/download/community.jsp?platform=linux&arch=32bit&install=no">
+InstallFree</a></td>
+			<td align="right" style="color: #606060">[374MB]</td>
+		</tr>
+		</table>
+	<div id="secure-checkbox" style="overflow-y: auto; margin-top: 10px; cursor: pointer;">
+				<div class="icon-secure" style="height: 14px; line-height: 15px;">SSL Secure Connection</div>
+				<input type="checkbox" style="float: right; margin-right: 6px;" data-checked="checked" checked="checked" />
+			</div>
+			<p style="margin-top: 24px;">Download Visual Paradigm for other platform</p>
+			<ul class="other-platforms" style="overflow-y:auto;">
+<li><a href="/download/community.jsp?platform=windows">Windows</a></li>
+<li><a href="/download/community.jsp?platform=macosx">Mac OS X</a></li>
+<li><a href="/download/community.jsp?platform=unix">Unix</a></li>
+</ul>
+			<div style="text-align: right; font-size: 11px; color: #707070; margin-top: 10px;">Verify Download with <a href="/downloads/vpce/checksum.html" target="checksum">Checksum</a></div>
+		</div>
+		<div class="options-block system-requirements">
+			<p style="font-weight: bold; margin-bottom: 6px;">System Requirements</p>
+			<ul class="contentPoint">
+				<li>Intel Pentium 4 at 2.0 GHz or higher.</li>
+				<li>Minimum 2.0 GB RAM, but 4.0 GB is recommended.</li>
+				<li>Minimum 4GB disk space (NOT include project space).</li>
+</ul>
+<p style="margin-top: 20px;">IDE Integration (Optional)</p>
+			<ul class="contentPoint">
+	<li>Eclipse 3.5 or above</li>
+	<li>IntelliJ IDEA 11 or above</li>
+				<li>Android Studio 1.3 or above</li>
+				<li>NetBeans 6.7 or above</li>
+			</ul>
+<p style="margin-top: 20px;">Visual Paradigm also available on 
+<a href="/download/community.jsp?platform=windows">Windows</a> and <a href="/download/community.jsp?platform=macosx">Mac OS X</a></p>
+		</div>
+	</div>	
+	<div class="columnsBottom download-other">
+		<div class="section-container">
+			<p class="title">Other download</p>
+			<ul>
+<li><a class="block" href="/download/"><span>Download<br/>30 days evaluation version</span></a></li>
+<li><a class="block" href="/download/viewer.jsp"><span>Get VP-Viewer<br/>FREE VP project browser</span></a></li>
+<li><a class="block" href="/download/archive/"><span>Download Old Versions</span></a></li>
+			</ul>
+<a href="/support/documents/vpuserguide/12/2590/6372_uninstalling.html" target="guideline">Uninstall Guidelines</a>
+</div>
+	</div>
+	<div class="directory-block-testimonial">
+	<img class="directory-block-testimonial-photo" src="https://d1dlalugb0z2hd.cloudfront.net/about/testimonials/testimony-avatar.png"/>
+	<p class="directory-block-testimonial-comment"><a href="/aboutus/testimonial-all.jsp?id=10003">Visual Paradigm is focused - it has the requisite tools to get the job done without adding extraneous functionality, bloated code, and "noise" into the process.</a></p>
+	<p class="directory-block-testimonial-title">- Prof. William Burrows, University of Washington, Seattle</p>
+</div></div>
+<div class="section-footer"><div class="section-container">
+	<div class="section-footer-aboutus">
+		<a class="logo" href="/"><img src="https://d1dlalugb0z2hd.cloudfront.net/logos/vp-white-logo.png" alt="Visual Paradigm" width="201px" height="51px" /></a>
+	</div>
+	<div class="section-footer-vp">
+		<ul>
+			<h6>Product</h6>
+			<li><a href="/features/">Features</a>
+			<li><a href="/download/">Try Now</a>
+			<li><a href="/shop/">Pricing</a>
+			<li><a href="/whats-new/">What's New</a>
+		</ul>
+		<ul>
+			<h6>Partnership</h6>
+			<li><a href="/partner/reseller/">Reseller Partners</a></li>
+			<li><a href="/partner/academic/">Academic Partners</a></li>
+		</ul>
+		<ul>
+			<h6>Support</h6>
+			<li><a href="/training/">Online Training</a></li>
+			<li><a href="/tutorials/">Tutorials</a></li>
+			<li><a href="/support/documents/">Documents</a></li>
+			<li><a href="https://knowhow.visual-paradigm.com/" target="_blank">Know-how</a></li>
+			<li><a href="http://forums.visual-paradigm.com/" target="_blank">Forum</a></li>
+		</ul>
+		<ul>
+			<h6>About Us</h6>
+			<li><a href="/aboutus/">About us</a></li>
+			<li><a href="/solution/">Solutions</a></li>
+			<li><a href="/aboutus/newsreleases/">Newsroom</a></li>
+			<li><a href="https://www.youtube.com/user/VisualParadigm/" target="_blank">YouTube Channel</a></li>
+			<li><a href="/aboutus/contactus.jsp">Contact us</a></li>
+		</ul>
+	</div>
+</div></div>
+<div style="background-color: #232323"><div class="section-container" style="padding: 10px 0; margin-top: 0">
+	<div id="footer" class="footerMenu">
+		<ul class="pipeMenu footerLeftItem" style="margin-top: 8px;">
+			<li>All rights reserved.</li>
+			<li><a href="/aboutus/legal.jsp">Legal</a></li>
+			<li><a href="/aboutus/privacy.jsp">Privacy statement</a></li>
+		</ul>
+		<div style="text-align: right">
+<link rel="stylesheet" href="/script/social-likes_flat.css">
+<div class="social-likes">
+<div class="facebook" title="Share link on Facebook">Facebook</div>
+	<div class="plusone" title="Share link on Google+">Google+</div>
+	<a class="twitter"><span>Twitter</span></a>
+	<a class="youtube" href="https://www.youtube.com/user/VisualParadigm?sub_confirmation=1" target="_blank"><span>Youtube</span></a>
+	<a class="gmail"><span>Gmail</span></a>
+	<a class="email"><span>Email</span></a>
+	<script src="/script/social-likes_v3.1.0.min.js"></script>
+</div>		
+		</div>
+<script type="text/javascript">
+<!--
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-1417439-1']);
+  _gaq.push(['_setDomainName', '.www.visual-paradigm.com']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+//-->  
+</script>
+</div>
+</div></div></body>
+</html>

@@ -68,6 +68,12 @@ if determine_install_with_dir "Jetbrains CLion" "yN" "${home}/.jetbrains/clion";
     runcmd "rm -f ${home}/Downloads/CLion-2016.3.4.tar.gz"
 fi
 
-
+# Install Visual Paradigm
+if determine_install_with_type "Visual_Paradigm" "yN"; then
+    runcmd "wget https://www.visual-paradigm.com/downloads/vpce/Visual_Paradigm_CE_Linux64.sh -O ${home}/Downloads/Visual_Paradigm.sh"
+    runcmd "chmod +x ${home}/Downloads/Visual_Paradigm.sh"
+    runcmd "${home}/Downloads/Visual_Paradigm.sh" nonull
+    runcmd "rm -rf ${home}/Downloads/Visual_Paradigm.sh"
+fi
 
 echo_prefix="$echo_prefix_temp"

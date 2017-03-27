@@ -65,7 +65,7 @@ subshell_check()
 { # exit script if subshell failed
     local subshell_exit_status="$1"
     if [[ "$subshell_exit_status" -ne 0 ]]; then
-	exit $subshell_exit_status
+	    exit $subshell_exit_status
     fi
 }
 
@@ -75,7 +75,7 @@ install_program()
     local prog_script="$2"
 
     if [[ ! -z ${install_programs_list["$program_name"]} ]]; then
-	source $prog_script
+	    source $prog_script
     fi
 }
 
@@ -83,9 +83,9 @@ apt_get_install_pkg()
 { # install package with apt-get
     local pkg="$1"
     if [ "$#" -gt 1 ]; then
-	runcmd "apt-get --assume-yes install $pkg" nonull
+	    runcmd "apt-get --assume-yes install $pkg" nonull
     else
-	runcmd "apt-get --assume-yes install $pkg"
+	    runcmd "apt-get --assume-yes install $pkg"
     fi
 }
 

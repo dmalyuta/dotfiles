@@ -96,6 +96,12 @@ if [ -e "${home}/.jupyter/jupyter_notebook_config.py" ]; then
     make_symlink ".jupyter/jupyter_notebook_config.py" "$dir" "$home" $symlink
 fi
 
+########## LaTeX
+
+if [ -e "${home}/.config/texstudio" ]; then
+    make_symlink ".config/texstudio" "$dir" "$home" $symlink false
+fi
+
 ########## closing actions
 
 builtin echo

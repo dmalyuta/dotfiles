@@ -27,6 +27,7 @@ dependencies_bin=(".bin")
 dependencies_dev_tools=(".config/terminator/config" ".jetbrains/settings" ".icons/matlab_icon.png")
 dependencies_emacs=(".emacs.d/init.el" ".emacs.d/lisp")
 dependencies_python=(".jupyter/jupyter_notebook_config.py")
+dependencies_latex=(".config/texstudio")
 
 # question to ask user when determining which programs to install
 
@@ -165,10 +166,11 @@ echo "any existing dotfiles in $home will be moved to $backup_folder"
 ### loop through each dotfile/folder and put it on the user computer, if requested
 for foo in "${install_dotfiles_list[@]}"
 do
-    if [ "$foo" == ".jetbrains/settings" ]; then
-        # symlink the whole settings folder got JetBrains' IDE settings
+    if [ "$foo" == ".jetbrains/settings" ] || [ "$foo" == ".config/texstudio" ]; then
+        # symlink the actual folder
         copy_foo "$foo" "$dir" "$home" $symlink false
     else
+        # symlink the folder's contents
         copy_foo "$foo" "$dir" "$home" $symlink
     fi
 done

@@ -68,12 +68,17 @@ if determine_install_with_dir "Jetbrains CLion" "yN" "${home}/.jetbrains/clion";
     runcmd "rm -f ${home}/Downloads/CLion-2016.3.4.tar.gz"
 fi
 
-# Install Visual Paradigm
-if determine_install_with_type "Visual_Paradigm" "yN"; then
-    runcmd "wget https://www.visual-paradigm.com/downloads/vpce/Visual_Paradigm_CE_Linux64.sh -O ${home}/Downloads/Visual_Paradigm.sh"
-    runcmd "chmod +x ${home}/Downloads/Visual_Paradigm.sh"
-    runcmd "${home}/Downloads/Visual_Paradigm.sh" nonull
-    runcmd "rm -rf ${home}/Downloads/Visual_Paradigm.sh"
-fi
+# Install Wine pre-requisites for Enterprise Architect
+runcmd "dpkg --add-architecture i386"
+runcmd "add-apt-repository ppa:wine/wine-builds -y"
+runcmd "apt-get update"
+runcmd "apt-get install --assume-yes --install-recommends winehq-devel"
+apt_get_install_pkg winetricks
+apt_get_install_pkg fonts-crosextra-carlito
+echowarn "You still have to run the following commands (possibly also download msxml.msi and place it into ~/.cache/winetricks/msxml3):"
+echowarn "  $ winetricks msxml3"
+echowarn "  $ winetricks msxml4"
+echowarn "  $ winetricks mdac28"
+
 
 echo_prefix="$echo_prefix_temp"

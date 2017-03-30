@@ -77,6 +77,9 @@ fi
 if [ -e "${home}/.icons/matlab_icon.png" ]; then
     make_symlink ".icons/matlab_icon.png" "$dir" "$home" $symlink
 fi
+if [ -e "${home}/.icons/arbre_analyste_icon.png" ]; then
+    make_symlink ".icons/arbre_analyste_icon.png" "$dir" "$home" $symlink
+fi
 if [ -e "${home}/.jetbrains/settings" ]; then
     make_symlink ".jetbrains/settings" "$dir" "$home" $symlink false
 fi

@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Terminal=false
+Exec=bash -i -c "wine ~/.arbreanalyste/ArbreAnalyste/Arbre\ Analyste.exe"
+Name=Arbre Analyste
+Icon=arbre_analyste_icon
+Categories=Development;Math;Science;
+Comment=Fault Tree Analysis

@@ -80,5 +80,20 @@ echowarn "  $ winetricks msxml3"
 echowarn "  $ winetricks msxml4"
 echowarn "  $ winetricks mdac28"
 
+# Install R
+runcmd "sh -c 'echo \"deb http://cran.rstudio.com/bin/linux/ubuntu trusty/\" >> /etc/apt/sources.list'"
+runcmd "gpg --keyserver keyserver.ubuntu.com --recv-key E084DAB9"
+runcmd "gpg -a --export E084DAB9 | sudo apt-key add -"
+runcmd "apt-get update"
+apt_get_install_pkg r-base
+
+# Install RStudio
+if determine_install_with_type "rstudio" "yN"; then
+    runcmd "wget https://download1.rstudio.org/rstudio-1.0.136-amd64.deb -P ${home}/Downloads/"
+    runcmd "dpkg -i ${home}/Downloads/rstudio-1.0.136-amd64.deb"
+    runcmd "apt-get --assume-yes install -f"
+    runcmd "rm -f ${home}/Downloads/rstudio-1.0.136-amd64.deb"
+fi
+
 
 echo_prefix="$echo_prefix_temp"

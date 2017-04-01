@@ -209,14 +209,15 @@ flush_stdin()
 }
 
 determine_install_with_type() {
-    local program="$1"
-    local choice="$2" # yN or Yn
+    local program_name="$1"
+    local program="$2"
+    local choice="$3" # yN or Yn
     
     local program_exists=false
     local do_reinstall=false
     if ! program_not_installed "$program"; then
         program_exists=true
-        prompt_msg="Do you want to reinstall ${program} [${choice}]? "
+        prompt_msg="Do you want to reinstall ${program_name} [${choice}]? "
         printf_prompt "$prompt_msg"
 	    read -r -p "" user_response
 	    if [[ $user_response =~ ^[yY]$ ]] || ( [[ -z $user_response ]] && [[ ${prompt_msg: -5:1} == Y ]] ); then

@@ -1,7 +1,8 @@
 #!/bin/bash
 # ----------------------------------------------------------------------
 #
-# Installation of tools for software development.
+# Installation of tools for engineering and, in particular, software
+# development.
 #
 # ----------------------------------------------------------------------
 
@@ -104,6 +105,13 @@ if determine_install_with_type "Astah Professional" "astah-pro" "yN"; then
     runcmd "dpkg -i ${home}/Downloads/astah.deb" nonull
     runcmd "apt-get --assume-yes install -f"
     runcmd "rm -f ${home}/Downloads/astah.deb"
+fi
+
+# Install GeNIe (Bayesian Networks)
+if determine_install_with_dir "GeNIe Academic" "yN" "${home}/.wine/drive_c/Program Files (x86)/GeNIe 2.1 Academic"; then
+    runcmd "wget https://download.bayesfusion.com/downloads/Academia/GeNIe/genie_academic_setup.exe -O ${home}/Downloads/genie_academic_setup.exe"
+    runcmd "wine ${home}/Downloads/genie_academic_setup.exe"
+    runcmd "rm -f ${home}/Downloads/genie_academic_setup.exe"
 fi
 
 

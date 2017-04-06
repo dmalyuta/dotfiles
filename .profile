@@ -33,6 +33,3 @@ if [ -d ~/.jetbrains/idea-IU-163.12024.16/bin ]; then
     # Add IntelliJ IDEA IDE to PATH
     PATH="${HOME}/.jetbrains/idea-IU-163.12024.16/bin:$PATH"
 fi
-
-#export EDITOR=$(type -P emacsclient || type -P emacs || type -P nano)
-#export VISUAL=$EDITOR

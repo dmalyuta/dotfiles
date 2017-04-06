@@ -83,8 +83,9 @@ if determine_install_with_type "R and RStudio" "rstudio" "yN"; then
     runcmd "eval sh -c 'echo \"deb http://cran.rstudio.com/bin/linux/ubuntu trusty/\" >> /etc/apt/sources.list'"
     runcmd "eval su -c \"gpg --keyserver keyserver.ubuntu.com --recv-key E084DAB9\" ${SUDO_USER:-$USER}"
     runcmd "gpg -a --export E084DAB9 | sudo apt-key add -"
+    runcmd "apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E084DAB9"
     runcmd "apt-get update"
-    apt_get_install_pkg r-base
+    runcmd "apt-get install --assume-yes --force-yes r-base"
 
     # Install RStudio
     if ! program_not_installed "rstudio"; then
@@ -105,13 +106,6 @@ if determine_install_with_type "Astah Professional" "astah-pro" "yN"; then
     runcmd "dpkg -i ${home}/Downloads/astah.deb" nonull
     runcmd "apt-get --assume-yes install -f"
     runcmd "rm -f ${home}/Downloads/astah.deb"
-fi
-
-# Install GeNIe (Bayesian Networks)
-if determine_install_with_dir "GeNIe Academic" "yN" "${home}/.wine/drive_c/Program Files (x86)/GeNIe 2.1 Academic"; then
-    runcmd "wget https://download.bayesfusion.com/downloads/Academia/GeNIe/genie_academic_setup.exe -O ${home}/Downloads/genie_academic_setup.exe"
-    runcmd "wine ${home}/Downloads/genie_academic_setup.exe"
-    runcmd "rm -f ${home}/Downloads/genie_academic_setup.exe"
 fi
 
 

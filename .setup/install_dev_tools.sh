@@ -59,14 +59,22 @@ fi
 # Fix Unity bug that Ctrl-Alt-T creates a new icon in the Unity Dash
 runcmd "gsettings set org.gnome.desktop.default-applications.terminal exec 'terminator'"
 
+# Install SmartGit
+if ! dpkg -l | grep -E '^ii' | grep smartgit &>/dev/null; then
+    runcmd "wget http://www.syntevo.com/static/smart/download/smartgit/smartgit-17_0_3.deb -O ${home}/Downloads/smartgit.deb"
+    runcmd "dpkg -i ${home}/Downloads/smartgit.deb" nonull
+    runcmd "apt-get --assume-yes install -f"
+    runcmd "rm -f ${home}/Downloads/smartgit.deb"
+fi
+
 # Install Jetbrains CLion 
-if determine_install_with_dir "Jetbrains CLion" "yN" "${home}/.jetbrains/clion"; then
-    runcmd "wget https://download.jetbrains.com/cpp/CLion-2016.3.4.tar.gz -P ${home}/Downloads/"
+if [ ! -d "${home}/.jetbrains/clion" ]; then
+    runcmd "wget https://download.jetbrains.com/cpp/CLion-2017.1.tar.gz -O ${home}/Downloads/clion.tar.gz"
     runcmd "rm -rf ${home}/.jetbrains/clion"
     runcmd "mkdir -p ${home}/.jetbrains/clion"
-    runcmd "tar zxf ${home}/Downloads/CLion-2016.3.4.tar.gz --strip 1 -C ${home}/.jetbrains/clion"
+    runcmd "tar zxf ${home}/Downloads/clion.tar.gz --strip 1 -C ${home}/.jetbrains/clion"
     runcmd "eval chown -R ${SUDO_USER:-$USER}:${SUDO_USER:-$USER} ${home}/.jetbrains/clion"
-    runcmd "rm -f ${home}/Downloads/CLion-2016.3.4.tar.gz"
+    runcmd "rm -f ${home}/Downloads/clion.tar.gz"
 fi
 
 # Install Wine pre-requisites for running Windows programs on Linux
@@ -78,7 +86,7 @@ runcmd "apt-get install --assume-yes --install-recommends winehq-devel"
 apt_get_install_pkg winetricks
 
 # Install R and RStudio
-if determine_install_with_type "R and RStudio" "rstudio" "yN"; then
+if program_not_installed "rstudio"; then
     # Install R
     runcmd "eval sh -c 'echo \"deb http://cran.rstudio.com/bin/linux/ubuntu trusty/\" >> /etc/apt/sources.list'"
     runcmd "eval su -c \"gpg --keyserver keyserver.ubuntu.com --recv-key E084DAB9\" ${SUDO_USER:-$USER}"
@@ -88,9 +96,6 @@ if determine_install_with_type "R and RStudio" "rstudio" "yN"; then
     runcmd "apt-get install --assume-yes --force-yes r-base"
 
     # Install RStudio
-    if ! program_not_installed "rstudio"; then
-        runcmd "apt-get purge --assume-yes rstudio"
-    fi
     runcmd "wget https://download1.rstudio.org/rstudio-1.0.136-amd64.deb -P ${home}/Downloads/"
     runcmd "dpkg -i ${home}/Downloads/rstudio-1.0.136-amd64.deb"
     runcmd "apt-get --assume-yes install -f"
@@ -98,10 +103,7 @@ if determine_install_with_type "R and RStudio" "rstudio" "yN"; then
 fi
 
 # Install Astah (UML software)
-if determine_install_with_type "Astah Professional" "astah-pro" "yN"; then
-    if ! program_not_installed "astah-professional"; then
-        runcmd "apt-get purge --assume-yes astah-professional"
-    fi
+if program_not_installed "astah-pro"; then
     runcmd "wget http://cdn.astah.net/downloads/astah-professional_7.1.0.f2c212-0_all.deb -O ${home}/Downloads/astah.deb"
     runcmd "dpkg -i ${home}/Downloads/astah.deb" nonull
     runcmd "apt-get --assume-yes install -f"

@@ -179,6 +179,10 @@ done
 
 install_program "dev_tools" .setup/install_dev_tools.sh
 
+########## Emacs
+
+install_program "emacs" .setup/install_emacs.sh
+
 ########## Python tools
 
 if [[ ! -z ${install_programs_list["python"]} ]]; then

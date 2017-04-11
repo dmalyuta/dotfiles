@@ -80,9 +80,6 @@ fi
 if [ -e "${home}/.icons/arbre_analyste_icon.png" ]; then
     make_symlink ".icons/arbre_analyste_icon.png" "$dir" "$home" $symlink
 fi
-if [ -e "${home}/.jetbrains/settings" ]; then
-    make_symlink ".jetbrains/settings" "$dir" "$home" $symlink false
-fi
 
 ########## Emacs
 
@@ -97,12 +94,6 @@ fi
 
 if [ -e "${home}/.jupyter/jupyter_notebook_config.py" ]; then
     make_symlink ".jupyter/jupyter_notebook_config.py" "$dir" "$home" $symlink
-fi
-
-########## LaTeX
-
-if [ -e "${home}/.config/texstudio" ]; then
-    make_symlink ".config/texstudio" "$dir" "$home" $symlink false
 fi
 
 ########## closing actions

@@ -24,10 +24,9 @@ programs_list=(
 
 dependencies_home_dotfiles=(".profile" ".bash_aliases" ".local.bashrc" ".screenrc" ".tmux.conf")
 dependencies_bin=(".bin")
-dependencies_dev_tools=(".config/terminator/config" ".jetbrains/settings" ".icons/matlab_icon.png" ".icons/arbre_analyste_icon.png")
+dependencies_dev_tools=(".config/terminator/config" ".icons/matlab_icon.png" ".icons/arbre_analyste_icon.png")
 dependencies_emacs=(".emacs.d/init.el" ".emacs.d/lisp")
 dependencies_python=(".jupyter/jupyter_notebook_config.py")
-dependencies_latex=(".config/texstudio")
 
 # question to ask user when determining which programs to install
 

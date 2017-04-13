@@ -69,12 +69,11 @@ apt_get_install_pkg winetricks
 
 ####### Programs below are installed *only* if they are not already installed
 
-# Install Remarkable (Markdown editor)
-if program_not_installed "remarkable"; then
-    runcmd "wget https://remarkableapp.github.io/files/remarkable_1.87_all.deb -O ${home}/Downloads/remarkable.deb"
-    runcmd "dpkg -i ${home}/Downloads/remarkable.deb" nonull
-    runcmd "apt-get --assume-yes install -f"
-    runcmd "rm -f ${home}/Downloads/remarkable.deb"
+# Install Haroopad (Markdown editor)
+if program_not_installed "haroopad"; then
+    runcmd "wget https://bitbucket.org/rhiokim/haroopad-download/downloads/haroopad-v0.13.1-x64.deb -O ${home}/Downloads/haroopad.deb"
+    runcmd "dpkg -i ${home}/Downloads/haroopad.deb; apt-get --assume-yes install -f" nonull
+    runcmd "rm -f ${home}/Downloads/haroopad.deb"
 fi
 
 # Install SmartGit

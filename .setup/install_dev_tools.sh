@@ -72,8 +72,7 @@ apt_get_install_pkg winetricks
 # Install Remarkable (Markdown editor)
 if program_not_installed "remarkable"; then
     runcmd "wget https://remarkableapp.github.io/files/remarkable_1.87_all.deb -O ${home}/Downloads/remarkable.deb"
-    runcmd "dpkg -i ${home}/Downloads/remarkable.deb" nonull
-    runcmd "apt-get --assume-yes install -f"
+    runcmd "dpkg -i ${home}/Downloads/remarkable.deb; apt-get --assume-yes install -f" nonull
     runcmd "rm -f ${home}/Downloads/remarkable.deb"
 fi
 

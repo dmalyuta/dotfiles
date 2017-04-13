@@ -59,6 +59,24 @@ fi
 # Fix Unity bug that Ctrl-Alt-T creates a new icon in the Unity Dash
 runcmd "gsettings set org.gnome.desktop.default-applications.terminal exec 'terminator'"
 
+# Install Wine pre-requisites for running Windows programs on Linux
+# In particular, I use it to run [Arbre Analyste](http://www.arbre-analyste.fr/)
+runcmd "dpkg --add-architecture i386"
+runcmd "add-apt-repository ppa:wine/wine-builds -y"
+runcmd "apt-get update"
+runcmd "apt-get install --assume-yes --install-recommends winehq-devel"
+apt_get_install_pkg winetricks
+
+####### Programs below are installed *only* if they are not already installed
+
+# Install Remarkable (Markdown editor)
+if program_not_installed "remarkable"; then
+    runcmd "wget https://remarkableapp.github.io/files/remarkable_1.87_all.deb -O ${home}/Downloads/remarkable.deb"
+    runcmd "dpkg -i ${home}/Downloads/remarkable.deb" nonull
+    runcmd "apt-get --assume-yes install -f"
+    runcmd "rm -f ${home}/Downloads/remarkable.deb"
+fi
+
 # Install SmartGit
 if ! dpkg -l | grep -E '^ii' | grep smartgit &>/dev/null; then
     runcmd "wget http://www.syntevo.com/static/smart/download/smartgit/smartgit-17_0_3.deb -O ${home}/Downloads/smartgit.deb"
@@ -76,14 +94,6 @@ if [ ! -d "${home}/.jetbrains/clion" ]; then
     runcmd "eval chown -R ${SUDO_USER:-$USER}:${SUDO_USER:-$USER} ${home}/.jetbrains/clion"
     runcmd "rm -f ${home}/Downloads/clion.tar.gz"
 fi
-
-# Install Wine pre-requisites for running Windows programs on Linux
-# In particular, I use it to run [Arbre Analyste](http://www.arbre-analyste.fr/)
-runcmd "dpkg --add-architecture i386"
-runcmd "add-apt-repository ppa:wine/wine-builds -y"
-runcmd "apt-get update"
-runcmd "apt-get install --assume-yes --install-recommends winehq-devel"
-apt_get_install_pkg winetricks
 
 # Install R and RStudio
 if program_not_installed "rstudio"; then

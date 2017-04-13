@@ -72,7 +72,8 @@ apt_get_install_pkg winetricks
 # Install Haroopad (Markdown editor)
 if program_not_installed "haroopad"; then
     runcmd "wget https://bitbucket.org/rhiokim/haroopad-download/downloads/haroopad-v0.13.1-x64.deb -O ${home}/Downloads/haroopad.deb"
-    runcmd "dpkg -i ${home}/Downloads/haroopad.deb; apt-get --assume-yes install -f" nonull
+    runcmd "dpkg -i ${home}/Downloads/haroopad.deb" nonull
+    runcmd "apt-get --assume-yes install -f"
     runcmd "rm -f ${home}/Downloads/haroopad.deb"
 fi
 

@@ -135,3 +135,8 @@ alias venv_jupnb=". ~/.python_venv/jupnb/bin/activate && echo Use \'$ deactivate
 
 # JetBrains products
 alias clion='~/.jetbrains/clion/bin/clion.sh & 2&>/dev/null && disown'
+
+# Gedit open file without blocking terminal
+gedit() {
+    nohup gedit $@ &>/dev/null
+}

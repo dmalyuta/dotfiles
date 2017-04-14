@@ -84,7 +84,7 @@ if ! dpkg -l | grep -E '^ii' | grep smartgit &>/dev/null; then
     runcmd "rm -f ${home}/Downloads/smartgit.deb"
 fi
 
-# Install Jetbrains CLion 
+# Install Jetbrains CLion
 if [ ! -d "${home}/.jetbrains/clion" ]; then
     runcmd "wget https://download.jetbrains.com/cpp/CLion-2017.1.tar.gz -O ${home}/Downloads/clion.tar.gz"
     runcmd "rm -rf ${home}/.jetbrains/clion"
@@ -117,6 +117,19 @@ if program_not_installed "astah-pro"; then
     runcmd "dpkg -i ${home}/Downloads/astah.deb" nonull
     runcmd "apt-get --assume-yes install -f"
     runcmd "rm -f ${home}/Downloads/astah.deb"
+fi
+
+# Install Eclipse
+#
+# User should manually install afterwards:
+# - Oxygen XML plugin (Update site: http://www.oxygenxml.com/InstData/Editor/Eclipse/site.xml)
+# - TeXlipse (Update site: http://texlipse.sourceforge.net)
+if [ ! -f "${home}/.eclipse/eclipse_java/eclipse" ]; then
+    runcmd "wget http://mirror.csclub.uwaterloo.ca/eclipse/technology/epp/downloads/release/neon/3/eclipse-java-neon-3-linux-gtk-x86_64.tar.gz -O ${home}/Downloads/eclipse.tar.gz"
+    runcmd "mkdir -p ${home}/.eclipse/eclipse_java"
+    runcmd "tar zxf ${home}/Downloads/eclipse.tar.gz --strip 1 -C ${home}/.eclipse/eclipse_java"
+    runcmd "eval chown -R ${SUDO_USER:-$USER}:${SUDO_USER:-$USER} ${home}/.eclipse/eclipse_java"
+    runcmd "rm -f ${home}/Downloads/eclipse.tar.gz"
 fi
 
 

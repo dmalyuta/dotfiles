@@ -11,7 +11,46 @@ alias rm='rm -i'
 # Clipboard
 alias copy='xargs echo -n | xclip -selection clipboard'
 
-# Emacs
+# MATLAB terminal
+alias matlab='matlab -softwareopengl & 2&>/dev/null && disown'
+alias matlabterminal='matlab -nodesktop -nosplash'
+
+# Directory making
+now() { date "+%d%m%YT%H%M%S"; } # shortcut for timestamps
+
+# Grep contents of files in <dir> for <pattern>
+alias greptext='grep -rnw'
+
+# ROS stuff
+alias catkin_make_debug='catkin_make -DCMAKE_BUILD_TYPE=Debug'
+alias catkin_make_release='catkin_make -DCMAKE_BUILD_TYPE=Release'
+alias catkin_make_release_debug='catkin_make -DCMAKE_BUILD_TYPE=RelWithDebInfo'
+compile_commands_json() { echo "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON"; } # generate compile_commands.json for use with Emacs irony mode via 'M-x irony-cdb-json-add-compile-commands-path' (syntax check, autocompletion)
+
+# Screen
+killscreens () {
+    screen -ls | grep Detached | cut -d. -f1 | awk '{print $1}' | xargs kill
+}
+
+# Jupyter
+alias venv_jupnb=". ~/.python_venv/jupnb/bin/activate && echo Use \'$ deactivate\' to quit the Jupyter notebook virtualenv"
+
+# JetBrains products
+alias clion='~/.jetbrains/clion/bin/clion.sh & 2&>/dev/null && disown'
+
+# Gedit open file without blocking terminal
+gedit() {
+    nohup gedit $@ &>/dev/null
+}
+
+# Eclipse
+alias eclipse_java='~/.eclipse/eclipse_java/eclipse '
+
+
+
+
+######################################### Emacs
+
 alias emacsclient="emacsclient -e '(my-start-emacs)' " # crucial part of layout persistence across sessions! (must come before below functions!!) (fixed, no longer needed I think...)
 emacsserverstart() {
     local name="$1"
@@ -48,9 +87,17 @@ emacsserverconnect() {
 	    local nwoption="-t"
 	fi
 	if [ "$#" -gt 2 ]; then
-	    emacsclient $nwoption -s "$name" "$options"
+	    if [ "$nwoption" == "-c" ]; then
+		emacsclient $nwoption -s "$name" "$options" &>/dev/null & disown
+	    else
+		emacsclient $nwoption -s "$name" "$options"
+	    fi
 	else
-	    emacsclient $nwoption -s "$name"
+	    if [ "$nwoption" == "-c" ]; then
+		emacsclient $nwoption -s "$name" &>/dev/null & disown
+	    else
+		emacsclient $nwoption -s "$name"
+	    fi
 	fi
     fi
 }
@@ -59,7 +106,7 @@ emacsserverlist() {
     local -a servers
     for file in ${serverdir}/*; do
 	if [[ -S ${file} ]]; then
-	    servers+=("${file##*/}")  
+	    servers+=("${file##*/}")
 	fi
     done
     echo "${servers[@]}"
@@ -108,35 +155,3 @@ emacsserver() {
 }
 alias em='emacs -nw '
 alias ems='emacsserver '
-
-# MATLAB terminal
-alias matlab='matlab -softwareopengl & 2&>/dev/null && disown'
-alias matlabterminal='matlab -nodesktop -nosplash'
-
-# Directory making
-now() { date "+%d%m%YT%H%M%S"; } # shortcut for timestamps
-
-# Grep contents of files in <dir> for <pattern>
-alias greptext='grep -rnw'
-
-# ROS stuff
-alias catkin_make_debug='catkin_make -DCMAKE_BUILD_TYPE=Debug'
-alias catkin_make_release='catkin_make -DCMAKE_BUILD_TYPE=Release'
-alias catkin_make_release_debug='catkin_make -DCMAKE_BUILD_TYPE=RelWithDebInfo'
-compile_commands_json() { echo "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON"; } # generate compile_commands.json for use with Emacs irony mode via 'M-x irony-cdb-json-add-compile-commands-path' (syntax check, autocompletion)
-
-# Screen
-killscreens () {
-    screen -ls | grep Detached | cut -d. -f1 | awk '{print $1}' | xargs kill
-}
-
-# Jupyter
-alias venv_jupnb=". ~/.python_venv/jupnb/bin/activate && echo Use \'$ deactivate\' to quit the Jupyter notebook virtualenv"
-
-# JetBrains products
-alias clion='~/.jetbrains/clion/bin/clion.sh & 2&>/dev/null && disown'
-
-# Gedit open file without blocking terminal
-gedit() {
-    nohup gedit $@ &>/dev/null
-}

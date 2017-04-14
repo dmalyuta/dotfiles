@@ -533,15 +533,6 @@
       )
     )
 
-  (use-package markdown-mode
-    ;; Major mode for editing Markdown-formatted text
-    :ensure t
-    :commands (markdown-mode gfm-mode)
-    :mode (("README\\.md\\'" . gfm-mode)
-	   ("\\.md\\'" . markdown-mode)
-	   ("\\.markdown\\'" . markdown-mode))
-    :init (setq markdown-command "multimarkdown"))
-
   (use-package jedi
     ;; Python autocompletion
     ;; Must run once M-x jedi:install-server
@@ -669,6 +660,24 @@ bash-completion-dynamic-complete from bash-completion.el"
 	      (lambda()
 		(setq ac-sources '(ac-source-bash))
 		(auto-complete-mode)))
+    )
+
+  (use-package markdown-mode
+    :ensure t
+    :commands (markdown-mode gfm-mode)
+    :mode (("README\\.md\\'" . gfm-mode)
+	   ("\\.md\\'" . markdown-mode)
+	   ("\\.markdown\\'" . markdown-mode))
+    :init (setq markdown-command "multimarkdown"))
+
+  (use-package flymd
+    :ensure t
+    :config
+    (require 'flymd)
+    (defun my-flymd-browser-function (url)
+      (let ((browse-url-browser-function 'browse-url-firefox))
+	(browse-url url)))
+    (setq flymd-browser-open-function 'my-flymd-browser-function)
     )
 
 ;;;;;;;;;;;;;;;;; PERSONAL PACKAGES
@@ -1040,14 +1049,15 @@ bash-completion-dynamic-complete from bash-completion.el"
   (setq auto-mode-alist (cons '("\\.xsl$" . nxml-mode) auto-mode-alist))
   (setq auto-mode-alist (cons '("\\.xhtml$" . nxml-mode) auto-mode-alist))
   (setq auto-mode-alist (cons '("\\.page$" . nxml-mode) auto-mode-alist))
-
   (autoload 'xml-mode "nxml" "XML editing mode" t)
-
   (eval-after-load 'rng-loc
     '(add-to-list 'rng-schema-locating-files "~/.schema/schemas.xml"))
-  
   (global-set-key [C-return] 'completion-at-point)
-  
+  ;; Auto-set the schema
+  (defun my-xml-schema-hook ()
+    (when (string= (file-name-extension buffer-file-name) "ts")
+      (rng-auto-set-schema))
+  (add-hook 'find-file-hook 'my-xml-schema-hook)
   
 )
 
@@ -1106,7 +1116,16 @@ bash-completion-dynamic-complete from bash-completion.el"
      (320 . "#8CD0D3")
      (340 . "#94BFF3")
      (360 . "#DC8CC3"))))
- '(vc-annotate-very-old-color "#DC8CC3"))
+ '(vc-annotate-very-old-color "#DC8CC3")
+ '(livedown-autostart nil) ; automatically open preview when opening markdown files
+ '(livedown-open t)        ; automatically open the browser window
+ '(livedown-port 1337)     ; port for livedown server
+ '(livedown-browser nil)   ; browser to use
+ )
+
+(add-to-list 'load-path (expand-file-name "~/.emacs.d/emacs-livedown"))
+(require 'livedown)
+
 (let ((bg (face-attribute 'default :background)))
   (custom-set-faces
    ;; custom-set-faces was added by Custom.

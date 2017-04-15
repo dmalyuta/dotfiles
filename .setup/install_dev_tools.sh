@@ -72,15 +72,15 @@ apt_get_install_pkg winetricks
 # Install Haroopad (Markdown editor)
 if program_not_installed "haroopad"; then
     runcmd "wget https://bitbucket.org/rhiokim/haroopad-download/downloads/haroopad-v0.13.1-x64.deb -O ${home}/Downloads/haroopad.deb"
-    runcmd "dpkg -i ${home}/Downloads/haroopad.deb" nonull
-    runcmd "apt-get --assume-yes install -f"
+    runcmd_noexit "dpkg -i ${home}/Downloads/haroopad.deb" nonull
+    runcmd "apt-get --assume-yes install -f" nonull
     runcmd "rm -f ${home}/Downloads/haroopad.deb"
 fi
 
 # Install SmartGit
 if ! dpkg -l | grep -E '^ii' | grep smartgit &>/dev/null; then
     runcmd "wget http://www.syntevo.com/static/smart/download/smartgit/smartgit-17_0_3.deb -O ${home}/Downloads/smartgit.deb"
-    runcmd "dpkg -i ${home}/Downloads/smartgit.deb" nonull
+    runcmd_noexit "dpkg -i ${home}/Downloads/smartgit.deb" nonull
     runcmd "apt-get --assume-yes install -f"
     runcmd "rm -f ${home}/Downloads/smartgit.deb"
 fi
@@ -107,24 +107,25 @@ if program_not_installed "rstudio"; then
 
     # Install RStudio
     runcmd "wget https://download1.rstudio.org/rstudio-1.0.136-amd64.deb -P ${home}/Downloads/"
-    runcmd "dpkg -i ${home}/Downloads/rstudio-1.0.136-amd64.deb"
+    runcmd_noexit "dpkg -i ${home}/Downloads/rstudio-1.0.136-amd64.deb"
     runcmd "apt-get --assume-yes install -f"
     runcmd "rm -f ${home}/Downloads/rstudio-1.0.136-amd64.deb"
 fi
 
-# Install Astah (UML software)
-if program_not_installed "astah-pro"; then
-    runcmd "wget http://cdn.astah.net/downloads/astah-professional_7.1.0.f2c212-0_all.deb -O ${home}/Downloads/astah.deb"
-    runcmd "dpkg -i ${home}/Downloads/astah.deb" nonull
-    runcmd "apt-get --assume-yes install -f"
-    runcmd "rm -f ${home}/Downloads/astah.deb"
+# Install Visual Paradigm Community Edition (UML/SysML software)
+if program_not_installed "Visual_Paradigm"; then # TODO improve this weak check, since false positive if user did not choose to create symlinks in /usr/local/bin during installation...
+    runcmd "wget https://www.visual-paradigm.com/downloads/vpce/Visual_Paradigm_CE_Linux64.sh -O ${home}/Downloads/visualparadigm.sh"
+    runcmd "chmod +x ${home}/Downloads/visualparadigm.sh"
+    runcmd_noexit "${home}/Downloads/visualparadigm.sh" nonull
+    runcmd "rm -f ${home}/Downloads/visualparadigm.sh"
 fi
 
 # Install Eclipse
 #
-# User should manually install afterwards:
-# - Oxygen XML plugin (Update site: http://www.oxygenxml.com/InstData/Editor/Eclipse/site.xml)
-# - TeXlipse (Update site: http://texlipse.sourceforge.net)
+# User advised to manually install afterwards:
+# - XML editing: Oxygen XML plugin (Update site: http://www.oxygenxml.com/InstData/Editor/Eclipse/site.xml)
+# - LaTeX editing: TeXlipse (Update site: http://texlipse.sourceforge.net)
+# - Integration with the terminal: EasyShell (Update site: http://anb0s.github.io/EasyShell)
 if [ ! -f "${home}/.eclipse/eclipse_java/eclipse" ]; then
     runcmd "wget http://mirror.csclub.uwaterloo.ca/eclipse/technology/epp/downloads/release/neon/3/eclipse-java-neon-3-linux-gtk-x86_64.tar.gz -O ${home}/Downloads/eclipse.tar.gz"
     runcmd "mkdir -p ${home}/.eclipse/eclipse_java"

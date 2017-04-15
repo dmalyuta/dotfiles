@@ -40,13 +40,18 @@ alias clion='~/.jetbrains/clion/bin/clion.sh & 2&>/dev/null && disown'
 
 # Gedit open file without blocking terminal
 gedit() {
-    nohup gedit $@ &>/dev/null
+    nohup gedit $@ &>/dev/null & disown
 }
 
 # Eclipse
-alias eclipse_java='~/.eclipse/eclipse_java/eclipse '
+eclipse_java() {
+    nohup ~/.eclipse/eclipse_java/eclipse $@ &>/dev/null & disown
+}
 
-
+# Jupyter
+alias jn='jupyter-notebook '
+alias jl='jupyter lab '
+alias jc='jupyter nbconvert '
 
 
 ######################################### Emacs

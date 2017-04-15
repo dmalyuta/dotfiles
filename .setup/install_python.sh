@@ -80,6 +80,20 @@ runcmd "deactivate"
 	runcmd "eval chown -R ${normal_user}:${normal_user} \"${home}/.local/share/jupyter\"")
 #runcmd "sudo -u ${normal_user} jupyter notebook --generate-config" nonull
 #runcmd "eval chown -R ${normal_user}:${normal_user} \"${home}/.jupyter\""
+
+##################
+####### JupyterLab
+##################
+
+runcmd "sudo -H pip install jupyterlab"
+runcmd "jupyter serverextension enable --py jupyterlab --sys-prefix"
+
+#######################
+####### Other utilities
+#######################
+
+# Pandoc (document conversion, e.g. for Jupyter Notebook ---> PDF)
+apt_get_install_pkg pandoc
  
 
 echo_prefix="$echo_prefix_temp"

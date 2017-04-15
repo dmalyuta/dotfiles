@@ -61,6 +61,20 @@ runcmd()
     fi
 }
 
+runcmd_noexit()
+{ # run a command in active mode, just print it in dry run mode. Do not quit if the command failed!
+    local cmd="$1"
+    echo "$cmd"
+    if [ $dryrun = false ]; then
+	    if [ "$2" ]; then
+	        # disable 1>/dev/null which prevents from writing to file
+	        $cmd
+	    else
+	        $cmd 1>/dev/null
+	    fi
+    fi
+}
+
 subshell_check()
 { # exit script if subshell failed
     local subshell_exit_status="$1"
@@ -106,7 +120,8 @@ make_symlink()
         builtin echo
         exit 1
     fi
-    destination_version_parent_dir="$(dirname "$destination_version")"
+    local destination_version_parent_dir="$(dirname "$destination_version")"
+    local parent_of_name="$(echo $name | cut -f 1 -d "/")" # get the topmost directory (parent) of the thing passed in
     makefolder "$destination_version_parent_dir"
     runcmd "eval rm -rf \"${destination_version}\""
     if $do_symlink; then
@@ -118,12 +133,12 @@ make_symlink()
             runcmd "eval ln -s \"$origin_version\" \"${destination_version}\""
         fi
 	    # make sure permissions are set to the user's (and not to root)
-	    runcmd "eval chown -R ${SUDO_USER:-$USER}:${SUDO_USER:-$USER} \"${destination_version}\""
+	    runcmd "eval chown -R ${SUDO_USER:-$USER}:${SUDO_USER:-$USER} \"${destination}/${parent_of_name}\""
     else
 	    # copy to destination
 	    runcmd "eval /bin/cp -arf --remove-destination \"$origin_version\" \"${destination_version_parent_dir}\""
 	    # make sure permissions are set to the user's (and not to root)
-	    runcmd "eval chown -R ${SUDO_USER:-$USER}:${SUDO_USER:-$USER} \"${destination_version}\""
+	    runcmd "eval chown -R ${SUDO_USER:-$USER}:${SUDO_USER:-$USER} \"${destination}/${parent_of_name}\""
     fi
 }
 

@@ -52,7 +52,22 @@ eclipse_java() {
 alias jn='jupyter-notebook '
 alias jl='jupyter lab '
 alias jc='jupyter nbconvert '
-
+jupyter2pdf() {
+    # Convert .ipynb to .pdf
+    if [ "$#" -ne 1 ]; then
+        echo "Usage: jupyter2pdf <JUPYTER_NOTEBOOK_NAME>.ipynb"
+	    return 1
+    fi
+    local notebook_name_original="$1"
+    notebook_name=${notebook_name_original%".ipynb"}
+    if [ "$notebook_name_original" == "$notebook_name" ]; then
+        echo "Usage: jupyter2pdf <JUPYTER_NOTEBOOK_NAME>.ipynb"
+        return 1
+    fi
+    jupyter nbconvert --to html "${notebook_name}.ipynb" --output=tmpfile123
+    wkhtmltopdf --enable-internal-links tmpfile123.html "${notebook_name}.pdf"
+    rm -f tmpfile123.html
+}
 
 ######################################### Emacs
 

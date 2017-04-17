@@ -114,9 +114,9 @@ fi
 
 # Install Modelio (UML/SysML software)
 #
-# User adviced to manually install afterwards:
+# User advised to manually install afterwards:
 #   - SysMLArchitect (from Configuration -> Modules... -> Add...)
-if [ ! -f "${home}/.eclipse/modelio/modelio" ]; then
+if program_not_installed "modelio-open-source3.6"; then
     runcmd "wget https://www.modelio.org/download/send/24-modelio-361/91-modelio-361-debian-ubuntu-64-bit.html -O ${home}/Downloads/modelio.deb"
     runcmd_noexit "dpkg -i ${home}/Downloads/modelio.deb" nonull
     runcmd "apt-get --assume-yes install -f"

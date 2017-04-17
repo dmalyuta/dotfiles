@@ -112,12 +112,15 @@ if program_not_installed "rstudio"; then
     runcmd "rm -f ${home}/Downloads/rstudio-1.0.136-amd64.deb"
 fi
 
-# Install Visual Paradigm Community Edition (UML/SysML software)
-if program_not_installed "Visual_Paradigm"; then # TODO improve this weak check, since false positive if user did not choose to create symlinks in /usr/local/bin during installation...
-    runcmd "wget https://www.visual-paradigm.com/downloads/vpce/Visual_Paradigm_CE_Linux64.sh -O ${home}/Downloads/visualparadigm.sh"
-    runcmd "chmod +x ${home}/Downloads/visualparadigm.sh"
-    runcmd_noexit "${home}/Downloads/visualparadigm.sh" nonull
-    runcmd "rm -f ${home}/Downloads/visualparadigm.sh"
+# Install Modelio (UML/SysML software)
+#
+# User adviced to manually install afterwards:
+#   - SysMLArchitect (from Configuration -> Modules... -> Add...)
+if [ ! -f "${home}/.eclipse/modelio/modelio" ]; then
+    runcmd "wget https://www.modelio.org/download/send/24-modelio-361/91-modelio-361-debian-ubuntu-64-bit.html -O ${home}/Downloads/modelio.deb"
+    runcmd_noexit "dpkg -i ${home}/Downloads/modelio.deb" nonull
+    runcmd "apt-get --assume-yes install -f"
+    runcmd "rm -f ${home}/Downloads/modelio.deb"
 fi
 
 # Install Eclipse

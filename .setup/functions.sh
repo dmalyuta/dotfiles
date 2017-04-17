@@ -121,7 +121,7 @@ make_symlink()
         exit 1
     fi
     local destination_version_parent_dir="$(dirname "$destination_version")"
-    local parent_of_name="$(echo $name | cut -f 1 -d "/")" # get the topmost directory (parent) of the thing passed in
+    local parent_of_name="$(builtin echo $name | cut -f 1 -d "/")" # get the topmost directory (parent) of the thing passed in
     makefolder "$destination_version_parent_dir"
     runcmd "eval rm -rf \"${destination_version}\""
     if $do_symlink; then

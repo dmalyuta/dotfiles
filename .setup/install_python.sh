@@ -93,7 +93,25 @@ runcmd "jupyter serverextension enable --py jupyterlab --sys-prefix"
 #######################
 
 # Pandoc (document conversion, e.g. for Jupyter Notebook ---> PDF)
-apt_get_install_pkg pandoc
+if program_not_installed "pandoc"; then
+    runcmd "wget https://github.com/jgm/pandoc/releases/download/1.19.2.1/pandoc-1.19.2.1-1-amd64.deb -O ${home}/Downloads/pandoc.deb"
+    runcmd "dpkg -i ${home}/Downloads/pandoc.deb"
+    runcmd "apt-get --assume-yes install -f"
+    runcmd "rm -f ${home}/Downloads/pandoc.deb"
+fi
+
+# wkhtmltopdf (converter HTML to PDF)
+if program_not_installed "wkhtmltopdf"; then
+    runcmd "wget https://downloads.wkhtmltopdf.org/0.12/0.12.4/wkhtmltox-0.12.4_linux-generic-amd64.tar.xz -O ${home}/Downloads/wkhtmltox.tar.xz"
+    runcmd "rm -rf ${home}/Downloads/wkhtmltox"
+    runcmd "tar xf ${home}/Downloads/wkhtmltox.tar.xz -C ${home}/Downloads"
+    runcmd "mv ${home}/Downloads/wkhtmltox/bin/* /usr/bin/"
+    runcmd "mv ${home}/Downloads/wkhtmltox/include/* /usr/include/"
+    runcmd "mv ${home}/Downloads/wkhtmltox/lib/* /usr/lib/"
+    runcmd "mv ${home}/Downloads/wkhtmltox/share/man/man1/* /usr/share/man/man1/"
+    runcmd "rm -f ${home}/Downloads/wkhtmltox.tar.xz"
+    runcmd "rm -rf ${home}/Downloads/wkhtmltox"
+fi
  
 
 echo_prefix="$echo_prefix_temp"

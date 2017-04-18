@@ -139,13 +139,13 @@ fi
 # Install Papyrus 1.0 (OMG::UML 2.5 and OMG::SysML 1.2 software)
 #
 # This installs Eclipse Luna Modeling Tools.
-# User should manually install Papyrus via Help --> Install new Software... --> Update site: http://download.eclipse.org/modeling/mdt/papyrus/updates/releases/luna
-if [ ! -f "${home}/.eclipse/eclipse_papyrus/eclipse" ]; then
-    runcmd "wget http://eclipse.stu.edu.tw/technology/epp/downloads/release/luna/SR2/eclipse-modeling-luna-SR2-linux-gtk-x86_64.tar.gz -O ${home}/Downloads/eclipse_papyrus.tar.gz"
-    runcmd "mkdir -p ${home}/.eclipse/eclipse_papyrus"
-    runcmd "tar zxf ${home}/Downloads/eclipse_papyrus.tar.gz --strip 1 -C ${home}/.eclipse/eclipse_java"
-    runcmd "eval chown -R ${SUDO_USER:-$USER}:${SUDO_USER:-$USER} ${home}/.eclipse/eclipse_java"
-    runcmd "rm -f ${home}/Downloads/eclipse_papyrus.tar.gz"
+# User should manually install Papyrus via Help --> Install new Software... --> Update site: http://download.eclipse.org/modeling/mdt/papyrus/updates/releases/luna/1.0.0
+if [ ! -f "${home}/.eclipse/eclipse_modeling_tools/eclipse" ]; then
+    runcmd "wget http://eclipse.stu.edu.tw/technology/epp/downloads/release/luna/SR2/eclipse-modeling-luna-SR2-linux-gtk-x86_64.tar.gz -O ${home}/Downloads/eclipse_modeling_tools.tar.gz"
+    runcmd "mkdir -p ${home}/.eclipse/eclipse_modeling_tools"
+    runcmd "tar zxf ${home}/Downloads/eclipse_modeling_tools.tar.gz --strip 1 -C ${home}/.eclipse/eclipse_modeling_tools"
+    runcmd "eval chown -R ${SUDO_USER:-$USER}:${SUDO_USER:-$USER} ${home}/.eclipse/eclipse_modeling_tools"
+    runcmd "rm -f ${home}/Downloads/eclipse_modeling_tools.tar.gz"
 fi
 
 

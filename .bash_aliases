@@ -45,10 +45,10 @@ gedit() {
 
 # Eclipse
 eclipse_java() {
-    nohup ~/.eclipse/eclipse_java/eclipse $@ &>/dev/null & disown
+    UBUNTU_MENUPROXY=0 ~/.eclipse/eclipse_java/eclipse &>/dev/null & disown
 }
-papyrus() {
-    nohup ~/.eclipse/eclipse_papyrus/eclipse $@ &>/dev/null & disown
+eclipse_modeling_tools() {
+    UBUNTU_MENUPROXY=0 ~/.eclipse/eclipse_modeling_tools/eclipse &>/dev/null & disown
 }
 
 # Jupyter

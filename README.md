@@ -17,7 +17,7 @@
 * C/C++/Python: [CLion](https://www.jetbrains.com/clion/?fromMenu), [PyCharm](https://www.jetbrains.com/pycharm/?fromMenu), [Jupyter](http://jupyter.org/)
 * XML: [Eclipse Oxygen XML Plugin](https://www.oxygenxml.com/xml_editor/download_oxygenxml_editor.html?os=Eclipse)
 * Scientific computing: [MATLAB](https://www.mathworks.com/products/matlab.html), [Mathematica](https://www.wolfram.com/mathematica/), [RStudio](https://www.rstudio.com/)
-* Software design: [Modelio](https://www.modelio.org/), [GeNIe](https://www.bayesfusion.com/genie-modeler), [Stateflow](https://www.mathworks.com/products/stateflow.html), [Arbre Analyste](http://www.arbre-analyste.fr/en.html#)
+* Software design: [Papyrus](http://www.eclipse.org/papyrus/index.php), [GeNIe](https://www.bayesfusion.com/genie-modeler), [Stateflow](https://www.mathworks.com/products/stateflow.html), [Arbre Analyste](http://www.arbre-analyste.fr/en.html#)
 * Version control and file sharing: [Git](https://git-scm.com/) (with help  [SmartGit](http://www.syntevo.com/smartgit/)) and [Dropbox](https://www.dropbox.com/login)
 * Publishing: [Eclipse TeXlipse](http://texlipse.sourceforge.net/), [Haroopad](http://pad.haroopress.com/user.html), [Jupyter Notebook/Lab](http://jupyter.org/)
 

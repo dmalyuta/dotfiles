@@ -85,7 +85,7 @@ if ! dpkg -l | grep -E '^ii' | grep smartgit &>/dev/null; then
     runcmd "rm -f ${home}/Downloads/smartgit.deb"
 fi
 
-# Install Jetbrains CLion
+# Install Jetbrains CLion (C/C++)
 if [ ! -d "${home}/.jetbrains/clion" ]; then
     runcmd "wget https://download.jetbrains.com/cpp/CLion-2017.1.tar.gz -O ${home}/Downloads/clion.tar.gz"
     runcmd "rm -rf ${home}/.jetbrains/clion"
@@ -93,6 +93,16 @@ if [ ! -d "${home}/.jetbrains/clion" ]; then
     runcmd "tar zxf ${home}/Downloads/clion.tar.gz --strip 1 -C ${home}/.jetbrains/clion"
     runcmd "eval chown -R ${SUDO_USER:-$USER}:${SUDO_USER:-$USER} ${home}/.jetbrains/clion"
     runcmd "rm -f ${home}/Downloads/clion.tar.gz"
+fi
+
+# Install Jetbrains PyCharm (Python)
+if [ ! -d "${home}/.jetbrains/pycharm" ]; then
+    runcmd "wget https://download.jetbrains.com/python/pycharm-professional-2017.1.1.tar.gz -O ${home}/Downloads/pycharm.tar.gz"
+    runcmd "rm -rf ${home}/.jetbrains/pycharm"
+    runcmd "mkdir -p ${home}/.jetbrains/pycharm"
+    runcmd "tar zxf ${home}/Downloads/pycharm.tar.gz --strip 1 -C ${home}/.jetbrains/pycharm"
+    runcmd "eval chown -R ${SUDO_USER:-$USER}:${SUDO_USER:-$USER} ${home}/.jetbrains/pycharm"
+    runcmd "rm -f ${home}/Downloads/pycharm.tar.gz"
 fi
 
 # Install R and RStudio
@@ -112,17 +122,6 @@ if program_not_installed "rstudio"; then
     runcmd "rm -f ${home}/Downloads/rstudio-1.0.136-amd64.deb"
 fi
 
-# Install Modelio (UML/SysML software)
-#
-# User advised to manually install afterwards:
-#   - SysMLArchitect (from Configuration -> Modules... -> Add...)
-if program_not_installed "modelio-open-source3.6"; then
-    runcmd "wget https://www.modelio.org/download/send/24-modelio-361/91-modelio-361-debian-ubuntu-64-bit.html -O ${home}/Downloads/modelio.deb"
-    runcmd_noexit "dpkg -i ${home}/Downloads/modelio.deb" nonull
-    runcmd "apt-get --assume-yes install -f"
-    runcmd "rm -f ${home}/Downloads/modelio.deb"
-fi
-
 # Install Eclipse
 #
 # User advised to manually install afterwards:
@@ -130,11 +129,23 @@ fi
 # - LaTeX editing: TeXlipse (Update site: http://texlipse.sourceforge.net)
 # - Integration with the terminal: EasyShell (Update site: http://anb0s.github.io/EasyShell)
 if [ ! -f "${home}/.eclipse/eclipse_java/eclipse" ]; then
-    runcmd "wget http://mirror.csclub.uwaterloo.ca/eclipse/technology/epp/downloads/release/neon/3/eclipse-java-neon-3-linux-gtk-x86_64.tar.gz -O ${home}/Downloads/eclipse.tar.gz"
+    runcmd "wget http://mirror.csclub.uwaterloo.ca/eclipse/technology/epp/downloads/release/neon/3/eclipse-java-neon-3-linux-gtk-x86_64.tar.gz -O ${home}/Downloads/eclipse_java.tar.gz"
     runcmd "mkdir -p ${home}/.eclipse/eclipse_java"
-    runcmd "tar zxf ${home}/Downloads/eclipse.tar.gz --strip 1 -C ${home}/.eclipse/eclipse_java"
+    runcmd "tar zxf ${home}/Downloads/eclipse_java.tar.gz --strip 1 -C ${home}/.eclipse/eclipse_java"
     runcmd "eval chown -R ${SUDO_USER:-$USER}:${SUDO_USER:-$USER} ${home}/.eclipse/eclipse_java"
-    runcmd "rm -f ${home}/Downloads/eclipse.tar.gz"
+    runcmd "rm -f ${home}/Downloads/eclipse_java.tar.gz"
+fi
+
+# Install Papyrus 1.0 (OMG::UML 2.5 and OMG::SysML 1.2 software)
+#
+# This installs Eclipse Luna.
+# User should manually install Papyrus via Help --> Install new Software... --> Update site: http://download.eclipse.org/modeling/mdt/papyrus/updates/releases/luna
+if [ ! -f "${home}/.eclipse/eclipse_papyrus/eclipse" ]; then
+    runcmd "wget http://eclipse.stu.edu.tw/technology/epp/downloads/release/luna/SR2/eclipse-jee-luna-SR2-linux-gtk.tar.gz -O ${home}/Downloads/eclipse_papyrus.tar.gz"
+    runcmd "mkdir -p ${home}/.eclipse/eclipse_papyrus"
+    runcmd "tar zxf ${home}/Downloads/eclipse_papyrus.tar.gz --strip 1 -C ${home}/.eclipse/eclipse_java"
+    runcmd "eval chown -R ${SUDO_USER:-$USER}:${SUDO_USER:-$USER} ${home}/.eclipse/eclipse_java"
+    runcmd "rm -f ${home}/Downloads/eclipse_papyrus.tar.gz"
 fi
 
 

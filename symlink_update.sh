@@ -95,6 +95,9 @@ fi
 if [ -e "${home}/.jupyter/jupyter_notebook_config.py" ]; then
     make_symlink ".jupyter/jupyter_notebook_config.py" "$dir" "$home" $symlink
 fi
+if [ -e "${home}/.jupyter/custom/custom.css" ]; then
+    make_symlink ".jupyter/custom/custom.css" "$dir" "$home" $symlink
+fi
 
 ########## closing actions
 

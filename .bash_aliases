@@ -47,6 +47,9 @@ gedit() {
 eclipse_java() {
     nohup ~/.eclipse/eclipse_java/eclipse $@ &>/dev/null & disown
 }
+papyrus() {
+    nohup ~/.eclipse/eclipse_papyrus/eclipse $@ &>/dev/null & disown
+}
 
 # Jupyter
 alias jn='jupyter-notebook '

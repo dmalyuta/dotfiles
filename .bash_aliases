@@ -44,8 +44,8 @@ gedit() {
 }
 
 # Eclipse
-eclipse_java() {
-    UBUNTU_MENUPROXY=0 ~/.eclipse/eclipse_java/eclipse &>/dev/null & disown
+eclipse_xml_tex() {
+    UBUNTU_MENUPROXY=0 ~/.eclipse/eclipse_xml_tex/eclipse &>/dev/null & disown
 }
 eclipse_modeling_tools() {
     UBUNTU_MENUPROXY=0 ~/.eclipse/eclipse_modeling_tools/eclipse &>/dev/null & disown

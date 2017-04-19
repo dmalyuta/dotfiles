@@ -13,17 +13,24 @@ echo_prefix="[dev tools setup] "
 apt_get_install_pkg build-essential
 
 # Java 8
-apt_get_install_pkg python-software-properties
-runcmd "add-apt-repository ppa:webupd8team/java -y"
-runcmd "apt-get update"
-apt_get_install_pkg oracle-java8-installer nonull
-apt_get_install_pkg oracle-java8-set-default
+java_version=$(java -version 2>&1 | grep "java version")
+if echo "$java_version" | grep "1.8" &>/dev/null; then # TODO change to a check whether version is *at least* 1.8 (e.g. 1.9 is OK, don't do anything then)
+    apt_get_install_pkg python-software-properties
+    runcmd "add-apt-repository ppa:webupd8team/java -y"
+    runcmd "apt-get update"
+    apt_get_install_pkg oracle-java8-installer nonull
+    apt_get_install_pkg oracle-java8-set-default
+fi
 
 # Terminator
 # Terminal emulator
-runcmd "add-apt-repository ppa:gnome-terminator -y"
-runcmd "apt-get update"
-apt_get_install_pkg terminator
+if program_not_installed "terminator"; then
+    runcmd "add-apt-repository ppa:gnome-terminator -y"
+    runcmd "apt-get update"
+    apt_get_install_pkg terminator
+fi
+
+# Other command line utilities
 apt_get_install_pkg aptitude
 apt_get_install_pkg xclip
 apt_get_install_pkg silversearcher-ag
@@ -61,11 +68,14 @@ runcmd "gsettings set org.gnome.desktop.default-applications.terminal exec 'term
 
 # Install Wine pre-requisites for running Windows programs on Linux
 # In particular, I use it to run [Arbre Analyste](http://www.arbre-analyste.fr/)
-runcmd "dpkg --add-architecture i386"
-runcmd "add-apt-repository ppa:wine/wine-builds -y"
-runcmd "apt-get update"
-runcmd "apt-get install --assume-yes --install-recommends winehq-devel"
-apt_get_install_pkg winetricks
+if program_not_installed "winetricks"; then
+    runcmd "dpkg --add-architecture i386"
+    runcmd "add-apt-repository ppa:wine/wine-builds -y"
+    runcmd "apt-get update"
+    runcmd "apt-get install --assume-yes --install-recommends winehq-devel"
+    apt_get_install_pkg winetricks
+fi
+
 
 ####### Programs below are installed *only* if they are not already installed
 
@@ -128,12 +138,12 @@ fi
 # - XML editing: Oxygen XML plugin (Update site: http://www.oxygenxml.com/InstData/Editor/Eclipse/site.xml)
 # - LaTeX editing: TeXlipse (Update site: http://texlipse.sourceforge.net)
 # - Integration with the terminal: EasyShell (Update site: http://anb0s.github.io/EasyShell)
-if [ ! -f "${home}/.eclipse/eclipse_java/eclipse" ]; then
-    runcmd "wget http://mirror.csclub.uwaterloo.ca/eclipse/technology/epp/downloads/release/neon/3/eclipse-java-neon-3-linux-gtk-x86_64.tar.gz -O ${home}/Downloads/eclipse_java.tar.gz"
-    runcmd "mkdir -p ${home}/.eclipse/eclipse_java"
-    runcmd "tar zxf ${home}/Downloads/eclipse_java.tar.gz --strip 1 -C ${home}/.eclipse/eclipse_java"
-    runcmd "eval chown -R ${SUDO_USER:-$USER}:${SUDO_USER:-$USER} ${home}/.eclipse/eclipse_java"
-    runcmd "rm -f ${home}/Downloads/eclipse_java.tar.gz"
+if [ ! -f "${home}/.eclipse/eclipse_xml_tex/eclipse" ]; then
+    runcmd "wget http://mirror.csclub.uwaterloo.ca/eclipse/technology/epp/downloads/release/neon/3/eclipse-java-neon-3-linux-gtk-x86_64.tar.gz -O ${home}/Downloads/eclipse_xml_tex.tar.gz"
+    runcmd "mkdir -p ${home}/.eclipse/eclipse_xml_tex"
+    runcmd "tar zxf ${home}/Downloads/eclipse_xml_tex.tar.gz --strip 1 -C ${home}/.eclipse/eclipse_xml_tex"
+    runcmd "eval chown -R ${SUDO_USER:-$USER}:${SUDO_USER:-$USER} ${home}/.eclipse/eclipse_xml_tex"
+    runcmd "rm -f ${home}/Downloads/eclipse_xml_tex.tar.gz"
 fi
 
 # Install Papyrus 1.0 (OMG::UML 2.5 and OMG::SysML 1.2 software)

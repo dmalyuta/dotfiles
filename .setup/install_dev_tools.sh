@@ -14,7 +14,7 @@ apt_get_install_pkg build-essential
 
 # Java 8
 java_version=$(java -version 2>&1 | grep "java version")
-if echo "$java_version" | grep "1.8" &>/dev/null; then # TODO change to a check whether version is *at least* 1.8 (e.g. 1.9 is OK, don't do anything then)
+if ! echo "$java_version" | grep "1.8" &>/dev/null; then # TODO change to a check whether version is *at least* 1.8 (e.g. 1.9 is OK, don't do anything then)
     apt_get_install_pkg python-software-properties
     runcmd "add-apt-repository ppa:webupd8team/java -y"
     runcmd "apt-get update"
@@ -142,7 +142,7 @@ fi
 #   - Install integration with the terminal (EasyShell): Help --> Install New Software... --> Update site: http://anb0s.github.io/EasyShell
 if [ ! -f "${home}/.eclipse/eclipse_cdt/eclipse" ]; then
     echowarn "Please read the instructions in comments of .setup/install_dev_tools.sh for follow-up installation actions inside Eclipse!"
-    runcmd "wget \"https://www.eclipse.org/downloads/download.php?file=/technology/epp/downloads/release/neon/3/eclipse-cpp-neon-3-linux-gtk-x86_64.tar.gz&r=1\" -O ${home}/Downloads/eclipse_cdt.tar.gz"
+    runcmd "wget https://www.eclipse.org/downloads/download.php?file=/technology/epp/downloads/release/neon/3/eclipse-cpp-neon-3-linux-gtk-x86_64.tar.gz&r=1 -O ${home}/Downloads/eclipse_cdt.tar.gz"
     runcmd "mkdir -p ${home}/.eclipse/eclipse_cdt"
     runcmd "tar zxf ${home}/Downloads/eclipse_cdt.tar.gz --strip 1 -C ${home}/.eclipse/eclipse_cdt"
     runcmd "eval chown -R ${SUDO_USER:-$USER}:${SUDO_USER:-$USER} ${home}/.eclipse/eclipse_cdt"
@@ -158,7 +158,7 @@ fi
 #   - Install SysML 1.1: Help --> Install New Software... --> Update site: http://download.eclipse.org/modeling/mdt/papyrus/updates/releases/neon --> Papyrus SysML 1.1
 if [ ! -f "${home}/.eclipse/papyrus/papyrus" ]; then
     echowarn "Please read the instructions in comments of .setup/install_dev_tools.sh for follow-up installation actions inside Papyrus!"
-    runcmd "wget \"https://www.eclipse.org/downloads/download.php?file=/modeling/mdt/papyrus/rcp/neon/2.0.2/papyrus-neon-2.0.2-linux64.tar.gz&r=1\" -O ${home}/Downloads/papyrus.tar.gz"
+    runcmd "wget https://www.eclipse.org/downloads/download.php?file=/modeling/mdt/papyrus/rcp/neon/2.0.2/papyrus-neon-2.0.2-linux64.tar.gz&r=1 -O ${home}/Downloads/papyrus.tar.gz"
     runcmd "mkdir -p ${home}/.eclipse/papyrus"
     runcmd "tar zxf ${home}/Downloads/papyrus.tar.gz --strip 1 -C ${home}/.eclipse/papyrus"
     runcmd "eval chown -R ${SUDO_USER:-$USER}:${SUDO_USER:-$USER} ${home}/.eclipse/papyrus"

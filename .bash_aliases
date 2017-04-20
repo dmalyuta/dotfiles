@@ -43,12 +43,14 @@ gedit() {
     nohup gedit $@ &>/dev/null & disown
 }
 
-# Eclipse
-eclipse_xml_tex() {
-    UBUNTU_MENUPROXY=0 ~/.eclipse/eclipse_xml_tex/eclipse &>/dev/null & disown
+# Eclipse editors
+cdt() {
+    # Launch Eclipse CDT (C/C++, XML and LaTeX)
+    UBUNTU_MENUPROXY=0 ~/.eclipse/eclipse_cdt/eclipse &>/dev/null & disown
 }
-eclipse_modeling_tools() {
-    UBUNTU_MENUPROXY=0 ~/.eclipse/eclipse_modeling_tools/eclipse &>/dev/null & disown
+uml() {
+    # Launch Papyrus (OMG::UML and OMG::SysML)
+    UBUNTU_MENUPROXY=0 ~/.eclipse/papyrus/papyrus &>/dev/null & disown
 }
 
 # Jupyter

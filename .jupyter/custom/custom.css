@@ -1,3 +1,22 @@
 img.special {
     width: 50%;
 }
+
+.hl_yellow {
+    background-color: yellow;
+}
+
+.explanation {
+    background-color: #ff9499;
+    margin: 10px;
+    margin-left: 50px;
+    padding: 5px;
+}
+
+.stereotype::before {
+    content: "«";
+}
+
+.stereotype::after {
+    content: "»";
+}

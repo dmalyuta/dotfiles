@@ -134,28 +134,35 @@ fi
 
 # Install Eclipse
 #
-# User advised to manually install afterwards:
-# - XML editing: Oxygen XML plugin (Update site: http://www.oxygenxml.com/InstData/Editor/Eclipse/site.xml)
-# - LaTeX editing: TeXlipse (Update site: http://texlipse.sourceforge.net)
-# - Integration with the terminal: EasyShell (Update site: http://anb0s.github.io/EasyShell)
-if [ ! -f "${home}/.eclipse/eclipse_xml_tex/eclipse" ]; then
-    runcmd "wget http://mirror.csclub.uwaterloo.ca/eclipse/technology/epp/downloads/release/neon/3/eclipse-java-neon-3-linux-gtk-x86_64.tar.gz -O ${home}/Downloads/eclipse_xml_tex.tar.gz"
-    runcmd "mkdir -p ${home}/.eclipse/eclipse_xml_tex"
-    runcmd "tar zxf ${home}/Downloads/eclipse_xml_tex.tar.gz --strip 1 -C ${home}/.eclipse/eclipse_xml_tex"
-    runcmd "eval chown -R ${SUDO_USER:-$USER}:${SUDO_USER:-$USER} ${home}/.eclipse/eclipse_xml_tex"
-    runcmd "rm -f ${home}/Downloads/eclipse_xml_tex.tar.gz"
+# Follow up this installation with the following actions:
+#   - Launch Eclipse: in the terminal run
+#                     $ cdt
+#   - Install XML editing (Oxygen XML plugin): Help --> Install New Software... --> Update site: http://www.oxygenxml.com/InstData/Editor/Eclipse/site.xml
+#   - Install LaTeX editing (TeXlipse): Help --> Install New Software... --> Update site: http://texlipse.sourceforge.net
+#   - Install integration with the terminal (EasyShell): Help --> Install New Software... --> Update site: http://anb0s.github.io/EasyShell
+if [ ! -f "${home}/.eclipse/eclipse_cdt/eclipse" ]; then
+    echowarn "Please read the instructions in comments of .setup/install_dev_tools.sh for follow-up installation actions inside Eclipse!"
+    runcmd "wget \"https://www.eclipse.org/downloads/download.php?file=/technology/epp/downloads/release/neon/3/eclipse-cpp-neon-3-linux-gtk-x86_64.tar.gz&r=1\" -O ${home}/Downloads/eclipse_cdt.tar.gz"
+    runcmd "mkdir -p ${home}/.eclipse/eclipse_cdt"
+    runcmd "tar zxf ${home}/Downloads/eclipse_cdt.tar.gz --strip 1 -C ${home}/.eclipse/eclipse_cdt"
+    runcmd "eval chown -R ${SUDO_USER:-$USER}:${SUDO_USER:-$USER} ${home}/.eclipse/eclipse_cdt"
+    runcmd "rm -f ${home}/Downloads/eclipse_cdt.tar.gz"
 fi
 
-# Install Papyrus 1.0 (OMG::UML 2.5 and OMG::SysML 1.2 software)
+# Install Papyrus (OMG::UML and OMG::SysML software)
 #
-# This installs Eclipse Luna Modeling Tools.
-# User should manually install Papyrus via Help --> Install new Software... --> Update site: http://download.eclipse.org/modeling/mdt/papyrus/updates/releases/luna/1.0.0
-if [ ! -f "${home}/.eclipse/eclipse_modeling_tools/eclipse" ]; then
-    runcmd "wget http://eclipse.stu.edu.tw/technology/epp/downloads/release/luna/SR2/eclipse-modeling-luna-SR2-linux-gtk-x86_64.tar.gz -O ${home}/Downloads/eclipse_modeling_tools.tar.gz"
-    runcmd "mkdir -p ${home}/.eclipse/eclipse_modeling_tools"
-    runcmd "tar zxf ${home}/Downloads/eclipse_modeling_tools.tar.gz --strip 1 -C ${home}/.eclipse/eclipse_modeling_tools"
-    runcmd "eval chown -R ${SUDO_USER:-$USER}:${SUDO_USER:-$USER} ${home}/.eclipse/eclipse_modeling_tools"
-    runcmd "rm -f ${home}/Downloads/eclipse_modeling_tools.tar.gz"
+# Follow up this installation with the following actions:
+#   - Launch Papyrus: in the terminal run
+#                     $ uml
+#   - Install SysML 1.4: Help --> Install Papyrus Additional Components --> SysML
+#   - Install SysML 1.1: Help --> Install New Software... --> Update site: http://download.eclipse.org/modeling/mdt/papyrus/updates/releases/neon --> Papyrus SysML 1.1
+if [ ! -f "${home}/.eclipse/papyrus/papyrus" ]; then
+    echowarn "Please read the instructions in comments of .setup/install_dev_tools.sh for follow-up installation actions inside Papyrus!"
+    runcmd "wget \"https://www.eclipse.org/downloads/download.php?file=/modeling/mdt/papyrus/rcp/neon/2.0.2/papyrus-neon-2.0.2-linux64.tar.gz&r=1\" -O ${home}/Downloads/papyrus.tar.gz"
+    runcmd "mkdir -p ${home}/.eclipse/papyrus"
+    runcmd "tar zxf ${home}/Downloads/papyrus.tar.gz --strip 1 -C ${home}/.eclipse/papyrus"
+    runcmd "eval chown -R ${SUDO_USER:-$USER}:${SUDO_USER:-$USER} ${home}/.eclipse/papyrus"
+    runcmd "rm -f ${home}/Downloads/papyrus.tar.gz"
 fi
 
 

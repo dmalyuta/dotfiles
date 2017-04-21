@@ -156,6 +156,7 @@ fi
 #                     $ uml
 #   - Install SysML 1.4: Help --> Install Papyrus Additional Components --> SysML
 #   - Install SysML 1.1: Help --> Install New Software... --> Update site: http://download.eclipse.org/modeling/mdt/papyrus/updates/releases/neon --> Papyrus SysML 1.1
+#   - Install Web Developer Tools (Useful for editing diagram CSS files): Help --> Install New Software... --> Update site: http://download.eclipse.org/releases/neon/ --> Web, XML, Java EE and OSGi Enterprise Development
 if [ ! -f "${home}/.eclipse/papyrus/papyrus" ]; then
     echowarn "Please read the instructions in comments of .setup/install_dev_tools.sh for follow-up installation actions inside Papyrus!"
     runcmd "wget https://www.eclipse.org/downloads/download.php?file=/modeling/mdt/papyrus/rcp/neon/2.0.2/papyrus-neon-2.0.2-linux64.tar.gz&r=1 -O ${home}/Downloads/papyrus.tar.gz"

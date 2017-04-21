@@ -6,11 +6,24 @@ img.special {
     background-color: yellow;
 }
 
-.explanation {
-    background-color: #ff9499;
+.explanation,
+.remark,
+.definition {
     margin: 10px;
     margin-left: 50px;
     padding: 5px;
+}
+
+.explanation {
+    background-color: #ff9499;
+}
+
+.remark {
+    background-color: #a0adff;
+}
+
+.definition {
+    background-color: #4bff45;
 }
 
 .stereotype::before {

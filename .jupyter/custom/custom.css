@@ -33,3 +33,30 @@ img.special {
 .stereotype::after {
     content: "»";
 }
+
+pre {
+    margin: 0px;
+    background-color: transparent !important;
+}
+
+pre > code {
+    display: block;
+    background-color: #fcfcfc !important;
+    border-color: rgb(64, 64, 64) !important;
+    border-style: solid !important;
+    border-width: 1px !important;
+    border-radius: 5px !important;
+    max-height: 1000px !important;
+    overflow: auto !important;
+    padding: 10px !important;
+    margin: 10px !important;
+    color: #404040 !important;
+    line-height: normal !important;
+    font-family: Consolas,Menlo,Monaco,Lucida Console,Liberation Mono,DejaVu Sans Mono,Bitstream Vera Sans Mono,Courier New,monospace,sans-serif !important;
+}
+
+:not(pre) > code {
+    padding: 1px 5px !important;
+    font-family: Consolas,Menlo,Monaco,Lucida Console,Liberation Mono,DejaVu Sans Mono,Bitstream Vera Sans Mono,Courier New,monospace,sans-serif !important;
+    background-color: #eff0f1 !important;
+}

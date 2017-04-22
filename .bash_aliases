@@ -36,7 +36,14 @@ killscreens () {
 alias venv_jupnb=". ~/.python_venv/jupnb/bin/activate && echo Use \'$ deactivate\' to quit the Jupyter notebook virtualenv"
 
 # JetBrains products
-alias clion='~/.jetbrains/clion/bin/clion.sh & 2&>/dev/null && disown'
+clion() {
+    # Launch Clion (C/C++)
+    ~/.jetbrains/clion/bin/clion.sh &>/dev/null & disown
+}
+pycharm() {
+    # Launch PyCharm (Python)
+    ~/.jetbrains/pycharm/bin/pycharm.sh &>/dev/null & disown
+}
 
 # Gedit open file without blocking terminal
 gedit() {

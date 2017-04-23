@@ -8,7 +8,8 @@ img.special {
 
 .explanation,
 .remark,
-.definition {
+.definition,
+.example {
     margin: 10px;
     margin-left: 50px;
     padding: 5px;
@@ -20,6 +21,10 @@ img.special {
 
 .remark {
     background-color: #a0adff;
+}
+
+.example {
+    background-color: #a0ff8d;
 }
 
 .definition {

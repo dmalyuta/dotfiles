@@ -51,13 +51,13 @@ gedit() {
 }
 
 # Eclipse editors
-cdt() {
-    # Launch Eclipse CDT (C/C++, XML and LaTeX)
-    UBUNTU_MENUPROXY=0 ~/.eclipse/eclipse_cdt/eclipse &>/dev/null & disown
+eclipse_common() {
+    # Launch Eclipse CDT (C/C++, Java, UML/SysML, XML, etc.)
+    UBUNTU_MENUPROXY=0 ~/.eclipse/eclipse_common/eclipse &>/dev/null & disown
 }
-uml() {
-    # Launch Papyrus (OMG::UML and OMG::SysML)
-    UBUNTU_MENUPROXY=0 ~/.eclipse/papyrus/papyrus &>/dev/null & disown
+eclipse_latex() {
+    # Launch Eclipse (LaTeX)
+    UBUNTU_MENUPROXY=0 ~/.eclipse/eclipse_latex/eclipse &>/dev/null & disown
 }
 
 # Jupyter

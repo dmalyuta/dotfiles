@@ -132,39 +132,38 @@ if program_not_installed "rstudio"; then
     runcmd "rm -f ${home}/Downloads/rstudio-1.0.136-amd64.deb"
 fi
 
-# Install Eclipse
+# Install Eclipse for C/C++, Java, XML, UML/SysML, Web
 #
-# Follow up this installation with the following actions:
-#   - Launch Eclipse: in the terminal run
-#                     $ cdt
-#   - Install XML editing (Oxygen XML plugin): Help --> Install New Software... --> Update site: http://www.oxygenxml.com/InstData/Editor/Eclipse/site.xml
-#   - Install LaTeX editing (TeXlipse): Help --> Install New Software... --> Update site: http://texlipse.sourceforge.net
-#   - Install integration with the terminal (EasyShell): Help --> Install New Software... --> Update site: http://anb0s.github.io/EasyShell
-if [ ! -f "${home}/.eclipse/eclipse_cdt/eclipse" ]; then
+# Follow up this installation with the following actions
+#   - Launch Eclipse: $ eclipse_common
+#   - Install CDT (C/C++): Help --> Install New Software... --> Update site: http://download.eclipse.org/tools/cdt/releases/9.2 --> CDT Main Features, CDT Optional Features
+#   - Optionally install XML editing (Oxygen XML plugin): Help --> Install New Software... --> Update site: http://www.oxygenxml.com/InstData/Editor/Eclipse/site.xml --> oXygen XML Editor for Eclipse 3.6 -> 3.8, 4.2 -> 4.6
+#   - Install Remote System Explorer: Help --> Eclipse Marketplace... --> search for Remote System Explorer
+#   - Install integration with the terminal (EasyShell): Help --> Install New Software... --> Update site: http://anb0s.github.io/EasyShell --> EasyShell 2.0.x, PluginBox
+#   - Install Web dev tools (for Papyrus CSS mainly): Help --> Install New Software... --> Update site: http://download.eclipse.org/releases/neon  --> Web, XML, Java EE and OSGi Enterprise Development/Eclipse Web Developer Tools
+#   - Install Papyrus (UML/SysML): Help --> Install New Software... --> Update site: http://download.eclipse.org/modeling/mdt/papyrus/updates/releases/neon --> Papyrus, Papyrus SysML 1.1
+#       - Install SysML 1.4: Help --> Install Papyrus Additional Components --> SysML
+if [ ! -f "${home}/.eclipse/eclipse_java/eclipse" ]; then
     echowarn "Please read the instructions in comments of .setup/install_dev_tools.sh for follow-up installation actions inside Eclipse!"
-    runcmd "wget https://www.eclipse.org/downloads/download.php?file=/technology/epp/downloads/release/neon/3/eclipse-cpp-neon-3-linux-gtk-x86_64.tar.gz&r=1 -O ${home}/Downloads/eclipse_cdt.tar.gz"
-    runcmd "mkdir -p ${home}/.eclipse/eclipse_cdt"
-    runcmd "tar zxf ${home}/Downloads/eclipse_cdt.tar.gz --strip 1 -C ${home}/.eclipse/eclipse_cdt"
-    runcmd "eval chown -R ${SUDO_USER:-$USER}:${SUDO_USER:-$USER} ${home}/.eclipse/eclipse_cdt"
-    runcmd "rm -f ${home}/Downloads/eclipse_cdt.tar.gz"
+    runcmd "wget https://www.eclipse.org/downloads/download.php?file=/technology/epp/downloads/release/neon/3/eclipse-java-neon-3-linux-gtk-x86_64.tar.gz&r=1 -O ${home}/Downloads/eclipse_java.tar.gz"
+    runcmd "mkdir -p ${home}/.eclipse/eclipse_java"
+    runcmd "tar zxf ${home}/Downloads/eclipse_java.tar.gz --strip 1 -C ${home}/.eclipse/eclipse_java"
+    runcmd "eval chown -R ${SUDO_USER:-$USER}:${SUDO_USER:-$USER} ${home}/.eclipse/eclipse_java"
+    runcmd "rm -f ${home}/Downloads/eclipse_java.tar.gz"
 fi
 
-# Install Papyrus (OMG::UML and OMG::SysML software)
+# Install Eclipse for LaTeX
 #
-# Follow up this installation with the following actions:
-#   - Launch Papyrus: in the terminal run
-#                     $ uml
-#   - Install SysML 1.4: Help --> Install Papyrus Additional Components --> SysML
-#   - Install SysML 1.1: Help --> Install New Software... --> Update site: http://download.eclipse.org/modeling/mdt/papyrus/updates/releases/neon --> Papyrus SysML 1.1
-#   - Install Papyrus Extra Tools: Help --> Install New Software... --> Update site: http://download.eclipse.org/modeling/mdt/papyrus/updates/releases/neon --> Papyrus Extra (All - Not recommended), Papyrus Extra (Others)
-#   - Install Web Developer Tools (Useful for editing diagram CSS files): Help --> Install New Software... --> Update site: http://download.eclipse.org/releases/neon/ --> Web, XML, Java EE and OSGi Enterprise Development
-if [ ! -f "${home}/.eclipse/papyrus/papyrus" ]; then
-    echowarn "Please read the instructions in comments of .setup/install_dev_tools.sh for follow-up installation actions inside Papyrus!"
-    runcmd "wget https://www.eclipse.org/downloads/download.php?file=/modeling/mdt/papyrus/rcp/neon/2.0.2/papyrus-neon-2.0.2-linux64.tar.gz&r=1 -O ${home}/Downloads/papyrus.tar.gz"
-    runcmd "mkdir -p ${home}/.eclipse/papyrus"
-    runcmd "tar zxf ${home}/Downloads/papyrus.tar.gz --strip 1 -C ${home}/.eclipse/papyrus"
-    runcmd "eval chown -R ${SUDO_USER:-$USER}:${SUDO_USER:-$USER} ${home}/.eclipse/papyrus"
-    runcmd "rm -f ${home}/Downloads/papyrus.tar.gz"
+# Follow up this installation with the following actions
+#   - Launch Eclipse: $ eclipse_latex
+#   - Install LaTeX editing (TeXlipse): Help --> Install New Software... --> Update site: http://texlipse.sourceforge.net --> Pdf4Eclipse, TeXlipse
+if [ ! -f "${home}/.eclipse/eclipse_latex/eclipse" ]; then
+    echowarn "Please read the instructions in comments of .setup/install_dev_tools.sh for follow-up installation actions inside Eclipse!"
+    runcmd "wget https://www.eclipse.org/downloads/download.php?file=/technology/epp/downloads/release/neon/3/eclipse-committers-neon-3-linux-gtk-x86_64.tar.gz&r=1 -O ${home}/Downloads/eclipse_latex.tar.gz"
+    runcmd "mkdir -p ${home}/.eclipse/eclipse_latex"
+    runcmd "tar zxf ${home}/Downloads/eclipse_latex.tar.gz --strip 1 -C ${home}/.eclipse/eclipse_latex"
+    runcmd "eval chown -R ${SUDO_USER:-$USER}:${SUDO_USER:-$USER} ${home}/.eclipse/eclipse_latex"
+    runcmd "rm -f ${home}/Downloads/eclipse_latex.tar.gz"
 fi
 
 

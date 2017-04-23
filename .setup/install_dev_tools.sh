@@ -143,13 +143,13 @@ fi
 #   - Install Web dev tools (for Papyrus CSS mainly): Help --> Install New Software... --> Update site: http://download.eclipse.org/releases/neon  --> Web, XML, Java EE and OSGi Enterprise Development/Eclipse Web Developer Tools
 #   - Install Papyrus (UML/SysML): Help --> Install New Software... --> Update site: http://download.eclipse.org/modeling/mdt/papyrus/updates/releases/neon --> Papyrus, Papyrus SysML 1.1
 #       - Install SysML 1.4: Help --> Install Papyrus Additional Components --> SysML
-if [ ! -f "${home}/.eclipse/eclipse_java/eclipse" ]; then
+if [ ! -f "${home}/.eclipse/eclipse_common/eclipse" ]; then
     echowarn "Please read the instructions in comments of .setup/install_dev_tools.sh for follow-up installation actions inside Eclipse!"
-    runcmd "wget https://www.eclipse.org/downloads/download.php?file=/technology/epp/downloads/release/neon/3/eclipse-java-neon-3-linux-gtk-x86_64.tar.gz&r=1 -O ${home}/Downloads/eclipse_java.tar.gz"
-    runcmd "mkdir -p ${home}/.eclipse/eclipse_java"
-    runcmd "tar zxf ${home}/Downloads/eclipse_java.tar.gz --strip 1 -C ${home}/.eclipse/eclipse_java"
-    runcmd "eval chown -R ${SUDO_USER:-$USER}:${SUDO_USER:-$USER} ${home}/.eclipse/eclipse_java"
-    runcmd "rm -f ${home}/Downloads/eclipse_java.tar.gz"
+    runcmd "wget https://www.eclipse.org/downloads/download.php?file=/technology/epp/downloads/release/neon/3/eclipse-java-neon-3-linux-gtk-x86_64.tar.gz&r=1 -O ${home}/Downloads/eclipse_common.tar.gz"
+    runcmd "mkdir -p ${home}/.eclipse/eclipse_common"
+    runcmd "tar zxf ${home}/Downloads/eclipse_common.tar.gz --strip 1 -C ${home}/.eclipse/eclipse_common"
+    runcmd "eval chown -R ${SUDO_USER:-$USER}:${SUDO_USER:-$USER} ${home}/.eclipse/eclipse_common"
+    runcmd "rm -f ${home}/Downloads/eclipse_common.tar.gz"
 fi
 
 # Install Eclipse for LaTeX

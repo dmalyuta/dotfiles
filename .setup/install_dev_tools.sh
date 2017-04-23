@@ -148,7 +148,7 @@ if [ ! -f "${home}/.eclipse/eclipse_common/eclipse" ]; then
     runcmd "wget https://www.eclipse.org/downloads/download.php?file=/technology/epp/downloads/release/neon/3/eclipse-java-neon-3-linux-gtk-x86_64.tar.gz&r=1 -O ${home}/Downloads/eclipse_common.tar.gz"
     runcmd "mkdir -p ${home}/.eclipse/eclipse_common"
     runcmd "tar zxf ${home}/Downloads/eclipse_common.tar.gz --strip 1 -C ${home}/.eclipse/eclipse_common"
-    runcmd "eval chown -R ${SUDO_USER:-$USER}:${SUDO_USER:-$USER} ${home}/.eclipse/eclipse_common"
+    runcmd "eval chown -R ${SUDO_USER:-$USER}:${SUDO_USER:-$USER} ${home}/.eclipse"
     runcmd "rm -f ${home}/Downloads/eclipse_common.tar.gz"
 fi
 
@@ -162,7 +162,7 @@ if [ ! -f "${home}/.eclipse/eclipse_latex/eclipse" ]; then
     runcmd "wget https://www.eclipse.org/downloads/download.php?file=/technology/epp/downloads/release/neon/3/eclipse-committers-neon-3-linux-gtk-x86_64.tar.gz&r=1 -O ${home}/Downloads/eclipse_latex.tar.gz"
     runcmd "mkdir -p ${home}/.eclipse/eclipse_latex"
     runcmd "tar zxf ${home}/Downloads/eclipse_latex.tar.gz --strip 1 -C ${home}/.eclipse/eclipse_latex"
-    runcmd "eval chown -R ${SUDO_USER:-$USER}:${SUDO_USER:-$USER} ${home}/.eclipse/eclipse_latex"
+    runcmd "eval chown -R ${SUDO_USER:-$USER}:${SUDO_USER:-$USER} ${home}/.eclipse"
     runcmd "rm -f ${home}/Downloads/eclipse_latex.tar.gz"
 fi
 

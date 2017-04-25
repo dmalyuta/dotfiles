@@ -169,7 +169,7 @@ if [ ! -f "${home}/.eclipse/eclipse_mbse/eclipse" ]; then
 fi
 
 # Install Eclipse for LaTeX
-#
+# 
 # Follow up this installation with the following actions
 #   - Launch Eclipse: $ eclipse_latex
 #   - Install LaTeX editing (TeXlipse): Help --> Install New Software... --> Update site: http://texlipse.sourceforge.net --> Pdf4Eclipse, TeXlipse

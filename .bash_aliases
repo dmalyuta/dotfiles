@@ -52,8 +52,12 @@ gedit() {
 
 # Eclipse editors
 eclipse_common() {
-    # Launch Eclipse CDT (C/C++, Java, UML/SysML, XML, etc.)
+    # Launch Eclipse CDT (C/C++, Java, XML, etc.)
     UBUNTU_MENUPROXY=0 ~/.eclipse/eclipse_common/eclipse &>/dev/null & disown
+}
+eclipse_mbse() {
+    # Launch Eclipse (model-based systems engineering with UML/SysML)
+    UBUNTU_MENUPROXY=0 ~/.eclipse/eclipse_mbse/eclipse &>/dev/null & disown
 }
 eclipse_latex() {
     # Launch Eclipse (LaTeX)

@@ -132,7 +132,9 @@ if program_not_installed "rstudio"; then
     runcmd "rm -f ${home}/Downloads/rstudio-1.0.136-amd64.deb"
 fi
 
-# Install Eclipse for C/C++, Java, XML, UML/SysML, Web
+##### NB: below, Eclipse installations are essentially of Eclipse [VERSION] Platform Runtime Binary, which is the barebones minimalist Eclipse version (without any junk plugins preinstalled)
+
+# Install Eclipse for C/C++, XML, Web
 #
 # Follow up this installation with the following actions
 #   - Launch Eclipse: $ eclipse_common
@@ -140,16 +142,30 @@ fi
 #   - Optionally install XML editing (Oxygen XML plugin): Help --> Install New Software... --> Update site: http://www.oxygenxml.com/InstData/Editor/Eclipse/site.xml --> oXygen XML Editor for Eclipse 3.6 -> 3.8, 4.2 -> 4.6
 #   - Install Remote System Explorer: Help --> Eclipse Marketplace... --> search for Remote System Explorer
 #   - Install integration with the terminal (EasyShell): Help --> Install New Software... --> Update site: http://anb0s.github.io/EasyShell --> EasyShell 2.0.x, PluginBox
-#   - Install Web dev tools (for Papyrus CSS mainly): Help --> Install New Software... --> Update site: http://download.eclipse.org/releases/neon  --> Web, XML, Java EE and OSGi Enterprise Development/Eclipse Web Developer Tools
-#   - Install Papyrus (UML/SysML): Help --> Install New Software... --> Update site: http://download.eclipse.org/modeling/mdt/papyrus/updates/releases/neon --> Papyrus, Papyrus SysML 1.1
-#       - Install SysML 1.4: Help --> Install Papyrus Additional Components --> SysML
 if [ ! -f "${home}/.eclipse/eclipse_common/eclipse" ]; then
     echowarn "Please read the instructions in comments of .setup/install_dev_tools.sh for follow-up installation actions inside Eclipse!"
-    runcmd "wget https://www.eclipse.org/downloads/download.php?file=/technology/epp/downloads/release/neon/3/eclipse-java-neon-3-linux-gtk-x86_64.tar.gz&r=1 -O ${home}/Downloads/eclipse_common.tar.gz"
+    runcmd "wget https://www.eclipse.org/downloads/download.php?file=/eclipse/downloads/drops4/R-4.6.3-201703010400/eclipse-platform-4.6.3-linux-gtk-x86_64.tar.gz&r=1 -O ${home}/Downloads/eclipse_common.tar.gz"
     runcmd "mkdir -p ${home}/.eclipse/eclipse_common"
     runcmd "tar zxf ${home}/Downloads/eclipse_common.tar.gz --strip 1 -C ${home}/.eclipse/eclipse_common"
     runcmd "eval chown -R ${SUDO_USER:-$USER}:${SUDO_USER:-$USER} ${home}/.eclipse"
     runcmd "rm -f ${home}/Downloads/eclipse_common.tar.gz"
+fi
+
+# Install Eclipse of UML/SysML
+#
+# TODO once Eclipse Oxygen is released, then might make sense to merge this and the above Eclipse installation for C/C++, Java, XML, etc.
+#
+# Follow up this installation with the following actions
+#   - Install Web dev tools (for Papyrus CSS file editing): Help --> Install New Software... --> Update site: http://download.eclipse.org/releases/oxygen  --> Web, XML, Java EE and OSGi Enterprise Development/Eclipse Web Developer Tools
+#   - Install Papyrus (UML/SysML): Help --> Install New Software... --> Update site: http://download.eclipse.org/modeling/mdt/papyrus/updates/nightly/oxygen --> Papyrus, Papyrus SysML 1.1
+#       - Install SysML 1.4 [NOT YET POSSIBLE FOR OXYGEN]: Help --> Install Papyrus Additional Components --> SysML
+if [ ! -f "${home}/.eclipse/eclipse_mbse/eclipse" ]; then
+    echowarn "Please read the instructions in comments of .setup/install_dev_tools.sh for follow-up installation actions inside Eclipse!"
+    runcmd "wget https://www.eclipse.org/downloads/download.php?file=/eclipse/downloads/drops4/S-4.7M6-201703082000/eclipse-platform-4.7M6-linux-gtk-x86_64.tar.gz&r=1 -O ${home}/Downloads/eclipse_mbse.tar.gz"
+    runcmd "mkdir -p ${home}/.eclipse/eclipse_mbse"
+    runcmd "tar zxf ${home}/Downloads/eclipse_mbse.tar.gz --strip 1 -C ${home}/.eclipse/eclipse_mbse"
+    runcmd "eval chown -R ${SUDO_USER:-$USER}:${SUDO_USER:-$USER} ${home}/.eclipse"
+    runcmd "rm -f ${home}/Downloads/eclipse_mbse.tar.gz"
 fi
 
 # Install Eclipse for LaTeX
@@ -159,7 +175,7 @@ fi
 #   - Install LaTeX editing (TeXlipse): Help --> Install New Software... --> Update site: http://texlipse.sourceforge.net --> Pdf4Eclipse, TeXlipse
 if [ ! -f "${home}/.eclipse/eclipse_latex/eclipse" ]; then
     echowarn "Please read the instructions in comments of .setup/install_dev_tools.sh for follow-up installation actions inside Eclipse!"
-    runcmd "wget https://www.eclipse.org/downloads/download.php?file=/technology/epp/downloads/release/neon/3/eclipse-committers-neon-3-linux-gtk-x86_64.tar.gz&r=1 -O ${home}/Downloads/eclipse_latex.tar.gz"
+    runcmd "wget https://www.eclipse.org/downloads/download.php?file=/eclipse/downloads/drops4/R-4.6.3-201703010400/eclipse-platform-4.6.3-linux-gtk-x86_64.tar.gz&r=1 -O ${home}/Downloads/eclipse_latex.tar.gz"
     runcmd "mkdir -p ${home}/.eclipse/eclipse_latex"
     runcmd "tar zxf ${home}/Downloads/eclipse_latex.tar.gz --strip 1 -C ${home}/.eclipse/eclipse_latex"
     runcmd "eval chown -R ${SUDO_USER:-$USER}:${SUDO_USER:-$USER} ${home}/.eclipse"

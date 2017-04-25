@@ -175,7 +175,7 @@ fi
 #   - Install LaTeX editing (TeXlipse): Help --> Install New Software... --> Update site: http://texlipse.sourceforge.net --> Pdf4Eclipse, TeXlipse
 if [ ! -f "${home}/.eclipse/eclipse_latex/eclipse" ]; then
     echowarn "Please read the instructions in comments of .setup/install_dev_tools.sh for follow-up installation actions inside Eclipse!"
-    runcmd "wget https://www.eclipse.org/downloads/download.php?file=/eclipse/downloads/drops4/R-4.6.3-201703010400/eclipse-platform-4.6.3-linux-gtk-x86_64.tar.gz&r=1 -O ${home}/Downloads/eclipse_latex.tar.gz"
+    runcmd "wget http://www.eclipse.org/downloads/download.php?file=/eclipse/downloads/drops/R-3.8.2-201301310800/eclipse-platform-3.8.2-linux-gtk-x86_64.tar.gz -O ${home}/Downloads/eclipse_latex.tar.gz"
     runcmd "mkdir -p ${home}/.eclipse/eclipse_latex"
     runcmd "tar zxf ${home}/Downloads/eclipse_latex.tar.gz --strip 1 -C ${home}/.eclipse/eclipse_latex"
     runcmd "eval chown -R ${SUDO_USER:-$USER}:${SUDO_USER:-$USER} ${home}/.eclipse"

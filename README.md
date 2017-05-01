@@ -9,6 +9,7 @@
 
 * Terminal utilities: tmux, GNU Screen, customized bash prompt using [colorizer](https://github.com/jakobwesthoff/colorizer) showing SSH, program return status, Git, etc.
 * Personalized `.bashrc`, `.profile` and `.bash_aliases`
+* Optional [Flatabulous](https://github.com/anmoljagetia/Flatabulous) desktop theme
 * Personalized [Terminator](https://launchpad.net/terminator) (multiple window terminal emulator)
 * [Automated backup](https://github.com/dmalyuta/dotfiles/blob/master/.bin/make_snapshot.sh) using `rsync`, `cron` and `anacron` with support for grandfather-father-son backup scheme
 

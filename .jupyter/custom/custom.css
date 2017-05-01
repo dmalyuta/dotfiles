@@ -9,7 +9,8 @@ img.special {
 .explanation,
 .remark,
 .definition,
-.example {
+.example,
+.idea {
     margin: 10px;
     margin-left: 50px;
     padding: 5px;
@@ -29,6 +30,10 @@ img.special {
 
 .definition {
     background-color: #4bff45;
+}
+
+.idea {
+    background-color: yellow;
 }
 
 .stereotype::before {

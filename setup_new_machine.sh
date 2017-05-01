@@ -15,7 +15,8 @@ programs_list=(
     "bin"
     "dev_tools"
     "latex"
-    "inkscape"
+    "creative"
+    "internet"
     "emacs"
 )
 
@@ -33,8 +34,9 @@ dotfiles_prompt["${programs_list[0]}"]="Do you want to install the dotfiles that
 dotfiles_prompt["${programs_list[1]}"]="Do you want to install the .bin directory [Yn]? "
 dotfiles_prompt["${programs_list[2]}"]="Do you want to install development tools [Yn]? "
 dotfiles_prompt["${programs_list[3]}"]="Do you want to install LaTeX [Yn]? "
-dotfiles_prompt["${programs_list[4]}"]="Do you want to install Inkscape [Yn]? "
-dotfiles_prompt["${programs_list[5]}"]="Do you want to install Emacs [yN]? "
+dotfiles_prompt["${programs_list[4]}"]="Do you want to install creative applications (drawing, diagramming) [Yn]? "
+dotfiles_prompt["${programs_list[5]}"]="Do you want to install internet applications (Chrome, etc.) [yN]? "
+dotfiles_prompt["${programs_list[6]}"]="Do you want to install Emacs [yN]? "
 
 ########## global variables
 
@@ -175,9 +177,13 @@ install_program "dev_tools" .setup/install_dev_tools.sh
 
 install_program "latex" .setup/install_latex.sh
 
-########## Inkscape
+########## Creative applications
 
-install_program "inkscape" .setup/install_inkscape.sh
+install_program "creative" .setup/install_creative.sh
+
+########## Internet
+
+install_program "internet" .setup/install_internet.sh
 
 ########## Emacs
 

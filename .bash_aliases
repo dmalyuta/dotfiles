@@ -85,6 +85,11 @@ jupyter2pdf() {
     rm -f tmpfile123.html
 }
 
+# yEd
+yed() {
+    java -jar ~/.yed/yed.jar &>/dev/null & disown
+}
+
 ######################################### Emacs
 
 alias emacsclient="emacsclient -e '(my-start-emacs)' " # crucial part of layout persistence across sessions! (must come before below functions!!) (fixed, no longer needed I think...)

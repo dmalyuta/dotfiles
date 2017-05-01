@@ -41,6 +41,14 @@ apt_get_install_pkg tree
 apt_get_install_pkg bash-completion
 #apt_get_install_pkg rxvt-unicode
 
+# Sunflower Twin-panel file manager
+if program_not_installed "sunflower"; then
+    runcmd "wget http://sunflower-fm.org/pub/sunflower-0.3.61-1.all.deb -O ${home}/Downloads/sunflower.deb"
+    runcmd_noexit "dpkg -i ${home}/Downloads/sunflower.deb" nonull
+    runcmd "apt-get --assume-yes install -f" nonull
+    runcmd "rm -f ${home}/Downloads/sunflower.deb"
+fi
+
 # tmux (version 2.3)
 # Terminal multiplexer
 if [ "$(tmux -V)" != "tmux 2.3" ]; then
@@ -134,7 +142,7 @@ fi
 
 ##### NB: below, Eclipse installations are essentially of Eclipse [VERSION] Platform Runtime Binary, which is the barebones minimalist Eclipse version (without any junk plugins preinstalled)
 
-# Install Eclipse for C/C++, XML, Web
+# Install Eclipse for C/C++, XML Web
 #
 # Follow up this installation with the following actions
 #   - Launch Eclipse: $ eclipse_common
@@ -168,11 +176,12 @@ if [ ! -f "${home}/.eclipse/eclipse_mbse/eclipse" ]; then
     runcmd "rm -f ${home}/Downloads/eclipse_mbse.tar.gz"
 fi
 
-# Install Eclipse for LaTeX
+# Install Eclipse for LaTeX, Markdown
 # 
 # Follow up this installation with the following actions
 #   - Launch Eclipse: $ eclipse_latex
 #   - Install LaTeX editing (TeXlipse): Help --> Install New Software... --> Update site: http://texlipse.sourceforge.net --> Pdf4Eclipse, TeXlipse
+#   - Install Markdown editor: Help --> Install New Software... --> Update site: http://www.certiv.net/updates --> Certiv Tools/FluentMark Editor
 if [ ! -f "${home}/.eclipse/eclipse_latex/eclipse" ]; then
     echowarn "Please read the instructions in comments of .setup/install_dev_tools.sh for follow-up installation actions inside Eclipse!"
     runcmd "wget http://www.eclipse.org/downloads/download.php?file=/eclipse/downloads/drops/R-3.8.2-201301310800/eclipse-platform-3.8.2-linux-gtk-x86_64.tar.gz -O ${home}/Downloads/eclipse_latex.tar.gz"

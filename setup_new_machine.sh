@@ -14,6 +14,7 @@ programs_list=(
     "home_dotfiles"
     "bin"
     "dev_tools"
+    "usability"
     "latex"
     "inkscape"
     "emacs"
@@ -32,9 +33,10 @@ declare -A dotfiles_prompt
 dotfiles_prompt["${programs_list[0]}"]="Do you want to install the dotfiles that go in $HOME directory [Yn]? "
 dotfiles_prompt["${programs_list[1]}"]="Do you want to install the .bin directory [Yn]? "
 dotfiles_prompt["${programs_list[2]}"]="Do you want to install development tools [Yn]? "
-dotfiles_prompt["${programs_list[3]}"]="Do you want to install LaTeX [Yn]? "
-dotfiles_prompt["${programs_list[4]}"]="Do you want to install Inkscape [Yn]? "
-dotfiles_prompt["${programs_list[5]}"]="Do you want to install Emacs [yN]? "
+dotfiles_prompt["${programs_list[3]}"]="Do you want to install usability features (like desktop theme) [Yn]? "
+dotfiles_prompt["${programs_list[4]}"]="Do you want to install LaTeX [Yn]? "
+dotfiles_prompt["${programs_list[5]}"]="Do you want to install Inkscape [Yn]? "
+dotfiles_prompt["${programs_list[6]}"]="Do you want to install Emacs [yN]? "
 
 ########## global variables
 
@@ -170,6 +172,10 @@ done
 
 install_program "dev_tools" .setup/install_python.sh
 install_program "dev_tools" .setup/install_dev_tools.sh
+
+########## Usability
+
+install_program "usability" .setup/install_usability.sh
 
 ########## LaTeX
 

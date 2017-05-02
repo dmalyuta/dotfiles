@@ -1,10 +1,10 @@
 #!/bin/bash
-# ----------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 #
-# Installation of tools for engineering and, in particular, software
+# Installation of tools for engineering and, in particular, software/algorithms
 # development.
 #
-# ----------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
 echo_prefix_temp="$echo_prefix"
 echo_prefix="[dev tools setup] "
@@ -40,6 +40,10 @@ apt_get_install_pkg sshpass
 apt_get_install_pkg tree
 apt_get_install_pkg bash-completion
 #apt_get_install_pkg rxvt-unicode
+
+# ghex
+# Hex editor
+apt_get_install_pkg ghex
 
 # Sunflower Twin-panel file manager
 if program_not_installed "sunflower"; then

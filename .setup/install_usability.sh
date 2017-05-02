@@ -1,7 +1,8 @@
 #!/bin/bash
 # ----------------------------------------------------------------------
 #
-# Install usability-related things for Linux like the theme.
+# Install usability-related things for Linux like the theme, the text
+# editor, etc.
 #
 # ----------------------------------------------------------------------
 
@@ -20,6 +21,17 @@ if ! dpkg-query -W flatabulous-theme &>/dev/null; then
     apt_get_install_pkg flatabulous-theme
     apt_get_install_pkg ultra-flat-icons
 fi
+
+# Sublime Text 3
+# Text editor
+if program_not_installed "subl"; then
+    # Install if not already installed
+    runcmd "wget https://download.sublimetext.com/sublime-text_build-3126_amd64.deb -O ${home}/Downloads/sublime_text.deb"
+    runcmd_noexit "dpkg -i ${home}/Downloads/sublime_text.deb" nonull
+    runcmd "apt-get --assume-yes install -f" nonull
+    runcmd "rm -f ${home}/Downloads/sublime_text.deb"
+fi
+
 
 
 

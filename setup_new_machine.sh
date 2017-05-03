@@ -178,6 +178,7 @@ install_program "dev_tools" .setup/install_dev_tools.sh
 ########## Usability
 
 install_program "usability" .setup/install_usability.sh
+install_program "usability" .setup/install_foxit.sh
 
 ########## LaTeX
 

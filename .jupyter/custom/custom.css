@@ -75,3 +75,12 @@ pre > code {
     text-align: center;
     font-weight: bold;
 }
+
+.important::before {
+    content: "\00a0\00a0\00a0\00a0\00a0\00a0\00a0";
+    background: url(images/warning_sign.png) no-repeat center center; 
+    background-size: cover;
+    -webkit-background-size: cover;
+    -moz-background-size: cover;
+    -o-background-size: cover;
+}

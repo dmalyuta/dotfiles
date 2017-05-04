@@ -25,7 +25,7 @@ programs_list=(
 
 dependencies_home_dotfiles=(".profile" ".bash_aliases" ".local.bashrc" ".screenrc" ".tmux.conf")
 dependencies_bin=(".bin")
-dependencies_dev_tools=(".config/terminator/config" ".icons/matlab_icon.png" ".icons/arbre_analyste_icon.png" ".jupyter/jupyter_notebook_config.py" ".jupyter/custom/custom.css")
+dependencies_dev_tools=(".config/terminator/config" ".icons/matlab_icon.png" ".icons/arbre_analyste_icon.png" ".jupyter")
 dependencies_emacs=(".emacs.d/init.el" ".emacs.d/lisp")
 
 # question to ask user when determining which programs to install
@@ -166,8 +166,13 @@ echo "any existing dotfiles in $home will be moved to $backup_folder"
 ### loop through each dotfile/folder and put it on the user computer, if requested
 for foo in "${install_dotfiles_list[@]}"
 do
-    # symlink the folder's contents
-    copy_foo "$foo" "$dir" "$home" $symlink
+    if [ "$foo" == ".jupyter" ]; then
+        # symlink the actual folder
+        copy_foo "$foo" "$dir" "$home" $symlink false
+    else
+        # symlink the folder's contents
+        copy_foo "$foo" "$dir" "$home" $symlink
+    fi
 done
 
 ########## Development tools

@@ -33,6 +33,4 @@ if program_not_installed "subl"; then
 fi
 
 
-
-
 echo_prefix="$echo_prefix_temp"

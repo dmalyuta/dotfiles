@@ -41,6 +41,13 @@ if [[ ( -z "$INSIDE_EMACS" || "$EMACS_BASH_COMPLETE" = "t" ) &&\
     . /etc/bash_completion
 fi
 
+# Go language
+if [[ -d /usr/local/go ]]; then
+    export GOROOT=/usr/local/go
+    export GOPATH=$HOME/gopath
+    export PATH=$GOPATH:$GOPATH/bin:$GOROOT/bin:$PATH
+fi
+
 ##################################### BASH PROMPT
 parse_git_branch() {
     # Display git branch

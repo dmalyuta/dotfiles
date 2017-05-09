@@ -21,9 +21,9 @@ fi
 
 # Google Drive client for the commandline
 # https://github.com/odeke-em/drive
-if program_not_installed "drive"; then
+if [ ! -f "${home}/gopath/bin/drive" ]; then
 	# Install the Go programming language
-	if program_not_installed "go"; then
+	if [ ! -d "/usr/local/go" ]; then
 		runcmd "wget https://storage.googleapis.com/golang/go1.7.4.linux-amd64.tar.gz -O ${home}/Downloads/go_language.tar.gz"
 		runcmd "tar zxf ${home}/Downloads/go_language.tar.gz -C ${home}/Downloads/"
 		runcmd "eval chown -R ${SUDO_USER:-$USER}:${SUDO_USER:-$USER} ${home}/Downloads/go"

@@ -680,6 +680,15 @@ bash-completion-dynamic-complete from bash-completion.el"
     (setq flymd-browser-open-function 'my-flymd-browser-function)
     )
 
+  (use-package fill-column-indicator
+    ;; 
+    :ensure t
+    :config
+    (require 'fill-column-indicator)
+    (setq-default fill-column 80)
+    (add-hook 'c-mode-common-hook 'turn-on-auto-fill)
+    (add-hook 'c-mode-common-hook (lambda () (fci-mode 1))))
+
 ;;;;;;;;;;;;;;;;; PERSONAL PACKAGES
 
   (use-package c-block-comment
@@ -960,20 +969,20 @@ bash-completion-dynamic-complete from bash-completion.el"
 
   ;; auto-fill comments in programming modes
   ;; if you want to have automatic auto-fill:
-  ;; (defun comment-auto-fill ()
-  ;;       (setq-local comment-auto-fill-only-comments t)
-  ;;       (auto-fill-mode 1))
-  ;; (add-hook 'c-mode-common-hook (lambda () (comment-auto-fill)))
+  (defun comment-auto-fill ()
+        (setq-local comment-auto-fill-only-comments t)
+        (auto-fill-mode 1))
+  (add-hook 'c-mode-common-hook (lambda () (comment-auto-fill)))
   ;; if you want to manually auto-fill (M-q), but for that to only apply to comments
-  (add-hook 'c-mode-common-hook (lambda () (setq-local comment-auto-fill-only-comments t)))
+  ;; (add-hook 'c-mode-common-hook (lambda () (setq-local comment-auto-fill-only-comments t)))
 
   ;; /*  */ style comments with C-x M-; in c++-mode
-  (defun my-block-comment ()
-    (interactive)
-    (let ((comment-start "/* ")
-	  (comment-end " */"))
-      (comment-dwim nil)))
-  (add-hook 'c++-mode-hook (lambda () (local-set-key (kbd "C-x M-;") 'my-block-comment)))
+  ;; (defun my-block-comment ()
+  ;;   (interactive)
+  ;;   (let ((comment-start "/* ")
+  ;; 	  (comment-end " */"))
+  ;;     (comment-dwim nil)))
+  ;; (add-hook 'c++-mode-hook (lambda () (local-set-key (kbd "C-x M-;") 'my-block-comment)))
 
   ;; Color roslaunch files correctly
   (add-to-list 'auto-mode-alist '("\\.launch$" . xml-mode))
@@ -1057,7 +1066,7 @@ bash-completion-dynamic-complete from bash-completion.el"
   (defun my-xml-schema-hook ()
     (when (string= (file-name-extension buffer-file-name) "ts")
       (rng-auto-set-schema))
-  (add-hook 'find-file-hook 'my-xml-schema-hook)
+  (add-hook 'find-file-hook 'my-xml-schema-hook))
   
 )
 
@@ -1117,14 +1126,7 @@ bash-completion-dynamic-complete from bash-completion.el"
      (340 . "#94BFF3")
      (360 . "#DC8CC3"))))
  '(vc-annotate-very-old-color "#DC8CC3")
- '(livedown-autostart nil) ; automatically open preview when opening markdown files
- '(livedown-open t)        ; automatically open the browser window
- '(livedown-port 1337)     ; port for livedown server
- '(livedown-browser nil)   ; browser to use
  )
-
-(add-to-list 'load-path (expand-file-name "~/.emacs.d/emacs-livedown"))
-(require 'livedown)
 
 (let ((bg (face-attribute 'default :background)))
   (custom-set-faces

@@ -34,7 +34,7 @@ if [ ! -f "${home}/gopath/bin/drive" ]; then
 		runcmd "eval chown -R ${SUDO_USER:-$USER}:${SUDO_USER:-$USER} ${home}/gopath"
 	fi
 	# Install Google Drive client
-	runcmd "eval su -c \"go get -u github.com/odeke-em/drive/cmd/drive\" ${SUDO_USER:-$USER}"
+	runcmd "eval su -c \"/usr/local/go/bin/go get -u github.com/odeke-em/drive/cmd/drive\" ${SUDO_USER:-$USER}"
 fi
 
 # Insync Google Drive client

@@ -99,7 +99,7 @@
     ;; complete anything
     :ensure t
     :bind
-    (("C-:" . company-complete) ;; recommended to use TAB instead (which uses helm-company, see below)
+    (("<S-SPC>" . company-complete) ;; recommended to use TAB instead (which uses helm-company, see below)
      ("M-n" . company-select-next)
      ("M-p" . company-select-previous))
     :init
@@ -132,22 +132,22 @@
       '(define-key company-active-map (kbd "M-h") #'company-quickhelp-manual-begin))
     )
 
-  (use-package helm-company
-    ;; Helm interface for company-mode
-    :ensure t
-    :bind
-    (("C-;" . helm-company))
-    :demand
-    :config
-    (eval-after-load 'company
-      '(progn
-	 (defun indent-or-complete ()
-	   (interactive)
-	   (if (looking-at "\\_>")
-	       (helm-company)
-	     (indent-according-to-mode)))
-	 ))
-    )
+  ;; (use-package helm-company
+  ;;   ;; Helm interface for company-mode
+  ;;   :ensure t
+  ;;   :bind
+  ;;   (("C-;" . helm-company))
+  ;;   :demand
+  ;;   :config
+  ;;   (eval-after-load 'company
+  ;;     '(progn
+  ;; 	 (defun indent-or-complete ()
+  ;; 	   (interactive)
+  ;; 	   (if (looking-at "\\_>")
+  ;; 	       (helm-company)
+  ;; 	     (indent-according-to-mode)))
+  ;; 	 ))
+  ;;   )
 
   (use-package company-shell
     ;; company mode completion backends for your shell functions:
@@ -680,14 +680,23 @@ bash-completion-dynamic-complete from bash-completion.el"
     (setq flymd-browser-open-function 'my-flymd-browser-function)
     )
 
-  (use-package fill-column-indicator
-    ;; 
+  ;; (use-package fill-column-indicator
+  ;;   ;; 
+  ;;   :ensure t
+  ;;   :config
+  ;;   ;;(require 'fill-column-indicator)
+  ;;   (setq-default fill-column 80)
+  ;;   (add-hook 'c-mode-common-hook 'turn-on-auto-fill)
+  ;;   ;;(add-hook 'c-mode-common-hook (lambda () (fci-mode 1)))
+  ;;   )
+
+  (use-package real-auto-save
     :ensure t
     :config
-    (require 'fill-column-indicator)
-    (setq-default fill-column 80)
-    (add-hook 'c-mode-common-hook 'turn-on-auto-fill)
-    (add-hook 'c-mode-common-hook (lambda () (fci-mode 1))))
+    (require 'real-auto-save)
+    (add-hook 'prog-mode-hook 'real-auto-save-mode)
+    (setq real-auto-save-interval 10) ;; in seconds (default 10)
+    )
 
 ;;;;;;;;;;;;;;;;; PERSONAL PACKAGES
 

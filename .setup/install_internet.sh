@@ -37,12 +37,23 @@ if [ ! -f "${home}/gopath/bin/drive" ]; then
 	runcmd "eval su -c \"/usr/local/go/bin/go get -u github.com/odeke-em/drive/cmd/drive\" ${SUDO_USER:-$USER}"
 fi
 
-# Insync Google Drive client
-if program_not_installed "insync"; then
-	runcmd "wget https://d2t3ff60b2tol4.cloudfront.net/builds/insync_1.3.16.36155-trusty_amd64.deb -O ${home}/Downloads/insync.deb"
-    runcmd_noexit "dpkg -i ${home}/Downloads/insync.deb" nonull
-    runcmd "apt-get --assume-yes install -f" nonull
-    runcmd "rm -f ${home}/Downloads/insync.deb"
+# Rclone
+# "rsync for cloud storage"
+# Rclone is a command line program to sync files and directories to and from cloud services (Google Drive, Dropbox, etc.)
+# Installation instructions taken from https://rclone.org/install/
+if program_not_installed "rclone"; then
+	# Fetch and unpack
+	runcmd "wget https://downloads.rclone.org/rclone-current-linux-amd64.zip -O ${home}/Downloads/rclone.zip"
+	runcmd "unzip ${home}/Downloads/rclone.zip -d ${home}/Downloads/"
+	# Copy binary file
+	runcmd "cp ${home}/Downloads/rclone-*-linux-amd64/rclone /usr/bin/"
+	runcmd "chown root:root /usr/bin/rclone"
+	runcmd "chmod 755 /usr/bin/rclone"
+	# Install manpage
+	runcmd "mkdir -p /usr/local/share/man/man1"
+	runcmd "cp ${home}/Downloads/rclone-*-linux-amd64/rclone.1 /usr/local/share/man/man1/"
+	runcmd "mandb"
+	runcmd "rm -rf ${home}/Downloads/rclone*"
 fi
 
 echo_prefix="$echo_prefix_temp"

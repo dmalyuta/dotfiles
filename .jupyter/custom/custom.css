@@ -45,23 +45,22 @@ img.special {
 }
 
 pre {
-    margin: 0px;
+    margin: 0px !important;
     background-color: transparent !important;
 }
 
 pre > code {
     display: block;
-    background-color: #fcfcfc !important;
-    border-color: rgb(64, 64, 64) !important;
-    border-style: solid !important;
-    border-width: 1px !important;
-    border-radius: 5px !important;
-    max-height: 1000px !important;
-    overflow: auto !important;
-    padding: 10px !important;
-    margin: 10px !important;
-    color: #404040 !important;
-    line-height: normal !important;
+    background-color: #F3F5F7 !important;
+    border: 1pt solid #AEBDCC !important;
+    border-radius: 4px !important;
+    margin: 0 0 10px !important;
+    font-size: 13px !important;
+    line-height: 1.428571429 !important;
+    color: #333 !important;
+    word-break: break-all !important;
+    word-wrap: break-word !important;
+    padding: 5pt !important;
     font-family: Consolas,Menlo,Monaco,Lucida Console,Liberation Mono,DejaVu Sans Mono,Bitstream Vera Sans Mono,Courier New,monospace,sans-serif !important;
 }
 

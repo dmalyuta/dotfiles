@@ -212,6 +212,7 @@ wget_targz_install()
 program_not_installed()
 { # return true if program is not installed
     local program_name="$1"
+    # ! which "$program_name" &>/dev/null # maybe works too/is better?
     ! type "$program_name" > /dev/null 2>&1
 }
 

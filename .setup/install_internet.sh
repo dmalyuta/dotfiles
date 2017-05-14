@@ -19,6 +19,11 @@ if program_not_installed "google-chrome"; then
     runcmd "rm -f ${home}/Downloads/chrome.deb"
 fi
 
+# Dropbox
+if program_not_installed "dropbox"; then
+	apt_get_install_pkg dropbox
+fi
+
 # Google Drive client for the commandline
 # https://github.com/odeke-em/drive
 if [ ! -f "${home}/gopath/bin/drive" ]; then

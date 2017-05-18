@@ -152,7 +152,7 @@ fi
 #   - Launch Eclipse: $ eclipse_common
 #   - Install CDT (C/C++): Help --> Install New Software... --> Update site: http://download.eclipse.org/tools/cdt/releases/9.2 --> CDT Main Features, CDT Optional Features
 #   - Optionally install XML editing (Oxygen XML plugin): Help --> Install New Software... --> Update site: http://www.oxygenxml.com/InstData/Editor/Eclipse/site.xml --> oXygen XML Editor for Eclipse 3.6 -> 3.8, 4.2 -> 4.6
-#   - Install Remote System Explorer: Help --> Eclipse Marketplace... --> search for Remote System Explorer
+#   - Install Remote System Explorer: Help --> Install New Software... --> Update site: http://download.eclipse.org/releases/neon --> Search for "remote" --> General Purpose Tools/Remote System Explorer End-User Runtime
 #   - Install integration with the terminal (EasyShell): Help --> Install New Software... --> Update site: http://anb0s.github.io/EasyShell --> EasyShell 2.0.x, PluginBox
 if [ ! -f "${home}/.eclipse/eclipse_common/eclipse" ]; then
     echowarn "Please read the instructions in comments of .setup/install_dev_tools.sh for follow-up installation actions inside Eclipse!"

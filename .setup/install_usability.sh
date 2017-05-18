@@ -38,7 +38,7 @@ install_libreoffice=0
 if program_not_installed "libreoffice"; then
     install_libreoffice=1
 else
-    libreoffice_version="$(libreoffice --version | cut -d \" \" -f 2 | cut -d \".\" -f 1)"
+    libreoffice_version="$(libreoffice --version | cut -d ' ' -f 2 | cut -d '.' -f 1)"
     if [ "$libreoffice_version" -lt 5 ]; then
         # Need to upgrade current libreoffice
         install_libreoffice=1

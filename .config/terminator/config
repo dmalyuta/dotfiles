@@ -36,7 +36,7 @@
       title = /bin/bash
       type = Window
     [[[child1]]]
-      active_page = 1
+      active_page = 0
       labels = quadcopter, basestation
       last_active_term = a1874d2a-d157-4672-a329-f0fda05b7c68, e3e9ff6e-1e44-45e2-8e2c-725fb8b4dc5e
       order = 0
@@ -51,38 +51,38 @@
     [[[child11]]]
       order = 0
       parent = child10
-      position = 287
-      ratio = 0.5
+      position = 290
+      ratio = 0.505217391304
       type = VPaned
     [[[child14]]]
       order = 1
       parent = child10
-      position = 287
-      ratio = 0.500871080139
+      position = 289
+      ratio = 0.504355400697
       type = VPaned
     [[[child17]]]
       order = 1
       parent = child1
-      position = 927
-      ratio = 0.5
+      position = 928
+      ratio = 0.500539083558
       type = HPaned
     [[[child18]]]
       order = 0
       parent = child17
-      position = 574
-      ratio = 0.499565217391
+      position = 575
+      ratio = 0.500434782609
       type = VPaned
     [[[child2]]]
       order = 0
       parent = child1
-      position = 927
-      ratio = 0.5
+      position = 928
+      ratio = 0.500539083558
       type = HPaned
     [[[child21]]]
       order = 1
       parent = child17
-      position = 574
-      ratio = 0.499565217391
+      position = 575
+      ratio = 0.500434782609
       type = VPaned
     [[[child3]]]
       order = 0
@@ -93,14 +93,14 @@
     [[[child4]]]
       order = 0
       parent = child3
-      position = 287
-      ratio = 0.5
+      position = 290
+      ratio = 0.505217391304
       type = VPaned
     [[[child7]]]
       order = 1
       parent = child3
-      position = 287
-      ratio = 0.500871080139
+      position = 289
+      ratio = 0.504355400697
       type = VPaned
     [[[terminal12]]]
       group = Omicron
@@ -131,24 +131,28 @@
       type = Terminal
       uuid = 4007baf0-1318-4d67-8a40-ad190e2d1e2c
     [[[terminal19]]]
+      group = Sigma
       order = 0
       parent = child18
       profile = default
       type = Terminal
       uuid = e3e9ff6e-1e44-45e2-8e2c-725fb8b4dc5e
     [[[terminal20]]]
+      group = Sigma
       order = 1
       parent = child18
       profile = default
       type = Terminal
       uuid = 6bf41418-7b30-444c-9cce-4ce4486a65b4
     [[[terminal22]]]
+      group = Sigma
       order = 0
       parent = child21
       profile = default
       type = Terminal
       uuid = 23442629-ae78-4b84-a79a-f618b7e97b65
     [[[terminal23]]]
+      group = Sigma
       order = 1
       parent = child21
       profile = default

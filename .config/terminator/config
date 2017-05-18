@@ -8,6 +8,10 @@
   go_next = F7
   go_right = KP_Right
   go_up = KP_Up
+  move_tab_left = KP_Home
+  move_tab_right = KP_Page_Up
+  next_tab = KP_Page_Down
+  prev_tab = KP_End
   resize_down = <Primary>KP_Down
   resize_left = <Primary>KP_Left
   resize_right = <Primary>KP_Right

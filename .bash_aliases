@@ -12,8 +12,8 @@ alias rm='rm -i'
 alias copy='xargs echo -n | xclip -selection clipboard'
 
 # MATLAB terminal
-alias matlab='matlab -softwareopengl & 2&>/dev/null && disown'
-alias matlabterminal='matlab -nodesktop -nosplash'
+alias matlab='/usr/local/MATLAB/R2017a/bin/matlab & 2&>/dev/null && disown' # -softwareopengl
+alias matlabterminal='/usr/local/MATLAB/R2017a/bin/matlab -nodesktop -nosplash'
 
 # Directory making
 now() { date "+%d%m%YT%H%M%S"; } # shortcut for timestamps

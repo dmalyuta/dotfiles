@@ -107,6 +107,16 @@ if ! dpkg -l | grep -E '^ii' | grep smartgit &>/dev/null; then
     runcmd "rm -f ${home}/Downloads/smartgit.deb"
 fi
 
+# Install Jetbrains Toolbox App (projects & programs manager)
+if [ ! -d "${home}/.jetbrains/toolbox" ]; then
+    runcmd "wget https://download.jetbrains.com/toolbox/jetbrains-toolbox-1.2.2314.tar.gz -O ${home}/Downloads/toolbox.tar.gz"
+    runcmd "rm -rf ${home}/.jetbrains/toolbox"
+    runcmd "mkdir -p ${home}/.jetbrains/toolbox"
+    runcmd "tar zxf ${home}/Downloads/toolbox.tar.gz --strip 1 -C ${home}/.jetbrains/toolbox"
+    runcmd "eval chown -R ${SUDO_USER:-$USER}:${SUDO_USER:-$USER} ${home}/.jetbrains/toolbox"
+    runcmd "rm -f ${home}/Downloads/toolbox.tar.gz"
+fi
+
 # Install Jetbrains CLion (C/C++)
 if [ ! -d "${home}/.jetbrains/clion" ]; then
     runcmd "wget https://download.jetbrains.com/cpp/CLion-2017.1.tar.gz -O ${home}/Downloads/clion.tar.gz"

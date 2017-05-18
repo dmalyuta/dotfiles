@@ -47,57 +47,30 @@ done
 
 ########## dotfiles that go into $HOME directory
 
-if [ -e "${home}/.profile" ]; then
-    make_symlink ".profile" "$dir" "$home" $symlink
-fi
-if [ -e "${home}/.bash_aliases" ]; then
-    make_symlink ".bash_aliases" "$dir" "$home" $symlink
-fi
-if [ -e "${home}/.local.bashrc" ]; then
-    make_symlink ".local.bashrc" "$dir" "$home" $symlink
-fi
-if [ -e "${home}/.screenrc" ]; then
-    make_symlink ".screenrc" "$dir" "$home" $symlink
-fi
-if [ -e "${home}/.tmux.conf" ]; then
-    make_symlink ".tmux.conf" "$dir" "$home" $symlink
-fi
+update_file ".profile"      "$dir" "$home" $symlink
+update_file ".bash_aliases" "$dir" "$home" $symlink
+update_file ".local.bashrc" "$dir" "$home" $symlink
+update_file ".screenrc"     "$dir" "$home" $symlink
+update_file ".tmux.conf"    "$dir" "$home" $symlink
 
 ########## .bin directory
 
-if [ -e "${home}/.bin" ]; then
-    make_symlink ".bin" "$dir" "$home" $symlink
-fi
+update_file ".bin" "$dir" "$home" $symlink false
 
 ########## Development tools
 
-if [ -e "${home}/.config/terminator/config" ]; then
-    make_symlink ".config/terminator/config" "$dir" "$home" $symlink
-fi
-if [ -e "${home}/.icons/matlab_icon.png" ]; then
-    make_symlink ".icons/matlab_icon.png" "$dir" "$home" $symlink
-fi
-if [ -e "${home}/.icons/arbre_analyste_icon.png" ]; then
-    make_symlink ".icons/arbre_analyste_icon.png" "$dir" "$home" $symlink
-fi
+update_file ".config/terminator/config"      "$dir" "$home" $symlink
+update_file ".icons/matlab_icon.png"         "$dir" "$home" $symlink
+update_file ".icons/arbre_analyste_icon.png" "$dir" "$home" $symlink
 
 ########## Emacs
 
-if [ -e "${home}/.emacs.d/init.el" ]; then
-    make_symlink ".emacs.d/init.el" "$dir" "$home" $symlink
-fi
-if [ -e "${home}/.emacs.d/lisp" ]; then
-    make_symlink ".emacs.d/lisp" "$dir" "$home" $symlink
-fi
+update_file ".emacs.d/init.el" "$dir" "$home" $symlink
+update_file ".emacs.d/lisp"    "$dir" "$home" $symlink
 
 ########## Python
 
-if [ -e "${home}/.jupyter/jupyter_notebook_config.py" ]; then
-    make_symlink ".jupyter/jupyter_notebook_config.py" "$dir" "$home" $symlink
-fi
-if [ -e "${home}/.jupyter" ]; then
-    make_symlink ".jupyter" "$dir" "$home" $symlink false
-fi
+update_file ".jupyter" "$dir" "$home" $symlink false
 
 ########## closing actions
 

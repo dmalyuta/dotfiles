@@ -224,3 +224,16 @@ flush_stdin()
     done
 }
 
+update_file()
+{
+    # Update file/directory if it exists (as a symlink or not) or if event if it is
+    # a symlink but which is now broken.
+    local F="$1"
+    local src="$2"
+    local dest="$3"
+    local is_symlink="$4"
+    local symlink_whole_dir=$5 # when ommitted: true
+    if [ -e "${dest}/$F" ] || ( [ -L "${dest}/$F" ] && [ ! -a "${dest}/$F" ] ); then
+        make_symlink "$F" "$src" "$dest" $is_symlink $symlink_whole_dir
+    fi
+}

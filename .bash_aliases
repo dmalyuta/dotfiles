@@ -36,6 +36,10 @@ killscreens () {
 alias venv_jupnb=". ~/.python_venv/jupnb/bin/activate && echo Use \'$ deactivate\' to quit the Jupyter notebook virtualenv"
 
 # JetBrains products
+toolbox() {
+    # Launch Clion (C/C++)
+    ~/.jetbrains/toolbox/jetbrains-toolbox &>/dev/null & disown
+}
 clion() {
     # Launch Clion (C/C++)
     ~/.jetbrains/clion/bin/clion.sh &>/dev/null & disown

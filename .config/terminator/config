@@ -8,6 +8,8 @@
   go_next = F7
   go_right = KP_Right
   go_up = KP_Up
+  group_all_toggle = F5
+  group_tab_toggle = F6
   move_tab_left = KP_Home
   move_tab_right = KP_Page_Up
   next_tab = KP_Page_Down

@@ -700,6 +700,12 @@ bash-completion-dynamic-complete from bash-completion.el"
 
 ;;;;;;;;;;;;;;;;; PERSONAL PACKAGES
 
+  ;; Highlight lines that are greater than 120 characters long
+  (setq-default
+   whitespace-line-column 120
+   whitespace-style       '(face lines-tail))
+  (add-hook 'prog-mode-hook #'whitespace-mode)
+
   (use-package c-block-comment
     ;; automatically type C-style block comments
     ;; Use M-; to insert /* */ around the point

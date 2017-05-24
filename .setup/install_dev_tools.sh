@@ -154,6 +154,10 @@ if program_not_installed "rstudio"; then
     runcmd "rm -f ${home}/Downloads/rstudio-1.0.136-amd64.deb"
 fi
 
+# Install Jetbrains YouTrack (issue/bug/feature tracking)
+# Find installation instructions at http://mmorejon.github.io/en/blog/how-to-install-youtrack-6.5-on-ubuntu-14.04/
+echowarn "Find installation instructions for YouTrack at http://mmorejon.github.io/en/blog/how-to-install-youtrack-6.5-on-ubuntu-14.04/"
+
 ##### NB: below, Eclipse installations are essentially of Eclipse [VERSION] Platform Runtime Binary, which is the barebones minimalist Eclipse version (without any junk plugins preinstalled)
 
 # Install Eclipse for C/C++, XML Web

@@ -802,7 +802,7 @@ bash-completion-dynamic-complete from bash-completion.el"
   (setq x-select-enable-clipboard t)
 
   ;; default font and font size
-  (add-to-list 'default-frame-alist '(font . "DejaVu Sans Mono-10"))
+  (add-to-list 'default-frame-alist '(font . "DejaVu Sans Mono-13"))
 
   ;; rename buffer shortcut
   (global-set-key (kbd "C-c r") 'rename-buffer)

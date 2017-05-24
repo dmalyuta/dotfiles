@@ -50,4 +50,9 @@ if [ "$install_libreoffice" -eq 1 ]; then
     apt_get_install_pkg libreoffice
 fi
 
+# Byzanz
+# Screencast GIF recorder
+# Run .bin/byzanz-gui script for GUI
+apt_get_install_pkg byzanz
+
 echo_prefix="$echo_prefix_temp"

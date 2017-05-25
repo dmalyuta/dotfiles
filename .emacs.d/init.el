@@ -680,31 +680,15 @@ bash-completion-dynamic-complete from bash-completion.el"
     (setq flymd-browser-open-function 'my-flymd-browser-function)
     )
 
-  ;; (use-package fill-column-indicator
-  ;;   ;; 
+  ;; (use-package real-auto-save
   ;;   :ensure t
   ;;   :config
-  ;;   ;;(require 'fill-column-indicator)
-  ;;   (setq-default fill-column 80)
-  ;;   (add-hook 'c-mode-common-hook 'turn-on-auto-fill)
-  ;;   ;;(add-hook 'c-mode-common-hook (lambda () (fci-mode 1)))
+  ;;   (require 'real-auto-save)
+  ;;   (add-hook 'prog-mode-hook 'real-auto-save-mode)
+  ;;   (setq real-auto-save-interval 10) ;; in seconds (default 10)
   ;;   )
 
-  (use-package real-auto-save
-    :ensure t
-    :config
-    (require 'real-auto-save)
-    (add-hook 'prog-mode-hook 'real-auto-save-mode)
-    (setq real-auto-save-interval 10) ;; in seconds (default 10)
-    )
-
 ;;;;;;;;;;;;;;;;; PERSONAL PACKAGES
-
-  ;; Highlight lines that are greater than 120 characters long
-  (setq-default
-   whitespace-line-column 120
-   whitespace-style       '(face lines-tail))
-  (add-hook 'prog-mode-hook #'whitespace-mode)
 
   (use-package c-block-comment
     ;; automatically type C-style block comments
@@ -795,6 +779,15 @@ bash-completion-dynamic-complete from bash-completion.el"
     )
 
 ;;;;;;;;;;;;;;;;; OTHER STUFF
+
+  ;; Doxymacs
+  (add-to-list 'load-path "~/.emacs.d/doxymacs/")
+  (require 'doxymacs)
+  (add-hook 'c-mode-common-hook'doxymacs-mode)
+  (defun my-doxymacs-font-lock-hook ()
+    (if (or (eq major-mode 'c-mode) (eq major-mode 'c++-mode))
+        (doxymacs-font-lock)))
+  (add-hook 'font-lock-mode-hook 'my-doxymacs-font-lock-hook)
   
   ;; enable clipboard in emacs
   (xterm-mouse-mode t)
@@ -984,10 +977,10 @@ bash-completion-dynamic-complete from bash-completion.el"
 
   ;; auto-fill comments in programming modes
   ;; if you want to have automatic auto-fill:
-  (defun comment-auto-fill ()
-        (setq-local comment-auto-fill-only-comments t)
-        (auto-fill-mode 1))
-  (add-hook 'c-mode-common-hook (lambda () (comment-auto-fill)))
+  ;; (defun comment-auto-fill ()
+  ;;       (setq-local comment-auto-fill-only-comments t)
+  ;;       (auto-fill-mode 1))
+  ;; (add-hook 'c-mode-common-hook (lambda () (comment-auto-fill)))
   ;; if you want to manually auto-fill (M-q), but for that to only apply to comments
   ;; (add-hook 'c-mode-common-hook (lambda () (setq-local comment-auto-fill-only-comments t)))
 

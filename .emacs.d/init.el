@@ -813,13 +813,13 @@ bash-completion-dynamic-complete from bash-completion.el"
 ;;;;;;;;;;;;;;;;; OTHER STUFF
 
   ;; Doxymacs
-  (add-to-list 'load-path "~/.emacs.d/doxymacs/")
-  (require 'doxymacs)
-  (add-hook 'c-mode-common-hook'doxymacs-mode)
-  (defun my-doxymacs-font-lock-hook ()
-    (if (or (eq major-mode 'c-mode) (eq major-mode 'c++-mode))
-        (doxymacs-font-lock)))
-  (add-hook 'font-lock-mode-hook 'my-doxymacs-font-lock-hook)
+  ;; (add-to-list 'load-path "~/.emacs.d/doxymacs/")
+  ;; (require 'doxymacs)
+  ;; (add-hook 'c-mode-common-hook'doxymacs-mode)
+  ;; (defun my-doxymacs-font-lock-hook ()
+  ;;   (if (or (eq major-mode 'c-mode) (eq major-mode 'c++-mode))
+  ;;       (doxymacs-font-lock)))
+  ;; (add-hook 'font-lock-mode-hook 'my-doxymacs-font-lock-hook)
   
   ;; enable clipboard in emacs
   (xterm-mouse-mode t)
@@ -827,7 +827,7 @@ bash-completion-dynamic-complete from bash-completion.el"
   (setq x-select-enable-clipboard t)
 
   ;; default font and font size
-  (add-to-list 'default-frame-alist '(font . "DejaVu Sans Mono-13"))
+  (add-to-list 'default-frame-alist '(font . "DejaVu Sans Mono-9"))
 
   ;; rename buffer shortcut
   (global-set-key (kbd "C-c r") 'rename-buffer)

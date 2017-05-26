@@ -7,10 +7,23 @@
 ;;; Code:
 
 (defun use-zenburn-theme()
-  (load-theme 'zenburn t t) ;; last t is for NO-ENABLE
-  (enable-theme 'zenburn)
-  (set-face-attribute 'mode-line nil :box nil)
-  (set-face-attribute 'mode-line-inactive nil :box nil)
+  ;; (load-theme 'zenburn t t) ;; last t is for NO-ENABLE
+  ;; (enable-theme 'zenburn)
+  ;; (set-face-attribute 'mode-line nil :box nil)
+  ;; (set-face-attribute 'mode-line-inactive nil :box nil)
+  (require 'doom-themes)
+  ;; Load the theme (doom-one, doom-dark, etc.)
+  (load-theme 'doom-one t)
+  ;; brighter source buffers (that represent files)
+  (add-hook 'find-file-hook #'doom-buffer-mode-maybe)
+  ;; ...if you use auto-revert-mode
+  (add-hook 'after-revert-hook #'doom-buffer-mode-maybe)
+  ;; And you can brighten other buffers (unconditionally) with:
+  (add-hook 'ediff-prepare-buffer-hook #'doom-buffer-mode)
+  ;; Enable custom neotree theme
+  (doom-themes-neotree-config)
+  ;; Enable nlinum line highlighting
+  (doom-themes-nlinum-config)
   )
 
 (defun use-nw-theme()

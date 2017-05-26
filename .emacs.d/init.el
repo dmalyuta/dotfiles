@@ -57,13 +57,45 @@
     (require 'rainbow-delimiters)
     (add-hook 'prog-mode-hook 'rainbow-delimiters-mode))
 
-  (use-package zenburn-theme
-    ;; the best theme there is!
+  ;; (use-package zenburn-theme
+  ;;   ;; the best theme there is!
+  ;;   :ensure t
+  ;;   :defer t
+  ;;   ;;:config
+  ;;   ;;(load-theme 'zenburn t t) ;; last t is for NO-ENABLE
+  ;;   )
+
+  (use-package doom-themes
+    ;; DOOM Themes is an opinionated UI plugin and pack of themes extracted from my emacs.d, inspired by the One Dark/Light UI and syntax themes in Atom.
     :ensure t
-    :defer t
-    ;;:config
-    ;;(load-theme 'zenburn t t) ;; last t is for NO-ENABLE
+    :config
+    (require 'doom-themes)
+    ;; Load the theme (doom-one, doom-dark, etc.)
+    (load-theme 'doom-one t)
+    ;; brighter source buffers (that represent files)
+    (add-hook 'find-file-hook #'doom-buffer-mode-maybe)
+    ;; ...if you use auto-revert-mode
+    (add-hook 'after-revert-hook #'doom-buffer-mode-maybe)
+    ;; And you can brighten other buffers (unconditionally) with:
+    (add-hook 'ediff-prepare-buffer-hook #'doom-buffer-mode)
+    ;; Enable custom neotree theme
+    (doom-themes-neotree-config)
+    ;; Enable nlinum line highlighting
+    (doom-themes-nlinum-config)
     )
+
+  (use-package neotree
+    ;; Good tree-based project file browser
+    :ensure t
+    :config
+    (require 'neotree)
+    (global-set-key [f8] 'neotree-toggle))
+
+  (use-package all-the-icons
+    ;; Icons for NeoTree
+    :ensure t
+    :config
+    (use-package all-the-icons))
 
   (use-package dired+
     ;; advanced Dired functionality

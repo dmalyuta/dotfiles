@@ -3,6 +3,10 @@
 
 ;;;;;;;;;;;;;;;;; STUFF THAT NEEDS TO COME FIRST
                ;; (like mode line, so that we get the customization right away)
+
+  ;; Frame size
+  (add-to-list 'default-frame-alist '(height . 80))
+  (add-to-list 'default-frame-alist '(width . 130))
   
   ;; sensible GUI
   (menu-bar-mode -1)  ;; disable menubar
@@ -719,6 +723,23 @@ bash-completion-dynamic-complete from bash-completion.el"
   ;;   (add-hook 'prog-mode-hook 'real-auto-save-mode)
   ;;   (setq real-auto-save-interval 10) ;; in seconds (default 10)
   ;;   )
+
+  (use-package fill-column-indicator
+    ;; An Emacs minor mode that graphically indicates the fill column.
+    :ensure t
+    :config
+    (require 'fill-column-indicator)
+    (setq-default fill-column 120)
+    (add-hook 'c-mode-common-hook 'fci-mode)
+    (setq fci-rule-width 1)
+    (setq fci-rule-color "yellow")
+    )
+
+  (use-package magit
+    :ensure t
+    :config
+    
+    )
 
 ;;;;;;;;;;;;;;;;; PERSONAL PACKAGES
 

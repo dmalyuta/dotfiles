@@ -569,14 +569,14 @@
       )
     )
 
-  (use-package jedi
-    ;; Python autocompletion
-    ;; Must run once M-x jedi:install-server
-    :ensure t
-    :config
-    (load-file "~/.emacs.d/lisp/jedi-configuration.el")
-    (require 'jedi-configuration)
-    )
+  ;; (use-package jedi
+  ;;   ;; Python autocompletion
+  ;;   ;; Must run once M-x jedi:install-server
+  ;;   :ensure t
+  ;;   :config
+  ;;   (load-file "~/.emacs.d/lisp/jedi-configuration.el")
+  ;;   (require 'jedi-configuration)
+  ;;   )
 
   (use-package fuzzy
     :ensure t)
@@ -733,6 +733,13 @@ bash-completion-dynamic-complete from bash-completion.el"
     (add-hook 'c-mode-common-hook 'fci-mode)
     (setq fci-rule-width 1)
     (setq fci-rule-color "yellow")
+    ;; Fix company mode compatibility issue
+    (defun on-off-fci-before-company(command)
+      (when (string= "show" command)
+	(turn-off-fci-mode))
+      (when (string= "hide" command)
+	(turn-on-fci-mode)))
+    (advice-add 'company-call-frontends :before #'on-off-fci-before-company)
     )
 
   (use-package magit

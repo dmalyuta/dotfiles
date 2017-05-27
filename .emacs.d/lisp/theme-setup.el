@@ -6,7 +6,7 @@
 
 ;;; Code:
 
-(defun use-zenburn-theme()
+(defun use-gui-theme()
   ;; (load-theme 'zenburn t t) ;; last t is for NO-ENABLE
   ;; (enable-theme 'zenburn)
   ;; (set-face-attribute 'mode-line nil :box nil)
@@ -27,16 +27,18 @@
   )
 
 (defun use-nw-theme()
-  ;; Zenburn works well with TERM=xterm-256-color
-  ;; otherwise just comment out - no theme at all is next-best
-  ;; alternative I think
-  (use-zenburn-theme)
+  ;; Works well with TERM=xterm-256-color
+  ;; ---
+  ;; If you cannot do TERM=xterm-256-color, the just comment
+  ;; out - no theme at all is next-best alternative I think
+  (use-gui-theme)
+  (set-face-attribute 'region nil :background "#666")
   )
 
 (defun my-gui-config ()
   (interactive)
   ;;(disable-theme 'tsdh-dark) ; in case it was active
-  (use-zenburn-theme)
+  (use-gui-theme)
   ;; highlight current line (only in GUI mode, since it's
   ;; uncomfortable in the terminal)
   (add-hook 'c-mode-common-hook 'hl-line-mode)

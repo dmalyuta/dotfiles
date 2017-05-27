@@ -985,6 +985,10 @@ bash-completion-dynamic-complete from bash-completion.el"
 	      (define-key term-raw-map (kbd "C-<down>") 'nil)
 	      (define-key term-raw-map (kbd "C-<left>") 'nil)
 	      (define-key term-raw-map (kbd "C-<right>") 'nil)))
+  ;; turn off line wrapping for terminal
+  (add-hook 'term-mode-hook
+	    (lambda ()
+	      (setq truncate-lines t)))
 
   ;; make sure window movement keys are not captured by GUD's comint
   (add-hook 'comint-mode-hook

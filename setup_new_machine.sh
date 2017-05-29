@@ -166,7 +166,7 @@ echo "any existing dotfiles in $home will be moved to $backup_folder"
 ### loop through each dotfile/folder and put it on the user computer, if requested
 for foo in "${install_dotfiles_list[@]}"
 do
-    if [ "$foo" == ".jupyter" ] || [ "$foo" == ".bin" ]; then
+    if [ "$foo" == ".jupyter" ] || [ "$foo" == ".bin" ] || [ "$foo" == ".emacs.d/lisp" ]; then
         # symlink the actual folder
         copy_foo "$foo" "$dir" "$home" $symlink false
     else

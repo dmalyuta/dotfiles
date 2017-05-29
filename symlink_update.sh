@@ -66,7 +66,7 @@ update_file ".icons/arbre_analyste_icon.png" "$dir" "$home" $symlink
 ########## Emacs
 
 update_file ".emacs.d/init.el" "$dir" "$home" $symlink
-update_file ".emacs.d/lisp"    "$dir" "$home" $symlink
+update_file ".emacs.d/lisp"    "$dir" "$home" $symlink false
 
 ########## Python
 

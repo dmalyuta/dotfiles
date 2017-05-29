@@ -408,7 +408,10 @@
     :defer t
     :init
     (add-to-list 'auto-mode-alist '("\\.yml$" . yaml-mode))
-    (add-to-list 'auto-mode-alist '("\\.yaml$" . yaml-mode)))
+    (add-to-list 'auto-mode-alist '("\\.yaml$" . yaml-mode))
+    (add-to-list 'auto-mode-alist '("\\.srv$" . yaml-mode))
+    (add-to-list 'auto-mode-alist '("\\.msg$" . yaml-mode))
+    )
 
   (use-package google-c-style
     ;; provides the Google C/C++ coding style
@@ -742,10 +745,16 @@ bash-completion-dynamic-complete from bash-completion.el"
     (advice-add 'company-call-frontends :before #'on-off-fci-before-company)
     )
 
-  (use-package magit
+  ;; (use-package magit
+  ;;   :ensure t
+  ;;   :config
+  ;;   )
+
+  (use-package move-text
+    ;; Move current line or region up or down
     :ensure t
     :config
-    
+    (move-text-default-bindings)
     )
 
 ;;;;;;;;;;;;;;;;; PERSONAL PACKAGES

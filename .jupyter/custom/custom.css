@@ -62,6 +62,8 @@ pre > code {
     word-wrap: break-word !important;
     padding: 5pt !important;
     font-family: Consolas,Menlo,Monaco,Lucida Console,Liberation Mono,DejaVu Sans Mono,Bitstream Vera Sans Mono,Courier New,monospace,sans-serif !important;
+    max-height: 500px !important;
+    overflow: auto !important;
 }
 
 :not(pre) > code {

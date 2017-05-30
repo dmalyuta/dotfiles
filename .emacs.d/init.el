@@ -745,10 +745,13 @@ bash-completion-dynamic-complete from bash-completion.el"
     (advice-add 'company-call-frontends :before #'on-off-fci-before-company)
     )
 
-  ;; (use-package magit
-  ;;   :ensure t
-  ;;   :config
-  ;;   )
+  (use-package magit
+    :ensure t
+    :bind
+    (("C-x g" . magit-status)
+     )
+    :config
+    )
 
   (use-package move-text
     ;; Move current line or region up or down

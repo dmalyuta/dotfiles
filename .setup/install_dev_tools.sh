@@ -9,6 +9,16 @@
 echo_prefix_temp="$echo_prefix"
 echo_prefix="[dev tools setup] "
 
+# Latest version of Git
+git_version="$(git --version | cut -d ' ' -f 3 | cut -d '.' -f 1)"
+if [ "$git_version" -lt 2 ]; then
+    # Need to upgrade Git
+    apt_get_install_pkg python-software-properties
+    runcmd "add-apt-repository ppa:git-core/ppa -y"
+    runcmd "apt-get update"
+    apt_get_install_pkg git
+fi
+
 # Build tools like gcc, g++
 apt_get_install_pkg build-essential
 

@@ -718,31 +718,13 @@ bash-completion-dynamic-complete from bash-completion.el"
 	(browse-url url)))
     (setq flymd-browser-open-function 'my-flymd-browser-function)
     )
-
-  ;; (use-package real-auto-save
-  ;;   :ensure t
-  ;;   :config
-  ;;   (require 'real-auto-save)
-  ;;   (add-hook 'prog-mode-hook 'real-auto-save-mode)
-  ;;   (setq real-auto-save-interval 10) ;; in seconds (default 10)
-  ;;   )
-
+  
   (use-package fill-column-indicator
     ;; An Emacs minor mode that graphically indicates the fill column.
     :ensure t
     :config
-    (require 'fill-column-indicator)
     (setq-default fill-column 120)
     (add-hook 'c-mode-common-hook 'fci-mode)
-    (setq fci-rule-width 1)
-    (setq fci-rule-color "yellow")
-    ;; Fix company mode compatibility issue
-    (defun on-off-fci-before-company(command)
-      (when (string= "show" command)
-	(turn-off-fci-mode))
-      (when (string= "hide" command)
-	(turn-on-fci-mode)))
-    (advice-add 'company-call-frontends :before #'on-off-fci-before-company)
     )
 
   (use-package magit
@@ -851,6 +833,10 @@ bash-completion-dynamic-complete from bash-completion.el"
     )
 
 ;;;;;;;;;;;;;;;;; OTHER STUFF
+
+  ;; Fix laggy point (cursor)
+  ;; In particular: cursor freezing when moving down (next-line) for a while
+  (setq auto-window-vscroll nil)
 
   ;; Doxymacs
   ;; (add-to-list 'load-path "~/.emacs.d/doxymacs/")
@@ -1168,6 +1154,16 @@ bash-completion-dynamic-complete from bash-completion.el"
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  '(Man-notify-method (quote pushy))
+ '(TeX-PDF-mode t)
+ '(TeX-source-correlate-method (quote synctex))
+ '(TeX-source-correlate-mode t)
+ '(TeX-source-correlate-start-server t)
+ '(TeX-view-program-list
+   (quote
+    (("Okular"
+      ("okular --unique %o#src:%n%b")
+      "/usr/bin/okular"))))
+ '(TeX-view-program-selection (quote ((output-pdf "Okular"))))
  '(ansi-color-faces-vector
    [default default default italic underline success warning error])
  '(ansi-color-names-vector
@@ -1209,8 +1205,7 @@ bash-completion-dynamic-complete from bash-completion.el"
      (320 . "#8CD0D3")
      (340 . "#94BFF3")
      (360 . "#DC8CC3"))))
- '(vc-annotate-very-old-color "#DC8CC3")
- )
+ '(vc-annotate-very-old-color "#DC8CC3"))
 
 (let ((bg (face-attribute 'default :background)))
   (custom-set-faces

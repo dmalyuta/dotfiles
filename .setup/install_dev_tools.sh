@@ -164,10 +164,6 @@ if program_not_installed "rstudio"; then
     runcmd "rm -f ${home}/Downloads/rstudio-1.0.136-amd64.deb"
 fi
 
-# Install Jetbrains YouTrack (issue/bug/feature tracking)
-# Find installation instructions at http://mmorejon.github.io/en/blog/how-to-install-youtrack-6.5-on-ubuntu-14.04/
-echowarn "Find installation instructions for YouTrack at http://mmorejon.github.io/en/blog/how-to-install-youtrack-6.5-on-ubuntu-14.04/"
-
 ##### NB: below, Eclipse installations are essentially of Eclipse [VERSION] Platform Runtime Binary, which is the barebones minimalist Eclipse version (without any junk plugins preinstalled)
 
 # Install Eclipse for C/C++, XML Web
@@ -212,7 +208,7 @@ fi
 #   - Install Markdown editor: Help --> Install New Software... --> Update site: http://www.certiv.net/updates --> Certiv Tools/FluentMark Editor
 if [ ! -f "${home}/.eclipse/eclipse_latex/eclipse" ]; then
     echowarn "Please read the instructions in comments of .setup/install_dev_tools.sh for follow-up installation actions inside Eclipse!"
-    runcmd "wget http://www.eclipse.org/downloads/download.php?file=/eclipse/downloads/drops/R-3.8.2-201301310800/eclipse-platform-3.8.2-linux-gtk-x86_64.tar.gz -O ${home}/Downloads/eclipse_latex.tar.gz"
+    runcmd "wget http://www.eclipse.org/downloads/download.php?file=/eclipse/downloads/drops4/R-4.5.2-201602121500/eclipse-platform-4.5.2-linux-gtk-x86_64.tar.gz&r=1 -O ${home}/Downloads/eclipse_latex.tar.gz"
     runcmd "mkdir -p ${home}/.eclipse/eclipse_latex"
     runcmd "tar zxf ${home}/Downloads/eclipse_latex.tar.gz --strip 1 -C ${home}/.eclipse/eclipse_latex"
     runcmd "eval chown -R ${SUDO_USER:-$USER}:${SUDO_USER:-$USER} ${home}/.eclipse"

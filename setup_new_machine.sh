@@ -38,7 +38,7 @@ dotfiles_prompt["${programs_list[3]}"]="Do you want to install usability feature
 dotfiles_prompt["${programs_list[4]}"]="Do you want to install creative applications (drawing, diagramming) [Yn]? "
 dotfiles_prompt["${programs_list[5]}"]="Do you want to install LaTeX [Yn]? "
 dotfiles_prompt["${programs_list[6]}"]="Do you want to install internet applications (Chrome, etc.) [Yn]? "
-dotfiles_prompt["${programs_list[7]}"]="Do you want to install Emacs [yN]? "
+dotfiles_prompt["${programs_list[7]}"]="Do you want to install Emacs [Yn]? "
 
 ########## global variables
 

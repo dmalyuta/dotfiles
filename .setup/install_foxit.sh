@@ -16,36 +16,31 @@
 echo_prefix_temp="$echo_prefix"
 echo_prefix="[foxit setup] "
 
-if program_not_installed "FoxitReader"; then
-    # remove any previous Foxit Reader archives and installers
-    runcmd "rm -rf ${home}/Downloads/FoxitReader*"
-    
+if program_not_installed "FoxitReader"; then    
     # download Foxit Reader
     bit_number="$(uname -m)"
     if [[ "$bit_number" == "x86_64" ]]; then
 		# 64-bit
 		echo "Detected that you're running a 64-bit OS, will install 64-bit version of Foxit PDF Reader"
-		runcmd "wget https://www.foxitsoftware.com/downloads/latest.php?product=Foxit-Reader&platform=Linux-64-bit&version=2.4.0.14978&package_type=run&language=English -O ${home}/Downloads/foxit.tar.gz"
+		runcmd "wget https://www.foxitsoftware.com/downloads/latest.php?product=Foxit-Reader&platform=Linux-64-bit&version=2.4.0.14978&package_type=run&language=English -O /tmp/foxit.tar.gz"
     else
 		# 32-bit
 		echo "Detected that you're running a 32-bit OS, will install 32-bit version of Foxit PDF Reader"
-		runcmd "wget https://www.foxitsoftware.com/downloads/latest.php?product=Foxit-Reader&platform=Linux-32-bit&version=2.4.0.14978&package_type=run&language=English -O ${home}/Downloads/foxit.tar.gz"
+		runcmd "wget https://www.foxitsoftware.com/downloads/latest.php?product=Foxit-Reader&platform=Linux-32-bit&version=2.4.0.14978&package_type=run&language=English -O /tmp/foxit.tar.gz"
     fi
 
     # unpack the installer
-    runcmd "tar -zxvf ${home}/Downloads/foxit.tar.gz -C ${home}/Downloads"
+    runcmd "tar -zxvf /tmp/foxit.tar.gz -C /tmp"
     
-    foxit_tar_gz_name=$(ls ~/Downloads/foxit.tar.gz)
-    foxit_installer_name=$(ls ~/Downloads/FoxitReader*.run)
+    foxit_installer_name=$(ls /tmp/FoxitReader*.run)
 	
     # install Foxit PDF Reader
     echowarn "Please follow the GUI's instructions and install Foxit PDF Reader into /opt/foxitsoftware/foxitreader"
     runcmd "eval '${foxit_installer_name}'"
     installer_exit_status=$?
 
-    # delete the installer and tarball
-    runcmd "rm -rf $foxit_tar_gz_name"
-    runcmd "rm -rf $foxit_installer_name"
+    # delete the installer
+    runcmd "rm -f $foxit_installer_name"
 
     if [[ $installer_exit_status -eq 0 ]]; then
 	# installation finished successfully (i.e. user did not quit it)

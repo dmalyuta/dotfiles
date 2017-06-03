@@ -103,23 +103,20 @@ runcmd "jupyter serverextension enable --py jupyterlab --sys-prefix"
 
 # Pandoc (document conversion, e.g. for Jupyter Notebook ---> PDF)
 if program_not_installed "pandoc"; then
-    runcmd "wget https://github.com/jgm/pandoc/releases/download/1.19.2.1/pandoc-1.19.2.1-1-amd64.deb -O ${home}/Downloads/pandoc.deb"
-    runcmd "dpkg -i ${home}/Downloads/pandoc.deb"
+    runcmd "wget https://github.com/jgm/pandoc/releases/download/1.19.2.1/pandoc-1.19.2.1-1-amd64.deb -O /tmp/pandoc.deb"
+    runcmd "dpkg -i /tmp/pandoc.deb"
     runcmd "apt-get --assume-yes install -f"
-    runcmd "rm -f ${home}/Downloads/pandoc.deb"
 fi
 
 # wkhtmltopdf (converter HTML to PDF)
 if program_not_installed "wkhtmltopdf"; then
-    runcmd "wget https://downloads.wkhtmltopdf.org/0.12/0.12.4/wkhtmltox-0.12.4_linux-generic-amd64.tar.xz -O ${home}/Downloads/wkhtmltox.tar.xz"
-    runcmd "rm -rf ${home}/Downloads/wkhtmltox"
-    runcmd "tar xf ${home}/Downloads/wkhtmltox.tar.xz -C ${home}/Downloads"
-    runcmd "mv ${home}/Downloads/wkhtmltox/bin/* /usr/bin/"
-    runcmd "mv ${home}/Downloads/wkhtmltox/include/* /usr/include/"
-    runcmd "mv ${home}/Downloads/wkhtmltox/lib/* /usr/lib/"
-    runcmd "mv ${home}/Downloads/wkhtmltox/share/man/man1/* /usr/share/man/man1/"
-    runcmd "rm -f ${home}/Downloads/wkhtmltox.tar.xz"
-    runcmd "rm -rf ${home}/Downloads/wkhtmltox"
+    runcmd "wget https://downloads.wkhtmltopdf.org/0.12/0.12.4/wkhtmltox-0.12.4_linux-generic-amd64.tar.xz -O /tmp/wkhtmltox.tar.xz"
+    runcmd "rm -rf /tmp/wkhtmltox"
+    runcmd "tar xf /tmp/wkhtmltox.tar.xz -C /tmp"
+    runcmd "mv /tmp/wkhtmltox/bin/* /usr/bin/"
+    runcmd "mv /tmp/wkhtmltox/include/* /usr/include/"
+    runcmd "mv /tmp/wkhtmltox/lib/* /usr/lib/"
+    runcmd "mv /tmp/wkhtmltox/share/man/man1/* /usr/share/man/man1/"
 fi
  
 

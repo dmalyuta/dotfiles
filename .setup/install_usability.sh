@@ -26,10 +26,9 @@ fi
 # Text editor
 if program_not_installed "subl"; then
     # Install if not already installed
-    runcmd "wget https://download.sublimetext.com/sublime-text_build-3126_amd64.deb -O ${home}/Downloads/sublime_text.deb"
-    runcmd_noexit "dpkg -i ${home}/Downloads/sublime_text.deb" nonull
+    runcmd "wget https://download.sublimetext.com/sublime-text_build-3126_amd64.deb -O /tmp/sublime_text.deb"
+    runcmd_noexit "dpkg -i /tmp/sublime_text.deb" nonull
     runcmd "apt-get --assume-yes install -f" nonull
-    runcmd "rm -f ${home}/Downloads/sublime_text.deb"
 fi
 
 # LibreOffice 5.x

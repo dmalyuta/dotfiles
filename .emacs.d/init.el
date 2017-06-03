@@ -1,8 +1,10 @@
 (let ((gc-cons-threshold most-positive-fixnum) ;; better garbage collection
       (file-name-handler-alist nil))
 
-;;;;;;;;;;;;;;;;; STUFF THAT NEEDS TO COME FIRST
-               ;; (like mode line, so that we get the customization right away)
+;;;;;;;;;;;;;;;;; MOST IMPORTANT, GENERAL STUFF
+
+  ;; Default directory
+  (setq default-directory "~/")
 
   ;; Frame size
   (add-to-list 'default-frame-alist '(height . 80))
@@ -192,49 +194,83 @@
     (add-to-list 'company-backends 'company-shell)
     )
 
-  (use-package irony
-    ;; asynchronous capabilities (improces C/C++ editing experience)
-    ;; Linux Mint:
-    ;;  sudo apt-get install g++ clang libclang-dev
-    ;;  M-x irony-install-server # when in c-mode or c++-mode
+  ;; (use-package irony
+  ;;   ;; asynchronous capabilities (improces C/C++ editing experience)
+  ;;   ;; Linux Mint:
+  ;;   ;;  sudo apt-get install g++ clang libclang-dev
+  ;;   ;;  M-x irony-install-server # when in c-mode or c++-mode
+  ;;   :ensure t
+  ;;   :defer t
+  ;;   :init
+  ;;   (add-hook 'c-mode-common-hook 'irony-mode)
+  ;;   :config
+  ;;   ;; replace completion-at-point and complete-symbol by irony-mode's asynchronous functions
+  ;;   (defun my-irony-mode-hook ()
+  ;;     (define-key irony-mode-map [remap completion-at-point]
+  ;; 	'irony-completion-at-point-async)
+  ;;     (define-key irony-mode-map [remap complete-symbol]
+  ;; 	'irony-completion-at-point-async))
+  ;;   (add-hook 'irony-mode-hook 'my-irony-mode-hook)
+  ;;   (add-hook 'irony-mode-hook 'irony-cdb-autosetup-compile-options)
+  ;;   (setq irony-additional-clang-options '(;; use C++11
+  ;; 					   "-std=c++11"))
+  ;;   ;; additional include paths
+  ;;   ;;					 "-I/home/danylo/catkin_ws/devel/include/"
+  ;;   ;;					 "-I/opt/ros/kinetic/include/"))
+  ;;   ;; asynchronous code linting
+  ;;   (use-package flycheck-irony
+  ;;     :ensure t
+  ;;     :config
+  ;;     ;; Enable Irony for Flycheck
+  ;;     (eval-after-load 'flycheck '(add-hook 'flycheck-mode-hook #'flycheck-irony-setup)))
+  ;;   ;; asynchronous completion
+  ;;   (use-package company-irony
+  ;;     :ensure t
+  ;;     :init
+  ;;     ;;(add-hook 'irony-mode-hook 'company-irony-setup-begin-commands) ;; trigger completion after typing stuff like ->, ., etc
+  ;;     (eval-after-load 'company '(add-to-list 'company-backends 'company-irony))
+  ;;     ;; :config
+  ;;     ;; (setq company-idle-delay 0.05)
+  ;;     )
+  ;;   ;; enable C/C++ header completion
+  ;;   (use-package company-irony-c-headers
+  ;;     :ensure t
+  ;;     :config
+  ;;     (eval-after-load 'company '(add-to-list 'company-backends '(company-irony-c-headers company-irony)))))
+
+  (use-package ycmd
+    ;; Emacs bindings to the ycmd completion server
     :ensure t
-    :defer t
-    :init
-    (add-hook 'c-mode-common-hook 'irony-mode)
     :config
-    ;; replace completion-at-point and complete-symbol by irony-mode's asynchronous functions
-    (defun my-irony-mode-hook ()
-      (define-key irony-mode-map [remap completion-at-point]
-  	'irony-completion-at-point-async)
-      (define-key irony-mode-map [remap complete-symbol]
-  	'irony-completion-at-point-async))
-    (add-hook 'irony-mode-hook 'my-irony-mode-hook)
-    (add-hook 'irony-mode-hook 'irony-cdb-autosetup-compile-options)
-    (setq irony-additional-clang-options '(;; use C++11
-  					   "-std=c++11"))
-    ;; additional include paths
-    ;;					 "-I/home/danylo/catkin_ws/devel/include/"
-    ;;					 "-I/opt/ros/kinetic/include/"))
-    ;; asynchronous code linting
-    (use-package flycheck-irony
+    ;; Basic setup
+    (require 'ycmd)
+    (add-hook 'c++-mode-hook 'ycmd-mode)
+    (set-variable 'ycmd-server-command '("python" "/home/malyuta/.emacs.d/ycmd/ycmd"))
+    ;; Completion at point
+    (defun ycmd-setup-completion-at-point-function ()
+      "Setup `completion-at-point-functions' for `ycmd-mode'."
+      (add-hook 'completion-at-point-functions
+		#'ycmd-complete-at-point nil :local))
+    (add-hook 'ycmd-mode #'ycmd-setup-completion-at-point-function)
+    (use-package company-ycmd
+      ;; Company-mode baackend for ycmd
       :ensure t
       :config
-      ;; Enable Irony for Flycheck
-      (eval-after-load 'flycheck '(add-hook 'flycheck-mode-hook #'flycheck-irony-setup)))
-    ;; asynchronous completion
-    (use-package company-irony
-      :ensure t
-      :init
-      ;;(add-hook 'irony-mode-hook 'company-irony-setup-begin-commands) ;; trigger completion after typing stuff like ->, ., etc
-      (eval-after-load 'company '(add-to-list 'company-backends 'company-irony))
-      ;; :config
-      ;; (setq company-idle-delay 0.05)
+      (require 'company-ycmd)
+      (company-ycmd-setup)
       )
-    ;; enable C/C++ header completion
-    (use-package company-irony-c-headers
+    ;; Code linting
+    (use-package flycheck-ycmd
+      ;; Flycheck integration for ycmd
       :ensure t
       :config
-      (eval-after-load 'company '(add-to-list 'company-backends '(company-irony-c-headers company-irony)))))
+      (require 'flycheck-ycmd)
+      (flycheck-ycmd-setup)
+      )
+    ;; Make flycheck and company play nicely with each other
+    (when (not (display-graphic-p))
+      (setq flycheck-indication-mode nil))
+    )
 
   (use-package helm
     ;; incremental completion and selection narrowing framework
@@ -418,18 +454,6 @@
     :ensure t
     :config
     (add-hook 'c-mode-common-hook 'google-set-c-style))
-
-  ;; (use-package flycheck-google-cpplint
-  ;;   ;; Add Google C++ Style checker for Flycheck
-  ;;   :disabled t ;; don't use google cpplint for now... annoying warnings
-  ;;   :ensure t
-  ;;   :demand
-  ;;   :config
-  ;;   (require 'flycheck-google-cpplint)
-  ;;   (require 'flycheck-irony)
-  ;;   (with-eval-after-load 'flycheck
-  ;;     ;; Chain javascript-jscs to run after javascript-jshint.
-  ;;     (flycheck-add-next-checker 'irony '(t . c/c++-googlelint))))
 
   (use-package nyan-mode
     ;; adorable cat showing progress in document
@@ -1183,6 +1207,9 @@ bash-completion-dynamic-complete from bash-completion.el"
  '(nrepl-message-colors
    (quote
     ("#CC9393" "#DFAF8F" "#F0DFAF" "#7F9F7F" "#BFEBBF" "#93E0E3" "#94BFF3" "#DC8CC3")))
+ '(package-selected-packages
+   (quote
+    (move-text magit fill-column-indicator flymd markdown-mode bash-completion workgroups2 fuzzy ess-R-data-view ess auto-compile rainbow-mode ecb realgud wgrep-helm wgrep multiple-cursors srefactor nyan-mode google-c-style yaml-mode mic-paren pdf-tools auctex helm-projectile projectile helm-ros helm-gtags helm-swoop helm company-irony-c-headers company-irony flycheck-irony irony company-shell company-quickhelp company flycheck dired+ neotree doom-themes rainbow-delimiters use-package)))
  '(pdf-view-midnight-colors (quote ("#DCDCCC" . "#383838")))
  '(vc-annotate-background "#2B2B2B")
  '(vc-annotate-color-map

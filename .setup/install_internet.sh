@@ -27,17 +27,18 @@ fi
 # https://github.com/odeke-em/drive
 if [ ! -f "${home}/gopath/bin/drive" ]; then
 	# Install the Go programming language
+	GOPATH="${home}/gopath"
 	if [ ! -d "/usr/local/go" ]; then
 		runcmd "wget https://storage.googleapis.com/golang/go1.7.4.linux-amd64.tar.gz -O /tmp/go_language.tar.gz"
 		runcmd "tar zxf /tmp/go_language.tar.gz -C /tmp/"
 		runcmd "eval chown -R ${SUDO_USER:-$USER}:${SUDO_USER:-$USER} /tmp/go"
 		runcmd "mv /tmp/go /usr/local"
 		# Make path for Go
-		runcmd "mkdir -p ${home}/gopath"
-		runcmd "eval chown -R ${SUDO_USER:-$USER}:${SUDO_USER:-$USER} ${home}/gopath"
+		runcmd "mkdir -p $GOPATH"
+		runcmd "eval chown -R ${SUDO_USER:-$USER}:${SUDO_USER:-$USER} $GOPATH"
 	fi
 	# Install Google Drive client
-	runcmd "eval su -c \"/usr/local/go/bin/go get -u github.com/odeke-em/drive/cmd/drive\" ${SUDO_USER:-$USER}"
+	(runcmd "export GOPATH=$GOPATH" && runcmd "/usr/local/go/bin/go get -u github.com/odeke-em/drive/cmd/drive")
 fi
 
 # Rclone

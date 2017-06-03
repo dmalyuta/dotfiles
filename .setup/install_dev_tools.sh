@@ -74,7 +74,7 @@ fi
 # Debugging tool (recording & deterministic debugging)
 if program_not_installed "rr"; then
     runcmd "wget https://github.com/mozilla/rr/releases/download/4.5.0/rr-4.5.0-Linux-$(uname -m).deb -O /tmp/rr.deb"
-    runcmd "dpkg -i rr.deb" nonull
+    runcmd "dpkg -i /tmp/rr.deb" nonull
 fi
 
 # Upgrade GDB to 7.12.1 (latest stable version)
@@ -84,10 +84,21 @@ fi
 # during completion. The default value is 200. This limit allows GDB
 # to avoid generating large completion lists, the computation of which
 # can cause the debugger to become temporarily unresponsive.
-gdbVersion="$(echo $(gdb --version) | cut -d " " -f 4)"
-if [[ "$gdbVersion" != "7.12.1" ]]; then
+gdbVersion="$(/bin/echo $(gdb --version) | cut -d ' ' -f 4)"
+if [ "$gdbVersion" != "7.12.1" ]; then
     # TODO make check only that $gdbVersion < 7.12.1 (so as not to downgrade if in the future user has a more recent version installed)
     wget_targz_install "gdb-7.12.1" "http://ftp.gnu.org/gnu/gdb/gdb-7.12.1.tar.gz"
+fi
+
+# GCC 7.1
+# C/C++ compiler
+gccVersion="$(/bin/echo $(gcc --version) | cut -d ' ' -f 4)"
+if [ "$gccVersion" != "7.1.0" ]; then
+	runcmd "add-apt-repository ppa:ubuntu-toolchain-r/test -y"
+    runcmd "apt-get update"
+    apt_get_install_pkg gcc-7
+    apt_get_install_pkg g++-7
+    runcmd "sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 60 --slave /usr/bin/g++ g++ /usr/bin/g++-7"
 fi
 
 # .bashrc personal inclusions

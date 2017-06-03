@@ -416,12 +416,17 @@
     (setq TeX-parse-self t)
     (setq TeX-save-query nil)
     (setq-default TeX-master nil)
-    (setq ispell-program-name "aspell") ; could be ispell as well, depending on your preferences
-    (setq ispell-dictionary "english") ; this can obviously be set to any language your spell-checking program supports
+    ;; (setq ispell-program-name "aspell") ; could be ispell as well, depending on your preferences
+    ;; (setq ispell-dictionary "english") ; this can obviously be set to any language your spell-checking program supports
     (setq reftex-plug-into-AUCTeX t)
     (add-hook 'LaTeX-mode-hook
 	      '(lambda ()
-		 (define-key LaTeX-mode-map (kbd "$") 'self-insert-command))))
+		 (define-key LaTeX-mode-map (kbd "$") 'self-insert-command)))
+    ;; Enable auto-fill mode, nice for text
+    (add-hook 'LaTeX-mode-hook 'auto-fill-mode)
+    (add-hook 'LaTeX-mode-hook 'turn-on-reftex)
+    (setq reftex-plug-into-AUCTeX t)
+    )
 
   (use-package pdf-tools
     ;; advanced PDF viewing capbilities inside Emacs (DocView deplacement)

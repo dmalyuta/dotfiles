@@ -22,7 +22,7 @@ if program_not_installed "emacs"; then
     # install dependencies
     runcmd "apt-get --assume-yes build-dep emacs24" nonull
     # download source, build and install Emacs 25.2
-    runcmd "wget https://ftp.gnu.org/gnu/emacs/emacs-25.2.tar.gz -C /tmp/emacs.tar.gz"
+    runcmd "wget https://ftp.gnu.org/gnu/emacs/emacs-25.2.tar.gz -O /tmp/emacs.tar.gz"
     runcmd "mkdir -p /tmp/emacs"
     runcmd "tar zxf /tmp/emacs.tar.gz --strip 1 -C /tmp/emacs"
     (runcmd "cd /tmp/emacs/" && runcmd "./configure --with-x-toolkit=lucid" && runcmd "make" && runcmd "make install")
@@ -38,10 +38,11 @@ apt_get_install_pkg libclang-dev
 apt_get_install_pkg cmake
 apt_get_install_pkg python-dev
 
-if [ ! -d "~/.emacs.d/ycmd" ]; then
+if [ ! -d "${home}/.emacs.d/ycmd" ]; then
     # Install YCMD
-    runcmd "git clone https://github.com/Valloric/ycmd ~/.emacs.d/ycmd"
-    (runcmd "cd ~/.emacs.d/ycmd" && runcmd "git submodule update --init --recursive" && runcmd "./build.py --clang-completer")
+    runcmd "git clone https://github.com/Valloric/ycmd ${home}/.emacs.d/ycmd"
+    (runcmd "cd ${home}/.emacs.d/ycmd" && runcmd "git submodule update --init --recursive" && runcmd "./build.py --clang-completer")
+    runcmd "eval chown -R ${SUDO_USER:-$USER}:${SUDO_USER:-$USER} ${home}/.emacs.d/ycmd"
 fi
 
 # [Python] JEDI auto-completion

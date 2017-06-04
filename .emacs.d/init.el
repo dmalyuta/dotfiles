@@ -136,24 +136,26 @@
   (use-package company
     ;; complete anything
     :ensure t
-    :bind
-    (("<S-SPC>" . company-complete) ;; recommended to use TAB instead (which uses helm-company, see below)
-     ("M-n" . company-select-next)
-     ("M-p" . company-select-previous))
+    ;; :bind
+    ;; (("<S-SPC>" . company-complete) ;; recommended to use TAB instead (which uses helm-company, see below)
+    ;;  ("M-n" . company-select-next)
+    ;;  ("M-p" . company-select-previous))
     :init
     ;;(add-hook 'after-init-hook 'global-company-mode)
     (add-hook 'c-mode-common-hook 'company-mode)
     (add-hook 'emacs-lisp-mode-hook 'company-mode)
     (add-hook 'comint-mode-hook 'company-mode)
+    (add-hook 'LaTeX-mode-hook 'company-mode)
     ;;(add-hook 'sh-mode-hook 'company-mode)
     ;;(add-hook 'python-mode-hook 'company-mode)
     :config
+    (setq company-dabbrev-downcase 0)
     ;; set timeout to 10 seconds
     (setq company-async-timeout 10)
     ;; Cancel selections by typing non-mathcing characters
     (setq company-require-match 'never)
     ;; Minimum length of word to start completion
-    (setq company-minimum-prefix-length 10)
+    (setq company-minimum-prefix-length 2)
     ;; Autocomplete only when I explicitly mean to
     (setq company-auto-complete nil)
     (set 'company-idle-delay 1)
@@ -170,22 +172,15 @@
       '(define-key company-active-map (kbd "M-h") #'company-quickhelp-manual-begin))
     )
 
-  ;; (use-package helm-company
-  ;;   ;; Helm interface for company-mode
-  ;;   :ensure t
-  ;;   :bind
-  ;;   (("C-;" . helm-company))
-  ;;   :demand
-  ;;   :config
-  ;;   (eval-after-load 'company
-  ;;     '(progn
-  ;; 	 (defun indent-or-complete ()
-  ;; 	   (interactive)
-  ;; 	   (if (looking-at "\\_>")
-  ;; 	       (helm-company)
-  ;; 	     (indent-according-to-mode)))
-  ;; 	 ))
-  ;;   )
+  (use-package helm-company
+    ;; Helm interface for company-mode
+    :ensure t
+    :config
+    (eval-after-load 'company
+      '(progn
+	 (define-key company-mode-map (kbd "<S-SPC>") 'helm-company)
+	 (define-key company-active-map (kbd "<S-SPC>") 'helm-company)))
+    )
 
   (use-package company-shell
     ;; company mode completion backends for your shell functions:
@@ -402,8 +397,7 @@
   (use-package tex
     ;; AUCTeX
     :ensure auctex
-    :init
-    (setq TeX-source-correlate-method 'synctex) ;; use SyncTeX for forward/backward search between source/PDF output
+    :demand
     :config
     ;;(add-hook 'LaTeX-mode-hook 'flyspell-mode)
     ;;(add-hook 'LaTeX-mode-hook 'flyspell-buffer)
@@ -412,8 +406,11 @@
     (add-hook 'LaTeX-mode-hook 'visual-line-mode)
     (add-hook 'LaTeX-mode-hook 'TeX-source-correlate-mode)
     (add-hook 'LaTeX-mode-hook 'TeX-PDF-mode)
+    (setq TeX-source-correlate-method 'synctex) ;; use SyncTeX for forward/backward search between source/PDF output
     (setq TeX-auto-save t)
     (setq TeX-parse-self t)
+    (setq TeX-auto-regexp-list 'TeX-auto-full-regexp-list)
+    (setq TeX-auto-parse-length 999999)
     (setq TeX-save-query nil)
     (setq-default TeX-master nil)
     ;; (setq ispell-program-name "aspell") ; could be ispell as well, depending on your preferences
@@ -426,6 +423,45 @@
     (add-hook 'LaTeX-mode-hook 'auto-fill-mode)
     (add-hook 'LaTeX-mode-hook 'turn-on-reftex)
     (setq reftex-plug-into-AUCTeX t)
+    ;; Set fill to 80 columns
+    (add-hook 'LaTeX-mode-hook
+	      (lambda ()
+		(setq fill-column 80)))
+    ;; Completion
+    ;; (add-hook 'LaTeX-mode-hook
+    ;; 	      (lambda ()
+    ;; 		(define-key LaTeX-mode-map (kbd "<S-SPC>") 'TeX-complete-symbol)))
+    (use-package company-auctex
+      :ensure t
+      :config
+      (require 'company-auctex)
+      (company-auctex-init)
+      (eval-after-load "latex"
+	'(progn
+	   (define-key LaTeX-mode-map (kbd "C-c m") 'nil)
+	   (define-key LaTeX-mode-map (kbd "C-c e") 'nil)
+	   (define-key LaTeX-mode-map (kbd "C-c l") 'nil)
+	   (define-key LaTeX-mode-map (kbd "C-c s") 'nil)
+	   
+	   (define-key LaTeX-mode-map (kbd "C-c m") 'company-auctex-macros)
+	   (define-key LaTeX-mode-map (kbd "C-c e") 'company-auctex-environments)
+	   (define-key LaTeX-mode-map (kbd "C-c l") 'company-auctex-labels)
+	   (define-key LaTeX-mode-map (kbd "C-c s") 'company-auctex-symbols)
+	   ))
+      )
+    ;; Other environments
+    (add-hook 'LaTeX-mode-hook
+	      (lambda ()
+		(LaTeX-add-environments "equation*")
+		))
+    )
+
+  (use-package yasnippet
+    ;; YASnippet is a template system for Emacs
+    :ensure t
+    :config
+    (require 'yasnippet)
+    (yas-global-mode 1)
     )
 
   (use-package pdf-tools
@@ -1216,6 +1252,19 @@ bash-completion-dynamic-complete from bash-completion.el"
    (quote
     (move-text magit fill-column-indicator flymd markdown-mode bash-completion workgroups2 fuzzy ess-R-data-view ess auto-compile rainbow-mode ecb realgud wgrep-helm wgrep multiple-cursors srefactor nyan-mode google-c-style yaml-mode mic-paren pdf-tools auctex helm-projectile projectile helm-ros helm-gtags helm-swoop helm company-irony-c-headers company-irony flycheck-irony irony company-shell company-quickhelp company flycheck dired+ neotree doom-themes rainbow-delimiters use-package)))
  '(pdf-view-midnight-colors (quote ("#DCDCCC" . "#383838")))
+ '(safe-local-variable-values
+   (quote
+    ((eval progn
+	   (add-hook
+	    (quote LaTeX-mode-hook)
+	    (lambda nil
+	      (LaTeX-add-environments "Definition")
+	      (LaTeX-add-environments "Theorem")
+	      (LaTeX-add-environments "Fact")
+	      (LaTeX-add-environments "Example")
+	      (LaTeX-add-environments "Method")
+	      (LaTeX-add-environments "Proof")
+	      (LaTeX-add-environments "VeryImportantStuff")))))))
  '(vc-annotate-background "#2B2B2B")
  '(vc-annotate-color-map
    (quote

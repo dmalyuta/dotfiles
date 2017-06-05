@@ -405,8 +405,6 @@
     :ensure auctex
     :demand
     :config
-    ;;(add-hook 'LaTeX-mode-hook 'flyspell-mode)
-    ;;(add-hook 'LaTeX-mode-hook 'flyspell-buffer)
     (add-hook 'LaTeX-mode-hook 'LaTeX-math-mode)
     (add-hook 'LaTeX-mode-hook 'turn-on-reftex)
     (add-hook 'LaTeX-mode-hook 'visual-line-mode)
@@ -460,6 +458,9 @@
 	      (lambda ()
 		(LaTeX-add-environments "equation*")
 		))
+    ;; Spell checking
+    (add-hook 'LaTeX-mode-hook 'flyspell-mode)
+    (add-hook 'LaTeX-mode-hook 'flyspell-buffer)
     )
 
   (use-package yasnippet

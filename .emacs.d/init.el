@@ -906,6 +906,21 @@ bash-completion-dynamic-complete from bash-completion.el"
 
 ;;;;;;;;;;;;;;;;; OTHER STUFF
 
+  ;; Revert all buffers currently visiting a file
+  (defun revert-all-buffers ()
+    "Refreshes all open buffers from their respective files"
+    (interactive)
+    (let* ((list (buffer-list))
+	   (buffer (car list)))
+      (while buffer
+	(when (and (buffer-file-name buffer) 
+		   (not (buffer-modified-p buffer)))
+	  (set-buffer buffer)
+	  (revert-buffer t t t))
+	(setq list (cdr list))
+	(setq buffer (car list))))
+    (message "Refreshed open files"))
+
   ;; Fix laggy point (cursor)
   ;; In particular: cursor freezing when moving down (next-line) for a while
   (setq auto-window-vscroll nil)

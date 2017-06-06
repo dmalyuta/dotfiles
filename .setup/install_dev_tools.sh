@@ -51,6 +51,10 @@ apt_get_install_pkg tree
 apt_get_install_pkg bash-completion
 #apt_get_install_pkg rxvt-unicode
 
+# Meld Diff Viewer
+# It is a GUI analog to the standard diff install diffutils and patch install patch command line tools
+apt_get_install_pkg meld
+
 # ghex
 # Hex editor
 apt_get_install_pkg ghex

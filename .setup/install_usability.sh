@@ -54,4 +54,13 @@ fi
 # Run .bin/byzanz-gui script for GUI
 apt_get_install_pkg byzanz
 
+# Mendeley
+# Research bibliography organizer
+if program_not_installed "mendeleydesktop"; then
+    runcmd "wget https://www.mendeley.com/repositories/ubuntu/stable/amd64/mendeleydesktop-latest -O /tmp/mendeley.deb"
+    runcmd_noexit "dpkg -i /tmp/mendeley.deb" nonull
+    runcmd "apt-get --assume-yes install -f" nonull
+fi
+
+
 echo_prefix="$echo_prefix_temp"

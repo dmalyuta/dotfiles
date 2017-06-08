@@ -7,7 +7,7 @@
   (setq default-directory "~/")
 
   ;; Frame size
-  (add-to-list 'default-frame-alist '(height . 80))
+  (add-to-list 'default-frame-alist '(height . 60))
   (add-to-list 'default-frame-alist '(width . 130))
   
   ;; sensible GUI
@@ -156,10 +156,10 @@
     ;; Cancel selections by typing non-mathcing characters
     (setq company-require-match 'never)
     ;; Minimum length of word to start completion
-    (setq company-minimum-prefix-length 2)
+    (setq company-minimum-prefix-length 0)
     ;; Autocomplete only when I explicitly mean to
     (setq company-auto-complete nil)
-    (set 'company-idle-delay 1)
+    (set 'company-idle-delay nil)
     (setq company-auto-select-first-candidate nil)
     )
 
@@ -180,7 +180,7 @@
     :config
     (eval-after-load 'company
       '(progn
-	 (set-variable 'helm-company-initialize-pattern-with-thing-at-point t)
+	 (set-variable 'helm-company-initialize-pattern-with-prefix t)
 	 (define-key company-mode-map (kbd "<S-SPC>") 'helm-company)
 	 (define-key company-active-map (kbd "<S-SPC>") 'helm-company)))
     )
@@ -304,11 +304,11 @@
     (setq helm-buffer-max-length 30) ;; nil to show full name always
     (setq helm-buffers-truncate-lines nil)
     (setq helm-split-window-in-side-p           t ; open helm buffer inside current window, not occupy whole other window
-	  helm-move-to-line-cycle-in-source     t ; move to end or beginning of source when reaching top or bottom of source.
-	  helm-ff-file-name-history-use-recentf t
-	  helm-echo-input-in-header-line t)
+    	  helm-move-to-line-cycle-in-source     t ; move to end or beginning of source when reaching top or bottom of source.
+    	  helm-ff-file-name-history-use-recentf t
+    	  helm-echo-input-in-header-line t)
     (setq helm-buffers-fuzzy-matching t
-	  helm-recentf-fuzzy-match    t)
+    	  helm-recentf-fuzzy-match    t)
     )
 
   (use-package helm-swoop

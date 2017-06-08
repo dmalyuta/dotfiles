@@ -127,8 +127,8 @@
     :defer t
     :init
     (add-hook 'c-mode-common-hook 'flycheck-mode)
-    (add-hook 'sh-mode-hook 'flycheck-mode)
-    (add-hook 'python-mode-hook 'flycheck-mode)
+    ;;(add-hook 'sh-mode-hook 'flycheck-mode)
+    ;;(add-hook 'python-mode-hook 'flycheck-mode)
     :config
     ;; Check buffer on save and immediately after opening buffer
     (setq flycheck-check-syntax-automatically '(mode-enabled save)))
@@ -146,6 +146,7 @@
     (add-hook 'emacs-lisp-mode-hook 'company-mode)
     (add-hook 'comint-mode-hook 'company-mode)
     (add-hook 'LaTeX-mode-hook 'company-mode)
+    (add-hook 'sh-mode-hook 'company-mode)
     ;;(add-hook 'sh-mode-hook 'company-mode)
     ;;(add-hook 'python-mode-hook 'company-mode)
     :config
@@ -191,87 +192,89 @@
     (add-to-list 'company-backends 'company-shell)
     )
 
-  (use-package irony
-    ;; asynchronous capabilities (improces C/C++ editing experience)
-    ;; Linux Mint:
-    ;;  sudo apt-get install g++ clang libclang-dev
-    ;;  M-x irony-install-server # when in c-mode or c++-mode
-    :ensure t
-    :defer t
-    :init
-    (add-hook 'c-mode-common-hook 'irony-mode)
-    :config
-    ;; replace completion-at-point and complete-symbol by irony-mode's asynchronous functions
-    (defun my-irony-mode-hook ()
-      (define-key irony-mode-map [remap completion-at-point]
-  	'irony-completion-at-point-async)
-      (define-key irony-mode-map [remap complete-symbol]
-  	'irony-completion-at-point-async))
-    (add-hook 'irony-mode-hook 'my-irony-mode-hook)
-    (add-hook 'irony-mode-hook 'irony-cdb-autosetup-compile-options)
-    (setq irony-additional-clang-options '(;; use C++11
-  					   "-std=c++11"))
-    ;; additional include paths
-    ;;					 "-I/home/danylo/catkin_ws/devel/include/"
-    ;;					 "-I/opt/ros/kinetic/include/"))
-    ;; asynchronous code linting
-    (use-package flycheck-irony
-      :ensure t
-      :config
-      ;; Enable Irony for Flycheck
-      (eval-after-load 'flycheck '(add-hook 'flycheck-mode-hook #'flycheck-irony-setup)))
-    ;; asynchronous completion
-    (use-package company-irony
-      :ensure t
-      :init
-      ;;(add-hook 'irony-mode-hook 'company-irony-setup-begin-commands) ;; trigger completion after typing stuff like ->, ., etc
-      (eval-after-load 'company '(add-to-list 'company-backends 'company-irony))
-      ;; :config
-      ;; (setq company-idle-delay 0.05)
-      )
-    ;; enable C/C++ header completion
-    (use-package company-irony-c-headers
-      :ensure t
-      :config
-      (eval-after-load 'company '(add-to-list 'company-backends '(company-irony-c-headers company-irony)))
-      )
-    )
-
-  ;; (use-package ycmd
-  ;;   ;; Emacs bindings to the ycmd completion server
+  ;; (use-package irony
+  ;;   ;; asynchronous capabilities (improces C/C++ editing experience)
+  ;;   ;; Linux Mint:
+  ;;   ;;  sudo apt-get install g++ clang libclang-dev
+  ;;   ;;  M-x irony-install-server # when in c-mode or c++-mode
   ;;   :ensure t
+  ;;   :defer t
+  ;;   :init
+  ;;   (add-hook 'c-mode-common-hook 'irony-mode)
   ;;   :config
-  ;;   ;; Basic setup
-  ;;   (require 'ycmd)
-  ;;   (add-hook 'c++-mode-hook 'ycmd-mode)
-  ;;   (set-variable 'ycmd-server-command '("python" "/home/malyuta/.emacs.d/ycmd/ycmd"))
-  ;;   ;; Completion at point
-  ;;   (defun ycmd-setup-completion-at-point-function ()
-  ;;     "Setup `completion-at-point-functions' for `ycmd-mode'."
-  ;;     (add-hook 'completion-at-point-functions
-  ;; 		#'ycmd-complete-at-point nil :local))
-  ;;   (add-hook 'ycmd-mode #'ycmd-setup-completion-at-point-function)
-  ;;   (use-package company-ycmd
-  ;;     ;; Company-mode baackend for ycmd
+  ;;   ;; replace completion-at-point and complete-symbol by irony-mode's asynchronous functions
+  ;;   (defun my-irony-mode-hook ()
+  ;;     (define-key irony-mode-map [remap completion-at-point]
+  ;; 	'irony-completion-at-point-async)
+  ;;     (define-key irony-mode-map [remap complete-symbol]
+  ;; 	'irony-completion-at-point-async))
+  ;;   (add-hook 'irony-mode-hook 'my-irony-mode-hook)
+  ;;   (add-hook 'irony-mode-hook 'irony-cdb-autosetup-compile-options)
+  ;;   (setq irony-additional-clang-options '(;; use C++11
+  ;; 					   "-std=c++11"))
+  ;;   ;; additional include paths
+  ;;   ;;					 "-I/home/danylo/catkin_ws/devel/include/"
+  ;;   ;;					 "-I/opt/ros/kinetic/include/"))
+  ;;   ;; asynchronous code linting
+  ;;   (use-package flycheck-irony
   ;;     :ensure t
   ;;     :config
-  ;;     (require 'company-ycmd)
-  ;;     (company-ycmd-setup)
+  ;;     ;; Enable Irony for Flycheck
+  ;;     (eval-after-load 'flycheck '(add-hook 'flycheck-mode-hook #'flycheck-irony-setup)))
+  ;;   ;; asynchronous completion
+  ;;   (use-package company-irony
+  ;;     :ensure t
+  ;;     :init
+  ;;     ;;(add-hook 'irony-mode-hook 'company-irony-setup-begin-commands) ;; trigger completion after typing stuff like ->, ., etc
+  ;;     (eval-after-load 'company '(add-to-list 'company-backends 'company-irony))
+  ;;     ;; :config
+  ;;     ;; (setq company-idle-delay 0.05)
   ;;     )
-  ;;   ;; Code linting
-  ;;   (use-package flycheck-ycmd
-  ;;     ;; Flycheck integration for ycmd
+  ;;   ;; enable C/C++ header completion
+  ;;   (use-package company-irony-c-headers
   ;;     :ensure t
   ;;     :config
-  ;;     (require 'flycheck-ycmd)
-  ;;     (flycheck-ycmd-setup)
+  ;;     (eval-after-load 'company '(add-to-list 'company-backends '(company-irony-c-headers company-irony)))
   ;;     )
-  ;;   ;; Make flycheck and company play nicely with each other
-  ;;   (when (not (display-graphic-p))
-  ;;     (setq flycheck-indication-mode nil))
-  ;;   ;; Automatically load extra config files
-  ;;   (set-variable 'ycmd-extra-conf-handler 'load)
   ;;   )
+
+  (use-package ycmd
+    ;; Emacs bindings to the ycmd completion server
+    :ensure t
+    :config
+    ;; Basic setup
+    (require 'ycmd)
+    (add-hook 'c++-mode-hook 'ycmd-mode)
+    (set-variable 'ycmd-server-command '("python" "/home/malyuta/.emacs.d/ycmd/ycmd"))
+    ;; Compile flag configs
+    (set-variable 'ycmd-global-config "ycmd/examples/.ycm_extra_conf.py")
+    ;; Completion at point
+    (defun ycmd-setup-completion-at-point-function ()
+      "Setup `completion-at-point-functions' for `ycmd-mode'."
+      (add-hook 'completion-at-point-functions
+  		#'ycmd-complete-at-point nil :local))
+    (add-hook 'ycmd-mode #'ycmd-setup-completion-at-point-function)
+    (use-package company-ycmd
+      ;; Company-mode baackend for ycmd
+      :ensure t
+      :config
+      (require 'company-ycmd)
+      (company-ycmd-setup)
+      )
+    ;; Code linting
+    (use-package flycheck-ycmd
+      ;; Flycheck integration for ycmd
+      :ensure t
+      :config
+      (require 'flycheck-ycmd)
+      (flycheck-ycmd-setup)
+      )
+    ;; Make flycheck and company play nicely with each other
+    (when (not (display-graphic-p))
+      (setq flycheck-indication-mode nil))
+    ;; Automatically load extra config files
+    (set-variable 'ycmd-extra-conf-handler 'load)
+    )
 
   (use-package helm
     ;; incremental completion and selection narrowing framework
@@ -299,7 +302,14 @@
     (helm-mode 1)
     (add-to-list 'helm-sources-using-default-as-input 'helm-source-man-pages)
     (setq helm-buffer-max-length 30) ;; nil to show full name always
-    (setq helm-buffers-truncate-lines nil))
+    (setq helm-buffers-truncate-lines nil)
+    (setq helm-split-window-in-side-p           t ; open helm buffer inside current window, not occupy whole other window
+	  helm-move-to-line-cycle-in-source     t ; move to end or beginning of source when reaching top or bottom of source.
+	  helm-ff-file-name-history-use-recentf t
+	  helm-echo-input-in-header-line t)
+    (setq helm-buffers-fuzzy-matching t
+	  helm-recentf-fuzzy-match    t)
+    )
 
   (use-package helm-swoop
     ;; Helm version of C-s (I-search) and C-r (I-search backward)
@@ -554,7 +564,26 @@
      ("C-<" . mc/mark-previous-like-this)
      ("C-*" . mc/mark-all-like-this))
     :config
-    (require 'multiple-cursors))
+    (require 'multiple-cursors)
+    ;; Make sure prompts for stuff like (, [, <, delete-word, etc. default to "yes"
+    ;; see https://github.com/magnars/multiple-cursors.el/issues/287#issuecomment-306571652
+    (eval-after-load "multiple-cursors"
+      '(progn
+	 (setq mc/cmds-to-run-for-all
+	       (append
+		'(c-electric-star
+		  c-electric-brace
+		  c-electric-paren
+		  c-electric-colon
+		  c-electric-slash
+		  c-electric-lt-gt
+		  c-electric-pound
+		  c-electric-delete
+		  c-electric-backspace
+		  c-electric-semi&comma
+		  c-electric-delete-forward)
+		mc/cmds-to-run-for-all))))
+    )
 
   (use-package wgrep
     ;; edit a grep buffer and apply those changes to the file buffer
@@ -653,11 +682,11 @@
   ;;   (require 'jedi-configuration)
   ;;   )
 
-  (use-package fuzzy
-    :ensure t)
+  ;; (use-package fuzzy
+  ;;   :ensure t)
 
-  (use-package popup
-    :ensure t)
+  ;; (use-package popup
+  ;;   :ensure t)
 
   (use-package workgroups2
     ;; Restore layout. I use it only for keeping a persistent layout
@@ -712,67 +741,6 @@
     (global-set-key (kbd "C-x C-c") 'my-exit-emacs)
     )
 
-  ;; Bash scripting
-  (add-hook
-   'sh-mode-hook
-   '(lambda ()
-      (require 'popup)
-      ;;(require 'fuzzy)
-      (require 'auto-complete)
-      (require 'auto-complete-config)
-      ;;(ac-config-default)
-      (global-auto-complete-mode nil)
-      (add-hook 'sh-mode-hook 'auto-complete-mode)  
-      (local-set-key (kbd "S-<SPC>") 'auto-complete)
-      (setq ac-auto-show-menu t)
-      (setq ac-dwim t)
-      (setq ac-use-menu-map t)
-      (setq ac-quick-help-delay 1)
-      (setq ac-quick-help-height 60)
-      (setq ac-disable-inline t)
-      (setq ac-show-menu-immediately-on-auto-complete t)
-      (setq ac-auto-start 0)
-      (setq ac-candidate-menu-min 0)
-      ))
-  (use-package bash-completion
-    :ensure t
-    :config
-    (autoload 'bash-completion-dynamic-complete 
-      "bash-completion"
-      "BASH completion hook")
-    (add-hook 'shell-dynamic-complete-functions
-	      'bash-completion-dynamic-complete)
-
-    (defun ac-bash-candidates ()
-      "This function is a modifed version of
-bash-completion-dynamic-complete from bash-completion.el"
-      (when bash-completion-enabled
-	(let* ( (start (comint-line-beginning-position))
-		(pos (point))
-		(tokens (bash-completion-tokenize start pos))
-		(open-quote (bash-completion-tokenize-open-quote tokens))
-		(parsed (bash-completion-process-tokens tokens pos))
-		(line (cdr (assq 'line parsed)))
-		(point (cdr (assq 'point parsed)))
-		(cword (cdr (assq 'cword parsed)))
-		(words (cdr (assq 'words parsed)))
-		(stub (nth cword words))
-		(completions (bash-completion-comm line point words cword open-quote))
-		;; Override configuration for comint-dynamic-simple-complete.
-		;; Bash adds a space suffix automatically.
-		(comint-completion-addsuffix nil) )
-	  (if completions
-	      completions))))
-    
-    (setq ac-source-bash
-	  '((candidates . ac-bash-candidates)))
-    
-    (add-hook 'shell-mode-hook
-	      (lambda()
-		(setq ac-sources '(ac-source-bash))
-		(auto-complete-mode)))
-    )
-
   (use-package markdown-mode
     :ensure t
     :commands (markdown-mode gfm-mode)
@@ -813,6 +781,14 @@ bash-completion-dynamic-complete from bash-completion.el"
     :config
     (move-text-default-bindings)
     )
+
+  (use-package zoom-frm
+    :ensure t
+    :config
+    ;; Use zoom-frame instead of zoom-font
+    (if window-system (progn
+			(global-set-key (kbd "C--" ) 'zoom-frm-out)
+			(global-set-key (kbd "C-=") 'zoom-frm-in))))
 
 ;;;;;;;;;;;;;;;;; PERSONAL PACKAGES
 
@@ -906,20 +882,33 @@ bash-completion-dynamic-complete from bash-completion.el"
 
 ;;;;;;;;;;;;;;;;; OTHER STUFF
 
+  ;; Keep a history of recent files
+  (recentf-mode 1)
+  (setq-default recent-save-file "~/.emacs.d/recentf")  
+
   ;; Revert all buffers currently visiting a file
-  (defun revert-all-buffers ()
-    "Refreshes all open buffers from their respective files"
+  (defun revert-all-file-buffers ()
+    "Refresh all open file buffers without confirmation.
+Buffers in modified (not yet saved) state in emacs will not be reverted. They
+will be reverted though if they were modified outside emacs.
+Buffers visiting files which do not exist any more or are no longer readable
+will be killed."
     (interactive)
-    (let* ((list (buffer-list))
-	   (buffer (car list)))
-      (while buffer
-	(when (and (buffer-file-name buffer) 
-		   (not (buffer-modified-p buffer)))
-	  (set-buffer buffer)
-	  (revert-buffer t t t))
-	(setq list (cdr list))
-	(setq buffer (car list))))
-    (message "Refreshed open files"))
+    (dolist (buf (buffer-list))
+      (let ((filename (buffer-file-name buf)))
+	;; Revert only buffers containing files, which are not modified;
+	;; do not try to revert non-file buffers like *Messages*.
+	(when (and filename
+		   (not (buffer-modified-p buf)))
+	  (if (file-readable-p filename)
+	      ;; If the file exists and is readable, revert the buffer.
+	      (with-current-buffer buf
+		(revert-buffer :ignore-auto :noconfirm :preserve-modes))
+	    ;; Otherwise, kill the buffer.
+	    (let (kill-buffer-query-functions) ; No query done when killing buffer
+	      (kill-buffer buf)
+	      (message "Killed non-existing/unreadable file buffer: %s" filename))))))
+    (message "Finished reverting buffers containing unmodified files."))
 
   ;; Fix laggy point (cursor)
   ;; In particular: cursor freezing when moving down (next-line) for a while
@@ -1272,7 +1261,7 @@ bash-completion-dynamic-complete from bash-completion.el"
     ("#CC9393" "#DFAF8F" "#F0DFAF" "#7F9F7F" "#BFEBBF" "#93E0E3" "#94BFF3" "#DC8CC3")))
  '(package-selected-packages
    (quote
-    (move-text magit fill-column-indicator flymd markdown-mode bash-completion workgroups2 fuzzy ess-R-data-view ess auto-compile rainbow-mode ecb realgud wgrep-helm wgrep multiple-cursors srefactor nyan-mode google-c-style yaml-mode mic-paren pdf-tools auctex helm-projectile projectile helm-ros helm-gtags helm-swoop helm company-irony-c-headers company-irony flycheck-irony irony company-shell company-quickhelp company flycheck dired+ neotree doom-themes rainbow-delimiters use-package)))
+    (zoom-frm move-text magit fill-column-indicator flymd markdown-mode bash-completion workgroups2 fuzzy ess-R-data-view ess auto-compile rainbow-mode ecb realgud wgrep-helm wgrep multiple-cursors srefactor nyan-mode google-c-style yaml-mode mic-paren pdf-tools auctex helm-projectile projectile helm-ros helm-gtags helm-swoop helm company-irony-c-headers company-irony flycheck-irony irony company-shell company-quickhelp company flycheck dired+ neotree doom-themes rainbow-delimiters use-package)))
  '(pdf-view-midnight-colors (quote ("#DCDCCC" . "#383838")))
  '(safe-local-variable-values
    (quote

@@ -32,12 +32,17 @@ if ! echo "$java_version" | grep "1.8" &>/dev/null; then # TODO change to a chec
     apt_get_install_pkg oracle-java8-set-default
 fi
 
-# Terminator
+# Terminator (replace Gnome Terminal with Terminator)
 # Terminal emulator
 if program_not_installed "terminator"; then
     runcmd "add-apt-repository ppa:gnome-terminator -y"
     runcmd "apt-get update"
     apt_get_install_pkg terminator
+
+    # Make Terminator the new Gnome Terminal!
+    runcmd "apt-get purge -y gnome-terminal"
+    runcmd "ln -s /usr/bin/terminator /usr/bin/gnome-terminal"
+    runcmd "sudo apt-get install nautilus-open-terminal" # Open nautilus view in terminal
 fi
 
 # Other command line utilities

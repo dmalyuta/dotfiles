@@ -75,7 +75,7 @@ parse_ssh() {
     fi    
 }
 if [ -e ~/.bin/colorizer ]; then
-    . ~/.bin/colorizer/colorizer.sh
+    . ~/.bin/colorizer/Library/colorizer.sh
     tmp=$(colorize -p ">>> [<purple>\D{%b %d} \A</purple>] <orange>$(parse_ssh)</orange><white></white>\u <green>\w</green><red>\$(parse_return_code)</red><yellow>\$(parse_git_branch)</yellow>")
     export PS1="${tmp}\n$ "
 fi

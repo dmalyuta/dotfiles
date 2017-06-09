@@ -1,0 +1,3 @@
+[submodule ".bin/colorizer"]
+	path = .bin/colorizer
+	url = https://github.com/jakobwesthoff/colorizer

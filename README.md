@@ -5,22 +5,14 @@
 * Target OS: Ubuntu 14.04.5 Desktop 64-bit
 * Purpose: keep my dotfiles synced across my computers.
 
-## Features
+## Key features
 
-* Terminal utilities: tmux, GNU Screen, customized bash prompt using [colorizer](https://github.com/jakobwesthoff/colorizer) showing SSH, program return status, Git, etc.
+* [Auto-install script](https://github.com/dmalyuta/dotfiles/blob/master/setup_new_machine.sh) for smooth setup
+* Emacs, tmux, customized bash prompt
 * Personalized `.bashrc`, `.profile` and `.bash_aliases`
 * Optional [Flatabulous](https://github.com/anmoljagetia/Flatabulous) desktop theme
-* Personalized [Terminator](https://launchpad.net/terminator) (multiple window terminal emulator)
+* Personalized [Terminator](https://launchpad.net/terminator)
 * [Automated backup](https://github.com/dmalyuta/dotfiles/blob/master/.bin/make_snapshot.sh) using `rsync`, `cron` and `anacron` with support for grandfather-father-son backup scheme
-
-### Used software
-
-* C/C++/Python: [CLion](https://www.jetbrains.com/clion/?fromMenu), [Eclipse CDT](https://eclipse.org/cdt/), [PyCharm](https://www.jetbrains.com/pycharm/?fromMenu), [Jupyter](http://jupyter.org/)
-* XML: [Eclipse Oxygen XML Plugin](https://www.oxygenxml.com/xml_editor/download_oxygenxml_editor.html?os=Eclipse)
-* Scientific computing: [MATLAB](https://www.mathworks.com/products/matlab.html), [Mathematica](https://www.wolfram.com/mathematica/), [RStudio](https://www.rstudio.com/)
-* Software design: [Papyrus](http://www.eclipse.org/papyrus/index.php), [GeNIe](https://www.bayesfusion.com/genie-modeler), [Stateflow](https://www.mathworks.com/products/stateflow.html), [Arbre Analyste](http://www.arbre-analyste.fr/en.html#)
-* Version control and file sharing: [Git](https://git-scm.com/) (with help  [SmartGit](http://www.syntevo.com/smartgit/)) and [Dropbox](https://www.dropbox.com/login)
-* Publishing: [Eclipse TeXlipse](http://texlipse.sourceforge.net/), [Haroopad](http://pad.haroopress.com/user.html), [Jupyter Notebook/Lab](http://jupyter.org/)
 
 ## Contributing
 
@@ -36,8 +28,7 @@ You should be running a Ubuntu-based Linux operating system. You can run the ins
 
 ### Supported Distributions
 
-- Ubuntu 14.04.5 Desktop 64-bit (*official*)
-- Linux Mint 18 MATE 64-bit (*used in the past*)
+- Ubuntu 14.04.5 Desktop 64-bit
 
 Other distributions may work, but I did not explicitly test them yet. If you try this repository on an OS that is not in the above list, please report what you find and submit pull requests with tweaks for that OS, if you can.
 

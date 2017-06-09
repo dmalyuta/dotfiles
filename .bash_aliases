@@ -49,6 +49,11 @@ pycharm() {
     ~/.jetbrains/pycharm/bin/pycharm.sh &>/dev/null & disown
 }
 
+# Shortcut video editor
+shotcut () {
+    ~/.shotcut/Shotcut.app/shotcut &>/dev/null & disown
+}
+
 # Gedit open file without blocking terminal
 gedit() {
     nohup gedit $@ &>/dev/null & disown

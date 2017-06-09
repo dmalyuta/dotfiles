@@ -62,5 +62,14 @@ if program_not_installed "mendeleydesktop"; then
     runcmd "apt-get --assume-yes install -f" nonull
 fi
 
+# Shotcut
+# Video editor
+if [ ! -f "${home}/.shotcut/Shotcut.app/shotcut" ]; then
+    runcmd "wget https://github.com/mltframework/shotcut/releases/download/v17.06/shotcut-linux-x86_64-170601.tar.bz2 -O /tmp/shotcut.tar.bz2"
+    runcmd "mkdir ${home}/.shotcut"
+    runcmd "tar jxf /tmp/shotcut.tar.bz2 --strip 1 -C ${home}/.shotcut"
+    runcmd "eval chown -R ${SUDO_USER:-$USER}:${SUDO_USER:-$USER} ${home}/.shotcut"
+fi
+
 
 echo_prefix="$echo_prefix_temp"

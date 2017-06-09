@@ -473,13 +473,13 @@
     (add-hook 'LaTeX-mode-hook 'flyspell-buffer)
     )
 
-  (use-package yasnippet
-    ;; YASnippet is a template system for Emacs
-    :ensure t
-    :config
-    (require 'yasnippet)
-    (yas-global-mode 1)
-    )
+  ;; (use-package yasnippet
+  ;;   ;; YASnippet is a template system for Emacs
+  ;;   :ensure t
+  ;;   :config
+  ;;   (require 'yasnippet)
+  ;;   (yas-global-mode 1)
+  ;;   )
 
   (use-package pdf-tools
     ;; advanced PDF viewing capbilities inside Emacs (DocView deplacement)
@@ -881,6 +881,9 @@
     )
 
 ;;;;;;;;;;;;;;;;; OTHER STUFF
+
+  ;; Turn off Abbrev mode
+  (setq-default abbrev-mode nil)
 
   ;; Keep a history of recent files
   (recentf-mode 1)

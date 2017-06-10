@@ -192,89 +192,89 @@
     (add-to-list 'company-backends 'company-shell)
     )
 
-  ;; (use-package irony
-  ;;   ;; asynchronous capabilities (improces C/C++ editing experience)
-  ;;   ;; Linux Mint:
-  ;;   ;;  sudo apt-get install g++ clang libclang-dev
-  ;;   ;;  M-x irony-install-server # when in c-mode or c++-mode
-  ;;   :ensure t
-  ;;   :defer t
-  ;;   :init
-  ;;   (add-hook 'c-mode-common-hook 'irony-mode)
-  ;;   :config
-  ;;   ;; replace completion-at-point and complete-symbol by irony-mode's asynchronous functions
-  ;;   (defun my-irony-mode-hook ()
-  ;;     (define-key irony-mode-map [remap completion-at-point]
-  ;; 	'irony-completion-at-point-async)
-  ;;     (define-key irony-mode-map [remap complete-symbol]
-  ;; 	'irony-completion-at-point-async))
-  ;;   (add-hook 'irony-mode-hook 'my-irony-mode-hook)
-  ;;   (add-hook 'irony-mode-hook 'irony-cdb-autosetup-compile-options)
-  ;;   (setq irony-additional-clang-options '(;; use C++11
-  ;; 					   "-std=c++11"))
-  ;;   ;; additional include paths
-  ;;   ;;					 "-I/home/danylo/catkin_ws/devel/include/"
-  ;;   ;;					 "-I/opt/ros/kinetic/include/"))
-  ;;   ;; asynchronous code linting
-  ;;   (use-package flycheck-irony
-  ;;     :ensure t
-  ;;     :config
-  ;;     ;; Enable Irony for Flycheck
-  ;;     (eval-after-load 'flycheck '(add-hook 'flycheck-mode-hook #'flycheck-irony-setup)))
-  ;;   ;; asynchronous completion
-  ;;   (use-package company-irony
-  ;;     :ensure t
-  ;;     :init
-  ;;     ;;(add-hook 'irony-mode-hook 'company-irony-setup-begin-commands) ;; trigger completion after typing stuff like ->, ., etc
-  ;;     (eval-after-load 'company '(add-to-list 'company-backends 'company-irony))
-  ;;     ;; :config
-  ;;     ;; (setq company-idle-delay 0.05)
-  ;;     )
-  ;;   ;; enable C/C++ header completion
-  ;;   (use-package company-irony-c-headers
-  ;;     :ensure t
-  ;;     :config
-  ;;     (eval-after-load 'company '(add-to-list 'company-backends '(company-irony-c-headers company-irony)))
-  ;;     )
-  ;;   )
-
-  (use-package ycmd
-    ;; Emacs bindings to the ycmd completion server
+  (use-package irony
+    ;; asynchronous capabilities (improces C/C++ editing experience)
+    ;; Linux Mint:
+    ;;  sudo apt-get install g++ clang libclang-dev
+    ;;  M-x irony-install-server # when in c-mode or c++-mode
     :ensure t
+    :defer t
+    :init
+    (add-hook 'c-mode-common-hook 'irony-mode)
     :config
-    ;; Basic setup
-    (require 'ycmd)
-    (add-hook 'c++-mode-hook 'ycmd-mode)
-    (set-variable 'ycmd-server-command '("python" "/home/malyuta/.emacs.d/ycmd/ycmd"))
-    ;; Compile flag configs
-    (set-variable 'ycmd-global-config "ycmd/examples/.ycm_extra_conf.py")
-    ;; Completion at point
-    (defun ycmd-setup-completion-at-point-function ()
-      "Setup `completion-at-point-functions' for `ycmd-mode'."
-      (add-hook 'completion-at-point-functions
-  		#'ycmd-complete-at-point nil :local))
-    (add-hook 'ycmd-mode #'ycmd-setup-completion-at-point-function)
-    (use-package company-ycmd
-      ;; Company-mode baackend for ycmd
+    ;; replace completion-at-point and complete-symbol by irony-mode's asynchronous functions
+    (defun my-irony-mode-hook ()
+      (define-key irony-mode-map [remap completion-at-point]
+  	'irony-completion-at-point-async)
+      (define-key irony-mode-map [remap complete-symbol]
+  	'irony-completion-at-point-async))
+    (add-hook 'irony-mode-hook 'my-irony-mode-hook)
+    (add-hook 'irony-mode-hook 'irony-cdb-autosetup-compile-options)
+    (setq irony-additional-clang-options '(;; use C++11
+  					   "-std=c++11"))
+    ;; additional include paths
+    ;;					 "-I/home/danylo/catkin_ws/devel/include/"
+    ;;					 "-I/opt/ros/kinetic/include/"))
+    ;; asynchronous code linting
+    (use-package flycheck-irony
       :ensure t
       :config
-      (require 'company-ycmd)
-      (company-ycmd-setup)
+      ;; Enable Irony for Flycheck
+      (eval-after-load 'flycheck '(add-hook 'flycheck-mode-hook #'flycheck-irony-setup)))
+    ;; asynchronous completion
+    (use-package company-irony
+      :ensure t
+      :init
+      ;;(add-hook 'irony-mode-hook 'company-irony-setup-begin-commands) ;; trigger completion after typing stuff like ->, ., etc
+      (eval-after-load 'company '(add-to-list 'company-backends 'company-irony))
+      ;; :config
+      ;; (setq company-idle-delay 0.05)
       )
-    ;; Code linting
-    (use-package flycheck-ycmd
-      ;; Flycheck integration for ycmd
+    ;; enable C/C++ header completion
+    (use-package company-irony-c-headers
       :ensure t
       :config
-      (require 'flycheck-ycmd)
-      (flycheck-ycmd-setup)
+      (eval-after-load 'company '(add-to-list 'company-backends '(company-irony-c-headers company-irony)))
       )
-    ;; Make flycheck and company play nicely with each other
-    (when (not (display-graphic-p))
-      (setq flycheck-indication-mode nil))
-    ;; Automatically load extra config files
-    (set-variable 'ycmd-extra-conf-handler 'load)
     )
+
+  ;; (use-package ycmd
+  ;;   ;; Emacs bindings to the ycmd completion server
+  ;;   :ensure t
+  ;;   :config
+  ;;   ;; Basic setup
+  ;;   (require 'ycmd)
+  ;;   (add-hook 'c++-mode-hook 'ycmd-mode)
+  ;;   (set-variable 'ycmd-server-command '("python" "/home/malyuta/.emacs.d/ycmd/ycmd"))
+  ;;   ;; Compile flag configs
+  ;;   (set-variable 'ycmd-global-config "ycmd/examples/.ycm_extra_conf.py")
+  ;;   ;; Completion at point
+  ;;   (defun ycmd-setup-completion-at-point-function ()
+  ;;     "Setup `completion-at-point-functions' for `ycmd-mode'."
+  ;;     (add-hook 'completion-at-point-functions
+  ;; 		#'ycmd-complete-at-point nil :local))
+  ;;   (add-hook 'ycmd-mode #'ycmd-setup-completion-at-point-function)
+  ;;   (use-package company-ycmd
+  ;;     ;; Company-mode baackend for ycmd
+  ;;     :ensure t
+  ;;     :config
+  ;;     (require 'company-ycmd)
+  ;;     (company-ycmd-setup)
+  ;;     )
+  ;;   ;; Code linting
+  ;;   (use-package flycheck-ycmd
+  ;;     ;; Flycheck integration for ycmd
+  ;;     :ensure t
+  ;;     :config
+  ;;     (require 'flycheck-ycmd)
+  ;;     (flycheck-ycmd-setup)
+  ;;     )
+  ;;   ;; Make flycheck and company play nicely with each other
+  ;;   (when (not (display-graphic-p))
+  ;;     (setq flycheck-indication-mode nil))
+  ;;   ;; Automatically load extra config files
+  ;;   (set-variable 'ycmd-extra-conf-handler 'load)
+  ;;   )
 
   (use-package helm
     ;; incremental completion and selection narrowing framework

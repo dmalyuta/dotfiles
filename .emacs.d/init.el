@@ -247,7 +247,7 @@
     (add-hook 'c++-mode-hook 'ycmd-mode)
     (set-variable 'ycmd-server-command '("python" "/home/malyuta/.emacs.d/ycmd/ycmd"))
     ;; Complete with semantic completion (could be flow for larger projects!)
-    (set-variable 'ycmd-force-semantic-completion t)
+    (set-variable 'ycmd-force-semantic-completion t) ;; breaks completion in C++ header files :(
     (set-variable 'company-ycmd-request-sync-timeout 0)
     ;; Compile flag configs
     (set-variable 'ycmd-global-config "ycmd/examples/.ycm_extra_conf.py")

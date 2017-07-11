@@ -209,7 +209,7 @@ fi
 #   - Install integration with the terminal (EasyShell): Help --> Install New Software... --> Update site: http://anb0s.github.io/EasyShell --> EasyShell 2.0.x, PluginBox
 if [ ! -f "${home}/.eclipse/eclipse_common/eclipse" ]; then
     echowarn "Please read the instructions in comments of .setup/install_dev_tools.sh for follow-up installation actions inside Eclipse!"
-    runcmd "wget https://www.eclipse.org/downloads/download.php?file=/eclipse/downloads/drops4/R-4.6.3-201703010400/eclipse-platform-4.6.3-linux-gtk-x86_64.tar.gz&r=1 -O /tmp/eclipse_common.tar.gz"
+    runcmd "wget http://www.eclipse.org/downloads/download.php?file=/eclipse/downloads/drops4/R-4.7-201706120950/eclipse-platform-4.7-linux-gtk-x86_64.tar.gz&r=1 -O /tmp/eclipse_common.tar.gz"
     runcmd "mkdir -p ${home}/.eclipse/eclipse_common"
     runcmd "tar zxf /tmp/eclipse_common.tar.gz --strip 1 -C ${home}/.eclipse/eclipse_common"
     runcmd "eval chown -R ${SUDO_USER:-$USER}:${SUDO_USER:-$USER} ${home}/.eclipse"
@@ -225,7 +225,7 @@ fi
 #       - Install SysML 1.4 [NOT YET POSSIBLE FOR OXYGEN]: Help --> Install Papyrus Additional Components --> SysML
 if [ ! -f "${home}/.eclipse/eclipse_mbse/eclipse" ]; then
     echowarn "Please read the instructions in comments of .setup/install_dev_tools.sh for follow-up installation actions inside Eclipse!"
-    runcmd "wget https://www.eclipse.org/downloads/download.php?file=/eclipse/downloads/drops4/S-4.7M6-201703082000/eclipse-platform-4.7M6-linux-gtk-x86_64.tar.gz&r=1 -O /tmp/eclipse_mbse.tar.gz"
+    runcmd "wget http://www.eclipse.org/downloads/download.php?file=/eclipse/downloads/drops4/R-4.7-201706120950/eclipse-platform-4.7-linux-gtk-x86_64.tar.gz&r=1 -O /tmp/eclipse_mbse.tar.gz"
     runcmd "mkdir -p ${home}/.eclipse/eclipse_mbse"
     runcmd "tar zxf /tmp/eclipse_mbse.tar.gz --strip 1 -C ${home}/.eclipse/eclipse_mbse"
     runcmd "eval chown -R ${SUDO_USER:-$USER}:${SUDO_USER:-$USER} ${home}/.eclipse"
@@ -239,7 +239,7 @@ fi
 #   - Install Markdown editor: Help --> Install New Software... --> Update site: http://www.certiv.net/updates --> Certiv Tools/FluentMark Editor
 if [ ! -f "${home}/.eclipse/eclipse_latex/eclipse" ]; then
     echowarn "Please read the instructions in comments of .setup/install_dev_tools.sh for follow-up installation actions inside Eclipse!"
-    runcmd "wget http://www.eclipse.org/downloads/download.php?file=/eclipse/downloads/drops4/R-4.5.2-201602121500/eclipse-platform-4.5.2-linux-gtk-x86_64.tar.gz&r=1 -O /tmp/eclipse_latex.tar.gz"
+    runcmd "wget http://www.eclipse.org/downloads/download.php?file=/eclipse/downloads/drops4/R-4.7-201706120950/eclipse-platform-4.7-linux-gtk-x86_64.tar.gz&r=1 -O /tmp/eclipse_latex.tar.gz"
     runcmd "mkdir -p ${home}/.eclipse/eclipse_latex"
     runcmd "tar zxf /tmp/eclipse_latex.tar.gz --strip 1 -C ${home}/.eclipse/eclipse_latex"
     runcmd "eval chown -R ${SUDO_USER:-$USER}:${SUDO_USER:-$USER} ${home}/.eclipse"

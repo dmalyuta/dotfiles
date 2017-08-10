@@ -140,13 +140,6 @@ fi
 
 ####### Programs below are installed *only* if they are not already installed
 
-# Install Haroopad (Markdown editor)
-if program_not_installed "haroopad"; then
-    runcmd "wget https://bitbucket.org/rhiokim/haroopad-download/downloads/haroopad-v0.13.1-x64.deb -O /tmp/haroopad.deb"
-    runcmd_noexit "dpkg -i /tmp/haroopad.deb" nonull
-    runcmd "apt-get --assume-yes install -f" nonull
-fi
-
 # Install SmartGit
 if ! dpkg -l | grep -E '^ii' | grep smartgit &>/dev/null; then
     runcmd "wget http://www.syntevo.com/static/smart/download/smartgit/smartgit-17_0_3.deb -O /tmp/smartgit.deb"
@@ -154,18 +147,9 @@ if ! dpkg -l | grep -E '^ii' | grep smartgit &>/dev/null; then
     runcmd "apt-get --assume-yes install -f"
 fi
 
-# Install Jetbrains Toolbox App (projects & programs manager)
-if [ ! -d "${home}/.jetbrains/toolbox" ]; then
-    runcmd "wget https://download.jetbrains.com/toolbox/jetbrains-toolbox-1.2.2314.tar.gz -O /tmp/toolbox.tar.gz"
-    runcmd "rm -rf ${home}/.jetbrains/toolbox"
-    runcmd "mkdir -p ${home}/.jetbrains/toolbox"
-    runcmd "tar zxf /tmp/toolbox.tar.gz --strip 1 -C ${home}/.jetbrains/toolbox"
-    runcmd "eval chown -R ${SUDO_USER:-$USER}:${SUDO_USER:-$USER} ${home}/.jetbrains/toolbox"
-fi
-
 # Install Jetbrains CLion (C/C++)
 if [ ! -d "${home}/.jetbrains/clion" ]; then
-    runcmd "wget https://download.jetbrains.com/cpp/CLion-2017.1.tar.gz -O /tmp/clion.tar.gz"
+    runcmd "wget https://download.jetbrains.com/cpp/CLion-2017.2.1.tar.gz -O /tmp/clion.tar.gz"
     runcmd "rm -rf ${home}/.jetbrains/clion"
     runcmd "mkdir -p ${home}/.jetbrains/clion"
     runcmd "tar zxf /tmp/clion.tar.gz --strip 1 -C ${home}/.jetbrains/clion"
@@ -174,7 +158,7 @@ fi
 
 # Install Jetbrains PyCharm (Python)
 if [ ! -d "${home}/.jetbrains/pycharm" ]; then
-    runcmd "wget https://download.jetbrains.com/python/pycharm-professional-2017.1.1.tar.gz -O /tmp/pycharm.tar.gz"
+    runcmd "wget https://download.jetbrains.com/python/pycharm-professional-2017.2.1.tar.gz -O /tmp/pycharm.tar.gz"
     runcmd "rm -rf ${home}/.jetbrains/pycharm"
     runcmd "mkdir -p ${home}/.jetbrains/pycharm"
     runcmd "tar zxf /tmp/pycharm.tar.gz --strip 1 -C ${home}/.jetbrains/pycharm"

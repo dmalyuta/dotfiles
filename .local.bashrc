@@ -35,12 +35,6 @@ checksum_check() {
     fi
 }
 
-# programmable bash completion, for Emacs
-if [[ ( -z "$INSIDE_EMACS" || "$EMACS_BASH_COMPLETE" = "t" ) &&\
-	  -f /etc/bash_completion ]]; then
-    . /etc/bash_completion
-fi
-
 # Go language
 if [[ -d /usr/local/go ]]; then
     export GOROOT=/usr/local/go

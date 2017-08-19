@@ -45,7 +45,7 @@
 # editing:
 #
 # sudo crontab -e # setup cron
-# sudo emacs /etc/anacrontab # setup anacron
+# sudo gedit /etc/anacrontab # setup anacron
 #
 # This will allow you to setup the desired backup scheme. I have for
 # example:

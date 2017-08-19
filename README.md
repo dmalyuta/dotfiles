@@ -8,8 +8,7 @@
 ## Key features
 
 * [Auto-install script](https://github.com/dmalyuta/dotfiles/blob/master/setup_new_machine.sh) for smooth setup
-* Emacs, tmux, customized bash prompt
-* Personalized `.bashrc`, `.profile` and `.bash_aliases`
+* Personalized `.bashrc`, `.profile`, `.bash_aliases`, bash prompt
 * Optional [Flatabulous](https://github.com/anmoljagetia/Flatabulous) desktop theme
 * Personalized [Terminator](https://launchpad.net/terminator)
 * [Automated backup](https://github.com/dmalyuta/dotfiles/blob/master/.bin/make_snapshot.sh) using `rsync`, `cron` and `anacron` with support for grandfather-father-son backup scheme

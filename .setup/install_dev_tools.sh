@@ -87,8 +87,7 @@ if program_not_installed "rr"; then
 fi
 
 # Upgrade GDB to 7.12.1 (latest stable version)
-# Includes many fixes, of which most important for Emacs is the `set max-completions`
-# (see https://sourceware.org/git/gitweb.cgi?p=binutils-gdb.git;a=blobdiff;f=gdb/NEWS;h=f19577a3a6d0ea9ff1015255eafbd965580afa2d;hp=cba21b6645dd09e83943b71d42ad4c3d3c00cad4;hb=ef0b411a110cd2602cb89c3fb237baf8beb28545;hpb=e11c72c7e4879894b9711b5c0b8247c20c6050f6 and http://stackoverflow.com/questions/20933946/gdb-freezing-when-print-variables-with-tab-completion)
+# Includes many fixes, of which most important is the `set max-completions`
 # Description: Sets the maximum number of candidates to be considered
 # during completion. The default value is 200. This limit allows GDB
 # to avoid generating large completion lists, the computation of which

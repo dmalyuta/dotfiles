@@ -147,6 +147,12 @@ if ! dpkg -l | grep -E '^ii' | grep smartgit &>/dev/null; then
 fi
 
 # Install Jetbrains CLion (C/C++)
+#
+# Additional plugins that I use:
+#   - CodeGlance
+#   - .ignore
+#   - Frame Switcher
+#   - Markdown support
 if [ ! -d "${home}/.jetbrains/clion" ]; then
     runcmd "wget https://download.jetbrains.com/cpp/CLion-2017.2.1.tar.gz -O /tmp/clion.tar.gz"
     runcmd "rm -rf ${home}/.jetbrains/clion"
@@ -184,12 +190,12 @@ fi
 
 # Install Eclipse for C/C++, XML Web
 #
-# Follow up this installation with the following actions
-#   - Launch Eclipse: $ eclipse_common
-#   - Install CDT (C/C++): Help --> Install New Software... --> Update site: http://download.eclipse.org/tools/cdt/releases/9.2 --> CDT Main Features, CDT Optional Features
-#   - Optionally install XML editing (Oxygen XML plugin): Help --> Install New Software... --> Update site: http://www.oxygenxml.com/InstData/Editor/Eclipse/site.xml --> oXygen XML Editor for Eclipse 3.6 -> 3.8, 4.2 -> 4.6
-#   - Install Remote System Explorer: Help --> Install New Software... --> Update site: http://download.eclipse.org/releases/neon --> Search for "remote" --> General Purpose Tools/Remote System Explorer End-User Runtime
-#   - Install integration with the terminal (EasyShell): Help --> Install New Software... --> Update site: http://anb0s.github.io/EasyShell --> EasyShell 2.0.x, PluginBox
+# Additional software to install:
+#   - CDT (https://tinyurl.com/lq5r4vk)
+#   - Eclipse Marketplace
+#   - Remote System Explorer (http://download.eclipse.org/releases/neon --> General Purpose Tools/Remote System Explorer End-User Runtime)
+#   - Darkest Dark Theme (https://tinyurl.com/ybgswz7v)
+#   - EasyShell (http://anb0s.github.io/EasyShell --> EasyShell 2.0.x, PluginBox)
 if [ ! -f "${home}/.eclipse/eclipse_common/eclipse" ]; then
     echowarn "Please read the instructions in comments of .setup/install_dev_tools.sh for follow-up installation actions inside Eclipse!"
     runcmd "wget http://www.eclipse.org/downloads/download.php?file=/eclipse/downloads/drops4/R-4.7-201706120950/eclipse-platform-4.7-linux-gtk-x86_64.tar.gz&r=1 -O /tmp/eclipse_common.tar.gz"
@@ -198,28 +204,11 @@ if [ ! -f "${home}/.eclipse/eclipse_common/eclipse" ]; then
     runcmd "eval chown -R ${SUDO_USER:-$USER}:${SUDO_USER:-$USER} ${home}/.eclipse"
 fi
 
-# Install Eclipse of UML/SysML
-#
-# TODO once Eclipse Oxygen is released, then might make sense to merge this and the above Eclipse installation for C/C++, Java, XML, etc.
-#
-# Follow up this installation with the following actions
-#   - Install Web dev tools (for Papyrus CSS file editing): Help --> Install New Software... --> Update site: http://download.eclipse.org/releases/oxygen  --> Web, XML, Java EE and OSGi Enterprise Development/Eclipse Web Developer Tools
-#   - Install Papyrus (UML/SysML): Help --> Install New Software... --> Update site: http://download.eclipse.org/modeling/mdt/papyrus/updates/nightly/oxygen --> Papyrus, Papyrus SysML 1.1
-#       - Install SysML 1.4 [NOT YET POSSIBLE FOR OXYGEN]: Help --> Install Papyrus Additional Components --> SysML
-if [ ! -f "${home}/.eclipse/eclipse_mbse/eclipse" ]; then
-    echowarn "Please read the instructions in comments of .setup/install_dev_tools.sh for follow-up installation actions inside Eclipse!"
-    runcmd "wget http://www.eclipse.org/downloads/download.php?file=/eclipse/downloads/drops4/R-4.7-201706120950/eclipse-platform-4.7-linux-gtk-x86_64.tar.gz&r=1 -O /tmp/eclipse_mbse.tar.gz"
-    runcmd "mkdir -p ${home}/.eclipse/eclipse_mbse"
-    runcmd "tar zxf /tmp/eclipse_mbse.tar.gz --strip 1 -C ${home}/.eclipse/eclipse_mbse"
-    runcmd "eval chown -R ${SUDO_USER:-$USER}:${SUDO_USER:-$USER} ${home}/.eclipse"
-fi
-
 # Install Eclipse for LaTeX, Markdown
 # 
-# Follow up this installation with the following actions
-#   - Launch Eclipse: $ eclipse_latex
-#   - Install LaTeX editing (TeXlipse): Help --> Install New Software... --> Update site: http://texlipse.sourceforge.net --> Pdf4Eclipse, TeXlipse
-#   - Install Markdown editor: Help --> Install New Software... --> Update site: http://www.certiv.net/updates --> Certiv Tools/FluentMark Editor
+# Additional software to install:
+#   - TeXlipse (http://texlipse.sourceforge.net --> Pdf4Eclipse, TeXlipse)
+#   - Markdown editor (http://www.certiv.net/updates --> Certiv Tools/FluentMark Editor)
 if [ ! -f "${home}/.eclipse/eclipse_latex/eclipse" ]; then
     echowarn "Please read the instructions in comments of .setup/install_dev_tools.sh for follow-up installation actions inside Eclipse!"
     runcmd "wget http://www.eclipse.org/downloads/download.php?file=/eclipse/downloads/drops4/R-4.7-201706120950/eclipse-platform-4.7-linux-gtk-x86_64.tar.gz&r=1 -O /tmp/eclipse_latex.tar.gz"

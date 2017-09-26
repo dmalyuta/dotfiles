@@ -79,3 +79,6 @@ if [ -e ~/.bin/colorizer ]; then
     tmp=$(colorize -p ">>> [<purple>\D{%b %d} \A</purple>] <orange>$(parse_ssh)</orange><white></white>\u <green>\w</green><red>\$(parse_return_code)</red><yellow>\$(parse_git_branch)</yellow>")
     export PS1="${tmp}\n$ "
 fi
+
+# Use emacsclient for Git
+export GIT_EDITOR="`which emacsclient` -t -s git"

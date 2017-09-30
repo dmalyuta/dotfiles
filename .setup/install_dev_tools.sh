@@ -92,6 +92,7 @@ fi
 # during completion. The default value is 200. This limit allows GDB
 # to avoid generating large completion lists, the computation of which
 # can cause the debugger to become temporarily unresponsive.
+apt_get_install_pkg texinfo
 gdbVersion="$(/bin/echo $(gdb --version) | cut -d ' ' -f 4)"
 if [ "$gdbVersion" != "7.12.1" ]; then
     # TODO make check only that $gdbVersion < 7.12.1 (so as not to downgrade if in the future user has a more recent version installed)

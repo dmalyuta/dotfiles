@@ -18,14 +18,10 @@ fi
 
 # yEd
 # Diagramming
-if [ ! -f "${home}/.yed/yed.jar" ]; then
-    runcmd "wget https://www.yworks.com/resources/yed/demo/yEd-3.17.zip -O /tmp/yEd.zip"
-    runcmd "rm -rf /tmp/.yed"
-    runcmd "mkdir -p ${home}/.yed"
-    runcmd "unzip /tmp/yEd.zip -d ${home}/.yed/"
-    runcmd "mv ${home}/.yed/yed-3.17/* ${home}/.yed/"
-    runcmd "rm -rf ${home}/.yed/yed-3.17"
-    runcmd "eval chown -R ${SUDO_USER:-$USER}:${SUDO_USER:-$USER} ${home}/.yed"
+if program_not_installed "yed"; then
+    runcmd "wget https://www.yworks.com/resources/yed/demo/yEd-3.17.1_64-bit_setup.sh -O /tmp/yEd.sh"
+    runcmd "chmod +x /tmp/yEd.sh"
+    runcmd "/tmp/yEd.sh"
 fi
 
 # Dia

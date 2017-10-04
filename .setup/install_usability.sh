@@ -75,4 +75,8 @@ fi
 # Automatic detection and changing of display configuration
 runcmd "sudo -H pip install autorandr"
 
+# Compix
+# Graphics/desktop customization program
+apt_get_install_pkg compizconfig-settings-manager
+
 echo_prefix="$echo_prefix_temp"

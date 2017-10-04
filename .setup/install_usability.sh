@@ -71,5 +71,8 @@ if [ ! -f "${home}/.shotcut/Shotcut.app/shotcut" ]; then
     runcmd "eval chown -R ${SUDO_USER:-$USER}:${SUDO_USER:-$USER} ${home}/.shotcut"
 fi
 
+# Autorandr
+# Automatic detection and changing of display configuration
+runcmd "sudo -H pip install autorandr"
 
 echo_prefix="$echo_prefix_temp"

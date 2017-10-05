@@ -118,6 +118,9 @@ if program_not_installed "wkhtmltopdf"; then
     runcmd "mv /tmp/wkhtmltox/lib/* /usr/lib/"
     runcmd "mv /tmp/wkhtmltox/share/man/man1/* /usr/share/man/man1/"
 fi
+
+# Password keyring
+runcmd "sudo -H pip install keyring"
  
 
 echo_prefix="$echo_prefix_temp"

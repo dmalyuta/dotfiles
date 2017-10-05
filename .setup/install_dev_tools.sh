@@ -19,8 +19,15 @@ if [ "$git_version" -lt 2 ]; then
     apt_get_install_pkg git
 fi
 
+# Gitk
+# Visual viewer of git history
+apt_get_install_pkg gitk
+
 # Build tools like gcc, g++
 apt_get_install_pkg build-essential
+
+# Google logging library
+apt_get_install_pkg libgoogle-glog-dev
 
 # Java 8
 java_version=$(java -version 2>&1 | grep "java version")

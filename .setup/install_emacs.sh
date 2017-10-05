@@ -70,4 +70,16 @@ if program_not_installed "global"; then
     wget_targz_install "global-6.5.5" "ftp://ftp.gnu.org/pub/gnu/global/global-6.5.5.tar.gz"
 fi
 
+# Mail (mu4e)
+
+apt_get_install_pkg libgmime-2.6-dev
+apt_get_install_pkg libxapian-dev
+# optional
+apt_get_install_pkg guile-2.0-dev
+apt_get_install_pkg html2text
+apt_get_install_pkg xdg-utils
+# optional: only needed for msg2pdf and mug (toy gtk+ frontend)
+apt_get_install_pkg libwebkit-dev
+# TODO need to now install actual mu and compile from source...
+
 echo_prefix="$echo_prefix_temp"

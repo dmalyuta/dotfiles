@@ -136,10 +136,9 @@
   (use-package company
     ;; complete anything
     :ensure t
-    ;; :bind
-    ;; (("<S-SPC>" . company-complete) ;; recommended to use TAB instead (which uses helm-company, see below)
-    ;;  ("M-n" . company-select-next)
-    ;;  ("M-p" . company-select-previous))
+    :bind
+    (("<S-SPC>" . company-complete)
+     )
     :init
     ;;(add-hook 'after-init-hook 'global-company-mode)
     (add-hook 'c-mode-common-hook 'company-mode)
@@ -173,17 +172,17 @@
       '(define-key company-active-map (kbd "M-h") #'company-quickhelp-manual-begin))
     )
 
-  (use-package helm-company
-    ;; Helm interface for company-mode
-    :load-path "elpa/helm-company"
-    ;;:ensure t ;; Waiting for MELPA update (fix was made by maintainer to autofill "pattern" in response to my issue)
-    :config
-    (eval-after-load 'company
-      '(progn
-    	 (set-variable 'helm-company-initialize-pattern-with-prefix t)
-    	 (define-key company-mode-map (kbd "<S-SPC>") 'helm-company)
-    	 (define-key company-active-map (kbd "<S-SPC>") 'helm-company)))
-    )
+  ;; (use-package helm-company
+  ;;   ;; Helm interface for company-mode
+  ;;   :load-path "elpa/helm-company"
+  ;;   ;;:ensure t ;; Waiting for MELPA update (fix was made by maintainer to autofill "pattern" in response to my issue)
+  ;;   :config
+  ;;   (eval-after-load 'company
+  ;;     '(progn
+  ;;   	 (set-variable 'helm-company-initialize-pattern-with-prefix t)
+  ;;   	 (define-key company-mode-map (kbd "<S-SPC>") 'helm-company)
+  ;;    	 (define-key company-active-map (kbd "<S-SPC>") 'helm-company)))
+  ;;   )
 
   (use-package company-shell
     ;; company mode completion backends for your shell functions:
@@ -762,13 +761,13 @@
     (setq flymd-browser-open-function 'my-flymd-browser-function)
     )
   
-  (use-package fill-column-indicator
-    ;; An Emacs minor mode that graphically indicates the fill column.
-    :ensure t
-    :config
-    (setq-default fill-column 80)
-    (add-hook 'c-mode-common-hook 'fci-mode)
-    )
+  ;; (use-package fill-column-indicator
+  ;;   ;; An Emacs minor mode that graphically indicates the fill column.
+  ;;   :ensure t
+  ;;   :config
+  ;;   (setq-default fill-column 80)
+  ;;   (add-hook 'c-mode-common-hook 'fci-mode)
+  ;;   )
 
   (use-package magit
     :ensure t
@@ -792,6 +791,21 @@
     (if window-system (progn
 			(global-set-key (kbd "C--" ) 'zoom-frm-out)
 			(global-set-key (kbd "C-=") 'zoom-frm-in))))
+
+  (use-package undo-tree
+    ;; Better undo/redo functionality, including undo tree browsing
+    :ensure t
+    :config
+    (require 'undo-tree)
+    (global-undo-tree-mode)
+    )
+
+  (use-package column-enforce-mode
+    :ensure t
+    :config
+    (setq column-enforce-column 80)
+    (add-hook 'c-mode-common-hook 'column-enforce-mode)
+    )
 
 ;;;;;;;;;;;;;;;;; PERSONAL PACKAGES
 
@@ -1221,7 +1235,70 @@ will be killed."
   (defun my-xml-schema-hook ()
     (when (string= (file-name-extension buffer-file-name) "ts")
       (rng-auto-set-schema))
-  (add-hook 'find-file-hook 'my-xml-schema-hook))
+    (add-hook 'find-file-hook 'my-xml-schema-hook))
+
+  (require 'mu4e)
+
+  ;; default
+  (setq mu4e-maildir "~/.gmail_dir")
+
+  (setq mu4e-drafts-folder "/[Gmail].Drafts")
+  (setq mu4e-sent-folder   "/[Gmail].Sent Mail")
+  (setq mu4e-trash-folder  "/[Gmail].Trash")
+
+  ;; don't save message to Sent Messages, Gmail/IMAP takes care of this
+  (setq mu4e-sent-messages-behavior 'delete)
+
+  ;; (See the documentation for `mu4e-sent-messages-behavior' if you have
+  ;; additional non-Gmail addresses and want assign them different
+  ;; behavior.)
+
+  ;; setup some handy shortcuts
+  ;; you can quickly switch to your Inbox -- press ``ji''
+  ;; then, when you want archive some messages, move them to
+  ;; the 'All Mail' folder by pressing ``ma''.
+
+  (setq mu4e-maildir-shortcuts
+	'( ("/INBOX"               . ?i)
+	   ("/[Gmail].Sent Mail"   . ?s)
+	   ("/[Gmail].Trash"       . ?t)
+	   ("/[Gmail].All Mail"    . ?a)))
+
+  ;; allow for updating mail using 'U' in the main view:
+  (setq mu4e-get-mail-command "offlineimap")
+
+  ;; something about ourselves
+  (setq
+   user-mail-address "USERNAME@gmail.com"
+   user-full-name  "Foo X. Bar"
+   mu4e-compose-signature
+   (concat
+    "Foo X. Bar\n"
+    "http://www.example.com\n"))
+
+  ;; sending mail -- replace USERNAME with your gmail username
+  ;; also, make sure the gnutls command line utils are installed
+  ;; package 'gnutls-bin' in Debian/Ubuntu
+
+  (require 'smtpmail)
+  (setq message-send-mail-function 'smtpmail-send-it
+	starttls-use-gnutls t
+	smtpmail-starttls-credentials '(("smtp.gmail.com" 587 nil nil))
+	smtpmail-auth-credentials
+	'(("smtp.gmail.com" 587 "USERNAME@gmail.com" nil))
+	smtpmail-default-smtp-server "smtp.gmail.com"
+	smtpmail-smtp-server "smtp.gmail.com"
+	smtpmail-smtp-service 587)
+
+  ;; alternatively, for emacs-24 you can use:
+  ;;(setq message-send-mail-function 'smtpmail-send-it
+  ;;     smtpmail-stream-type 'starttls
+  ;;     smtpmail-default-smtp-server "smtp.gmail.com"
+  ;;     smtpmail-smtp-server "smtp.gmail.com"
+  ;;     smtpmail-smtp-service 587)
+
+  ;; don't keep message buffers around
+  (setq message-kill-buffer-on-exit t)
   
 )
 
@@ -1270,7 +1347,7 @@ will be killed."
     ("#CC9393" "#DFAF8F" "#F0DFAF" "#7F9F7F" "#BFEBBF" "#93E0E3" "#94BFF3" "#DC8CC3")))
  '(package-selected-packages
    (quote
-    (zoom-frm move-text magit fill-column-indicator flymd markdown-mode bash-completion workgroups2 fuzzy ess-R-data-view ess auto-compile rainbow-mode ecb realgud wgrep-helm wgrep multiple-cursors srefactor nyan-mode google-c-style yaml-mode mic-paren pdf-tools auctex helm-projectile projectile helm-ros helm-gtags helm-swoop helm company-irony-c-headers company-irony flycheck-irony irony company-shell company-quickhelp company flycheck dired+ neotree doom-themes rainbow-delimiters use-package)))
+    (undo-tree zoom-frm move-text magit fill-column-indicator flymd markdown-mode bash-completion workgroups2 fuzzy ess-R-data-view ess auto-compile rainbow-mode ecb realgud wgrep-helm wgrep multiple-cursors srefactor nyan-mode google-c-style yaml-mode mic-paren pdf-tools auctex helm-projectile projectile helm-ros helm-gtags helm-swoop helm company-irony-c-headers company-irony flycheck-irony irony company-shell company-quickhelp company flycheck dired+ neotree doom-themes rainbow-delimiters use-package)))
  '(pdf-view-midnight-colors (quote ("#DCDCCC" . "#383838")))
  '(safe-local-variable-values
    (quote
@@ -1323,5 +1400,6 @@ will be killed."
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
+ '(column-enforce-face ((t (:background "yellow" :foreground "black" :slant oblique))))
  '(ecb-default-highlight-face ((((class color) (background dark)) (:background "yellow" :foreground "black"))))
  '(ecb-tag-header-face ((((class color) (background dark)) (:background "yellow" :foreground "black")))))

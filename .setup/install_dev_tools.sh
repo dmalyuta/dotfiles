@@ -29,6 +29,10 @@ apt_get_install_pkg build-essential
 # Google logging library
 apt_get_install_pkg libgoogle-glog-dev
 
+# gdbserver
+# Remote debugging
+apt_get_install_pkg gdbserver
+
 # Java 8
 java_version=$(java -version 2>&1 | grep "java version")
 if ! echo "$java_version" | grep "1.8" &>/dev/null; then # TODO change to a check whether version is *at least* 1.8 (e.g. 1.9 is OK, don't do anything then)

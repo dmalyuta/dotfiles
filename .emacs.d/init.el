@@ -429,6 +429,8 @@
     (setq TeX-auto-parse-length 999999)
     (setq TeX-save-query nil)
     (setq-default TeX-master nil)
+    ;; Spelling
+    (global-set-key (kbd "M-s") 'ispell-word)
     ;; (setq ispell-program-name "aspell") ; could be ispell as well, depending on your preferences
     ;; (setq ispell-dictionary "english") ; this can obviously be set to any language your spell-checking program supports
     (setq reftex-plug-into-AUCTeX t)
@@ -675,6 +677,19 @@
       )
     )
 
+  (use-package elpy
+    :ensure t
+    :config
+    (package-initialize)
+    (elpy-enable)
+    (add-hook 'elpy-mode-hook
+	      (lambda ()
+		(define-key elpy-mode-map (kbd "C-<up>") 'nil)
+		(define-key elpy-mode-map (kbd "C-<down>") 'nil)
+		(define-key elpy-mode-map (kbd "C-<left>") 'nil)
+		(define-key elpy-mode-map (kbd "C-<right>") 'nil)))
+    )
+
   ;; (use-package jedi
   ;;   ;; Python autocompletion
   ;;   ;; Must run once M-x jedi:install-server
@@ -813,6 +828,34 @@
     (global-hl-todo-mode)
     )
 
+  (use-package plantuml-mode
+    :ensure t
+    :config
+    ;; Enable plantuml-mode for PlantUML files
+    (add-to-list 'auto-mode-alist '("\\.plantuml\\'" . plantuml-mode))
+    )
+
+;;;;;;;;;;;;;;;;; NON-MELPA PACKAGES
+
+  ;; matlab-emacs
+  ;; MATLAB integration with Emacs
+  (add-to-list 'load-path "~/.emacs.d/matlab-emacs-src/")
+  (require 'matlab-load)
+  (matlab-cedet-setup)
+  (custom-set-variables
+   '(matlab-shell-command-switches '("-nodesktop -nosplash")))
+  (add-hook 'matlab-mode-hook 'auto-complete-mode)
+  (setq auto-mode-alist
+	(cons
+	 '("\\.m$" . matlab-mode)
+	 auto-mode-alist))
+  (add-hook 'matlab-mode-hook
+	    (lambda ()
+	      (define-key matlab-shell-mode-map (kbd "C-<up>") 'nil)
+	      (define-key matlab-shell-mode-map (kbd "C-<down>") 'nil)))
+  ;;comint-previous-matching-input-from-input
+  ;;comint-next-matching-input-from-input
+
 ;;;;;;;;;;;;;;;;; PERSONAL PACKAGES
 
   (use-package c-block-comment
@@ -910,7 +953,11 @@
 
   ;; Keep a history of recent files
   (recentf-mode 1)
-  (setq-default recent-save-file "~/.emacs.d/recentf")  
+  (setq-default recent-save-file "~/.emacs.d/recentf")
+
+  ;; Unbind Pesky Sleep Button
+  (global-unset-key [(control z)])
+  (global-unset-key [(control x)(control z)])
 
   ;; Revert all buffers currently visiting a file
   (defun revert-all-file-buffers ()
@@ -1286,12 +1333,13 @@ will be killed."
       (ecb-history-buffer-name 0.17901234567901234 . 0.275)))))
  '(ecb-options-version "2.50")
  '(fci-rule-color "#383838")
+ '(matlab-shell-command-switches (quote ("-nodesktop -nosplash")))
  '(nrepl-message-colors
    (quote
     ("#CC9393" "#DFAF8F" "#F0DFAF" "#7F9F7F" "#BFEBBF" "#93E0E3" "#94BFF3" "#DC8CC3")))
  '(package-selected-packages
    (quote
-    (hl-todo undo-tree zoom-frm move-text magit fill-column-indicator flymd markdown-mode bash-completion workgroups2 fuzzy ess-R-data-view ess auto-compile rainbow-mode ecb realgud wgrep-helm wgrep multiple-cursors srefactor nyan-mode google-c-style yaml-mode mic-paren pdf-tools auctex helm-projectile projectile helm-ros helm-gtags helm-swoop helm company-irony-c-headers company-irony flycheck-irony irony company-shell company-quickhelp company flycheck dired+ neotree doom-themes rainbow-delimiters use-package)))
+    (plantuml-mode elpy hl-todo undo-tree zoom-frm move-text magit fill-column-indicator flymd markdown-mode bash-completion workgroups2 fuzzy ess-R-data-view ess auto-compile rainbow-mode ecb realgud wgrep-helm wgrep multiple-cursors srefactor nyan-mode google-c-style yaml-mode mic-paren pdf-tools auctex helm-projectile projectile helm-ros helm-gtags helm-swoop helm company-irony-c-headers company-irony flycheck-irony irony company-shell company-quickhelp company flycheck dired+ neotree doom-themes rainbow-delimiters use-package)))
  '(pdf-view-midnight-colors (quote ("#DCDCCC" . "#383838")))
  '(safe-local-variable-values
    (quote

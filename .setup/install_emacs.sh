@@ -70,6 +70,18 @@ if program_not_installed "global"; then
     wget_targz_install "global-6.5.5" "ftp://ftp.gnu.org/pub/gnu/global/global-6.5.5.tar.gz"
 fi
 
+# MATLAB-Emacs
+# Integration with MATLAB
+#
+# After the install, you have to link MATLAB binary to /usr/bin/matlab
+# which is where MATLAB-Emacs expects it. Run:
+#   $ sudo ln -s <absolute path to 'matlab' binary> /usr/bin/matlab
+if [ ! -d "${home}/.emacs.d/matlab-emacs-src" ]; then
+    runcmd "git clone https://git.code.sf.net/p/matlab-emacs/src ${home}/.emacs.d/matlab-emacs-src"
+    runcmd "eval chown -R ${SUDO_USER:-$USER}:${SUDO_USER:-$USER} ${home}/.emacs.d/matlab-emacs-src"
+    (runcmd "cd ${home}/.emacs.d/matlab-emacs-src" && runcmd "make")
+fi
+
 # Mail (mu4e)
 
 apt_get_install_pkg libgmime-2.6-dev

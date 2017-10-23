@@ -32,4 +32,8 @@ if program_not_installed "dia"; then
     runcmd "apt-get --assume-yes install -f" nonull
 fi
 
+# Kazam
+# Screen recorder
+apt_get_install_pkg kazam
+
 echo_prefix="$echo_prefix_temp"

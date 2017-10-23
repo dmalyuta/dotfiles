@@ -75,8 +75,16 @@ fi
 # Automatic detection and changing of display configuration
 runcmd "sudo -H pip install autorandr"
 
-# Compix
+# Compiz
 # Graphics/desktop customization program
 apt_get_install_pkg compizconfig-settings-manager
+
+# Synapse
+# Instant search
+if program_not_installed "synapse"; then
+    runcmd "add-apt-repository ppa:synapse-core/ppa -y"
+    runcmd "apt-get update"
+    apt_get_install_pkg synapse
+fi
 
 echo_prefix="$echo_prefix_temp"

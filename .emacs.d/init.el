@@ -71,31 +71,46 @@
   ;;   ;;(load-theme 'zenburn t t) ;; last t is for NO-ENABLE
   ;;   )
 
-  (use-package doom-themes
-    ;; DOOM Themes is an opinionated UI plugin and pack of themes extracted from my emacs.d, inspired by the One Dark/Light UI and syntax themes in Atom.
+  (use-package solaire-mode
     :ensure t
     :config
-    (require 'doom-themes)
-    ;; Load the theme (doom-one, doom-dark, etc.)
-    (load-theme 'doom-one t)
-    ;; brighter source buffers (that represent files)
-    (add-hook 'find-file-hook #'doom-buffer-mode-maybe)
-    ;; ...if you use auto-revert-mode
-    (add-hook 'after-revert-hook #'doom-buffer-mode-maybe)
-    ;; And you can brighten other buffers (unconditionally) with:
-    (add-hook 'ediff-prepare-buffer-hook #'doom-buffer-mode)
-    ;; Enable custom neotree theme
-    (doom-themes-neotree-config)
-    ;; Enable nlinum line highlighting
-    (doom-themes-nlinum-config)
+    (require 'solaire-mode)
+    ;; brighten buffers (that represent real files)
+    (add-hook 'after-change-major-mode-hook #'turn-on-solaire-mode)
+    ;; To enable solaire-mode unconditionally for certain modes:
+    (add-hook 'ediff-prepare-buffer-hook #'solaire-mode)
+    ;; ...if you use auto-revert-mode:
+    (add-hook 'after-revert-hook #'turn-on-solaire-mode)
+    ;; highlight the minibuffer when it is activated:
+    (add-hook 'minibuffer-setup-hook #'solaire-mode-in-minibuffer)
     )
+
+  ;; (use-package doom-themes
+  ;;   ;; DOOM Themes is an opinionated UI plugin and pack of themes extracted from my emacs.d, inspired by the One Dark/Light UI and syntax themes in Atom.
+  ;;   :ensure t
+  ;;   :config
+  ;;   (require 'doom-themes)
+  ;;   ;; Load the theme (doom-one, doom-dark, etc.)
+  ;;   (load-theme 'doom-one t)
+  ;;   ;; brighter source buffers (that represent files)
+  ;;   (add-hook 'find-file-hook #'doom-buffer-mode-maybe)
+  ;;   ;; ...if you use auto-revert-mode
+  ;;   (add-hook 'after-revert-hook #'doom-buffer-mode-maybe)
+  ;;   ;; And you can brighten other buffers (unconditionally) with:
+  ;;   (add-hook 'ediff-prepare-buffer-hook #'doom-buffer-mode)
+  ;;   ;; Enable custom neotree theme
+  ;;   (doom-themes-neotree-config)
+  ;;   ;; Enable nlinum line highlighting
+  ;;   (doom-themes-nlinum-config)
+  ;;   )
 
   (use-package neotree
     ;; Good tree-based project file browser
+    ;; Need to follow up with M-x all-the-icons-install-fonts
     :ensure t
     :config
     (require 'neotree)
-    (global-set-key [f8] 'neotree-toggle))
+    (global-set-key (kbd "C-c n") 'neotree-toggle))
 
   (use-package all-the-icons
     ;; Icons for NeoTree
@@ -628,6 +643,10 @@
   (use-package ecb
     ;; Emacs Code Browser
     :ensure t
+    :bind
+    (("C-c e a" . ecb-activate)
+     ("C-c e d" . ecb-deactivate)
+     )
     :config
     (require 'ecb)
     ;;(setq ecb-auto-activate t) ;; auto-activate ECB at startup
@@ -818,7 +837,8 @@
   (use-package column-enforce-mode
     :ensure t
     :config
-    (setq column-enforce-column 80)
+    (setq-default fill-column 80)
+    (setq column-enforce-column fill-column)
     (add-hook 'c-mode-common-hook 'column-enforce-mode)
     )
 
@@ -833,6 +853,19 @@
     :config
     ;; Enable plantuml-mode for PlantUML files
     (add-to-list 'auto-mode-alist '("\\.plantuml\\'" . plantuml-mode))
+    )
+
+  (use-package helm-ag
+    ;; provides interfaces of The Silver Searcher with helm.
+    ;; Workflow to edit multiple files:
+    ;; C-c p s s : runs helm-projectile-ag, can do something like
+    ;;             `-G.[cpph]$ foobar' to search for foobar in .cpp and .h files
+    ;;             in the project
+    ;; C-c C-e : while in the helm-ag buffer, make it into a new buffer for editing
+    ;; <do your replacements...>
+    ;; C-c C-c : save edits across all files and close the helm-ag buffer. Done!
+    :ensure t
+    :config
     )
 
 ;;;;;;;;;;;;;;;;; NON-MELPA PACKAGES
@@ -855,6 +888,20 @@
 	      (define-key matlab-shell-mode-map (kbd "C-<down>") 'nil)))
   ;;comint-previous-matching-input-from-input
   ;;comint-next-matching-input-from-input
+
+  ;; filladapt
+  ;;
+  (use-package filladapt
+    :load-path "lisp/"
+    :config
+    (require 'filladapt)
+    (setq-default filladapt-mode t)
+    (add-hook 'c-mode-common-hook 'turn-on-filladapt-mode)
+    (add-hook 'c-mode-common-hook
+	      (lambda ()
+		(when (featurep 'filladapt)
+		  (c-setup-filladapt))))
+    )
 
 ;;;;;;;;;;;;;;;;; PERSONAL PACKAGES
 
@@ -951,9 +998,32 @@
   ;; Turn off Abbrev mode
   (setq-default abbrev-mode nil)
 
+  ;; Print current date
+  (defun insert-current-date () (interactive)
+	 (insert (shell-command-to-string "echo -n $(date \"+%Y/%m/%d %H:%M:%S\")")))
+
   ;; Keep a history of recent files
   (recentf-mode 1)
   (setq-default recent-save-file "~/.emacs.d/recentf")
+
+  ;; fill-region hotkey
+  (global-set-key (kbd "M-r") 'fill-region)
+
+  ;; Fill to column
+  (defun fill-to-end (char)
+    (interactive "cFill Character:")
+    (save-excursion
+      (end-of-line)
+      (while (< (current-column) fill-column)
+	(message "column = %d, fill-colummn = %d" (current-column) fill-column)
+	(insert-char char))
+      (while (> (current-column) fill-column)
+	(delete-backward-char 1))
+      ))
+  (global-set-key (kbd "C-c f c") 'fill-to-end)
+  (global-set-key (kbd "C-c f *") (lambda () (interactive) (
+					      fill-to-end ?*
+					      )))
 
   ;; Unbind Pesky Sleep Button
   (global-unset-key [(control z)])
@@ -1339,7 +1409,7 @@ will be killed."
     ("#CC9393" "#DFAF8F" "#F0DFAF" "#7F9F7F" "#BFEBBF" "#93E0E3" "#94BFF3" "#DC8CC3")))
  '(package-selected-packages
    (quote
-    (plantuml-mode elpy hl-todo undo-tree zoom-frm move-text magit fill-column-indicator flymd markdown-mode bash-completion workgroups2 fuzzy ess-R-data-view ess auto-compile rainbow-mode ecb realgud wgrep-helm wgrep multiple-cursors srefactor nyan-mode google-c-style yaml-mode mic-paren pdf-tools auctex helm-projectile projectile helm-ros helm-gtags helm-swoop helm company-irony-c-headers company-irony flycheck-irony irony company-shell company-quickhelp company flycheck dired+ neotree doom-themes rainbow-delimiters use-package)))
+    (helm-ag plantuml-mode elpy hl-todo undo-tree zoom-frm move-text magit fill-column-indicator flymd markdown-mode bash-completion workgroups2 fuzzy ess-R-data-view ess auto-compile rainbow-mode ecb realgud wgrep-helm wgrep multiple-cursors srefactor nyan-mode google-c-style yaml-mode mic-paren pdf-tools auctex helm-projectile projectile helm-ros helm-gtags helm-swoop helm company-irony-c-headers company-irony flycheck-irony irony company-shell company-quickhelp company flycheck dired+ neotree doom-themes rainbow-delimiters use-package)))
  '(pdf-view-midnight-colors (quote ("#DCDCCC" . "#383838")))
  '(safe-local-variable-values
    (quote
@@ -1394,4 +1464,5 @@ will be killed."
  ;; If there is more than one, they won't work right.
  '(column-enforce-face ((t (:background "yellow" :foreground "black" :slant oblique))))
  '(ecb-default-highlight-face ((((class color) (background dark)) (:background "yellow" :foreground "black"))))
- '(ecb-tag-header-face ((((class color) (background dark)) (:background "yellow" :foreground "black")))))
+ '(ecb-tag-header-face ((((class color) (background dark)) (:background "yellow" :foreground "black"))))
+ '(helm-ff-directory ((t (:foreground "yellow" :weight bold)))))

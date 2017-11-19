@@ -1006,6 +1006,11 @@
   (recentf-mode 1)
   (setq-default recent-save-file "~/.emacs.d/recentf")
 
+  ;; C files do not indent extern "C" { <HERE> }
+  (add-hook 'c-mode-common-hook
+	    (lambda()
+	      (c-set-offset 'inextern-lang 0)))
+
   ;; fill-region hotkey
   (global-set-key (kbd "M-r") 'fill-region)
 

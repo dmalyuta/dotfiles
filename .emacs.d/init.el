@@ -175,6 +175,14 @@
     (setq company-auto-complete nil)
     (set 'company-idle-delay nil)
     (setq company-auto-select-first-candidate nil)
+    ;; nomenclature for latex
+    (eval-after-load "tex"
+      '(add-to-list 'TeX-command-list 
+		    '("Nomenclature" "makeindex %s.nlo -s nomencl.ist -o %s.nls"
+		      (lambda (name command file)
+			(TeX-run-compile name command file)
+			(TeX-process-set-variable file 'TeX-command-next TeX-command-default))
+		      nil t :help "Create nomenclature file")))
     )
 
   (use-package company-quickhelp
@@ -1010,6 +1018,13 @@
   (add-hook 'c-mode-common-hook
 	    (lambda()
 	      (c-set-offset 'inextern-lang 0)))
+
+  ;; copy pwd
+  (defun show-file-name ()
+    "Show the full path file name in the minibuffer."
+    (interactive)
+    (kill-new (buffer-file-name))
+    (message (buffer-file-name)))
 
   ;; fill-region hotkey
   (global-set-key (kbd "M-r") 'fill-region)

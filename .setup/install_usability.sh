@@ -22,38 +22,6 @@ if ! dpkg-query -W flatabulous-theme &>/dev/null; then
     apt_get_install_pkg ultra-flat-icons
 fi
 
-# Sublime Text 3
-# Text editor
-if program_not_installed "subl"; then
-    # Install if not already installed
-    runcmd "wget https://download.sublimetext.com/sublime-text_build-3126_amd64.deb -O /tmp/sublime_text.deb"
-    runcmd_noexit "dpkg -i /tmp/sublime_text.deb" nonull
-    runcmd "apt-get --assume-yes install -f" nonull
-fi
-
-# LibreOffice 5.x
-# Office Suite
-install_libreoffice=0
-if program_not_installed "libreoffice"; then
-    install_libreoffice=1
-else
-    libreoffice_version="$(libreoffice --version | cut -d ' ' -f 2 | cut -d '.' -f 1)"
-    if [ "$libreoffice_version" -lt 5 ]; then
-        # Need to upgrade current libreoffice
-        install_libreoffice=1
-    fi
-fi
-if [ "$install_libreoffice" -eq 1 ]; then
-    runcmd "add-apt-repository ppa:libreoffice/ppa -y"
-    runcmd "apt-get update"
-    apt_get_install_pkg libreoffice
-fi
-
-# Byzanz
-# Screencast GIF recorder
-# Run .bin/byzanz-gui script for GUI
-apt_get_install_pkg byzanz
-
 # Mendeley
 # Research bibliography organizer
 if program_not_installed "mendeleydesktop"; then
@@ -62,14 +30,20 @@ if program_not_installed "mendeleydesktop"; then
     runcmd "apt-get --assume-yes install -f" nonull
 fi
 
-# Shotcut
-# Video editor
-if [ ! -f "${home}/.shotcut/Shotcut.app/shotcut" ]; then
-    runcmd "wget https://github.com/mltframework/shotcut/releases/download/v17.06/shotcut-linux-x86_64-170601.tar.bz2 -O /tmp/shotcut.tar.bz2"
-    runcmd "mkdir ${home}/.shotcut"
-    runcmd "tar jxf /tmp/shotcut.tar.bz2 --strip 1 -C ${home}/.shotcut"
-    runcmd "eval chown -R ${SUDO_USER:-$USER}:${SUDO_USER:-$USER} ${home}/.shotcut"
-fi
+# Autorandr
+# Automatic detection and changing of display configuration
+runcmd "sudo -H pip install autorandr"
 
+# Compiz
+# Graphics/desktop customization program
+apt_get_install_pkg compizconfig-settings-manager
+
+# Synapse
+# Instant search
+if program_not_installed "synapse"; then
+    runcmd "add-apt-repository ppa:synapse-core/testing -y"
+    runcmd "apt-get update"
+    apt_get_install_pkg synapse
+fi
 
 echo_prefix="$echo_prefix_temp"

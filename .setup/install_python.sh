@@ -66,24 +66,6 @@ runcmd "sudo -H pip install sympy scipy seaborn pandas jupyter"
 # install scikit-learn separately, it depends on numpy and scipy
 runcmd "sudo -H pip install scikit-learn"
 
-######## Setup virtualenvs
-runcmd "sudo -u ${normal_user} mkdir -p ${home}/.python_venv"
-runcmd "sudo -u ${normal_user} python -m pip install virtualenv --user"
-
-# configure python2 kernel
-runcmd "sudo -u ${normal_user} python -m virtualenv -p python2 ${home}/.python_venv/py2_kernel"
-runcmd ". ${home}/.python_venv/py2_kernel/bin/activate"
-runcmd "sudo -H python -m pip install ipykernel"
-runcmd "ipython kernel install --name py2 --user"
-runcmd "deactivate"
-
-# configure python3 kernel
-runcmd "sudo -u ${normal_user} python -m virtualenv -p python3 ${home}/.python_venv/py3_kernel"
-runcmd "source ${home}/.python_venv/py3_kernel/bin/activate"
-runcmd "sudo -H python -m pip install ipykernel"
-runcmd "ipython kernel install --name py3 --user"
-runcmd "deactivate"
-
 (runcmd "sudo -u ${normal_user} mkdir -p ${home}/.jupyter" && \
 	runcmd "cd ${home}/.jupyter" && \
 	runcmd "eval chown -R ${normal_user}:${normal_user} \"${home}/.local/share/jupyter\"")
@@ -118,6 +100,9 @@ if program_not_installed "wkhtmltopdf"; then
     runcmd "mv /tmp/wkhtmltox/lib/* /usr/lib/"
     runcmd "mv /tmp/wkhtmltox/share/man/man1/* /usr/share/man/man1/"
 fi
+
+# Password keyring
+runcmd "sudo -H pip install keyring"
  
 
 echo_prefix="$echo_prefix_temp"

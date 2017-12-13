@@ -16,24 +16,16 @@ if program_not_installed "inkscape"; then
     apt_get_install_pkg inkscape
 fi
 
-# yEd
-# Diagramming
-if [ ! -f "${home}/.yed/yed.jar" ]; then
-    runcmd "wget https://www.yworks.com/resources/yed/demo/yEd-3.17.zip -O /tmp/yEd.zip"
-    runcmd "rm -rf /tmp/.yed"
-    runcmd "mkdir -p ${home}/.yed"
-    runcmd "unzip /tmp/yEd.zip -d ${home}/.yed/"
-    runcmd "mv ${home}/.yed/yed-3.17/* ${home}/.yed/"
-    runcmd "rm -rf ${home}/.yed/yed-3.17"
-    runcmd "eval chown -R ${SUDO_USER:-$USER}:${SUDO_USER:-$USER} ${home}/.yed"
-fi
+# Kazam
+# Screen recorder
+apt_get_install_pkg kazam
 
-# Dia
-# Diagramming
-if program_not_installed "dia"; then
-    runcmd "wget https://downloads.sourceforge.net/project/dia-installer/dia/0.97.2/dia_0.97.2-5_i386.deb?r=http%3A%2F%2Fdia-installer.de%2Fdownload%2Flinux.html&ts=1493486541&use_mirror=iweb -O /tmp/dia.deb"
-    runcmd_noexit "dpkg -i /tmp/dia.deb" nonull
-    runcmd "apt-get --assume-yes install -f" nonull
+# Peek
+# GIF screen recorder
+if program_not_installed "inkscape"; then
+    runcmd "add-apt-repository ppa:peek-developers/stable -y"
+    runcmd "apt-get update"
+    apt_get_install_pkg peek
 fi
 
 echo_prefix="$echo_prefix_temp"

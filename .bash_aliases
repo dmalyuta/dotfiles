@@ -82,26 +82,10 @@ eclipse_common() {
 		echo "Executable not found :("
 	fi
 }
-eclipse_mbse() {
-    # Launch Eclipse (model-based systems engineering with UML/SysML)
-    if [ -f ~/.eclipse/eclipse_mbse/eclipse ]; then
-		UBUNTU_MENUPROXY=0 ~/.eclipse/eclipse_mbse/eclipse &>/dev/null & disown
-	else
-		echo "Executable not found :("
-	fi
-}
 eclipse_latex() {
     # Launch Eclipse (LaTeX)
     if [ -f ~/.eclipse/eclipse_latex/eclipse ]; then
 		UBUNTU_MENUPROXY=0 ~/.eclipse/eclipse_latex/eclipse &>/dev/null & disown
-	else
-		echo "Executable not found :("
-	fi
-}
-lpcxpresso() {
-    # Launch LPCXpresso (IDE from NXP for LPC microcontrollers)
-    if [ -f /usr/local/lpcxpresso_8.2.2_650/lpcxpresso/lpcxpresso ]; then
-		UBUNTU_MENUPROXY=0 /usr/local/lpcxpresso_8.2.2_650/lpcxpresso/lpcxpresso &>/dev/null & disown
 	else
 		echo "Executable not found :("
 	fi

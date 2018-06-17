@@ -63,6 +63,11 @@ update_file ".config/terminator/config"      "$dir" "$home" $symlink
 update_file ".icons/matlab_icon.png"         "$dir" "$home" $symlink
 update_file ".icons/arbre_analyste_icon.png" "$dir" "$home" $symlink
 
+########## Emacs
+
+update_file ".emacs.d/init.el" "$dir" "$home" $symlink
+update_file ".emacs.d/lisp"    "$dir" "$home" $symlink false
+
 ########## Python
 
 update_file ".jupyter" "$dir" "$home" $symlink false

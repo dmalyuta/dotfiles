@@ -13,15 +13,15 @@ alias copy='xargs echo -n | xclip -selection clipboard'
 
 # MATLAB terminal
 matlab() {
-	if [ -f /usr/local/MATLAB/R2017a/bin/matlab ]; then
-		/usr/local/MATLAB/R2017a/bin/matlab & 2&>/dev/null && disown # -softwareopengl
+	if [ -f /usr/local/MATLAB/R2017b/bin/matlab ]; then
+		/usr/local/MATLAB/R2017b/bin/matlab # & 2&>/dev/null # && disown # -softwareopengl
 	else
 		echo "Executable not found :("
 	fi
 }
 matlabterminal() {
-	if [ -f /usr/local/MATLAB/R2017a/bin/matlab ]; then
-		/usr/local/MATLAB/R2017a/bin/matlab -nodesktop -nosplash
+	if [ -f /usr/local/MATLAB/R2017b/bin/matlab ]; then
+		/usr/local/MATLAB/R2017b/bin/matlab -nodesktop -nosplash
 	else
 		echo "Executable not found :("
 	fi

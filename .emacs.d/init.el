@@ -7,8 +7,8 @@
   (setq default-directory "~/")
 
   ;; Frame size
-  (add-to-list 'default-frame-alist '(height . 60))
-  (add-to-list 'default-frame-alist '(width . 130))
+  (add-to-list 'default-frame-alist '(height . 30))
+  (add-to-list 'default-frame-alist '(width . 70))
   
   ;; sensible GUI
   (menu-bar-mode -1)  ;; disable menubar
@@ -63,14 +63,6 @@
     (require 'rainbow-delimiters)
     (add-hook 'prog-mode-hook 'rainbow-delimiters-mode))
 
-  ;; (use-package zenburn-theme
-  ;;   ;; the best theme there is!
-  ;;   :ensure t
-  ;;   :defer t
-  ;;   ;;:config
-  ;;   ;;(load-theme 'zenburn t t) ;; last t is for NO-ENABLE
-  ;;   )
-
   (use-package solaire-mode
     :ensure t
     :config
@@ -85,24 +77,24 @@
     (add-hook 'minibuffer-setup-hook #'solaire-mode-in-minibuffer)
     )
 
-  ;; (use-package doom-themes
-  ;;   ;; DOOM Themes is an opinionated UI plugin and pack of themes extracted from my emacs.d, inspired by the One Dark/Light UI and syntax themes in Atom.
-  ;;   :ensure t
-  ;;   :config
-  ;;   (require 'doom-themes)
-  ;;   ;; Load the theme (doom-one, doom-dark, etc.)
-  ;;   (load-theme 'doom-one t)
-  ;;   ;; brighter source buffers (that represent files)
-  ;;   (add-hook 'find-file-hook #'doom-buffer-mode-maybe)
-  ;;   ;; ...if you use auto-revert-mode
-  ;;   (add-hook 'after-revert-hook #'doom-buffer-mode-maybe)
-  ;;   ;; And you can brighten other buffers (unconditionally) with:
-  ;;   (add-hook 'ediff-prepare-buffer-hook #'doom-buffer-mode)
-  ;;   ;; Enable custom neotree theme
-  ;;   (doom-themes-neotree-config)
-  ;;   ;; Enable nlinum line highlighting
-  ;;   (doom-themes-nlinum-config)
-  ;;   )
+  (use-package doom-themes
+    ;; DOOM Themes is an opinionated UI plugin and pack of themes extracted from my emacs.d, inspired by the One Dark/Light UI and syntax themes in Atom.
+    :ensure t
+    :config
+    (require 'doom-themes)
+    ;; Load the theme (doom-one, doom-dark, etc.)
+    (load-theme 'doom-one t)
+    ;; brighter source buffers (that represent files)
+    (add-hook 'find-file-hook #'doom-buffer-mode-maybe)
+    ;; ...if you use auto-revert-mode
+    (add-hook 'after-revert-hook #'doom-buffer-mode-maybe)
+    ;; And you can brighten other buffers (unconditionally) with:
+    (add-hook 'ediff-prepare-buffer-hook #'doom-buffer-mode)
+    ;; Enable custom neotree theme
+    (doom-themes-neotree-config)
+    ;; Enable nlinum line highlighting
+    (doom-themes-nlinum-config)
+    )
 
   (use-package neotree
     ;; Good tree-based project file browser
@@ -142,8 +134,8 @@
     :defer t
     :init
     (add-hook 'c-mode-common-hook 'flycheck-mode)
-    ;;(add-hook 'sh-mode-hook 'flycheck-mode)
-    ;;(add-hook 'python-mode-hook 'flycheck-mode)
+    (add-hook 'sh-mode-hook 'flycheck-mode)
+    (add-hook 'python-mode-hook 'flycheck-mode)
     :config
     ;; Check buffer on save and immediately after opening buffer
     (setq flycheck-check-syntax-automatically '(mode-enabled save)))
@@ -259,47 +251,6 @@
       (eval-after-load 'company '(add-to-list 'company-backends '(company-irony-c-headers company-irony)))
       )
     )
-
-  ;; (use-package ycmd
-  ;;   ;; Emacs bindings to the ycmd completion server
-  ;;   :ensure t
-  ;;   :config
-  ;;   ;; Basic setup
-  ;;   (require 'ycmd)
-  ;;   (add-hook 'c++-mode-hook 'ycmd-mode)
-  ;;   (set-variable 'ycmd-server-command '("python" "/home/malyuta/.emacs.d/ycmd/ycmd"))
-  ;;   ;; Complete with semantic completion (could be flow for larger projects!)
-  ;;   (set-variable 'ycmd-force-semantic-completion t) ;; breaks completion in C++ header files :(
-  ;;   (set-variable 'company-ycmd-request-sync-timeout 0)
-  ;;   ;; Compile flag configs
-  ;;   (set-variable 'ycmd-global-config "ycmd/examples/.ycm_extra_conf.py")
-  ;;   ;; Completion at point
-  ;;   (defun ycmd-setup-completion-at-point-function ()
-  ;;     "Setup `completion-at-point-functions' for `ycmd-mode'."
-  ;;     (add-hook 'completion-at-point-functions
-  ;; 		#'ycmd-complete-at-point nil :local))
-  ;;   (add-hook 'ycmd-mode #'ycmd-setup-completion-at-point-function)
-  ;;   (use-package company-ycmd
-  ;;     ;; Company-mode baackend for ycmd
-  ;;     :ensure t
-  ;;     :config
-  ;;     (require 'company-ycmd)
-  ;;     (company-ycmd-setup)
-  ;;     )
-  ;;   ;; Code linting
-  ;;   (use-package flycheck-ycmd
-  ;;     ;; Flycheck integration for ycmd
-  ;;     :ensure t
-  ;;     :config
-  ;;     (require 'flycheck-ycmd)
-  ;;     (flycheck-ycmd-setup)
-  ;;     )
-  ;;   ;; Make flycheck and company play nicely with each other
-  ;;   (when (not (display-graphic-p))
-  ;;     (setq flycheck-indication-mode nil))
-  ;;   ;; Automatically load extra config files
-  ;;   (set-variable 'ycmd-extra-conf-handler 'load)
-  ;;   )
 
   (use-package helm
     ;; incremental completion and selection narrowing framework
@@ -498,6 +449,10 @@
     ;; Spell checking
     (add-hook 'LaTeX-mode-hook 'flyspell-mode)
     (add-hook 'LaTeX-mode-hook 'flyspell-buffer)
+    ;; Line breaking math
+    (add-hook 'LaTeX-mode-hook
+	      (lambda ()
+		(add-to-list 'fill-nobreak-predicate 'texmathp)))
     )
 
   ;; (use-package yasnippet
@@ -878,25 +833,6 @@
 
 ;;;;;;;;;;;;;;;;; NON-MELPA PACKAGES
 
-  ;; matlab-emacs
-  ;; MATLAB integration with Emacs
-  (add-to-list 'load-path "~/.emacs.d/matlab-emacs-src/")
-  (require 'matlab-load)
-  (matlab-cedet-setup)
-  (custom-set-variables
-   '(matlab-shell-command-switches '("-nodesktop -nosplash")))
-  (add-hook 'matlab-mode-hook 'auto-complete-mode)
-  (setq auto-mode-alist
-	(cons
-	 '("\\.m$" . matlab-mode)
-	 auto-mode-alist))
-  (add-hook 'matlab-mode-hook
-	    (lambda ()
-	      (define-key matlab-shell-mode-map (kbd "C-<up>") 'nil)
-	      (define-key matlab-shell-mode-map (kbd "C-<down>") 'nil)))
-  ;;comint-previous-matching-input-from-input
-  ;;comint-next-matching-input-from-input
-
   ;; filladapt
   ;;
   (use-package filladapt
@@ -910,6 +846,19 @@
 		(when (featurep 'filladapt)
 		  (c-setup-filladapt))))
     )
+
+  ;; MATLAB integration
+  ;; To install, run in ~/.emacs.d/
+  ;;   git clone https://github.com/yuhonglin/matlab-mode
+  (use-package matlab-mode
+    :load-path "matlab-mode/"
+    :init
+    (add-hook 'matlab-mode-hook 'matlab-mode)
+    :config
+    (setq matlab-server-executable "/usr/local/MATLAB/R2017b/bin/matlab")
+    (require 'matlab-mode)
+    (matlab-mode-common-setup)
+  )
 
 ;;;;;;;;;;;;;;;;; PERSONAL PACKAGES
 
@@ -1003,6 +952,9 @@
 
 ;;;;;;;;;;;;;;;;; OTHER STUFF
 
+  ;; Automatically reload files when they change on disk
+  (global-auto-revert-mode)
+
   ;; Turn off Abbrev mode
   (setq-default abbrev-mode nil)
 
@@ -1092,7 +1044,7 @@ will be killed."
   (setq x-select-enable-clipboard t)
 
   ;; default font and font size
-  (add-to-list 'default-frame-alist '(font . "DejaVu Sans Mono-9"))
+  (add-to-list 'default-frame-alist '(font . "DejaVu Sans Mono-12"))
 
   ;; Kill TRAMP stuff
   (global-set-key (kbd "C-c t k") 'tramp-cleanup-all-connections)

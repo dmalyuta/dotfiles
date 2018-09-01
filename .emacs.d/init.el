@@ -135,7 +135,7 @@
     :init
     (add-hook 'c-mode-common-hook 'flycheck-mode)
     (add-hook 'sh-mode-hook 'flycheck-mode)
-    (add-hook 'python-mode-hook 'flycheck-mode)
+    ;;(add-hook 'python-mode-hook 'flycheck-mode)
     :config
     ;; Check buffer on save and immediately after opening buffer
     (setq flycheck-check-syntax-automatically '(mode-enabled save)))
@@ -154,7 +154,7 @@
     (add-hook 'LaTeX-mode-hook 'company-mode)
     (add-hook 'sh-mode-hook 'company-mode)
     ;;(add-hook 'sh-mode-hook 'company-mode)
-    ;;(add-hook 'python-mode-hook 'company-mode)
+    (add-hook 'python-mode-hook 'company-mode)
     :config
     (setq company-dabbrev-downcase 0)
     ;; set timeout to 10 seconds
@@ -659,28 +659,37 @@
       )
     )
 
-  (use-package elpy
-    :ensure t
-    :config
-    (package-initialize)
-    (elpy-enable)
-    (add-hook 'elpy-mode-hook
-	      (lambda ()
-		(define-key elpy-mode-map (kbd "C-<up>") 'nil)
-		(define-key elpy-mode-map (kbd "C-<down>") 'nil)
-		(define-key elpy-mode-map (kbd "C-<left>") 'nil)
-		(define-key elpy-mode-map (kbd "C-<right>") 'nil)))
-    )
-
-  ;; (use-package jedi
-  ;;   ;; Python autocompletion
-  ;;   ;; Must run once M-x jedi:install-server
+  ;; (use-package elpy
   ;;   :ensure t
   ;;   :config
-  ;;   (load-file "~/.emacs.d/lisp/jedi-configuration.el")
-  ;;   (require 'jedi-configuration)
+  ;;   (package-initialize)
+  ;;   (elpy-enable)
+  ;;   (add-hook 'elpy-mode-hook
+  ;; 	      (lambda ()
+  ;; 		(define-key elpy-mode-map (kbd "C-<up>") 'nil)
+  ;; 		(define-key elpy-mode-map (kbd "C-<down>") 'nil)
+  ;; 		(define-key elpy-mode-map (kbd "C-<left>") 'nil)
+  ;; 		(define-key elpy-mode-map (kbd "C-<right>") 'nil)))
+  ;;   (remove-hook 'elpy-modules 'elpy-module-flymake)
+  ;;   ;; (add-hook 'python-mode-hook 'semantic-idle-completions-mode)
+  ;;   ;; (add-hook 'python-mode-hook
+  ;;   ;; 	      (lambda ()
+  ;;   ;; 		(auto-complete-mode 1)
+  ;;   ;; 		(define-key python-mode-map (kbd "<S-SPC>") 'auto-complete)))
   ;;   )
 
+  (use-package company-jedi
+    ;; company-mode completion back-end for Python JEDI
+    :ensure t
+    :config
+    (setq jedi:environment-virtualenv (list (expand-file-name "~/.emacs.d/.python-environments/")))
+    (add-hook 'python-mode-hook 'jedi:setup)
+    (setq jedi:complete-on-dot t)
+    (setq jedi:use-shortcuts t)
+    (defun config/enable-company-jedi ()
+      (add-to-list 'company-backends 'company-jedi))
+    (add-hook 'python-mode-hook 'config/enable-company-jedi))
+  
   ;; (use-package fuzzy
   ;;   :ensure t)
 
@@ -803,6 +812,7 @@
     (setq-default fill-column 80)
     (setq column-enforce-column fill-column)
     (add-hook 'c-mode-common-hook 'column-enforce-mode)
+    (add-hook 'python-mode-hook 'column-enforce-mode)
     )
 
   (use-package hl-todo

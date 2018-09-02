@@ -60,8 +60,6 @@ update_file ".bin" "$dir" "$home" $symlink false
 ########## Development tools
 
 update_file ".config/terminator/config"      "$dir" "$home" $symlink
-update_file ".icons/matlab_icon.png"         "$dir" "$home" $symlink
-update_file ".icons/arbre_analyste_icon.png" "$dir" "$home" $symlink
 
 ########## Emacs
 

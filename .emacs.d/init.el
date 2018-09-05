@@ -77,6 +77,12 @@
     (add-hook 'minibuffer-setup-hook #'solaire-mode-in-minibuffer)
     )
 
+  (use-package nlinum
+    :ensure t
+    :config
+    (setq nlinum-highlight-current-line t)
+    )
+
   (use-package doom-themes
     ;; DOOM Themes is an opinionated UI plugin and pack of themes extracted from my emacs.d, inspired by the One Dark/Light UI and syntax themes in Atom.
     :ensure t
@@ -92,8 +98,6 @@
     (add-hook 'ediff-prepare-buffer-hook #'doom-buffer-mode)
     ;; Enable custom neotree theme
     (doom-themes-neotree-config)
-    ;; Enable nlinum line highlighting
-    (doom-themes-nlinum-config)
     )
 
   (use-package neotree
@@ -110,22 +114,6 @@
     :ensure t
     :config
     (use-package all-the-icons))
-
-  (use-package dired+
-    ;; advanced Dired functionality
-    :ensure t
-    :init
-    ;; show details by default
-    (setq diredp-hide-details-initially-flag nil)
-    :config
-    ;; load Dired in the same buffer
-    (diredp-toggle-find-file-reuse-dir 1))
-
-  (use-package dired
-    ;; built-in directory browser
-    :config
-    ;; move files to trash
-    (setq delete-by-moving-to-trash t))
 
   (use-package flycheck
     ;; code error highlighting

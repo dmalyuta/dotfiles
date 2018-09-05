@@ -966,6 +966,13 @@
   ;; Automatically reload files when they change on disk
   (global-auto-revert-mode)
 
+  ;; Source: http://www.emacswiki.org/emacs-en/download/misc-cmds.el
+  (defun revert-buffer-no-confirm ()
+    "Revert buffer without confirmation."
+    (interactive)
+    (revert-buffer :ignore-auto :noconfirm))
+  (global-set-key (kbd "C-c b r") 'revert-buffer-no-confirm)
+
   ;; Turn off Abbrev mode
   (setq-default abbrev-mode nil)
 

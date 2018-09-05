@@ -358,6 +358,8 @@
 						    )
 						  projectile-globally-ignored-files))
   (projectile-global-mode)
+  (projectile-mode +1)
+  (define-key projectile-mode-map (kbd "C-c p") 'projectile-command-map)
   (use-package helm-projectile
     ;; Helm UI for Projectile
     :ensure t

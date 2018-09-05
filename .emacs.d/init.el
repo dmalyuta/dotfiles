@@ -87,12 +87,6 @@
   (require 'doom-themes)
   ;; Load the theme (doom-one, doom-dark, etc.)
   (load-theme 'doom-one t)
-  ;; brighter source buffers (that represent files)
-  (add-hook 'find-file-hook #'doom-buffer-mode-maybe)
-  ;; ...if you use auto-revert-mode
-  (add-hook 'after-revert-hook #'doom-buffer-mode-maybe)
-  ;; And you can brighten other buffers (unconditionally) with:
-  (add-hook 'ediff-prepare-buffer-hook #'doom-buffer-mode)
   ;; Enable custom neotree theme
   (doom-themes-neotree-config)
   )
@@ -620,50 +614,6 @@
   (auto-compile-on-save-mode)
   )
 
-;; (use-package smart-mode-line
-;;   ;; A sexy mode-line for Emacs. It aims to be easy to read from small to large monitors by using colors, a prefix feature, and smart truncation.
-;;   :ensure t
-;;   :config
-;;   (setq sml/no-confirm-load-theme t)
-;;   ;;(setq sml/theme 'dark)
-;;   (sml/setup))
-
-(use-package ess
-  ;; ESS (Emacs Speaks Statistics)
-  ;; for R language (and others...)
-  ;; Useful keyboard commands:
-  ;;   M-x R : start the R process in an (inferior) buffer
-  ;;   TAB : completion at point
-  ;;   C-c C-v <NAME> : get documentation about NAME
-  :ensure t
-  :config
-  (require 'ess-site)
-  (add-to-list 'auto-mode-alist '("\\.R$" . R-mode))
-  (add-to-list 'auto-mode-alist '("\\.r$" . R-mode))
-  (use-package ess-R-data-view
-    :ensure t
-    )
-  )
-
-;; (use-package elpy
-;;   :ensure t
-;;   :config
-;;   (package-initialize)
-;;   (elpy-enable)
-;;   (add-hook 'elpy-mode-hook
-;; 	      (lambda ()
-;; 		(define-key elpy-mode-map (kbd "C-<up>") 'nil)
-;; 		(define-key elpy-mode-map (kbd "C-<down>") 'nil)
-;; 		(define-key elpy-mode-map (kbd "C-<left>") 'nil)
-;; 		(define-key elpy-mode-map (kbd "C-<right>") 'nil)))
-;;   (remove-hook 'elpy-modules 'elpy-module-flymake)
-;;   ;; (add-hook 'python-mode-hook 'semantic-idle-completions-mode)
-;;   ;; (add-hook 'python-mode-hook
-;;   ;; 	      (lambda ()
-;;   ;; 		(auto-complete-mode 1)
-;;   ;; 		(define-key python-mode-map (kbd "<S-SPC>") 'auto-complete)))
-;;   )
-
 (use-package company-jedi
   ;; company-mode completion back-end for Python JEDI
   :ensure t
@@ -675,12 +625,6 @@
   (defun config/enable-company-jedi ()
     (add-to-list 'company-backends 'company-jedi))
   (add-hook 'python-mode-hook 'config/enable-company-jedi))
-
-;; (use-package fuzzy
-;;   :ensure t)
-
-;; (use-package popup
-;;   :ensure t)
 
 (use-package workgroups2
   ;; Restore layout. I use it only for keeping a persistent layout
@@ -775,14 +719,6 @@
   :config
   (move-text-default-bindings)
   )
-
-(use-package zoom-frm
-  :ensure t
-  :config
-  ;; Use zoom-frame instead of zoom-font
-  (if window-system (progn
-		      (global-set-key (kbd "C--" ) 'zoom-frm-out)
-		      (global-set-key (kbd "C-=") 'zoom-frm-in))))
 
 (use-package undo-tree
   ;; Better undo/redo functionality, including undo tree browsing

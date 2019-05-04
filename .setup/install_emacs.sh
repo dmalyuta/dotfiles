@@ -20,7 +20,7 @@ echo_prefix="[emacs setup] "
 if program_not_installed "emacs"; then
     # install from source
     # install dependencies
-    runcmd "apt-get --assume-yes build-dep emacs24" nonull
+    runcmd "apt-get --assume-yes build-dep emacs25" nonull
     # download source, build and install Emacs 25.3
     runcmd "wget https://ftp.gnu.org/gnu/emacs/emacs-25.3.tar.gz -O /tmp/emacs.tar.gz"
     runcmd "mkdir -p /tmp/emacs"

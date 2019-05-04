@@ -36,8 +36,8 @@ apt_get_install_pkg gdbserver
 # Terminator (replace Gnome Terminal with Terminator)
 # Terminal emulator
 if program_not_installed "terminator"; then
-    runcmd "add-apt-repository ppa:gnome-terminator -y"
-    runcmd "apt-get update"
+    #runcmd "add-apt-repository ppa:gnome-terminator -y"
+    #runcmd "apt-get update"
     apt_get_install_pkg terminator
 
     # Make Terminator the new Gnome Terminal!

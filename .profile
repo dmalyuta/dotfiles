@@ -35,6 +35,6 @@ check_emacs_server_is_running() {
     done
     echo 1
 }
-if [[ $(check_emacs_server_is_running) == 1 ]]; then
-    emacs --eval "(setq server-name \"git\")" --daemon
-fi
+#if [[ $(check_emacs_server_is_running) == 1 ]]; then
+#    emacs --eval "(setq server-name \"git\")" --daemon
+#fi

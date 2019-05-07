@@ -479,6 +479,7 @@
 
 (use-package nyan-mode
   ;; adorable cat showing progress in document
+  :disabled
   :ensure t
   :config
   (defun my-nyan-mode-activation (&optional frame)
@@ -620,10 +621,16 @@
   ;; company-mode completion back-end for Python JEDI
   :ensure t
   :config
-  (setq jedi:environment-virtualenv (list (expand-file-name "~/.emacs.d/.python-environments/")))
+  ;; (setq jedi:environment-virtualenv (list (expand-file-name "~/.emacs.d/.python-environments/")))
+  (setq jedi:server-args
+	'("--sys-path" "/home/danylo/.conda/envs/py36/lib/python3.6/site-packages"
+	  ;; "--sys-path" "ROOT_DIR_2/envs/NAME_2/.../site-packages"
+	  ;; ... and more! ...
+	  ))
   (add-hook 'python-mode-hook 'jedi:setup)
   (setq jedi:complete-on-dot t)
   (setq jedi:use-shortcuts t)
+  (setq jedi:tooltip-method nil)
   (defun config/enable-company-jedi ()
     (add-to-list 'company-backends 'company-jedi))
   (add-hook 'python-mode-hook 'config/enable-company-jedi))
@@ -765,6 +772,15 @@
   :config
   )
 
+(use-package all-the-icons
+  ;; Icons font - needed for doom-modeline
+  :ensure t)
+
+(use-package doom-modeline
+  ;; Sexy modeline
+  :ensure t
+  :hook (after-init . doom-modeline-mode))
+
 ;;;;;;;;;;;;;;;;; NON-MELPA PACKAGES
 
 ;; filladapt
@@ -885,6 +901,9 @@
   )
 
 ;;;;;;;;;;;;;;;;; OTHER STUFF
+
+;; Python shell
+(setq python-shell-interpreter "python")
 
 ;; Automatically reload files when they change on disk
 (global-auto-revert-mode)
@@ -1376,3 +1395,5 @@ will be killed."
  '(ecb-default-highlight-face ((((class color) (background dark)) (:background "yellow" :foreground "black"))))
  '(ecb-tag-header-face ((((class color) (background dark)) (:background "yellow" :foreground "black"))))
  '(helm-ff-directory ((t (:foreground "yellow" :weight bold)))))
+(put 'narrow-to-region 'disabled nil)
+(put 'narrow-to-page 'disabled nil)

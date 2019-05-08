@@ -52,6 +52,8 @@ update_file ".bash_aliases" "$dir" "$home" $symlink
 update_file ".local.bashrc" "$dir" "$home" $symlink
 update_file ".screenrc"     "$dir" "$home" $symlink
 update_file ".tmux.conf"    "$dir" "$home" $symlink
+update_file ".gitk"         "$dir" "$home" $symlink
+update_file ".gitconfig"    "$dir" "$home" false
 
 ########## .bin directory
 

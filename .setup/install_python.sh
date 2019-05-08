@@ -19,7 +19,7 @@ runcmd "sudo -H python -m pip install --upgrade --force pip"
 # Anaconda
 ########################
 
-runcmd "wget https://repo.anaconda.com/archive/Anaconda2-5.2.0-Linux-x86_64.sh -O /tmp/anaconda.sh"
+runcmd "wget https://repo.anaconda.com/archive/Anaconda3-2019.03-Linux-x86_64.sh -O /tmp/anaconda.sh"
 runcmd_noexit "chmod +x /tmp/anaconda.sh" nonull
 runcmd_noexit "/tmp/anaconda.sh" nonull
 

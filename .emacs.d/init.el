@@ -903,7 +903,11 @@
 ;;;;;;;;;;;;;;;;; OTHER STUFF
 
 ;; Python shell
-(setq python-shell-interpreter "python")
+;; Make sure you are running IPython 5.8.0, because buggy for later versions
+;; ``$ pip install -U ipython=5.8.0``
+(setq python-shell-interpreter "ipython"
+      python-shell-interpreter-args "--simple-prompt -i")
+
 
 ;; Automatically reload files when they change on disk
 (global-auto-revert-mode)

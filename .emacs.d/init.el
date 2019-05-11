@@ -802,6 +802,13 @@
 		(c-setup-filladapt))))
   )
 
+;; so-long
+;; Improve performance for long lines
+(use-package so-long
+  :load-path "lisp/"
+  :config
+  (so-long-enable))
+
 ;; MATLAB integration
 ;; To install, run in ~/.emacs.d/
 ;;   git clone https://github.com/yuhonglin/matlab-mode
@@ -912,7 +919,19 @@
 ;; ``$ pip install -U ipython=5.8.0``
 (setq python-shell-interpreter "ipython"
       python-shell-interpreter-args "--simple-prompt -i")
-
+;; Printout what file is being run
+(defun ipython-print-runfile ()
+  (interactive)
+  "Print in comint buffer the file that is being executed"
+  ;;(message "%s" (buffer-file-name))
+  ;;(python-shell-send-file buffer-file-name 'nil 'nil 'nil "Hello world")
+  (python-shell-send-string (concat "print('%run " buffer-file-name "')"))
+  (python-shell-send-string (concat "%run " buffer-file-name))
+  )
+(add-hook 'python-mode-hook
+	  (lambda ()
+	    (define-key python-mode-map (kbd "C-c C-l")
+	      'ipython-print-runfile)))
 
 ;; Automatically reload files when they change on disk
 (global-auto-revert-mode)

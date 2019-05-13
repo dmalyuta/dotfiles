@@ -11,6 +11,12 @@ alias rm='rm -i'
 # Clipboard
 alias copy='xargs echo -n | xclip -selection clipboard'
 
+# Display processes matching grep
+alias listproc='~/.bin/listproc.sh'
+
+# Kill processes matching grep
+alias killgrep='~/.bin/killgrep.sh'
+
 # Directory making
 now() { date "+%d%m%YT%H%M%S"; } # shortcut for timestamps
 

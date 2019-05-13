@@ -914,11 +914,17 @@
 
 ;;;;;;;;;;;;;;;;; OTHER STUFF
 
+;; Run terminal from current buffer
+(defun run-terminator-here ()
+  (interactive "@")
+  (shell-command (concat "terminator > /dev/null 2>&1 & disown") nil nil))
+(global-set-key (kbd "C-c t r") 'run-terminator-here)
+
 ;; Python shell
 ;; Make sure you are running IPython 5.8.0, because buggy for later versions
 ;; ``$ pip install -U ipython=5.8.0``
 (setq python-shell-interpreter "ipython"
-      python-shell-interpreter-args "--simple-prompt -i")
+      python-shell-interpreter-args "-i --simple-prompt --pprint")
 ;; Printout what file is being run
 (defun ipython-print-runfile ()
   (interactive)
@@ -926,7 +932,9 @@
   ;;(message "%s" (buffer-file-name))
   ;;(python-shell-send-file buffer-file-name 'nil 'nil 'nil "Hello world")
   (python-shell-send-string (concat "print('%run " buffer-file-name "')"))
+  (python-shell-send-string "print('Running... ')")
   (python-shell-send-string (concat "%run " buffer-file-name))
+  (python-shell-send-string "print('done')")
   )
 (add-hook 'python-mode-hook
 	  (lambda ()

@@ -9,17 +9,19 @@
 echo_prefix_temp="$echo_prefix"
 echo_prefix="[usability setup] "
 
-# Flatabulous theme & icon set
-# https://github.com/anmoljagetia/Flatabulous
-if ! dpkg-query -W flatabulous-theme &>/dev/null; then
+# Numix theme & icon set
+# https://github.com/numixproject
+if ! dpkg-query -W numix-gtk-theme &>/dev/null; then
     # Install if not already installed
-    echowarn "Afterwards, run Unity Tweak Tool and set the Theme-->Flatabulous, Icons-->Ultra-flat!"
-    apt_get_install_pkg unity-tweak-tool
-    runcmd "add-apt-repository ppa:noobslab/themes -y"
-    runcmd "add-apt-repository ppa:noobslab/icons -y"
+    echowarn "Afterwards, run GNOME Tweaks and set the Icons-->Numix-Circle!"
+    apt_get_install_pkg gnome-tweak-tool
+    apt_get_install_pkg numix-gtk-theme
+    runcmd "gsettings set org.gnome.desktop.interface gtk-theme \"Numix\""
+    runcmd "gsettings set org.gnome.desktop.wm.preferences theme \"Numix\""
+    runcmd "add-apt-repository ppa:numix/ppa -y"
     runcmd "apt-get update"
-    apt_get_install_pkg flatabulous-theme
-    apt_get_install_pkg ultra-flat-icons
+    apt_get_install_pkg numix-icon-theme
+    apt_get_install_pkg numix-icon-theme-circle
 fi
 
 # Mendeley

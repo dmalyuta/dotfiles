@@ -4,7 +4,7 @@
 (setq default-directory "~/")
 
 ;; Frame size
-(add-to-list 'default-frame-alist '(height . 30))
+(add-to-list 'default-frame-alist '(height . 50))
 (add-to-list 'default-frame-alist '(width . 70))
 
 ;; sensible GUI
@@ -786,6 +786,22 @@
   :config
   (setq ac-sage-show-quick-help t))
 
+(use-package dashboard
+  ;; An extensible emacs startup screen showing you what’s most important.
+  :ensure t
+  :diminish dashboard-mode
+  :config
+  (setq dashboard-banner-logo-title "Change the world, step by step")
+  ;;(setq dashboard-startup-banner "/path/to/image")
+  (setq dashboard-items '((recents  . 5)
+			  (bookmarks . 5)
+			  (projects . 5)))
+  (setq dashboard-center-content t)
+  (setq dashboard-set-heading-icons t)
+  (setq dashboard-set-file-icons t)
+  (dashboard-setup-startup-hook)
+  )
+
 ;;;;;;;;;;;;;;;;; NON-MELPA PACKAGES
 
 ;; filladapt
@@ -964,7 +980,7 @@
 	      'ipython-print-runfile)))
 
 ;; Automatically reload files when they change on disk
-(global-auto-revert-mode)
+;; (global-auto-revert-mode)
 
 ;; Source: http://www.emacswiki.org/emacs-en/download/misc-cmds.el
 (defun revert-buffer-no-confirm ()
@@ -1015,33 +1031,27 @@
 							  fill-to-end ?*
 								      )))
 
+;; Semantic be quiet
+;; by selectively suppressing messages, see the full technique at
+;; https://superuser.com/a/1025827/512940 (answer by Bernard Hurley)
+(defun suppress-messages (old-fun &rest args)
+  (cl-flet ((silence (&rest args1) (ignore)))
+    (advice-add 'message :around #'silence)
+    (unwind-protect
+         (apply old-fun args)
+      (advice-remove 'message #'silence))))
+(defun who-called-me? (old-fun format &rest args)
+  (let ((trace nil) (n 1) (frame nil))
+      (while (setf frame (backtrace-frame n))
+        (setf n     (1+ n) 
+              trace (cons (cadr frame) trace)) )
+      (apply old-fun (concat "<<%S>>\n" format) (cons trace args))))
+;; (advice-add 'message :around #'who-called-me?)
+(advice-add 'semantic-idle-scheduler-function :around #'suppress-messages)
+
 ;; Unbind Pesky Sleep Button
 (global-unset-key [(control z)])
 (global-unset-key [(control x)(control z)])
-
-;; Revert all buffers currently visiting a file
-(defun revert-all-file-buffers ()
-  "Refresh all open file buffers without confirmation.
-Buffers in modified (not yet saved) state in emacs will not be reverted. They
-will be reverted though if they were modified outside emacs.
-Buffers visiting files which do not exist any more or are no longer readable
-will be killed."
-  (interactive)
-  (dolist (buf (buffer-list))
-    (let ((filename (buffer-file-name buf)))
-      ;; Revert only buffers containing files, which are not modified;
-      ;; do not try to revert non-file buffers like *Messages*.
-      (when (and filename
-		 (not (buffer-modified-p buf)))
-	(if (file-readable-p filename)
-	    ;; If the file exists and is readable, revert the buffer.
-	    (with-current-buffer buf
-	      (revert-buffer :ignore-auto :noconfirm :preserve-modes))
-	  ;; Otherwise, kill the buffer.
-	  (let (kill-buffer-query-functions) ; No query done when killing buffer
-	    (kill-buffer buf)
-	    (message "Killed non-existing/unreadable file buffer: %s" filename))))))
-  (message "Finished reverting buffers containing unmodified files."))
 
 ;; Fix laggy point (cursor)
 ;; In particular: cursor freezing when moving down (next-line) for a while

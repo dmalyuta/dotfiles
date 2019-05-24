@@ -938,7 +938,7 @@
 
 ;; Python shell
 ;; Make sure you are running IPython 5.7.0, because buggy for later versions
-;; ``$ pip install -U ipython=5.7.0``
+;; ``$ pip install -U ipython==5.7.0``
 ;; 
 ;; Fix autoreload problem (answer by DmitrySemenov at
 ;; https://tinyurl.com/ipython-autoreload):

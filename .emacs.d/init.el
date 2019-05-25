@@ -802,6 +802,12 @@
   (dashboard-setup-startup-hook)
   )
 
+(use-package unfill
+  ;; Opposite of Emacs fill
+  :ensure t
+  :config
+  (require 'unfill))
+
 ;;;;;;;;;;;;;;;;; NON-MELPA PACKAGES
 
 ;; filladapt
@@ -974,10 +980,22 @@
   (python-shell-send-string (concat "%run " buffer-file-name))
   (python-shell-send-string "print('done')")
   )
+(defun ipython-print-region ()
+  (interactive)
+  "Print in comint buffer the region that is being executed"
+  ;; (message "%s" (buffer-substring (region-beginning) (region-end)))
+  (python-shell-send-string (concat "print(\"\"\"<<<Running region>>>\n" (buffer-substring (region-beginning) (region-end)) "\"\"\")"))
+  (python-shell-send-string (buffer-substring (region-beginning) (region-end)))
+  ;; (python-shell-send-string "print('Running... ')")
+  ;; (python-shell-send-string (concat "%run " buffer-file-name))
+  ;; (python-shell-send-string "print('done')")
+  )
 (add-hook 'python-mode-hook
 	  (lambda ()
 	    (define-key python-mode-map (kbd "C-c C-l")
-	      'ipython-print-runfile)))
+	      'ipython-print-runfile)
+	    (define-key python-mode-map (kbd "C-c C-r")
+	      'ipython-print-region)))
 
 ;; Automatically reload files when they change on disk
 ;; (global-auto-revert-mode)
@@ -1406,7 +1424,7 @@
     ("#CC9393" "#DFAF8F" "#F0DFAF" "#7F9F7F" "#BFEBBF" "#93E0E3" "#94BFF3" "#DC8CC3")))
  '(package-selected-packages
    (quote
-    (sage-mode sage-shell-mode minimap helm-ag plantuml-mode elpy hl-todo undo-tree zoom-frm move-text magit fill-column-indicator flymd markdown-mode bash-completion workgroups2 fuzzy ess-R-data-view ess auto-compile rainbow-mode ecb realgud wgrep-helm wgrep multiple-cursors srefactor nyan-mode google-c-style yaml-mode mic-paren pdf-tools auctex helm-projectile projectile helm-ros helm-gtags helm-swoop helm company-irony-c-headers company-irony flycheck-irony irony company-shell company-quickhelp company flycheck dired+ neotree doom-themes rainbow-delimiters use-package)))
+    (unfill sage-mode sage-shell-mode minimap helm-ag plantuml-mode elpy hl-todo undo-tree zoom-frm move-text magit fill-column-indicator flymd markdown-mode bash-completion workgroups2 fuzzy ess-R-data-view ess auto-compile rainbow-mode ecb realgud wgrep-helm wgrep multiple-cursors srefactor nyan-mode google-c-style yaml-mode mic-paren pdf-tools auctex helm-projectile projectile helm-ros helm-gtags helm-swoop helm company-irony-c-headers company-irony flycheck-irony irony company-shell company-quickhelp company flycheck dired+ neotree doom-themes rainbow-delimiters use-package)))
  '(pdf-view-midnight-colors (quote ("#DCDCCC" . "#383838")))
  '(safe-local-variable-values
    (quote

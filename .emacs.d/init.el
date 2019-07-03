@@ -435,6 +435,8 @@
   (add-hook 'LaTeX-mode-hook
 	    (lambda ()
 	      (add-to-list 'fill-nobreak-predicate 'texmathp)))
+  ;; Latex mode for TikZ
+  (add-to-list 'auto-mode-alist '("\\.tikz\\'" . latex-mode))
   )
 
 ;; (use-package yasnippet

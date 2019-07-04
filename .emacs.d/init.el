@@ -437,6 +437,13 @@
 	      (add-to-list 'fill-nobreak-predicate 'texmathp)))
   ;; Latex mode for TikZ
   (add-to-list 'auto-mode-alist '("\\.tikz\\'" . latex-mode))
+  ;; shell-escape stuff
+  (eval-after-load "tex" 
+    '(setcdr (assoc "LaTeX" TeX-command-list)
+	     '("%`%l%(mode) -shell-escape%' %t"
+	       TeX-run-TeX nil (latex-mode doctex-mode) :help "Run LaTeX")
+	     )
+    )
   )
 
 ;; (use-package yasnippet

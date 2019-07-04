@@ -845,10 +845,9 @@
 ;;   git clone https://github.com/yuhonglin/matlab-mode
 (use-package matlab-mode
   :load-path "matlab-mode/"
-  :init
-  (add-hook 'matlab-mode-hook 'matlab-mode)
   :config
-  (setq matlab-server-executable "/usr/local/MATLAB/R2017b/bin/matlab")
+  (set 'default-fill-column 80)
+  (setq matlab-server-executable "/usr/local/MATLAB/R2017a/bin/matlab")
   (require 'matlab-mode)
   (matlab-mode-common-setup)
   )
@@ -1253,6 +1252,13 @@
 
      ;; max history (# lines) to keep (0 == keep everything)
      (setq term-buffer-maximum-size 50000)))
+;; make sure window movement keys are not captured by shell
+(add-hook 'matlab-shell-mode-hook
+	  (lambda ()
+	    (define-key matlab-shell-mode-map (kbd "C-<up>") 'nil)
+	    (define-key matlab-shell-mode-map (kbd "C-<down>") 'nil)
+	    (define-key matlab-shell-mode-map (kbd "C-<left>") 'nil)
+	    (define-key matlab-shell-mode-map (kbd "C-<right>") 'nil)))
 ;; make sure window movement keys are not captured by terminal
 (add-hook 'term-mode-hook
 	  (lambda ()

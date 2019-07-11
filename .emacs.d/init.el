@@ -133,6 +133,7 @@
   (add-hook 'comint-mode-hook 'company-mode)
   (add-hook 'LaTeX-mode-hook 'company-mode)
   (add-hook 'sh-mode-hook 'company-mode)
+  (add-hook 'matlab-mode-hook 'company-mode)
   ;;(add-hook 'sh-mode-hook 'company-mode)
   (add-hook 'python-mode-hook 'company-mode)
   :config
@@ -841,16 +842,18 @@
   (so-long-enable))
 
 ;; MATLAB integration
+;; --------
 ;; To install, run in ~/.emacs.d/
-;;   git clone https://github.com/yuhonglin/matlab-mode
-(use-package matlab-mode
-  :load-path "matlab-mode/"
-  :config
-  (set 'default-fill-column 80)
-  (setq matlab-server-executable "/usr/local/MATLAB/R2017a/bin/matlab")
-  (require 'matlab-mode)
-  (matlab-mode-common-setup)
-  )
+;;   git clone https://git.code.sf.net/p/matlab-emacs/src matlab-emacs-src
+;;   cd matlab-emacs-src
+;;   make
+;; --------
+(add-to-list 'load-path "~/.emacs.d/matlab-emacs-src")
+(require 'matlab-load)
+(setq matlab-verify-on-save-flag nil)
+(defun my-matlab-mode-hook () (setq fill-column 80))
+(setq matlab-indent-function-body nil)
+(global-font-lock-mode t)
 
 ;;;;;;;;;;;;;;;;; PERSONAL PACKAGES
 
@@ -1434,6 +1437,8 @@
  '(ecb-options-version "2.50")
  '(fci-rule-color "#383838")
  '(matlab-shell-command-switches (quote ("-nodesktop -nosplash")))
+ '(matlab-show-mlint-warnings t)
+ '(mlint-programs (quote ("/usr/local/MATLAB/R2018b/bin/glnxa64/mlint")))
  '(nrepl-message-colors
    (quote
     ("#CC9393" "#DFAF8F" "#F0DFAF" "#7F9F7F" "#BFEBBF" "#93E0E3" "#94BFF3" "#DC8CC3")))

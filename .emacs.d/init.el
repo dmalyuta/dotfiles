@@ -844,16 +844,63 @@
 ;; MATLAB integration
 ;; --------
 ;; To install, run in ~/.emacs.d/
+;;   git clone https://github.com/dmalyuta/matlab-mode
 ;;   git clone https://git.code.sf.net/p/matlab-emacs/src matlab-emacs-src
 ;;   cd matlab-emacs-src
 ;;   make
 ;; --------
 (add-to-list 'load-path "~/.emacs.d/matlab-emacs-src")
 (require 'matlab-load)
+(require 'company-matlab-shell)
+(matlab-cedet-setup)
 (setq matlab-verify-on-save-flag nil)
 (defun my-matlab-mode-hook () (setq fill-column 80))
 (setq matlab-indent-function-body nil)
 (global-font-lock-mode t)
+(add-to-list 'load-path "~/.emacs.d/matlab-mode")
+(require 'matlab-mode)
+(require 'matlab-server)
+(add-to-list 'matlab-mode-hook 
+	     (lambda ()
+	       ;; bind key for starting the matlab shell
+	       (local-set-key (kbd "M-s") 'matlab-shell)
+	       ;; bind the key of checking document
+	       (local-set-key (kbd "C-c h")
+			      'matlab-view-current-word-doc-in-another-buffer)
+	       ;; bind the key of jump to source code
+	       (local-set-key (kbd "C-c s")
+			      'matlab-jump-to-definition-of-word-at-cursor)
+	       ;; set company-backends
+	       (setq-local company-backends '(company-files (company-matlab company-dabbrev)))
+	       ))
+(add-to-list 'matlab-shell-mode-hook
+	     (lambda ()
+	       ;; bind key for completion
+	       (local-set-key (kbd "S-SPC") 'matlab-shell-tab)))
+
+(defun matlab-docstring ()
+    "Print a default docstring for a MATLAB function."
+    (interactive)
+    (insert "% <FUNCTION NAME> <DESCRIPTION>\n")
+    (insert "%\n")
+    (insert "% Syntax:\n")
+    (insert "%\n")
+    (insert "% <OUT> = <FUNCTION NAME>(<IN>) : <DESCRIPTION>\n")
+    (insert "%\n")
+    (insert "% Inputs:\n")
+    (insert "%\n")
+    (insert "% <IN1> [<TYPE>] : <DESCRIPTION>\n")
+    (insert "% <IN2> [<TYPE>] : <DESCRIPTION>\n")
+    (insert "% \n")
+    (insert "% Outputs:\n")
+    (insert "%\n")
+    (insert "% <OUT1> [<TYPE>] : <DESCRIPTION>\n")
+    (insert "% <OUT2> [<TYPE>] : <DESCRIPTION>\n")
+    (insert "%\n")
+    (insert "% Other m-files required: none\n")
+    (insert "% Subfunctions: none\n")
+    (insert "% MAT-files required: none\n")
+    )
 
 ;;;;;;;;;;;;;;;;; PERSONAL PACKAGES
 
@@ -1436,9 +1483,10 @@
       (ecb-history-buffer-name 0.17901234567901234 . 0.275)))))
  '(ecb-options-version "2.50")
  '(fci-rule-color "#383838")
+ '(matlab-indent-function-body nil)
  '(matlab-shell-command-switches (quote ("-nodesktop -nosplash")))
  '(matlab-show-mlint-warnings t)
- '(mlint-programs (quote ("/usr/local/MATLAB/R2018b/bin/glnxa64/mlint")))
+ '(mlint-programs (quote ("/usr/local/MATLAB/R2017a/bin/glnxa64/mlint")))
  '(nrepl-message-colors
    (quote
     ("#CC9393" "#DFAF8F" "#F0DFAF" "#7F9F7F" "#BFEBBF" "#93E0E3" "#94BFF3" "#DC8CC3")))

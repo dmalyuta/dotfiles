@@ -860,13 +860,17 @@
 (add-to-list 'load-path "~/.emacs.d/matlab-mode")
 (require 'matlab-mode)
 (require 'matlab-server)
+(defun matlab-my-view-doc ()
+  "look up the matlab help info and show in another buffer"
+  (interactive)
+  (let* ((word (doc-matlab-grab-current-word)))
+    (matlab-shell-describe-command word)))
 (add-to-list 'matlab-mode-hook 
 	     (lambda ()
 	       ;; bind key for starting the matlab shell
 	       (local-set-key (kbd "M-s") 'matlab-shell)
 	       ;; bind the key of checking document
-	       (local-set-key (kbd "C-c h")
-			      'matlab-view-current-word-doc-in-another-buffer)
+	       (local-set-key (kbd "C-c h") 'matlab-my-view-doc)
 	       ;; bind the key of jump to source code
 	       (local-set-key (kbd "C-c s")
 			      'matlab-jump-to-definition-of-word-at-cursor)

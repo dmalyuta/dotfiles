@@ -122,6 +122,10 @@
 
 (use-package company
   ;; complete anything
+  ;;
+  ;; Other useful shortcuts:
+  ;;   C-M-/ runs the command dabbrev-completion (search all current buffers for
+  ;;   completion candidates)
   :ensure t
   :bind
   (("<S-SPC>" . company-complete)

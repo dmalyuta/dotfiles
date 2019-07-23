@@ -862,6 +862,7 @@
 (setq matlab-indent-function-body nil)
 (global-font-lock-mode t)
 (add-to-list 'load-path "~/.emacs.d/matlab-mode")
+(setq default-fill-column 80)
 (require 'matlab-mode)
 (require 'matlab-server)
 (defun matlab-my-view-doc ()
@@ -1494,6 +1495,7 @@
  '(matlab-indent-function-body nil)
  '(matlab-shell-command-switches (quote ("-nodesktop -nosplash")))
  '(matlab-show-mlint-warnings t)
+ '(matlab-show-periodic-code-details-flag t)
  '(mlint-programs (quote ("/usr/local/MATLAB/R2017a/bin/glnxa64/mlint")))
  '(nrepl-message-colors
    (quote

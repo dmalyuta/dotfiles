@@ -849,11 +849,11 @@
 ;; --------
 ;; To install, run in ~/.emacs.d/
 ;;   git clone https://github.com/dmalyuta/matlab-mode
-;;   git clone https://git.code.sf.net/p/matlab-emacs/src matlab-emacs-src
-;;   cd matlab-emacs-src
+;;   git clone https://github.com/dmalyuta/matlab-emacs
+;;   cd matlab-emacs
 ;;   make
 ;; --------
-(add-to-list 'load-path "~/.emacs.d/matlab-emacs-src")
+(add-to-list 'load-path "~/.emacs.d/matlab-emacs")
 (require 'matlab-load)
 (require 'company-matlab-shell)
 (matlab-cedet-setup)

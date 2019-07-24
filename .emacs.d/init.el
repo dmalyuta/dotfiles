@@ -872,6 +872,8 @@
     (matlab-shell-describe-command word)))
 (add-to-list 'matlab-mode-hook 
 	     (lambda ()
+	       ;; todo mode
+	       (hl-todo-mode)
 	       ;; bind key for starting the matlab shell
 	       (local-set-key (kbd "M-s") 'matlab-shell)
 	       ;; bind the key of checking document
@@ -1002,6 +1004,10 @@
   )
 
 ;;;;;;;;;;;;;;;;; OTHER STUFF
+
+;; Go back to previous buffer
+(global-set-key (kbd "C-c <prior>") 'previous-buffer) ;; prior: page up
+(global-set-key (kbd "C-c <next>") 'next-buffer) ;; prior: page down
 
 ;; Run terminal from current buffer
 (defun run-terminator-here ()
@@ -1495,7 +1501,7 @@
  '(matlab-indent-function-body nil)
  '(matlab-shell-command-switches (quote ("-nodesktop -nosplash")))
  '(matlab-show-mlint-warnings t)
- '(matlab-show-periodic-code-details-flag t)
+ '(matlab-show-periodic-code-details-flag nil)
  '(mlint-programs (quote ("/usr/local/MATLAB/R2017a/bin/glnxa64/mlint")))
  '(nrepl-message-colors
    (quote

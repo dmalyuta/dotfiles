@@ -46,3 +46,9 @@ jupyter2pdf() {
     wkhtmltopdf --enable-internal-links tmpfile123.html "${notebook_name}.pdf"
     rm -f tmpfile123.html
 }
+
+# Laspass
+passwordcopy() {
+    lpass show "$1" --password --clip
+}
+alias pswd="passwordcopy"

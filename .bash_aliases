@@ -52,3 +52,13 @@ passwordcopy() {
     lpass show "$1" --password --clip
 }
 alias pswd="passwordcopy"
+
+# Git push
+gitpush() {
+    pswd github.com
+    git push
+}
+gitpushoverleaf() {
+    pswd overleaf.com
+    git push
+}

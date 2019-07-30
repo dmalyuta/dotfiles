@@ -887,7 +887,9 @@
 (add-to-list 'matlab-shell-mode-hook
 	     (lambda ()
 	       ;; bind key for completion
-	       (local-set-key (kbd "S-SPC") 'matlab-shell-tab)))
+	       (local-set-key (kbd "S-SPC") 'matlab-shell-tab)
+	       ;; bind the key of checking document
+	       (local-set-key (kbd "C-c h") 'matlab-my-view-doc)))
 
 (defun matlab-docstring ()
     "Print a default docstring for a MATLAB function."

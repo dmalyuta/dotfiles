@@ -720,13 +720,14 @@
   (setq flymd-browser-open-function 'my-flymd-browser-function)
   )
 
-;; (use-package fill-column-indicator
-;;   ;; An Emacs minor mode that graphically indicates the fill column.
-;;   :ensure t
-;;   :config
-;;   (setq-default fill-column 80)
-;;   (add-hook 'c-mode-common-hook 'fci-mode)
-;;   )
+(use-package fill-column-indicator
+  ;; An Emacs minor mode that graphically indicates the fill column.
+  :ensure t
+  :config
+  (setq-default fill-column 80)
+  (add-hook 'c-mode-common-hook 'fci-mode)
+  (add-hook 'matlab-mode-hook 'fci-mode)
+  )
 
 (use-package magit
   :ensure t
@@ -758,6 +759,7 @@
   (setq column-enforce-column fill-column)
   (add-hook 'c-mode-common-hook 'column-enforce-mode)
   (add-hook 'python-mode-hook 'column-enforce-mode)
+  (add-hook 'matlab-mode-hook 'column-enforce-mode)
   )
 
 (use-package hl-todo

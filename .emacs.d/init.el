@@ -1502,6 +1502,8 @@
       (ecb-history-buffer-name 0.17901234567901234 . 0.275)))))
  '(ecb-options-version "2.50")
  '(fci-rule-color "#383838")
+ '(matlab-fill-fudge 0)
+ '(matlab-fill-fudge-hard-maximum 80)
  '(matlab-indent-function-body nil)
  '(matlab-shell-command-switches (quote ("-nodesktop -nosplash")))
  '(matlab-show-mlint-warnings t)

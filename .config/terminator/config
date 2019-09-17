@@ -22,10 +22,12 @@
   [[default]]
     [[[child1]]]
       parent = window0
+      profile = default
       type = Terminal
     [[[window0]]]
       parent = ""
       type = Window
+      size = 900, 500
   [[testing]]
     [[[child0]]]
       fullscreen = False
@@ -192,8 +194,8 @@
 [profiles]
   [[default]]
     background_darkness = 0.88
-    background_image = None
     background_type = transparent
+    cursor_color = "#839496"
     custom_command = TERM=xterm-256color bash
     foreground_color = "#839496"
     login_shell = True

@@ -249,6 +249,7 @@
   ;;  C-c h m : open man pages for symbol at point or search
   ;;  C-] : toggle to show only file names in helm buffer
   ;;  C-c r : open a file with sudo permissions
+  ;;  C-c q : show list of classes, functions, etc
   ;;  *<STUFF> : substring search major mode in helm-mini (i.e. after C-x b)
   :ensure t
   :demand
@@ -256,7 +257,8 @@
   (("M-x" . helm-M-x)
    ("M-y" . helm-show-kill-ring)
    ("C-x b" . helm-mini)
-   ("C-x C-f" . helm-find-files))
+   ("C-x C-f" . helm-find-files)
+   ("C-c q" . helm-semantic-or-imenu))
   :config
   (require 'helm)
   (require 'helm-config)
@@ -1016,6 +1018,9 @@
   )
 
 ;;;;;;;;;;;;;;;;; OTHER STUFF
+
+;; Kill buffer and window
+(global-set-key (kbd "C-x w") 'kill-buffer-and-window)
 
 ;; Go back to previous buffer
 (global-set-key (kbd "C-c <prior>") 'previous-buffer) ;; prior: page up

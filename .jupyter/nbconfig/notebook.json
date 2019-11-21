@@ -3,14 +3,14 @@
     "cm_config": {
       "lineNumbers": false
     }
-  },
+  }, 
   "load_extensions": {
-    "nbextensions_configurator/config_menu/main": true,
-    "equation-numbering/main": true,
+    "nbextensions_configurator/config_menu/main": true, 
+    "equation-numbering/main": true, 
     "contrib_nbextensions_help_item/main": true
-  },
+  }, 
   "Notebook": {
-    "Header": false,
+    "Header": false, 
     "Toolbar": true
   }
 }

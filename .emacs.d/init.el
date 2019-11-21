@@ -828,10 +828,31 @@
 
 (use-package julia-mode
   ;; Julia support for Emacs
+  :disabled
   :ensure t
   :config
-  (add-to-list 'load-path "path-to-julia-mode")
   (require 'julia-mode)
+  )
+
+(use-package ess
+  ;; Emacs Speaks Statistics
+  ;; For Julia
+  ;; First run M-x julia to have the inferior shell.
+  ;; Then useful commands:
+  ;;   C-c C-l : send file to buffer via include()
+  :ensure t
+  :config
+  (require 'ess-site)
+  (setq ess-use-company t)
+  (setq ess-tab-complete-in-script t)
+  (define-key ess-julia-mode-map (kbd "C-u C-x C-;") 'uncomment-region)
+  (define-key ess-julia-mode-map (kbd "S-SPC") 'complete-symbol)
+  (define-key ess-julia-mode-map (kbd "C-u C-c C-l") 'latexsub-or-indent)
+  (define-key inferior-ess-julia-mode-map (kbd "C-u C-c C-l") 'latexsub-or-indent)
+  (add-to-list 'ess-tracebug-search-path "~/julia/julia-1.2.0/share/julia/base")
+  (add-hook 'ess-julia-mode-hook
+	    (lambda ()
+	      (setq set-mark-command-repeat-pop t)))
   )
 
 ;;;;;;;;;;;;;;;;; NON-MELPA PACKAGES
@@ -926,6 +947,21 @@
     (insert "% Subfunctions: none\n")
     (insert "% MAT-files required: none\n")
     )
+
+;; Julia integration
+;; --------
+;; Emacs major mode for an interactive Julia shell
+;; To install, run in ~/.emacs.d/
+;;   git clone https://github.com/dmalyuta/julia-shell-mode
+;; --------
+(add-to-list 'load-path "~/.emacs.d/julia-shell-mode")
+;; (require 'julia-shell)
+;; (defun my-julia-mode-hooks ()
+;;   (require 'julia-shell-mode))
+;; (add-hook 'julia-mode-hook 'my-julia-mode-hooks)
+;; (define-key julia-mode-map (kbd "C-c C-c") 'julia-shell-run-region-or-line)
+;; (define-key julia-mode-map (kbd "C-c C-s") 'julia-shell-save-and-go)
+;; (define-key inferior-julia-shell-mode-map (kbd "C-u C-c C-l") 'latexsub-or-indent)
 
 ;;;;;;;;;;;;;;;;; PERSONAL PACKAGES
 
@@ -1521,7 +1557,7 @@
  '(matlab-shell-command-switches (quote ("-nodesktop -nosplash")))
  '(matlab-show-mlint-warnings t)
  '(matlab-show-periodic-code-details-flag nil)
- '(mlint-programs (quote ("/usr/local/MATLAB/R2017a/bin/glnxa64/mlint")))
+ '(mlint-programs (quote ("/usr/local/MATLAB/R2018b/bin/glnxa64/mlint")))
  '(nrepl-message-colors
    (quote
     ("#CC9393" "#DFAF8F" "#F0DFAF" "#7F9F7F" "#BFEBBF" "#93E0E3" "#94BFF3" "#DC8CC3")))

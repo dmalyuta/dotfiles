@@ -48,4 +48,12 @@ if program_not_installed "synapse"; then
     apt_get_install_pkg synapse
 fi
 
+# Gnome pixel saver
+# https://github.com/pixel-saver/pixel-saver
+# Merges top bar and window title bar when maximized
+apt_get_install_pkg gnome-shell-extension-pixelsaver
+gnome-shell-extension-tool -e pixel-saver@deadalnix.me
+# For code changes to become effective, you might need to reload GNOME Shell by
+# pressing Alt+F2 and entering r
+
 echo_prefix="$echo_prefix_temp"

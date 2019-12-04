@@ -1,5 +1,7 @@
 ;;;;;;;;;;;;;;;;; MOST IMPORTANT, GENERAL STUFF
 
+;; NB: use M-x customize to search and set package variables
+
 ;; Default directory
 (setq default-directory "~/")
 

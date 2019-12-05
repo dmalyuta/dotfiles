@@ -399,9 +399,6 @@
   ;; (setq ispell-program-name "aspell") ; could be ispell as well, depending on your preferences
   ;; (setq ispell-dictionary "english") ; this can obviously be set to any language your spell-checking program supports
   (setq reftex-plug-into-AUCTeX t)
-  (add-hook 'LaTeX-mode-hook
-	    '(lambda ()
-	       (define-key LaTeX-mode-map (kbd "$") 'self-insert-command)))
   ;; Enable auto-fill mode, nice for text
   (add-hook 'LaTeX-mode-hook 'auto-fill-mode)
   (add-hook 'LaTeX-mode-hook 'turn-on-reftex)
@@ -436,6 +433,7 @@
   (add-hook 'LaTeX-mode-hook
 	    (lambda ()
 	      (LaTeX-add-environments "equation*")
+	      (LaTeX-add-environments "tikzpicture")
 	      ))
   ;; Spell checking
   (add-hook 'LaTeX-mode-hook 'flyspell-mode)
@@ -453,8 +451,16 @@
 	       TeX-run-TeX nil (latex-mode doctex-mode) :help "Run LaTeX")
 	     )
     )
+  ;; latexmk
+  (add-hook 'LaTeX-mode-hook (lambda ()
+			       (push
+				'("latexmk" "latexmk -pdf %s" TeX-run-TeX nil t
+				  :help "Run latexmk on file")
+				TeX-command-list)))
   ;; Pairing
+  ;; brace electric pair
   (setq LaTeX-electric-left-right-brace t)
+  (setq TeX-electric-math '("$" . "$"))
   )
 
 ;; (use-package yasnippet

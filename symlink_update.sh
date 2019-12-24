@@ -54,6 +54,7 @@ update_file ".screenrc"     "$dir" "$home" $symlink
 update_file ".tmux.conf"    "$dir" "$home" $symlink
 update_file ".gitk"         "$dir" "$home" $symlink
 update_file ".gitconfig"    "$dir" "$home" false
+update_file "setup.cfg"     "$dir" "$home" false
 
 ########## .bin directory
 

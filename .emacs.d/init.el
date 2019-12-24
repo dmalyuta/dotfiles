@@ -452,15 +452,18 @@
 	     )
     )
   ;; latexmk
-  (add-hook 'LaTeX-mode-hook (lambda ()
-			       (push
-				'("latexmk" "latexmk -pdf %s" TeX-run-TeX nil t
-				  :help "Run latexmk on file")
-				TeX-command-list)))
+  ;; (add-hook 'LaTeX-mode-hook (lambda ()
+  ;; 			       (push
+  ;; 				'("latexmk" "latexmk -pdf %s" TeX-run-TeX nil t
+  ;; 				  :help "Run latexmk on file")
+  ;; 				TeX-command-list)))
   ;; Pairing
   ;; brace electric pair
   (setq LaTeX-electric-left-right-brace t)
   (setq TeX-electric-math '("$" . "$"))
+  (add-hook 'LaTeX-mode-hook (lambda ()
+			       (define-key LaTeX-mode-map (kbd "C-x C-<backspace>")
+				 'electric-pair-delete-pair)))
   )
 
 ;; (use-package yasnippet
@@ -643,23 +646,36 @@
   (auto-compile-on-save-mode)
   )
 
-(use-package company-jedi
-  ;; company-mode completion back-end for Python JEDI
+;; (use-package company-jedi
+;;   ;; company-mode completion back-end for Python JEDI
+;;   :ensure t
+;;   :config
+;;   ;; (setq jedi:environment-virtualenv (list (expand-file-name "~/.emacs.d/.python-environments/")))
+;;   (setq jedi:server-args
+;; 	'("--sys-path" "/home/danylo/.conda/envs/py36/lib/python3.6/site-packages"
+;; 	  ;; "--sys-path" "ROOT_DIR_2/envs/NAME_2/.../site-packages"
+;; 	  ;; ... and more! ...
+;; 	  ))
+;;   (add-hook 'python-mode-hook 'jedi:setup)
+;;   (setq jedi:complete-on-dot t)
+;;   (setq jedi:use-shortcuts t)
+;;   (setq jedi:tooltip-method nil)
+;;   (defun config/enable-company-jedi ()
+;;     (add-to-list 'company-backends 'company-jedi))
+;;   (add-hook 'python-mode-hook 'config/enable-company-jedi))
+
+(use-package elpy
   :ensure t
-  :config
-  ;; (setq jedi:environment-virtualenv (list (expand-file-name "~/.emacs.d/.python-environments/")))
-  (setq jedi:server-args
-	'("--sys-path" "/home/danylo/.conda/envs/py36/lib/python3.6/site-packages"
-	  ;; "--sys-path" "ROOT_DIR_2/envs/NAME_2/.../site-packages"
-	  ;; ... and more! ...
-	  ))
-  (add-hook 'python-mode-hook 'jedi:setup)
-  (setq jedi:complete-on-dot t)
-  (setq jedi:use-shortcuts t)
-  (setq jedi:tooltip-method nil)
-  (defun config/enable-company-jedi ()
-    (add-to-list 'company-backends 'company-jedi))
-  (add-hook 'python-mode-hook 'config/enable-company-jedi))
+  :init
+  (elpy-enable)
+  (add-hook 'elpy-mode-hook
+	    (lambda ()
+	      (define-key elpy-mode-map (kbd "C-<left>")  'windmove-left)
+	      (define-key elpy-mode-map (kbd "C-<right>")  'windmove-right)
+	      (define-key elpy-mode-map (kbd "C-<up>")  'windmove-up)
+	      (define-key elpy-mode-map (kbd "C-<down>")  'windmove-down)
+	      ))
+  )
 
 (use-package workgroups2
   ;; Restore layout. I use it only for keeping a persistent layout
@@ -1561,6 +1577,7 @@
       (ecb-history-buffer-name 0.17901234567901234 . 0.275)))))
  '(ecb-options-version "2.50")
  '(fci-rule-color "#383838")
+ '(flymake-fringe-indicator-position nil)
  '(matlab-fill-fudge 0)
  '(matlab-fill-fudge-hard-maximum 80)
  '(matlab-indent-function-body nil)
@@ -1575,6 +1592,7 @@
    (quote
     (autopair julia-mode julia-emacs unfill sage-mode sage-shell-mode minimap helm-ag plantuml-mode elpy hl-todo undo-tree zoom-frm move-text magit fill-column-indicator flymd markdown-mode bash-completion workgroups2 fuzzy ess-R-data-view ess auto-compile rainbow-mode ecb realgud wgrep-helm wgrep multiple-cursors srefactor nyan-mode google-c-style yaml-mode mic-paren pdf-tools auctex helm-projectile projectile helm-ros helm-gtags helm-swoop helm company-irony-c-headers company-irony flycheck-irony irony company-shell company-quickhelp company flycheck dired+ neotree doom-themes rainbow-delimiters use-package)))
  '(pdf-view-midnight-colors (quote ("#DCDCCC" . "#383838")))
+ '(python-shell-interpreter "/home/danylo/anaconda2/envs/py372/bin/ipython")
  '(safe-local-variable-values
    (quote
     ((eval progn
@@ -1629,6 +1647,7 @@
  '(column-enforce-face ((t (:background "yellow" :foreground "black" :slant oblique))))
  '(ecb-default-highlight-face ((((class color) (background dark)) (:background "yellow" :foreground "black"))))
  '(ecb-tag-header-face ((((class color) (background dark)) (:background "yellow" :foreground "black"))))
+ '(flymake-errline ((t (:background "red" :slant italic))))
  '(helm-ff-directory ((t (:foreground "yellow" :weight bold)))))
 (put 'narrow-to-region 'disabled nil)
 (put 'narrow-to-page 'disabled nil)

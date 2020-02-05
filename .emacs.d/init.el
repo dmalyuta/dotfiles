@@ -434,6 +434,7 @@
 	    (lambda ()
 	      (LaTeX-add-environments "equation*")
 	      (LaTeX-add-environments "tikzpicture")
+	      (LaTeX-add-environments "pgfonlayer")
 	      ))
   ;; Spell checking
   (add-hook 'LaTeX-mode-hook 'flyspell-mode)
@@ -1648,6 +1649,7 @@
  '(ecb-default-highlight-face ((((class color) (background dark)) (:background "yellow" :foreground "black"))))
  '(ecb-tag-header-face ((((class color) (background dark)) (:background "yellow" :foreground "black"))))
  '(flymake-errline ((t (:background "red" :slant italic))))
+ '(flymake-warnline ((t (:background "orange" :slant italic))))
  '(helm-ff-directory ((t (:foreground "yellow" :weight bold)))))
 (put 'narrow-to-region 'disabled nil)
 (put 'narrow-to-page 'disabled nil)

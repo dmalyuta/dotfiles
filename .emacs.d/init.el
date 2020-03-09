@@ -648,36 +648,66 @@
   (auto-compile-on-save-mode)
   )
 
-;; (use-package company-jedi
-;;   ;; company-mode completion back-end for Python JEDI
-;;   :ensure t
-;;   :config
-;;   ;; (setq jedi:environment-virtualenv (list (expand-file-name "~/.emacs.d/.python-environments/")))
-;;   (setq jedi:server-args
-;; 	'("--sys-path" "/home/danylo/.conda/envs/py36/lib/python3.6/site-packages"
-;; 	  ;; "--sys-path" "ROOT_DIR_2/envs/NAME_2/.../site-packages"
-;; 	  ;; ... and more! ...
-;; 	  ))
-;;   (add-hook 'python-mode-hook 'jedi:setup)
-;;   (setq jedi:complete-on-dot t)
-;;   (setq jedi:use-shortcuts t)
-;;   (setq jedi:tooltip-method nil)
-;;   (defun config/enable-company-jedi ()
-;;     (add-to-list 'company-backends 'company-jedi))
-;;   (add-hook 'python-mode-hook 'config/enable-company-jedi))
+(use-package dash
+  :ensure t)
 
-(use-package elpy
+(use-package dash-functional
+  :ensure t)
+
+(use-package lsp-mode
+  ;; Emacs client/library for the Language Server Protocol 
   :ensure t
-  :init
-  (elpy-enable)
-  (setq python-shell-prompt-detect-failure-warning nil)
-  (add-hook 'elpy-mode-hook
-	    (lambda ()
-	      (define-key elpy-mode-map (kbd "C-<left>")  'windmove-left)
-	      (define-key elpy-mode-map (kbd "C-<right>")  'windmove-right)
-	      (define-key elpy-mode-map (kbd "C-<up>")  'windmove-up)
-	      (define-key elpy-mode-map (kbd "C-<down>")  'windmove-down)
-	      ))
+  ;; :init (setq lsp-keymap-prefix "s-l")
+  :hook (;; replace python-mode with concrete major-mode
+         (python-mode . lsp))
+  :commands lsp
+  :config
+  ;; Complete functions without argument list
+  (setq lsp-enable-snippet nil)
+  ;; Use Flake8 for syntax style
+  (setq-default lsp-pyls-configuration-sources ["flake8"])
+  (setq-default lsp-pyls-plugins-pylint-enabled nil)
+  ;; (add-hook 'lsp-after-initialize-hook 'lsp-ui-imenu)
+  )
+
+(use-package lsp-ui
+  :ensure t
+  :commands lsp-ui-mode
+  :config
+  ;; (setq lsp-ui-doc-enable t
+  ;; 	lsp-ui-doc-use-childframe t
+  ;; 	lsp-ui-doc-position 'top
+  ;; 	lsp-ui-doc-include-signature t
+  ;; 	lsp-ui-sideline-enable nil
+  ;; 	lsp-ui-flycheck-enable t
+  ;; 	lsp-ui-flycheck-list-position 'right
+  ;; 	lsp-ui-flycheck-live-reporting t
+  ;; 	lsp-ui-peek-enable t
+  ;; 	lsp-ui-peek-list-width 60
+  ;; 	lsp-ui-peek-peek-height 25)
+  (setq lsp-ui-doc-enable nil
+	lsp-prefer-flymake nil
+	lsp-ui-sideline-enable nil
+	lsp-ui-doc-use-childframe t
+	lsp-ui-doc-position 'bottom)
+  ;; Doc frame navigation
+  (global-set-key (kbd "C-x p s") 'lsp-ui-doc-show)
+  (global-set-key (kbd "C-x p f") 'lsp-ui-doc-focus-frame)
+  (global-set-key (kbd "C-x p u") 'lsp-ui-doc-unfocus-frame)
+  (global-set-key (kbd "C-x p i") 'lsp-ui-imenu)
+  )
+
+(use-package company-lsp
+  ;; Company completion backend for lsp-mode
+  :ensure t
+  :commands company-lsp
+  :config
+  (setq company-lsp-cache-candidates 'auto)
+  )
+  
+(use-package helm-lsp
+  :ensure t
+  :commands helm-lsp-workspace-symbol
   )
 
 (use-package workgroups2
@@ -1587,6 +1617,10 @@
  '(ecb-options-version "2.50")
  '(fci-rule-color "#383838")
  '(flymake-fringe-indicator-position nil)
+ '(lsp-pyls-plugins-flake8-config "/home/danylo/setup.cfg")
+ '(lsp-pyls-plugins-flake8-ignore (quote ("E231")))
+ '(lsp-ui-doc-border "green")
+ '(lsp-ui-doc-delay 0)
  '(matlab-fill-fudge 0)
  '(matlab-fill-fudge-hard-maximum 80)
  '(matlab-indent-function-body nil)
@@ -1599,7 +1633,7 @@
     ("#CC9393" "#DFAF8F" "#F0DFAF" "#7F9F7F" "#BFEBBF" "#93E0E3" "#94BFF3" "#DC8CC3")))
  '(package-selected-packages
    (quote
-    (autopair julia-mode julia-emacs unfill sage-mode sage-shell-mode minimap helm-ag plantuml-mode elpy hl-todo undo-tree zoom-frm move-text magit fill-column-indicator flymd markdown-mode bash-completion workgroups2 fuzzy ess-R-data-view ess auto-compile rainbow-mode ecb realgud wgrep-helm wgrep multiple-cursors srefactor nyan-mode google-c-style yaml-mode mic-paren pdf-tools auctex helm-projectile projectile helm-ros helm-gtags helm-swoop helm company-irony-c-headers company-irony flycheck-irony irony company-shell company-quickhelp company flycheck dired+ neotree doom-themes rainbow-delimiters use-package)))
+    (helm-lsp lsp-ui which-key dap-mode autopair julia-mode julia-emacs unfill sage-mode sage-shell-mode minimap helm-ag plantuml-mode elpy hl-todo undo-tree zoom-frm move-text magit fill-column-indicator flymd markdown-mode bash-completion workgroups2 fuzzy ess-R-data-view ess auto-compile rainbow-mode ecb realgud wgrep-helm wgrep multiple-cursors srefactor nyan-mode google-c-style yaml-mode mic-paren pdf-tools auctex helm-projectile projectile helm-ros helm-gtags helm-swoop helm company-irony-c-headers company-irony flycheck-irony irony company-shell company-quickhelp company flycheck dired+ neotree doom-themes rainbow-delimiters use-package)))
  '(pdf-view-midnight-colors (quote ("#DCDCCC" . "#383838")))
  '(python-shell-interpreter "/home/danylo/.conda/envs/py372/bin/ipython")
  '(safe-local-variable-values
@@ -1656,8 +1690,8 @@
  '(column-enforce-face ((t (:background "yellow" :foreground "black" :slant oblique))))
  '(ecb-default-highlight-face ((((class color) (background dark)) (:background "yellow" :foreground "black"))))
  '(ecb-tag-header-face ((((class color) (background dark)) (:background "yellow" :foreground "black"))))
- '(flymake-errline ((t (:background "red" :slant italic))))
- '(flymake-warnline ((t (:background "orange" :slant italic))))
+ '(flymake-error ((t (:background "red" :slant italic))))
+ '(flymake-warning ((t (:background "orange" :slant italic))))
  '(helm-ff-directory ((t (:foreground "yellow" :weight bold)))))
 (put 'narrow-to-region 'disabled nil)
 (put 'narrow-to-page 'disabled nil)

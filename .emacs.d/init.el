@@ -55,6 +55,12 @@
 
 ;;;;;;;;;;;;;;;;; MELPA PACKAGES
 
+(use-package dash
+  :ensure t)
+
+(use-package dash-functional
+  :ensure t)
+
 (use-package rainbow-delimiters
   ;; highlights delimiters such as parentheses, brackets or braces according to their depth.
   :ensure t
@@ -117,6 +123,7 @@
   :init
   (add-hook 'c-mode-common-hook 'flycheck-mode)
   (add-hook 'sh-mode-hook 'flycheck-mode)
+  ;; (add-hook 'python-mode-hook 'flycheck-mode)
   (setq flycheck-enabled-checkers '(c/c++-gcc))
   ;;(add-hook 'python-mode-hook 'flycheck-mode)
   :config
@@ -648,68 +655,6 @@
   (auto-compile-on-save-mode)
   )
 
-(use-package dash
-  :ensure t)
-
-(use-package dash-functional
-  :ensure t)
-
-(use-package lsp-mode
-  ;; Emacs client/library for the Language Server Protocol 
-  :ensure t
-  ;; :init (setq lsp-keymap-prefix "s-l")
-  :hook (;; replace python-mode with concrete major-mode
-         (python-mode . lsp))
-  :commands lsp
-  :config
-  ;; Complete functions without argument list
-  (setq lsp-enable-snippet nil)
-  ;; Use Flake8 for syntax style
-  (setq-default lsp-pyls-configuration-sources ["flake8"])
-  (setq-default lsp-pyls-plugins-pylint-enabled nil)
-  ;; (add-hook 'lsp-after-initialize-hook 'lsp-ui-imenu)
-  )
-
-(use-package lsp-ui
-  :ensure t
-  :commands lsp-ui-mode
-  :config
-  ;; (setq lsp-ui-doc-enable t
-  ;; 	lsp-ui-doc-use-childframe t
-  ;; 	lsp-ui-doc-position 'top
-  ;; 	lsp-ui-doc-include-signature t
-  ;; 	lsp-ui-sideline-enable nil
-  ;; 	lsp-ui-flycheck-enable t
-  ;; 	lsp-ui-flycheck-list-position 'right
-  ;; 	lsp-ui-flycheck-live-reporting t
-  ;; 	lsp-ui-peek-enable t
-  ;; 	lsp-ui-peek-list-width 60
-  ;; 	lsp-ui-peek-peek-height 25)
-  (setq lsp-ui-doc-enable nil
-	lsp-prefer-flymake nil
-	lsp-ui-sideline-enable nil
-	lsp-ui-doc-use-childframe t
-	lsp-ui-doc-position 'bottom)
-  ;; Doc frame navigation
-  (global-set-key (kbd "C-x p s") 'lsp-ui-doc-show)
-  (global-set-key (kbd "C-x p f") 'lsp-ui-doc-focus-frame)
-  (global-set-key (kbd "C-x p u") 'lsp-ui-doc-unfocus-frame)
-  (global-set-key (kbd "C-x p i") 'lsp-ui-imenu)
-  )
-
-(use-package company-lsp
-  ;; Company completion backend for lsp-mode
-  :ensure t
-  :commands company-lsp
-  :config
-  (setq company-lsp-cache-candidates 'auto)
-  )
-  
-(use-package helm-lsp
-  :ensure t
-  :commands helm-lsp-workspace-symbol
-  )
-
 (use-package workgroups2
   ;; Restore layout. I use it only for keeping a persistent layout
   ;; for an emacs --daemon server
@@ -821,6 +766,20 @@
   (add-hook 'c-mode-common-hook 'column-enforce-mode)
   (add-hook 'python-mode-hook 'column-enforce-mode)
   (add-hook 'matlab-mode-hook 'column-enforce-mode)
+  )
+
+(use-package jedi
+  :ensure t
+  :config
+  (defun my/python-mode-hook ()
+    (add-to-list 'company-backends 'company-jedi))
+  (add-hook 'python-mode-hook 'my/python-mode-hook)
+  )
+
+(use-package company-jedi
+  :ensure t
+  :config
+  (add-to-list 'company-backends 'company-jedi)
   )
 
 (use-package hl-todo
@@ -1133,60 +1092,60 @@
   (shell-command (concat "terminator > /dev/null 2>&1 & disown") nil nil))
 (global-set-key (kbd "C-c t r") 'run-terminator-here)
 
-;; Python shell
-;; Make sure you are running IPython 5.7.0, because buggy for later versions
-;; ``$ pip install -U ipython==5.7.0``
-;; 
-;; Fix autoreload problem (answer by DmitrySemenov at
-;; https://tinyurl.com/ipython-autoreload):
-;; 
-;; I found a better solution that needs no emacs config: simply do
-;; 
-;; $ ipython profile create
-;; 
-;; that should create ipython profile in
-;; $HOME/.ipython/profile_default/ipython_config.py  
-;; then put the following inside
-;; ```
-;; c = get_config()
-;; c.TerminalInteractiveShell.editor = 'emacsclient'
-;; c.InteractiveShellApp.extensions = [
-;;      'autoreload'
-;; ]
-;; 
-;; c.InteractiveShellApp.exec_lines = []
-;; c.InteractiveShellApp.exec_lines.append('%load_ext autoreload')
-;; c.InteractiveShellApp.exec_lines.append('%autoreload 2')
-;; ```
-(setq python-shell-interpreter "ipython"
-      python-shell-interpreter-args "-i --simple-prompt --pprint")
-;; Printout what file is being run
-(defun ipython-print-runfile ()
-  (interactive)
-  "Print in comint buffer the file that is being executed"
-  ;;(message "%s" (buffer-file-name))
-  ;;(python-shell-send-file buffer-file-name 'nil 'nil 'nil "Hello world")
-  (python-shell-send-string (concat "print('%run " buffer-file-name "')"))
-  (python-shell-send-string "print('Running... ')")
-  (python-shell-send-string (concat "%run " buffer-file-name))
-  (python-shell-send-string "print('done')")
-  )
-(defun ipython-print-region ()
-  (interactive)
-  "Print in comint buffer the region that is being executed"
-  ;; (message "%s" (buffer-substring (region-beginning) (region-end)))
-  (python-shell-send-string (concat "print(\"\"\"<<<Running region>>>\n" (buffer-substring (region-beginning) (region-end)) "\"\"\")"))
-  (python-shell-send-string (buffer-substring (region-beginning) (region-end)))
-  ;; (python-shell-send-string "print('Running... ')")
-  ;; (python-shell-send-string (concat "%run " buffer-file-name))
-  ;; (python-shell-send-string "print('done')")
-  )
-(add-hook 'python-mode-hook
-	  (lambda ()
-	    (define-key python-mode-map (kbd "C-c C-l")
-	      'ipython-print-runfile)
-	    (define-key python-mode-map (kbd "C-c C-r")
-	      'ipython-print-region)))
+;; ;; Python shell
+;; ;; Make sure you are running IPython 5.7.0, because buggy for later versions
+;; ;; ``$ pip install -U ipython==5.7.0``
+;; ;; 
+;; ;; Fix autoreload problem (answer by DmitrySemenov at
+;; ;; https://tinyurl.com/ipython-autoreload):
+;; ;; 
+;; ;; I found a better solution that needs no emacs config: simply do
+;; ;; 
+;; ;; $ ipython profile create
+;; ;; 
+;; ;; that should create ipython profile in
+;; ;; $HOME/.ipython/profile_default/ipython_config.py  
+;; ;; then put the following inside
+;; ;; ```
+;; ;; c = get_config()
+;; ;; c.TerminalInteractiveShell.editor = 'emacsclient'
+;; ;; c.InteractiveShellApp.extensions = [
+;; ;;      'autoreload'
+;; ;; ]
+;; ;; 
+;; ;; c.InteractiveShellApp.exec_lines = []
+;; ;; c.InteractiveShellApp.exec_lines.append('%load_ext autoreload')
+;; ;; c.InteractiveShellApp.exec_lines.append('%autoreload 2')
+;; ;; ```
+;; (setq python-shell-interpreter "ipython"
+;;       python-shell-interpreter-args "-i --simple-prompt --pprint")
+;; ;; Printout what file is being run
+;; (defun ipython-print-runfile ()
+;;   (interactive)
+;;   "Print in comint buffer the file that is being executed"
+;;   ;;(message "%s" (buffer-file-name))
+;;   ;;(python-shell-send-file buffer-file-name 'nil 'nil 'nil "Hello world")
+;;   (python-shell-send-string (concat "print('%run " buffer-file-name "')"))
+;;   (python-shell-send-string "print('Running... ')")
+;;   (python-shell-send-string (concat "%run " buffer-file-name))
+;;   (python-shell-send-string "print('done')")
+;;   )
+;; (defun ipython-print-region ()
+;;   (interactive)
+;;   "Print in comint buffer the region that is being executed"
+;;   ;; (message "%s" (buffer-substring (region-beginning) (region-end)))
+;;   (python-shell-send-string (concat "print(\"\"\"<<<Running region>>>\n" (buffer-substring (region-beginning) (region-end)) "\"\"\")"))
+;;   (python-shell-send-string (buffer-substring (region-beginning) (region-end)))
+;;   ;; (python-shell-send-string "print('Running... ')")
+;;   ;; (python-shell-send-string (concat "%run " buffer-file-name))
+;;   ;; (python-shell-send-string "print('done')")
+;;   )
+;; (add-hook 'python-mode-hook
+;; 	  (lambda ()
+;; 	    (define-key python-mode-map (kbd "C-c C-l")
+;; 	      'ipython-print-runfile)
+;; 	    (define-key python-mode-map (kbd "C-c C-r")
+;; 	      'ipython-print-region)))
 
 ;; Automatically reload files when they change on disk
 ;; (global-auto-revert-mode)
@@ -1633,9 +1592,8 @@
     ("#CC9393" "#DFAF8F" "#F0DFAF" "#7F9F7F" "#BFEBBF" "#93E0E3" "#94BFF3" "#DC8CC3")))
  '(package-selected-packages
    (quote
-    (helm-lsp lsp-ui which-key dap-mode autopair julia-mode julia-emacs unfill sage-mode sage-shell-mode minimap helm-ag plantuml-mode elpy hl-todo undo-tree zoom-frm move-text magit fill-column-indicator flymd markdown-mode bash-completion workgroups2 fuzzy ess-R-data-view ess auto-compile rainbow-mode ecb realgud wgrep-helm wgrep multiple-cursors srefactor nyan-mode google-c-style yaml-mode mic-paren pdf-tools auctex helm-projectile projectile helm-ros helm-gtags helm-swoop helm company-irony-c-headers company-irony flycheck-irony irony company-shell company-quickhelp company flycheck dired+ neotree doom-themes rainbow-delimiters use-package)))
+    (workgroups helm-lsp lsp-ui which-key dap-mode autopair julia-mode julia-emacs unfill sage-mode sage-shell-mode minimap helm-ag plantuml-mode elpy hl-todo undo-tree zoom-frm move-text magit fill-column-indicator flymd markdown-mode bash-completion workgroups2 fuzzy ess-R-data-view ess auto-compile rainbow-mode ecb realgud wgrep-helm wgrep multiple-cursors srefactor nyan-mode google-c-style yaml-mode mic-paren pdf-tools auctex helm-projectile projectile helm-ros helm-gtags helm-swoop helm company-irony-c-headers company-irony flycheck-irony irony company-shell company-quickhelp company flycheck dired+ neotree doom-themes rainbow-delimiters use-package)))
  '(pdf-view-midnight-colors (quote ("#DCDCCC" . "#383838")))
- '(python-shell-interpreter "/home/danylo/.conda/envs/py372/bin/ipython")
  '(safe-local-variable-values
    (quote
     ((eval progn

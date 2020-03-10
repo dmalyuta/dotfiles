@@ -128,7 +128,10 @@
   ;;(add-hook 'python-mode-hook 'flycheck-mode)
   :config
   ;; Check buffer on save and immediately after opening buffer
-  (setq flycheck-check-syntax-automatically '(mode-enabled save)))
+  (setq flycheck-check-syntax-automatically '(mode-enabled save))
+  ;; Python
+  (setq flycheck-display-errors-function #'flycheck-display-error-messages-unless-error-list)
+  )
 
 (use-package company
   ;; complete anything
@@ -149,7 +152,7 @@
   (add-hook 'sh-mode-hook 'company-mode)
   (add-hook 'matlab-mode-hook 'company-mode)
   ;;(add-hook 'sh-mode-hook 'company-mode)
-  (add-hook 'python-mode-hook 'company-mode)
+  ;; (add-hook 'python-mode-hook 'company-mode)
   :config
   (setq company-dabbrev-downcase 0)
   ;; set timeout to 10 seconds
@@ -768,19 +771,20 @@
   (add-hook 'matlab-mode-hook 'column-enforce-mode)
   )
 
-(use-package jedi
+(use-package lsp-mode
   :ensure t
+  :hook (;; replace python-mode with concrete major-mode
+         (python-mode . lsp))
+  :commands lsp
   :config
-  (defun my/python-mode-hook ()
-    (add-to-list 'company-backends 'company-jedi))
-  (add-hook 'python-mode-hook 'my/python-mode-hook)
+  ;; Complete functions without argument list
+  (setq lsp-enable-snippet nil)
+  ;; Use Flake8 for syntax style
+  (setq-default lsp-pyls-configuration-sources ["flake8"])
+  ;; (add-hook 'lsp-after-initialize-hook 'lsp-ui-imenu)
   )
 
-(use-package company-jedi
-  :ensure t
-  :config
-  (add-to-list 'company-backends 'company-jedi)
-  )
+
 
 (use-package hl-todo
   :ensure t
@@ -1576,10 +1580,7 @@
  '(ecb-options-version "2.50")
  '(fci-rule-color "#383838")
  '(flymake-fringe-indicator-position nil)
- '(lsp-pyls-plugins-flake8-config "/home/danylo/setup.cfg")
- '(lsp-pyls-plugins-flake8-ignore (quote ("E231")))
- '(lsp-ui-doc-border "green")
- '(lsp-ui-doc-delay 0)
+ '(lsp-pyls-plugins-flake8-exclude (quote ("E231")))
  '(matlab-fill-fudge 0)
  '(matlab-fill-fudge-hard-maximum 80)
  '(matlab-indent-function-body nil)

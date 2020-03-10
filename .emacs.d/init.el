@@ -26,7 +26,7 @@
 (setq package-check-signature nil)
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/"))
 (add-to-list 'package-archives '("elpy" . "https://jorgenschaefer.github.io/packages/"))
-(package-initialize)
+;; (package-initialize)
 
 ;; boostrap 'use-package'
 (unless (package-installed-p 'use-package)
@@ -103,6 +103,7 @@
   ;; Good tree-based project file browser
   ;; Need to follow up with M-x all-the-icons-install-fonts
   :ensure t
+  :after (all-the-icons)
   :config
   (require 'neotree)
   (global-set-key (kbd "C-c n") 'neotree-toggle))
@@ -771,21 +772,6 @@
   (add-hook 'matlab-mode-hook 'column-enforce-mode)
   )
 
-(use-package lsp-mode
-  :ensure t
-  :hook (;; replace python-mode with concrete major-mode
-         (python-mode . lsp))
-  :commands lsp
-  :config
-  ;; Complete functions without argument list
-  (setq lsp-enable-snippet nil)
-  ;; Use Flake8 for syntax style
-  (setq-default lsp-pyls-configuration-sources ["flake8"])
-  ;; (add-hook 'lsp-after-initialize-hook 'lsp-ui-imenu)
-  )
-
-
-
 (use-package hl-todo
   :ensure t
   :config
@@ -877,11 +863,78 @@
 	      (setq set-mark-command-repeat-pop t)))
   )
 
+;; LANGUAGE LINTING/IDE FEATURES
+;; Use lsp-mode (Language Server Protocol)
+;; see https://github.com/emacs-lsp/lsp-mode/blob/master/README.org
+
+;; lsp-mode performance
+(setq gc-cons-threshold 100000000)
+(setq read-process-output-max (* 1024 1024)) ;; 1mb
+
+
+(use-package lsp-mode
+  :ensure t
+  :init
+  (setq lsp-keymap-prefix "C-c l")
+  :config
+  (require 'lsp-mode)
+  (add-hook 'python-mode-hook #'lsp)
+  ;; Optional: use company-capf . Although company-lsp also supports caching
+  ;; lsp-mode’s company-capf does that by default. To achieve that uninstall
+  ;; company-lsp or put these lines in your config:
+  (setq lsp-prefer-capf t)
+  ;; Optional: fine-tune lsp-idle-delay. This variable determines how often
+  ;; lsp-mode will refresh the highlights, lenses, links, etc while you type.
+  (setq lsp-idle-delay 0.500)
+  ;; Recommended settings
+  (add-hook 'lsp-mode-hook (lambda ()
+			     (setq company-minimum-prefix-length 1
+				   company-idle-delay 0.0)))
+  ;; Linting
+  (setq-default lsp-pyls-configuration-sources ["flake8"])
+  ;; Other niceties
+  (add-hook 'lsp-mode-hook
+	    (lambda ()
+	      (setq lsp-enable-imenu t)
+	      (setq lsp-enable-semantic-highlighting t)
+	      (setq lsp-enable-snippet nil) ;; disable snippet
+	      ))
+  )
+
+(use-package lsp-ui
+  :ensure t
+  :config
+  (add-hook 'lsp-mode-hook
+	    (lambda ()
+	      (setq lsp-ui-doc-enable nil ;; disable docs
+		    ;; lsp-ui-doc-delay 1
+   		    ;; lsp-ui-doc-use-childframe t
+   		    lsp-ui-doc-position 'bottom
+		    lsp-ui-doc-max-height 20
+   		    lsp-ui-doc-include-signature nil
+   		    lsp-ui-sideline-enable t
+		    lsp-ui-sideline-delay 2
+		    lsp-ui-sideline-show-code-actions nil
+		    lsp-ui-sideline-show-hover nil
+   		    lsp-ui-flycheck-enable t
+   		    lsp-ui-flycheck-list-position 'right
+   		    lsp-ui-flycheck-live-reporting t
+   		    lsp-ui-peek-enable nil
+   		    ;; lsp-ui-peek-list-width 60
+   		    ;; lsp-ui-peek-peek-height 25
+		    )
+	      (local-set-key (kbd "C-c l d s") 'lsp-ui-doc-show)
+	      (local-set-key (kbd "C-c l d f") 'lsp-ui-doc-focus-frame)
+	      (local-set-key (kbd "C-c l d u") 'lsp-ui-doc-unfocus-frame)
+	      (local-set-key (kbd "C-c l i") 'lsp-ui-imenu)))
+  )
+
 ;;;;;;;;;;;;;;;;; NON-MELPA PACKAGES
 
 ;; filladapt
 ;;
 (use-package filladapt
+  :disabled
   :load-path "lisp/"
   :config
   (require 'filladapt)
@@ -1552,66 +1605,59 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(Man-notify-method (quote pushy))
+ '(Man-notify-method 'pushy)
  '(TeX-PDF-mode t)
- '(TeX-source-correlate-method (quote synctex))
+ '(TeX-source-correlate-method 'synctex)
  '(TeX-source-correlate-mode t)
  '(TeX-source-correlate-start-server t)
  '(TeX-view-program-list
-   (quote
-    (("Okular"
+   '(("Okular"
       ("okular --unique %o#src:%n%b")
-      "/usr/bin/okular"))))
- '(TeX-view-program-selection (quote ((output-pdf "Okular"))))
+      "/usr/bin/okular")))
+ '(TeX-view-program-selection '((output-pdf "Okular")))
  '(ansi-color-faces-vector
    [default default default italic underline success warning error])
  '(ansi-color-names-vector
    ["#3F3F3F" "#CC9393" "#7F9F7F" "#F0DFAF" "#8CD0D3" "#DC8CC3" "#93E0E3" "#DCDCCC"])
  '(company-begin-commands nil)
- '(ecb-auto-expand-tag-tree (quote expand-spec))
+ '(ecb-auto-expand-tag-tree 'expand-spec)
  '(ecb-auto-expand-tag-tree-collapse-other nil)
- '(ecb-highlight-tag-with-point (quote highlight-scroll))
+ '(ecb-highlight-tag-with-point 'highlight-scroll)
  '(ecb-highlight-tag-with-point-delay 0.25)
  '(ecb-layout-window-sizes
-   (quote
-    (("left11"
+   '(("left11"
       (ecb-methods-buffer-name 0.17901234567901234 . 0.7)
-      (ecb-history-buffer-name 0.17901234567901234 . 0.275)))))
+      (ecb-history-buffer-name 0.17901234567901234 . 0.275))))
  '(ecb-options-version "2.50")
  '(fci-rule-color "#383838")
  '(flymake-fringe-indicator-position nil)
- '(lsp-pyls-plugins-flake8-exclude (quote ("E231")))
+ '(lsp-pyls-plugins-flake8-exclude '("E231"))
  '(matlab-fill-fudge 0)
  '(matlab-fill-fudge-hard-maximum 80)
  '(matlab-indent-function-body nil)
- '(matlab-shell-command-switches (quote ("-nodesktop -nosplash")))
+ '(matlab-shell-command-switches '("-nodesktop -nosplash"))
  '(matlab-show-mlint-warnings t)
  '(matlab-show-periodic-code-details-flag nil)
- '(mlint-programs (quote ("/usr/local/MATLAB/R2018b/bin/glnxa64/mlint")))
+ '(mlint-programs '("/usr/local/MATLAB/R2018b/bin/glnxa64/mlint"))
  '(nrepl-message-colors
-   (quote
-    ("#CC9393" "#DFAF8F" "#F0DFAF" "#7F9F7F" "#BFEBBF" "#93E0E3" "#94BFF3" "#DC8CC3")))
+   '("#CC9393" "#DFAF8F" "#F0DFAF" "#7F9F7F" "#BFEBBF" "#93E0E3" "#94BFF3" "#DC8CC3"))
  '(package-selected-packages
-   (quote
-    (workgroups helm-lsp lsp-ui which-key dap-mode autopair julia-mode julia-emacs unfill sage-mode sage-shell-mode minimap helm-ag plantuml-mode elpy hl-todo undo-tree zoom-frm move-text magit fill-column-indicator flymd markdown-mode bash-completion workgroups2 fuzzy ess-R-data-view ess auto-compile rainbow-mode ecb realgud wgrep-helm wgrep multiple-cursors srefactor nyan-mode google-c-style yaml-mode mic-paren pdf-tools auctex helm-projectile projectile helm-ros helm-gtags helm-swoop helm company-irony-c-headers company-irony flycheck-irony irony company-shell company-quickhelp company flycheck dired+ neotree doom-themes rainbow-delimiters use-package)))
- '(pdf-view-midnight-colors (quote ("#DCDCCC" . "#383838")))
+   '(workgroups helm-lsp lsp-ui which-key dap-mode autopair julia-mode julia-emacs unfill sage-mode sage-shell-mode minimap helm-ag plantuml-mode elpy hl-todo undo-tree zoom-frm move-text magit fill-column-indicator flymd markdown-mode bash-completion workgroups2 fuzzy ess-R-data-view ess auto-compile rainbow-mode ecb realgud wgrep-helm wgrep multiple-cursors srefactor nyan-mode google-c-style yaml-mode mic-paren pdf-tools auctex helm-projectile projectile helm-ros helm-gtags helm-swoop helm company-irony-c-headers company-irony flycheck-irony irony company-shell company-quickhelp company flycheck dired+ neotree doom-themes rainbow-delimiters use-package))
+ '(pdf-view-midnight-colors '("#DCDCCC" . "#383838"))
  '(safe-local-variable-values
-   (quote
-    ((eval progn
-	   (add-hook
-	    (quote LaTeX-mode-hook)
-	    (lambda nil
-	      (LaTeX-add-environments "Definition")
-	      (LaTeX-add-environments "Theorem")
-	      (LaTeX-add-environments "Fact")
-	      (LaTeX-add-environments "Example")
-	      (LaTeX-add-environments "Method")
-	      (LaTeX-add-environments "Proof")
-	      (LaTeX-add-environments "VeryImportantStuff")))))))
+   '((eval progn
+	   (add-hook 'LaTeX-mode-hook
+		     (lambda nil
+		       (LaTeX-add-environments "Definition")
+		       (LaTeX-add-environments "Theorem")
+		       (LaTeX-add-environments "Fact")
+		       (LaTeX-add-environments "Example")
+		       (LaTeX-add-environments "Method")
+		       (LaTeX-add-environments "Proof")
+		       (LaTeX-add-environments "VeryImportantStuff"))))))
  '(vc-annotate-background "#2B2B2B")
  '(vc-annotate-color-map
-   (quote
-    ((20 . "#BC8383")
+   '((20 . "#BC8383")
      (40 . "#CC9393")
      (60 . "#DFAF8F")
      (80 . "#D0BF8F")
@@ -1628,7 +1674,7 @@
      (300 . "#7CB8BB")
      (320 . "#8CD0D3")
      (340 . "#94BFF3")
-     (360 . "#DC8CC3"))))
+     (360 . "#DC8CC3")))
  '(vc-annotate-very-old-color "#DC8CC3"))
 
 (let ((bg (face-attribute 'default :background)))

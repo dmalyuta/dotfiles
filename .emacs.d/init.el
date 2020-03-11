@@ -7,7 +7,7 @@
 
 ;; Frame size
 (add-to-list 'default-frame-alist '(height . 50))
-(add-to-list 'default-frame-alist '(width . 70))
+(add-to-list 'default-frame-alist '(width . 100))
 
 ;; sensible GUI
 (menu-bar-mode -1)  ;; disable menubar
@@ -882,7 +882,7 @@
   ;; Optional: use company-capf . Although company-lsp also supports caching
   ;; lsp-mode’s company-capf does that by default. To achieve that uninstall
   ;; company-lsp or put these lines in your config:
-  (setq lsp-prefer-capf t)
+  ;; (setq lsp-prefer-capf t)
   ;; Optional: fine-tune lsp-idle-delay. This variable determines how often
   ;; lsp-mode will refresh the highlights, lenses, links, etc while you type.
   (setq lsp-idle-delay 0.500)
@@ -893,12 +893,22 @@
   ;; Linting
   (setq-default lsp-pyls-configuration-sources ["flake8"])
   ;; Other niceties
-  (add-hook 'lsp-mode-hook
-	    (lambda ()
-	      (setq lsp-enable-imenu t)
-	      (setq lsp-enable-semantic-highlighting t)
-	      (setq lsp-enable-snippet nil) ;; disable snippet
-	      ))
+  (setq lsp-enable-semantic-highlighting t)
+  (setq lsp-enable-snippet nil)
+  (setq lsp-signature-auto-activate nil)
+  )
+
+(use-package company-lsp
+  ;; Company completion backend for lsp-mode
+  ;; You should use (https://github.com/davidhalter/jedi/issues/1484):
+  ;;  pip install --upgrade jedi==0.15.2
+  ;;  pip install --upgrade parso==0.5.2
+  :ensure t
+  :config
+  (require 'company-lsp)
+  (push 'company-lsp company-backends)
+  (setq company-lsp-async t)
+  (setq company-lsp-enable-snippet nil)
   )
 
 (use-package lsp-ui
@@ -911,17 +921,22 @@
    		    ;; lsp-ui-doc-use-childframe t
    		    lsp-ui-doc-position 'bottom
 		    lsp-ui-doc-max-height 20
-   		    lsp-ui-doc-include-signature nil
+   		    lsp-ui-doc-include-signature t
+		    
    		    lsp-ui-sideline-enable t
-		    lsp-ui-sideline-delay 2
+		    lsp-ui-sideline-delay 0.5
 		    lsp-ui-sideline-show-code-actions nil
 		    lsp-ui-sideline-show-hover nil
+		    
    		    lsp-ui-flycheck-enable t
    		    lsp-ui-flycheck-list-position 'right
    		    lsp-ui-flycheck-live-reporting t
    		    lsp-ui-peek-enable nil
    		    ;; lsp-ui-peek-list-width 60
    		    ;; lsp-ui-peek-peek-height 25
+
+		    lsp-ui-imenu-enable t
+		    lsp-ui-imenu-kind-position 'top
 		    )
 	      (local-set-key (kbd "C-c l d s") 'lsp-ui-doc-show)
 	      (local-set-key (kbd "C-c l d f") 'lsp-ui-doc-focus-frame)
@@ -929,13 +944,24 @@
 	      (local-set-key (kbd "C-c l i") 'lsp-ui-imenu)))
   )
 
+(use-package elpy
+  ;; Elpy is an Emacs package to bring powerful Python editing to Emacs.
+  ;; Use it here just for some benefits:
+  ;;  - Documentation in a different buffer
+  :ensure t
+  :config
+  (add-hook 'python-mode-hook
+	    (lambda ()
+	      (local-set-key (kbd "C-c C-d") 'elpy-doc) ;; Documentation for thing at point
+	      ))
+  )
+
 ;;;;;;;;;;;;;;;;; NON-MELPA PACKAGES
 
 ;; filladapt
 ;;
 (use-package filladapt
-  :disabled
-  :load-path "lisp/"
+  :ensure t
   :config
   (require 'filladapt)
   (setq-default filladapt-mode t)
@@ -1149,60 +1175,60 @@
   (shell-command (concat "terminator > /dev/null 2>&1 & disown") nil nil))
 (global-set-key (kbd "C-c t r") 'run-terminator-here)
 
-;; ;; Python shell
-;; ;; Make sure you are running IPython 5.7.0, because buggy for later versions
-;; ;; ``$ pip install -U ipython==5.7.0``
-;; ;; 
-;; ;; Fix autoreload problem (answer by DmitrySemenov at
-;; ;; https://tinyurl.com/ipython-autoreload):
-;; ;; 
-;; ;; I found a better solution that needs no emacs config: simply do
-;; ;; 
-;; ;; $ ipython profile create
-;; ;; 
-;; ;; that should create ipython profile in
-;; ;; $HOME/.ipython/profile_default/ipython_config.py  
-;; ;; then put the following inside
-;; ;; ```
-;; ;; c = get_config()
-;; ;; c.TerminalInteractiveShell.editor = 'emacsclient'
-;; ;; c.InteractiveShellApp.extensions = [
-;; ;;      'autoreload'
-;; ;; ]
-;; ;; 
-;; ;; c.InteractiveShellApp.exec_lines = []
-;; ;; c.InteractiveShellApp.exec_lines.append('%load_ext autoreload')
-;; ;; c.InteractiveShellApp.exec_lines.append('%autoreload 2')
-;; ;; ```
-;; (setq python-shell-interpreter "ipython"
-;;       python-shell-interpreter-args "-i --simple-prompt --pprint")
-;; ;; Printout what file is being run
-;; (defun ipython-print-runfile ()
-;;   (interactive)
-;;   "Print in comint buffer the file that is being executed"
-;;   ;;(message "%s" (buffer-file-name))
-;;   ;;(python-shell-send-file buffer-file-name 'nil 'nil 'nil "Hello world")
-;;   (python-shell-send-string (concat "print('%run " buffer-file-name "')"))
-;;   (python-shell-send-string "print('Running... ')")
-;;   (python-shell-send-string (concat "%run " buffer-file-name))
-;;   (python-shell-send-string "print('done')")
-;;   )
-;; (defun ipython-print-region ()
-;;   (interactive)
-;;   "Print in comint buffer the region that is being executed"
-;;   ;; (message "%s" (buffer-substring (region-beginning) (region-end)))
-;;   (python-shell-send-string (concat "print(\"\"\"<<<Running region>>>\n" (buffer-substring (region-beginning) (region-end)) "\"\"\")"))
-;;   (python-shell-send-string (buffer-substring (region-beginning) (region-end)))
-;;   ;; (python-shell-send-string "print('Running... ')")
-;;   ;; (python-shell-send-string (concat "%run " buffer-file-name))
-;;   ;; (python-shell-send-string "print('done')")
-;;   )
-;; (add-hook 'python-mode-hook
-;; 	  (lambda ()
-;; 	    (define-key python-mode-map (kbd "C-c C-l")
-;; 	      'ipython-print-runfile)
-;; 	    (define-key python-mode-map (kbd "C-c C-r")
-;; 	      'ipython-print-region)))
+;; Python shell
+;; Make sure you are running IPython 5.7.0, because buggy for later versions
+;; ``$ pip install -U ipython==5.7.0``
+;; 
+;; Fix autoreload problem (answer by DmitrySemenov at
+;; https://tinyurl.com/ipython-autoreload):
+;; 
+;; I found a better solution that needs no emacs config: simply do
+;; 
+;; $ ipython profile create
+;; 
+;; that should create ipython profile in
+;; $HOME/.ipython/profile_default/ipython_config.py  
+;; then put the following inside
+;; ```
+;; c = get_config()
+;; c.TerminalInteractiveShell.editor = 'emacsclient'
+;; c.InteractiveShellApp.extensions = [
+;;      'autoreload'
+;; ]
+;; 
+;; c.InteractiveShellApp.exec_lines = []
+;; c.InteractiveShellApp.exec_lines.append('%load_ext autoreload')
+;; c.InteractiveShellApp.exec_lines.append('%autoreload 2')
+;; ```
+(setq python-shell-interpreter "ipython"
+      python-shell-interpreter-args "-i --simple-prompt --pprint")
+;; Printout what file is being run
+(defun ipython-print-runfile ()
+  (interactive)
+  "Print in comint buffer the file that is being executed"
+  ;;(message "%s" (buffer-file-name))
+  ;;(python-shell-send-file buffer-file-name 'nil 'nil 'nil "Hello world")
+  (python-shell-send-string (concat "print('%run " buffer-file-name "')"))
+  (python-shell-send-string "print('Running... ')")
+  (python-shell-send-string (concat "%run " buffer-file-name))
+  (python-shell-send-string "print('done')")
+  )
+(defun ipython-print-region ()
+  (interactive)
+  "Print in comint buffer the region that is being executed"
+  ;; (message "%s" (buffer-substring (region-beginning) (region-end)))
+  (python-shell-send-string (concat "print(\"\"\"<<<Running region>>>\n" (buffer-substring (region-beginning) (region-end)) "\"\"\")"))
+  (python-shell-send-string (buffer-substring (region-beginning) (region-end)))
+  ;; (python-shell-send-string "print('Running... ')")
+  ;; (python-shell-send-string (concat "%run " buffer-file-name))
+  ;; (python-shell-send-string "print('done')")
+  )
+(add-hook 'python-mode-hook
+	  (lambda ()
+	    (define-key python-mode-map (kbd "C-c C-l")
+	      'ipython-print-runfile)
+	    (define-key python-mode-map (kbd "C-c C-r")
+	      'ipython-print-region)))
 
 ;; Automatically reload files when they change on disk
 ;; (global-auto-revert-mode)

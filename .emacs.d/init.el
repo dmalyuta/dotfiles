@@ -898,6 +898,23 @@
   (setq lsp-signature-auto-activate nil)
   )
 
+(use-package dap-mode
+  ;; Emacs client/library for Debug Adapter Protocol is a wire protocol for
+  ;; communication between client and Debug Server. It’s similar to the LSP but
+  ;; provides integration with debug server.
+  :ensure t
+  :config
+  (dap-mode 1)
+  (dap-ui-mode 1)
+  ;; enables mouse hover support
+  (dap-tooltip-mode 1)
+  ;; use tooltips for mouse hover
+  ;; if it is not enabled `dap-mode' will use the minibuffer.
+  (tooltip-mode 1)
+  ;; Activations
+  (require 'dap-python)
+  )
+
 (use-package company-lsp
   ;; Company completion backend for lsp-mode
   ;; You should use (https://github.com/davidhalter/jedi/issues/1484):
@@ -1322,8 +1339,15 @@
 (mouse-wheel-mode t)
 (setq x-select-enable-clipboard t)
 
-;; default font and font size
-(add-to-list 'default-frame-alist '(font . "DejaVu Sans Mono-12"))
+;; ;; default font and font size
+;; (add-to-list 'default-frame-alist '(font . "DejaVu Sans Mono-12"))
+;; Font
+(add-hook 'after-init-hook (lambda ()
+			     (set-face-attribute 'default nil
+						 :family "Office Code Pro D"
+						 :height 100
+						 :weight 'normal
+						 :width 'normal)))
 
 ;; Kill TRAMP stuff
 (global-set-key (kbd "C-c t k") 'tramp-cleanup-all-connections)

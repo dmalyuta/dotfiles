@@ -882,7 +882,7 @@
   ;; Optional: use company-capf . Although company-lsp also supports caching
   ;; lsp-mode’s company-capf does that by default. To achieve that uninstall
   ;; company-lsp or put these lines in your config:
-  ;; (setq lsp-prefer-capf t)
+  (setq lsp-prefer-capf t)
   ;; Optional: fine-tune lsp-idle-delay. This variable determines how often
   ;; lsp-mode will refresh the highlights, lenses, links, etc while you type.
   (setq lsp-idle-delay 0.500)
@@ -896,36 +896,6 @@
   (setq lsp-enable-semantic-highlighting t)
   (setq lsp-enable-snippet nil)
   (setq lsp-signature-auto-activate nil)
-  )
-
-(use-package dap-mode
-  ;; Emacs client/library for Debug Adapter Protocol is a wire protocol for
-  ;; communication between client and Debug Server. It’s similar to the LSP but
-  ;; provides integration with debug server.
-  :ensure t
-  :config
-  (dap-mode 1)
-  (dap-ui-mode 1)
-  ;; enables mouse hover support
-  (dap-tooltip-mode 1)
-  ;; use tooltips for mouse hover
-  ;; if it is not enabled `dap-mode' will use the minibuffer.
-  (tooltip-mode 1)
-  ;; Activations
-  (require 'dap-python)
-  )
-
-(use-package company-lsp
-  ;; Company completion backend for lsp-mode
-  ;; You should use (https://github.com/davidhalter/jedi/issues/1484):
-  ;;  pip install --upgrade jedi==0.15.2
-  ;;  pip install --upgrade parso==0.5.2
-  :ensure t
-  :config
-  (require 'company-lsp)
-  (push 'company-lsp company-backends)
-  (setq company-lsp-async t)
-  (setq company-lsp-enable-snippet nil)
   )
 
 (use-package lsp-ui
@@ -955,10 +925,43 @@
 		    lsp-ui-imenu-enable t
 		    lsp-ui-imenu-kind-position 'top
 		    )
-	      (local-set-key (kbd "C-c l d s") 'lsp-ui-doc-show)
-	      (local-set-key (kbd "C-c l d f") 'lsp-ui-doc-focus-frame)
-	      (local-set-key (kbd "C-c l d u") 'lsp-ui-doc-unfocus-frame)
+	      ;; (local-set-key (kbd "C-c l d s") 'lsp-ui-doc-show)
+	      ;; (local-set-key (kbd "C-c l d f") 'lsp-ui-doc-focus-frame)
+	      ;; (local-set-key (kbd "C-c l d u") 'lsp-ui-doc-unfocus-frame)
 	      (local-set-key (kbd "C-c l i") 'lsp-ui-imenu)))
+  )
+
+(use-package company-lsp
+  ;; Company completion backend for lsp-mode
+  ;; You should use (https://github.com/davidhalter/jedi/issues/1484):
+  ;;  pip install --upgrade jedi==0.15.2
+  ;;  pip install --upgrade parso==0.5.2
+  :ensure t
+  :config
+  (require 'company-lsp)
+  (push 'company-lsp company-backends)
+  (setq company-lsp-async t)
+  (setq company-lsp-enable-snippet nil)
+  )
+
+(use-package dap-mode
+  ;; Emacs client/library for Debug Adapter Protocol is a wire protocol for
+  ;; communication between client and Debug Server. It’s similar to the LSP but
+  ;; provides integration with debug server.
+  ;;
+  ;; Require to run in terminal:
+  ;;  pip install "ptvsd>=4.2"
+  :ensure t
+  :config
+  (dap-mode 1)
+  (add-hook 'python-mode-hook (lambda () (dap-ui-mode 1)))
+  ;; enables mouse hover support
+  (dap-tooltip-mode 1)
+  ;; use tooltips for mouse hover
+  ;; if it is not enabled `dap-mode' will use the minibuffer.
+  (tooltip-mode 1)
+  ;; Activations
+  (require 'dap-python)
   )
 
 (use-package elpy
@@ -971,6 +974,32 @@
 	    (lambda ()
 	      (local-set-key (kbd "C-c C-d") 'elpy-doc) ;; Documentation for thing at point
 	      ))
+  )
+
+;; %%%%%%%%%%%%%%%%% Disabled pacakges
+
+(use-package lsp-python-ms
+  :disabled
+  :ensure t
+  :config
+  (require 'lsp-python-ms)
+  (add-hook 'python-mode-hook #'lsp) ; or lsp-deferred
+  )
+
+(use-package anaconda-mode
+  :disabled
+  :ensure t
+  :config
+  (add-hook 'python-mode-hook 'anaconda-mode)
+  (add-hook 'python-mode-hook 'anaconda-eldoc-mode)
+  )
+
+(use-package company-anaconda
+  :disabled
+  :ensure t
+  :config
+  (eval-after-load "company"
+    '(add-to-list 'company-backends '(company-anaconda :with company-capf)))
   )
 
 ;;;;;;;;;;;;;;;;; NON-MELPA PACKAGES
@@ -1172,6 +1201,13 @@
   )
 
 ;;;;;;;;;;;;;;;;; OTHER STUFF
+
+;; ;; CEDET tools
+;; (require 'cc-mode)
+;; (require 'semantic)
+;; (global-semanticdb-minor-mode 1)
+;; (global-semantic-idle-scheduler-mode 1)
+;; (semantic-mode 1)
 
 ;; No auto-newline for C/C++
 (add-hook 'c-mode-common-hook

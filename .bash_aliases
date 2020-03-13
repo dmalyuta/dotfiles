@@ -25,6 +25,11 @@ gedit() {
     nohup gedit $@ &>/dev/null & disown
 }
 
+# Emacs open file without blocking terminal
+semacs() {
+    nohup emacs $@ &>/dev/null & disown
+}
+
 # Jupyter
 alias venv_jupnb=". ~/.python_venv/jupnb/bin/activate && echo Use \'$ deactivate\' to quit the Jupyter notebook virtualenv"
 alias jn='jupyter-notebook '

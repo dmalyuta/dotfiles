@@ -14,6 +14,9 @@ alias copy='xargs echo -n | xclip -selection clipboard'
 # Display processes matching grep
 alias listproc='~/.bin/listproc.sh'
 
+# Display processes matching grep
+alias pdfjoinnorotate='pdfjoin --paper a4paper --rotateoversize false'
+
 # Kill processes matching grep
 alias killgrep='~/.bin/killgrep.sh'
 
@@ -28,6 +31,11 @@ gedit() {
 # Emacs open file without blocking terminal
 semacs() {
     nohup emacs $@ &>/dev/null & disown
+}
+
+# Evince open file without blocking terminal
+sevince() {
+    nohup evince $@ &>/dev/null & disown
 }
 
 # Jupyter

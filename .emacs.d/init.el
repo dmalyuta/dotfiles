@@ -391,6 +391,10 @@
 
 (use-package tex
   ;; AUCTeX
+  ;;
+  ;; Commands:
+  ;;   C-c & : find citation in bib file (when cursor over \cite{...})
+  ;;   
   :ensure auctex
   :demand
   :config
@@ -617,13 +621,34 @@
   :ensure t)
 
 (use-package org
-  ;; Org mode is for keeping notes, maintaining TODO lists, planning projects, and authoring documents with a fast and effective plain-text system.
+  ;; Org mode is for keeping notes, maintaining TODO lists, planning projects,
+  ;; and authoring documents with a fast and effective plain-text system.
+  ;;
+  ;; Commands:
+  ;;
+  ;;   TAB : collapse a section
+  ;;   M-RET : insert new heading at this level
+  ;;   M-S-<leftarrow> : demote current subtree
+  ;;   M-S-<rightarrow> : promote current subtree
+  ;;   M-<uparrow> : move heading up in subtree
+  ;;   M-<downarrow> : move heading down in subtree
+  ;;   C-c C-o : open link at point
+  ;;   
   :ensure t
   :config
+
+  (use-package org-bullets
+    :ensure t
+    :config
+    (require 'org-bullets)
+    (add-hook 'org-mode-hook (lambda () (org-bullets-mode 1)))
+    )
+  
   (require 'org)
   (add-hook 'org-mode-hook 'turn-on-auto-fill)
   (define-key global-map "\C-cl" 'org-store-link)
   (define-key global-map "\C-ca" 'org-agenda)
+  (setq org-format-latex-options (plist-put org-format-latex-options :scale 1.3))
   (setq org-log-done t)
   (setq org-agenda-files (list "~/Dropbox/shared_files/org/work.org"
 			       "~/Dropbox/shared_files/org/home.org")))
@@ -847,7 +872,10 @@
   ;; For Julia
   ;; First run M-x julia to have the inferior shell.
   ;; Then useful commands:
+  ;;   C-c C-j : run Julia shell
+  ;;   C-c C-c : run next contiguous block of code
   ;;   C-c C-l : send file to buffer via include()
+  ;;   C-c C-d C-d : help at point
   :ensure t
   :config
   (require 'ess-site)
@@ -856,6 +884,7 @@
   (define-key ess-julia-mode-map (kbd "C-u C-x C-;") 'uncomment-region)
   (define-key ess-julia-mode-map (kbd "S-SPC") 'complete-symbol)
   (define-key ess-julia-mode-map (kbd "C-u C-c C-l") 'latexsub-or-indent)
+  (define-key ess-julia-mode-map (kbd "C-u C-j") 'run-ess-julia)
   (define-key inferior-ess-julia-mode-map (kbd "C-u C-c C-l") 'latexsub-or-indent)
   (add-to-list 'ess-tracebug-search-path "~/julia/julia-1.2.0/share/julia/base")
   (add-hook 'ess-julia-mode-hook
@@ -1727,8 +1756,11 @@
  '(mlint-programs '("/usr/local/MATLAB/R2018b/bin/glnxa64/mlint"))
  '(nrepl-message-colors
    '("#CC9393" "#DFAF8F" "#F0DFAF" "#7F9F7F" "#BFEBBF" "#93E0E3" "#94BFF3" "#DC8CC3"))
+ '(org-format-latex-options
+   '(:foreground "yellow" :background default :scale 1.3 :html-foreground "Black" :html-background "Transparent" :html-scale 1.0 :matchers
+		 ("begin" "$1" "$" "$$" "\\(" "\\[")))
  '(package-selected-packages
-   '(workgroups helm-lsp lsp-ui which-key dap-mode autopair julia-mode julia-emacs unfill sage-mode sage-shell-mode minimap helm-ag plantuml-mode elpy hl-todo undo-tree zoom-frm move-text magit fill-column-indicator flymd markdown-mode bash-completion workgroups2 fuzzy ess-R-data-view ess auto-compile rainbow-mode ecb realgud wgrep-helm wgrep multiple-cursors srefactor nyan-mode google-c-style yaml-mode mic-paren pdf-tools auctex helm-projectile projectile helm-ros helm-gtags helm-swoop helm company-irony-c-headers company-irony flycheck-irony irony company-shell company-quickhelp company flycheck dired+ neotree doom-themes rainbow-delimiters use-package))
+   '(org-bullets workgroups helm-lsp lsp-ui which-key dap-mode autopair julia-mode julia-emacs unfill sage-mode sage-shell-mode minimap helm-ag plantuml-mode elpy hl-todo undo-tree zoom-frm move-text magit fill-column-indicator flymd markdown-mode bash-completion workgroups2 fuzzy ess-R-data-view ess auto-compile rainbow-mode ecb realgud wgrep-helm wgrep multiple-cursors srefactor nyan-mode google-c-style yaml-mode mic-paren pdf-tools auctex helm-projectile projectile helm-ros helm-gtags helm-swoop helm company-irony-c-headers company-irony flycheck-irony irony company-shell company-quickhelp company flycheck dired+ neotree doom-themes rainbow-delimiters use-package))
  '(pdf-view-midnight-colors '("#DCDCCC" . "#383838"))
  '(safe-local-variable-values
    '((eval progn

@@ -33,6 +33,11 @@ semacs() {
     nohup emacs $@ &>/dev/null & disown
 }
 
+# LibreOffice open file without blocking terminal
+sdoc() {
+    nohup libreoffice6.4 $@ &>/dev/null & disown
+}
+
 # Evince open file without blocking terminal
 sevince() {
     nohup evince $@ &>/dev/null & disown

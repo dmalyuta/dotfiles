@@ -186,17 +186,24 @@
     '(define-key company-active-map (kbd "M-h") #'company-quickhelp-manual-begin))
   )
 
-;; (use-package helm-company
-;;   ;; Helm interface for company-mode
-;;   :load-path "elpa/helm-company"
-;;   ;;:ensure t ;; Waiting for MELPA update (fix was made by maintainer to autofill "pattern" in response to my issue)
-;;   :config
-;;   (eval-after-load 'company
-;;     '(progn
-;;   	 (set-variable 'helm-company-initialize-pattern-with-prefix t)
-;;   	 (define-key company-mode-map (kbd "<S-SPC>") 'helm-company)
-;;    	 (define-key company-active-map (kbd "<S-SPC>") 'helm-company)))
-;;   )
+(use-package helm-company
+  ;; Helm interface for company-mode
+  :ensure t
+  ;; :load-path "elpa/helm-company"
+  ;;:ensure t ;; Waiting for MELPA update (fix was made by maintainer to
+  ;;             autofill "pattern" in response to my issue)
+  :config
+  (autoload 'helm-company "helm-company") ;; Not necessary if using ELPA package
+  ;; (eval-after-load 'company
+  ;;   '(progn
+  ;;      (define-key company-mode-map (kbd "C-:") 'helm-company)
+  ;;      (define-key company-active-map (kbd "C-:") 'helm-company)))
+  (eval-after-load 'company
+    '(progn
+       (set-variable 'helm-company-initialize-pattern-with-prefix t)
+       (define-key company-mode-map (kbd "<S-SPC>") 'helm-company)
+       (define-key company-active-map (kbd "<S-SPC>") 'helm-company)))
+  )
 
 (use-package company-shell
   ;; company mode completion backends for your shell functions:
@@ -876,6 +883,8 @@
   ;;   C-c C-c : run next contiguous block of code
   ;;   C-c C-l : send file to buffer via include()
   ;;   C-c C-d C-d : help at point
+  ;;   C-u C-c C-l : replace with latex character
+  ;;   M-/ : cycle through completion candidates
   :ensure t
   :config
   (require 'ess-site)
@@ -883,9 +892,9 @@
   (setq ess-tab-complete-in-script t)
   (define-key ess-julia-mode-map (kbd "C-u C-x C-;") 'uncomment-region)
   (define-key ess-julia-mode-map (kbd "S-SPC") 'complete-symbol)
-  (define-key ess-julia-mode-map (kbd "C-u C-c C-l") 'latexsub-or-indent)
+  (define-key ess-julia-mode-map (kbd "C-u C-c C-l") 'julia-latexsub-or-indent)
   (define-key ess-julia-mode-map (kbd "C-u C-j") 'run-ess-julia)
-  (define-key inferior-ess-julia-mode-map (kbd "C-u C-c C-l") 'latexsub-or-indent)
+  (define-key inferior-ess-julia-mode-map (kbd "C-u C-c C-l") 'julia-latexsub-or-indent)
   (add-to-list 'ess-tracebug-search-path "~/julia/julia-1.2.0/share/julia/base")
   (add-hook 'ess-julia-mode-hook
 	    (lambda ()
@@ -1760,7 +1769,7 @@
    '(:foreground "yellow" :background default :scale 1.3 :html-foreground "Black" :html-background "Transparent" :html-scale 1.0 :matchers
 		 ("begin" "$1" "$" "$$" "\\(" "\\[")))
  '(package-selected-packages
-   '(org-bullets workgroups helm-lsp lsp-ui which-key dap-mode autopair julia-mode julia-emacs unfill sage-mode sage-shell-mode minimap helm-ag plantuml-mode elpy hl-todo undo-tree zoom-frm move-text magit fill-column-indicator flymd markdown-mode bash-completion workgroups2 fuzzy ess-R-data-view ess auto-compile rainbow-mode ecb realgud wgrep-helm wgrep multiple-cursors srefactor nyan-mode google-c-style yaml-mode mic-paren pdf-tools auctex helm-projectile projectile helm-ros helm-gtags helm-swoop helm company-irony-c-headers company-irony flycheck-irony irony company-shell company-quickhelp company flycheck dired+ neotree doom-themes rainbow-delimiters use-package))
+   '(helm-company org-bullets workgroups helm-lsp lsp-ui which-key dap-mode autopair julia-mode julia-emacs unfill sage-mode sage-shell-mode minimap helm-ag plantuml-mode elpy hl-todo undo-tree zoom-frm move-text magit fill-column-indicator flymd markdown-mode bash-completion workgroups2 fuzzy ess-R-data-view ess auto-compile rainbow-mode ecb realgud wgrep-helm wgrep multiple-cursors srefactor nyan-mode google-c-style yaml-mode mic-paren pdf-tools auctex helm-projectile projectile helm-ros helm-gtags helm-swoop helm company-irony-c-headers company-irony flycheck-irony irony company-shell company-quickhelp company flycheck dired+ neotree doom-themes rainbow-delimiters use-package))
  '(pdf-view-midnight-colors '("#DCDCCC" . "#383838"))
  '(safe-local-variable-values
    '((eval progn

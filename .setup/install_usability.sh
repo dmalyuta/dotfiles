@@ -40,6 +40,11 @@ runcmd "sudo -H pip install autorandr"
 # Graphics/desktop customization program
 apt_get_install_pkg compizconfig-settings-manager
 
+# Recoll
+# Document search through whole system
+apt_get_install_pkg recoll
+apt_get_install_pkg pdfgrep
+
 # Synapse
 # Instant search
 if program_not_installed "synapse"; then

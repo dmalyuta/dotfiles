@@ -488,7 +488,57 @@
   (add-hook 'LaTeX-mode-hook (lambda ()
 			       (define-key LaTeX-mode-map (kbd "C-x C-<backspace>")
 				 'electric-pair-delete-pair)))
+  ;;
+  ;;
+  ;; Command sequence for Pythontex
+  ;;
+  ;;
+  (with-eval-after-load "tex"
+    (add-to-list 'TeX-command-list
+		 '("PythonTeX" "pythontex %s" TeX-run-command nil (latex-mode)
+                   :help "Run PythonTeX script")
+		 t))
+  (defun my/TeX-run-TeX-pythontex ()
+    "Save current master file, run LaTeX, PythonTeX and start the viewer."
+    (interactive)
+    (unless (featurep 'tex-buf)
+      (require 'tex-buf))
+    (TeX-save-document (TeX-master-file))
+    (TeX-command-sequence '("LaTeX" "PythonTeX" "LaTeX") 
+                          t))
+  (define-key LaTeX-mode-map (kbd "C-c C-p C-l") #'my/TeX-run-TeX-pythontex)
+  ;;
+  ;; Customization for Pythontex
+  ;;
+  (add-to-list 'LaTeX-verbatim-environments "pycode")
+  (add-to-list 'LaTeX-verbatim-environments "pykzmath")
+  (add-to-list 'LaTeX-verbatim-environments "@pie@shell")
+  (add-to-list 'LaTeX-indent-environment-list '("pycode" current-indentation))
+  (add-to-list 'LaTeX-indent-environment-list '("pykzmath" current-indentation))
+  (add-to-list 'LaTeX-indent-environment-list '("@pie@shell" current-indentation))
   )
+
+;; (use-package mmm-mode
+;;   :ensure t
+;;   :config
+;;   (require 'mmm-auto)
+;;   (mmm-add-group 'latex-python
+;; 		 '((latex-python-envs
+;; 		    :submode python-mode
+;; 		    :face mmm-default-submode-face
+;; 		    :front "\\\\begin{\\(pycode\\|pykzmath\\)}\n"
+;; 		    :back "\\\\end{~1}\n"
+;; 		    :save-matches 1)))
+;;   ;; (mmm-add-classes
+;;   ;;  '((latex-python
+;;   ;;     :submode python-mode
+;;   ;;     :face mmm-delimiter-face
+;;   ;;     :front "\\\\begin{pycode}\n"
+;;   ;;     :back "\\\\end{pycode}\n")))
+
+;;   (setq mmm-global-mode 'maybe)
+;;   (mmm-add-mode-ext-class 'latex-mode nil 'latex-python)
+;;   )
 
 ;; (use-package yasnippet
 ;;   ;; YASnippet is a template system for Emacs
@@ -885,6 +935,7 @@
   ;;   C-c C-d C-d : help at point
   ;;   C-u C-c C-l : replace with latex character
   ;;   M-/ : cycle through completion candidates
+  ;;   C-RET : execute current line and step to next line
   :ensure t
   :config
   (require 'ess-site)
@@ -1763,13 +1814,14 @@
  '(matlab-show-mlint-warnings t)
  '(matlab-show-periodic-code-details-flag nil)
  '(mlint-programs '("/usr/local/MATLAB/R2018b/bin/glnxa64/mlint"))
+ '(mmm-submode-decoration-level 0)
  '(nrepl-message-colors
    '("#CC9393" "#DFAF8F" "#F0DFAF" "#7F9F7F" "#BFEBBF" "#93E0E3" "#94BFF3" "#DC8CC3"))
  '(org-format-latex-options
    '(:foreground "yellow" :background default :scale 1.3 :html-foreground "Black" :html-background "Transparent" :html-scale 1.0 :matchers
 		 ("begin" "$1" "$" "$$" "\\(" "\\[")))
  '(package-selected-packages
-   '(helm-company org-bullets workgroups helm-lsp lsp-ui which-key dap-mode autopair julia-mode julia-emacs unfill sage-mode sage-shell-mode minimap helm-ag plantuml-mode elpy hl-todo undo-tree zoom-frm move-text magit fill-column-indicator flymd markdown-mode bash-completion workgroups2 fuzzy ess-R-data-view ess auto-compile rainbow-mode ecb realgud wgrep-helm wgrep multiple-cursors srefactor nyan-mode google-c-style yaml-mode mic-paren pdf-tools auctex helm-projectile projectile helm-ros helm-gtags helm-swoop helm company-irony-c-headers company-irony flycheck-irony irony company-shell company-quickhelp company flycheck dired+ neotree doom-themes rainbow-delimiters use-package))
+   '(mmm-mode helm-company org-bullets workgroups helm-lsp lsp-ui which-key dap-mode autopair julia-mode julia-emacs unfill sage-mode sage-shell-mode minimap helm-ag plantuml-mode elpy hl-todo undo-tree zoom-frm move-text magit fill-column-indicator flymd markdown-mode bash-completion workgroups2 fuzzy ess-R-data-view ess auto-compile rainbow-mode ecb realgud wgrep-helm wgrep multiple-cursors srefactor nyan-mode google-c-style yaml-mode mic-paren pdf-tools auctex helm-projectile projectile helm-ros helm-gtags helm-swoop helm company-irony-c-headers company-irony flycheck-irony irony company-shell company-quickhelp company flycheck dired+ neotree doom-themes rainbow-delimiters use-package))
  '(pdf-view-midnight-colors '("#DCDCCC" . "#383838"))
  '(safe-local-variable-values
    '((eval progn

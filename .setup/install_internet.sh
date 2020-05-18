@@ -39,15 +39,15 @@ if program_not_installed "lpass"; then
     apt_get_install_pkg bash-completion
     apt_get_install_pkg build-essential
     apt_get_install_pkg cmake
-    apt_get_install_pkg libcurl3 
-    apt_get_install_pkg libcurl3-openssl-dev 
-    apt_get_install_pkg libssl1.0.0
-    apt_get_install_pkg libssl-dev
+    apt_get_install_pkg libcurl4 
+    apt_get_install_pkg libcurl4-openssl-dev 
+    apt_get_install_pkg libssl-dev 
     apt_get_install_pkg libxml2
     apt_get_install_pkg libxml2-dev 
+    apt_get_install_pkg libssl1.1
     apt_get_install_pkg pkg-config
     apt_get_install_pkg ca-certificates
-    apt_get_install_pkg xcl
+    apt_get_install_pkg xclip
     apt_get_install_pkg lastpass-cli
 fi
 

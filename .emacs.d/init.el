@@ -945,6 +945,8 @@
   (define-key ess-julia-mode-map (kbd "S-SPC") 'complete-symbol)
   (define-key ess-julia-mode-map (kbd "C-u C-c C-l") 'julia-latexsub-or-indent)
   (define-key ess-julia-mode-map (kbd "C-u C-j") 'run-ess-julia)
+  (define-key ess-julia-mode-map (kbd "C-u C-SPC")
+    (lambda () (interactive) (set-mark-command -1))) ;; Go to previous mark
   (define-key inferior-ess-julia-mode-map (kbd "C-u C-c C-l") 'julia-latexsub-or-indent)
   (add-to-list 'ess-tracebug-search-path "~/julia/julia-1.2.0/share/julia/base")
   (add-hook 'ess-julia-mode-hook
@@ -1182,6 +1184,26 @@
     (insert "% Other m-files required: none\n")
     (insert "% Subfunctions: none\n")
     (insert "% MAT-files required: none\n")
+    )
+
+(defun code-section (start end)
+    "Section delimiters for comment"
+    (interactive "r")
+    (if (use-region-p)
+        (let ((regionp (buffer-substring start end)))
+	  (delete-region start end)
+          (insert "..:: " regionp " ::.."))
+      (insert "..:: SECTION ::.."))
+    )
+
+(defun code-subsection (start end)
+    "Subsection delimiters for comment"
+    (interactive "r")
+    (if (use-region-p)
+        (let ((regionp (buffer-substring start end)))
+	  (delete-region start end)
+          (insert "// " regionp " \\\\"))
+      (insert "// SUBSECTION \\\\"))
     )
 
 ;; Julia integration

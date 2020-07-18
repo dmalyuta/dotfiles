@@ -258,6 +258,15 @@
     )
   )
 
+(use-package modern-cpp-font-lock
+  ;; Syntax highlighting support for "Modern C++" - until C++20 and Technical
+  ;; Specification. This package aims to provide a simple highlight of the C++
+  ;; language without dependency.
+  :ensure t
+  :config
+  (add-hook 'c++-mode-hook #'modern-c++-font-lock-mode)
+  )
+
 (use-package helm
   ;; incremental completion and selection narrowing framework
   ;; Useful bindinds:
@@ -417,6 +426,12 @@
   (setq TeX-auto-parse-length 999999)
   (setq TeX-save-query nil)
   (setq-default TeX-master nil)
+  ;; View program
+  (add-hook 'LaTeX-mode-hook
+	    (lambda ()
+	      (setq TeX-view-program-list '(("Evince" "evince --page-index=%(outpage) %o")))
+	      (setq TeX-view-program-selection '((output-pdf "Evince")))))
+  (add-hook 'LaTeX-mode-hook 'TeX-source-correlate-mode)
   ;; Spelling
   (global-set-key (kbd "M-s") 'ispell-word)
   ;; (setq ispell-program-name "aspell") ; could be ispell as well, depending on your preferences
@@ -498,6 +513,11 @@
 		 '("PythonTeX" "pythontex %s" TeX-run-command nil (latex-mode)
                    :help "Run PythonTeX script")
 		 t))
+  (with-eval-after-load "tex"
+    (add-to-list 'TeX-command-list
+		 '("CSM-BibTeX" "bibtex main && bibtex sidebar" TeX-run-command nil (latex-mode)
+                   :help "Run BibTeX for CSM")
+		 t))
   (defun my/TeX-run-TeX-pythontex ()
     "Save current master file, run LaTeX, PythonTeX and start the viewer."
     (interactive)
@@ -511,10 +531,11 @@
   ;; Customization for Pythontex
   ;;
   (add-to-list 'LaTeX-verbatim-environments "pycode")
-  (add-to-list 'LaTeX-verbatim-environments "pykzmath")
+  (add-to-list 'LaTeX-verbatim-environments "pykzmathinline")
+  (add-to-list 'LaTeX-verbatim-environments "pykzmathblock")
   (add-to-list 'LaTeX-verbatim-environments "@pie@shell")
   (add-to-list 'LaTeX-indent-environment-list '("pycode" current-indentation))
-  (add-to-list 'LaTeX-indent-environment-list '("pykzmath" current-indentation))
+  (add-to-list 'LaTeX-indent-environment-list '("pykzmathblock" current-indentation))
   (add-to-list 'LaTeX-indent-environment-list '("@pie@shell" current-indentation))
   )
 
@@ -814,6 +835,7 @@
 
 (use-package fill-column-indicator
   ;; An Emacs minor mode that graphically indicates the fill column.
+  :disabled
   :ensure t
   :config
   (setq-default fill-column 80)
@@ -933,6 +955,7 @@
   ;;   C-c C-c : run next contiguous block of code
   ;;   C-c C-l : send file to buffer via include()
   ;;   C-c C-d C-d : help at point
+  ;;   C-c C-h C-i : show all functions list, or go to function at point
   ;;   C-u C-c C-l : replace with latex character
   ;;   M-/ : cycle through completion candidates
   ;;   C-RET : execute current line and step to next line
@@ -1093,6 +1116,28 @@
     '(add-to-list 'company-backends '(company-anaconda :with company-capf)))
   )
 
+(use-package gnuplot
+  ;; A major mode for Emacs for interacting with Gnuplot
+  :ensure t
+  :config
+  ;; these lines enable the use of gnuplot mode
+  (autoload 'gnuplot-mode "gnuplot" "gnuplot major mode" t)
+  (autoload 'gnuplot-make-buffer "gnuplot" "open a buffer in gnuplot mode" t)
+
+  ;; this line automatically causes all files with the .gp extension to be loaded into gnuplot mode
+  (setq auto-mode-alist (append '(("\\.gp$" . gnuplot-mode)) auto-mode-alist))
+  (setq auto-mode-alist (append '(("\\.gnu$" . gnuplot-mode)) auto-mode-alist))
+
+  ;; This line binds the function-9 key so that it opens a buffer into gnuplot mode
+  (global-set-key [(f9)] 'gnuplot-make-buffer)
+  )
+
+(use-package graphviz-dot-mode
+  ;; Emacs package for working with Graphviz DOT-format files.
+  :ensure t
+  :config
+  (setq graphviz-dot-indent-width 4))
+
 ;;;;;;;;;;;;;;;;; NON-MELPA PACKAGES
 
 ;; filladapt
@@ -1202,8 +1247,18 @@
     (if (use-region-p)
         (let ((regionp (buffer-substring start end)))
 	  (delete-region start end)
-          (insert "// " regionp " \\\\"))
-      (insert "// SUBSECTION \\\\"))
+          (insert ">> " regionp " <<"))
+      (insert ">> SUBSECTION <<"))
+    )
+
+(defun code-subsubsection (start end)
+    "Subsubsection delimiters for comment"
+    (interactive "r")
+    (if (use-region-p)
+        (let ((regionp (buffer-substring start end)))
+	  (delete-region start end)
+          (insert "@ " regionp " @"))
+      (insert "@ SUBSUBSECTION @"))
     )
 
 ;; Julia integration
@@ -1312,6 +1367,14 @@
   )
 
 ;;;;;;;;;;;;;;;;; OTHER STUFF
+
+;; Try to speed up font-lock mode speed (causes laggy scrolling in C++)
+(setq font-lock-support-mode 'jit-lock-mode)
+(setq jit-lock-stealth-time 16
+      jit-lock-defer-contextually t
+      jit-lock-stealth-nice 0.5)
+(setq-default font-lock-multiline t)
+(setq font-lock-maximum-decoration 1)
 
 ;; ;; CEDET tools
 ;; (require 'cc-mode)
@@ -1489,12 +1552,12 @@
 ;; ;; default font and font size
 ;; (add-to-list 'default-frame-alist '(font . "DejaVu Sans Mono-12"))
 ;; Font
-(add-hook 'after-init-hook (lambda ()
-			     (set-face-attribute 'default nil
-						 :family "Office Code Pro D"
-						 :height 100
-						 :weight 'normal
-						 :width 'normal)))
+;; (add-hook 'after-init-hook (lambda ()
+;; 			     (set-face-attribute 'default nil
+;; 						 :family "Office Code Pro D"
+;; 						 :height 100
+;; 						 :weight 'normal
+;; 						 :width 'normal)))
 
 ;; Kill TRAMP stuff
 (global-set-key (kbd "C-c t k") 'tramp-cleanup-all-connections)
@@ -1807,11 +1870,6 @@
  '(TeX-source-correlate-method 'synctex)
  '(TeX-source-correlate-mode t)
  '(TeX-source-correlate-start-server t)
- '(TeX-view-program-list
-   '(("Okular"
-      ("okular --unique %o#src:%n%b")
-      "/usr/bin/okular")))
- '(TeX-view-program-selection '((output-pdf "Okular")))
  '(ansi-color-faces-vector
    [default default default italic underline success warning error])
  '(ansi-color-names-vector
@@ -1828,7 +1886,10 @@
  '(ecb-options-version "2.50")
  '(fci-rule-color "#383838")
  '(flymake-fringe-indicator-position nil)
+ '(lsp-pyls-plugins-autopep8-enabled nil)
  '(lsp-pyls-plugins-flake8-exclude '("E231"))
+ '(lsp-pyls-plugins-pycodestyle-enabled nil)
+ '(lsp-pyls-plugins-pycodestyle-ignore '("E231"))
  '(matlab-fill-fudge 0)
  '(matlab-fill-fudge-hard-maximum 80)
  '(matlab-indent-function-body nil)
@@ -1843,7 +1904,7 @@
    '(:foreground "yellow" :background default :scale 1.3 :html-foreground "Black" :html-background "Transparent" :html-scale 1.0 :matchers
 		 ("begin" "$1" "$" "$$" "\\(" "\\[")))
  '(package-selected-packages
-   '(mmm-mode helm-company org-bullets workgroups helm-lsp lsp-ui which-key dap-mode autopair julia-mode julia-emacs unfill sage-mode sage-shell-mode minimap helm-ag plantuml-mode elpy hl-todo undo-tree zoom-frm move-text magit fill-column-indicator flymd markdown-mode bash-completion workgroups2 fuzzy ess-R-data-view ess auto-compile rainbow-mode ecb realgud wgrep-helm wgrep multiple-cursors srefactor nyan-mode google-c-style yaml-mode mic-paren pdf-tools auctex helm-projectile projectile helm-ros helm-gtags helm-swoop helm company-irony-c-headers company-irony flycheck-irony irony company-shell company-quickhelp company flycheck dired+ neotree doom-themes rainbow-delimiters use-package))
+   '(company-graphviz-dot graphviz-dot-mode gnuplot mmm-mode helm-company org-bullets workgroups helm-lsp lsp-ui which-key dap-mode autopair julia-mode julia-emacs unfill sage-mode sage-shell-mode minimap helm-ag plantuml-mode elpy hl-todo undo-tree zoom-frm move-text magit fill-column-indicator flymd markdown-mode bash-completion workgroups2 fuzzy ess-R-data-view ess auto-compile rainbow-mode ecb realgud wgrep-helm wgrep multiple-cursors srefactor nyan-mode google-c-style yaml-mode mic-paren pdf-tools auctex helm-projectile projectile helm-ros helm-gtags helm-swoop helm company-irony-c-headers company-irony flycheck-irony irony company-shell company-quickhelp company flycheck dired+ neotree doom-themes rainbow-delimiters use-package))
  '(pdf-view-midnight-colors '("#DCDCCC" . "#383838"))
  '(safe-local-variable-values
    '((eval progn

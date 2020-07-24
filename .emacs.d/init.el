@@ -26,7 +26,7 @@
 (setq package-check-signature nil)
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/"))
 (add-to-list 'package-archives '("elpy" . "https://jorgenschaefer.github.io/packages/"))
-;; (package-initialize)
+(package-initialize)
 
 ;; boostrap 'use-package'
 (unless (package-installed-p 'use-package)
@@ -964,13 +964,15 @@
   (require 'ess-site)
   (setq ess-use-company t)
   (setq ess-tab-complete-in-script t)
-  (define-key ess-julia-mode-map (kbd "C-u C-x C-;") 'uncomment-region)
-  (define-key ess-julia-mode-map (kbd "S-SPC") 'complete-symbol)
-  (define-key ess-julia-mode-map (kbd "C-u C-c C-l") 'julia-latexsub-or-indent)
-  (define-key ess-julia-mode-map (kbd "C-u C-j") 'run-ess-julia)
-  (define-key ess-julia-mode-map (kbd "C-u C-SPC")
-    (lambda () (interactive) (set-mark-command -1))) ;; Go to previous mark
-  (define-key inferior-ess-julia-mode-map (kbd "C-u C-c C-l") 'julia-latexsub-or-indent)
+  (add-hook 'ess-julia-mode-hook
+	    (lambda ()
+	      (define-key ess-julia-mode-map (kbd "C-u C-x C-;") 'uncomment-region)
+	      (define-key ess-julia-mode-map (kbd "S-SPC") 'complete-symbol)
+	      (define-key ess-julia-mode-map (kbd "C-u C-c C-l") 'julia-latexsub-or-indent)
+	      (define-key ess-julia-mode-map (kbd "C-u C-j") 'run-ess-julia)
+	      (define-key ess-julia-mode-map (kbd "C-u C-SPC")
+		(lambda () (interactive) (set-mark-command -1))) ;; Go to previous mark
+	      (define-key inferior-ess-julia-mode-map (kbd "C-u C-c C-l") 'julia-latexsub-or-indent)))
   (add-to-list 'ess-tracebug-search-path "~/julia/julia-1.2.0/share/julia/base")
   (add-hook 'ess-julia-mode-hook
 	    (lambda ()

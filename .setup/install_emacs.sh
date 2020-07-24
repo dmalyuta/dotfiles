@@ -30,11 +30,11 @@ if program_not_installed "emacs"; then
     (runcmd "cd /tmp/emacs/" && runcmd "./configure --with-x-toolkit=lucid" && runcmd "make" && runcmd "make install")
 fi
 
-# Font for Emacs: Office Code Pro D
-runcmd "cd /tmp/"
-runcmd "git clone https://github.com/nathco/Office-Code-Pro"
-runcmd "cd Office-Code-Pro/Fonts/Office\ Code\ Pro\ D/TTF/"
-runcmd "sudo -H cp * /usr/share/fonts/"
+# # Font for Emacs: Office Code Pro D
+# runcmd "cd /tmp/"
+# runcmd "git clone https://github.com/nathco/Office-Code-Pro"
+# runcmd "cd 'Office-Code-Pro/Fonts/Office Code Pro D/TTF/'"
+# runcmd "sudo -H cp * /usr/share/fonts/"
 
 # [Python] JEDI auto-completion
 

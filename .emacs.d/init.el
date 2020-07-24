@@ -569,13 +569,13 @@
 ;;   (yas-global-mode 1)
 ;;   )
 
-(use-package pdf-tools
-  ;; advanced PDF viewing capbilities inside Emacs (DocView deplacement)
-  :ensure t
-  :config
-  (pdf-tools-install)
-  (add-hook 'TeX-after-compilation-finished-functions #'TeX-revert-document-buffer)
-  (setq TeX-view-program-selection '((output-pdf "PDF Tools"))))
+;; (use-package pdf-tools
+;;   ;; advanced PDF viewing capbilities inside Emacs (DocView deplacement)
+;;   :ensure t
+;;   :config
+;;   (pdf-tools-install)
+;;   (add-hook 'TeX-after-compilation-finished-functions #'TeX-revert-document-buffer)
+;;   (setq TeX-view-program-selection '((output-pdf "PDF Tools"))))
 
 (use-package mic-paren
   ;; highlight matching parentheses

@@ -40,6 +40,10 @@ runcmd "sudo -H pip install autorandr"
 # Graphics/desktop customization program
 apt_get_install_pkg compizconfig-settings-manager
 
+# Shutter
+# Screenshot program
+apt_get_install_pkg shutter
+
 # Recoll
 # Document search through whole system
 apt_get_install_pkg recoll

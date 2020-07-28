@@ -22,7 +22,7 @@ apt_get_install_pkg kazam
 
 # Peek
 # GIF screen recorder
-if program_not_installed "inkscape"; then
+if program_not_installed "peek"; then
     runcmd "add-apt-repository ppa:peek-developers/stable -y"
     runcmd "apt-get update"
     apt_get_install_pkg peek

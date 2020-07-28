@@ -15,12 +15,15 @@ Synapse app launcher setup:
   - Startup on login
   - Activate: `<Alt>a`
   
-Window management:
+Desktop experience:
 
 * Open Tweaks:
   - In Windows, set Window Action Key to Alt
+  - In Windows, unset Attach Modal Dialogues
   - In Workspaces, select Static Workspaces and set number to 4
   - In Appearance, set Applications to Numix and set Icons to Numix-Circle
+* Open Settings:
+  - In Devices -> Mouse & Touchpad, turn off Natural Scrolling
   
 Emacs:
 

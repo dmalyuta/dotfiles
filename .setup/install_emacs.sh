@@ -23,11 +23,9 @@ if program_not_installed "emacs"; then
     # Ubuntu 18.04 requires turning on "Sources" in ``$ software-properties-gtk``, see
     # https://askubuntu.com/questions/496549/error-you-must-put-some-source-uris-in-your-sources-list
     runcmd "apt-get --assume-yes build-dep emacs25" nonull
-    # download source, build and install Emacs 25.3
-    runcmd "wget http://ftp.gnu.org/gnu/emacs/emacs-26.2.tar.gz -O /tmp/emacs.tar.gz"
-    runcmd "mkdir -p /tmp/emacs"
-    runcmd "tar zxf /tmp/emacs.tar.gz --strip 1 -C /tmp/emacs"
-    (runcmd "cd /tmp/emacs/" && runcmd "./configure --with-x-toolkit=lucid" && runcmd "make" && runcmd "make install")
+    # download source, build and install Emacs
+    runcmd "git clone --branch emacs-27.1-rc1 --depth 1 git://git.sv.gnu.org/emacs.git /tmp/emacs"
+    (runcmd "cd /tmp/emacs/" && runcmd "git checkout emacs-27.1-rc1" && runcmd "./autogen.sh" && runcmd "./configure --with-x-toolkit=lucid" && runcmd "make" && runcmd "make install")
 fi
 
 # # Font for Emacs: Office Code Pro D

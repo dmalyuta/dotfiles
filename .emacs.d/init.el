@@ -26,7 +26,7 @@
 (setq package-check-signature nil)
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/"))
 (add-to-list 'package-archives '("elpy" . "https://jorgenschaefer.github.io/packages/"))
-(package-initialize)
+;; (package-initialize)
 
 ;; boostrap 'use-package'
 (unless (package-installed-p 'use-package)
@@ -1867,9 +1867,9 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(Man-notify-method (quote pushy))
+ '(Man-notify-method 'pushy)
  '(TeX-PDF-mode t)
- '(TeX-source-correlate-method (quote synctex))
+ '(TeX-source-correlate-method 'synctex)
  '(TeX-source-correlate-mode t)
  '(TeX-source-correlate-start-server t)
  '(ansi-color-faces-vector
@@ -1877,58 +1877,51 @@
  '(ansi-color-names-vector
    ["#3F3F3F" "#CC9393" "#7F9F7F" "#F0DFAF" "#8CD0D3" "#DC8CC3" "#93E0E3" "#DCDCCC"])
  '(company-begin-commands nil)
- '(ecb-auto-expand-tag-tree (quote expand-spec))
+ '(ecb-auto-expand-tag-tree 'expand-spec)
  '(ecb-auto-expand-tag-tree-collapse-other nil)
- '(ecb-highlight-tag-with-point (quote highlight-scroll))
+ '(ecb-highlight-tag-with-point 'highlight-scroll)
  '(ecb-highlight-tag-with-point-delay 0.25)
  '(ecb-layout-window-sizes
-   (quote
-    (("left11"
+   '(("left11"
       (ecb-methods-buffer-name 0.17901234567901234 . 0.7)
-      (ecb-history-buffer-name 0.17901234567901234 . 0.275)))))
+      (ecb-history-buffer-name 0.17901234567901234 . 0.275))))
  '(ecb-options-version "2.50")
  '(fci-rule-color "#383838")
  '(flymake-fringe-indicator-position nil)
  '(lsp-pyls-plugins-autopep8-enabled nil)
- '(lsp-pyls-plugins-flake8-exclude (quote ("E231")))
+ '(lsp-pyls-plugins-flake8-exclude '("E231"))
  '(lsp-pyls-plugins-pycodestyle-enabled nil)
- '(lsp-pyls-plugins-pycodestyle-ignore (quote ("E231")))
+ '(lsp-pyls-plugins-pycodestyle-ignore '("E231"))
  '(matlab-fill-fudge 0)
  '(matlab-fill-fudge-hard-maximum 80)
  '(matlab-indent-function-body nil)
- '(matlab-shell-command-switches (quote ("-nodesktop -nosplash")))
+ '(matlab-shell-command-switches '("-nodesktop -nosplash"))
  '(matlab-show-mlint-warnings t)
  '(matlab-show-periodic-code-details-flag nil)
- '(mlint-programs (quote ("/usr/local/MATLAB/R2019b/bin/glnxa64/mlint")))
+ '(mlint-programs '("/usr/local/MATLAB/R2019b/bin/glnxa64/mlint"))
  '(mmm-submode-decoration-level 0)
  '(nrepl-message-colors
-   (quote
-    ("#CC9393" "#DFAF8F" "#F0DFAF" "#7F9F7F" "#BFEBBF" "#93E0E3" "#94BFF3" "#DC8CC3")))
+   '("#CC9393" "#DFAF8F" "#F0DFAF" "#7F9F7F" "#BFEBBF" "#93E0E3" "#94BFF3" "#DC8CC3"))
  '(org-format-latex-options
-   (quote
-    (:foreground "yellow" :background default :scale 1.3 :html-foreground "Black" :html-background "Transparent" :html-scale 1.0 :matchers
-		 ("begin" "$1" "$" "$$" "\\(" "\\["))))
+   '(:foreground "yellow" :background default :scale 1.3 :html-foreground "Black" :html-background "Transparent" :html-scale 1.0 :matchers
+		 ("begin" "$1" "$" "$$" "\\(" "\\[")))
  '(package-selected-packages
-   (quote
-    (company-graphviz-dot graphviz-dot-mode gnuplot mmm-mode helm-company org-bullets workgroups helm-lsp lsp-ui which-key dap-mode autopair julia-mode julia-emacs unfill sage-mode sage-shell-mode minimap helm-ag plantuml-mode elpy hl-todo undo-tree zoom-frm move-text magit fill-column-indicator flymd markdown-mode bash-completion workgroups2 fuzzy ess-R-data-view ess auto-compile rainbow-mode ecb realgud wgrep-helm wgrep multiple-cursors srefactor nyan-mode google-c-style yaml-mode mic-paren pdf-tools auctex helm-projectile projectile helm-ros helm-gtags helm-swoop helm company-irony-c-headers company-irony flycheck-irony irony company-shell company-quickhelp company flycheck dired+ neotree doom-themes rainbow-delimiters use-package)))
- '(pdf-view-midnight-colors (quote ("#DCDCCC" . "#383838")))
+   '(company-graphviz-dot graphviz-dot-mode gnuplot mmm-mode helm-company org-bullets workgroups helm-lsp lsp-ui which-key dap-mode autopair julia-mode julia-emacs unfill sage-mode sage-shell-mode minimap helm-ag plantuml-mode elpy hl-todo undo-tree zoom-frm move-text magit fill-column-indicator flymd markdown-mode bash-completion workgroups2 fuzzy ess-R-data-view ess auto-compile rainbow-mode ecb realgud wgrep-helm wgrep multiple-cursors srefactor nyan-mode google-c-style yaml-mode mic-paren pdf-tools auctex helm-projectile projectile helm-ros helm-gtags helm-swoop helm company-irony-c-headers company-irony flycheck-irony irony company-shell company-quickhelp company flycheck dired+ neotree doom-themes rainbow-delimiters use-package))
+ '(pdf-view-midnight-colors '("#DCDCCC" . "#383838"))
  '(safe-local-variable-values
-   (quote
-    ((eval progn
-	   (add-hook
-	    (quote LaTeX-mode-hook)
-	    (lambda nil
-	      (LaTeX-add-environments "Definition")
-	      (LaTeX-add-environments "Theorem")
-	      (LaTeX-add-environments "Fact")
-	      (LaTeX-add-environments "Example")
-	      (LaTeX-add-environments "Method")
-	      (LaTeX-add-environments "Proof")
-	      (LaTeX-add-environments "VeryImportantStuff")))))))
+   '((eval progn
+	   (add-hook 'LaTeX-mode-hook
+		     (lambda nil
+		       (LaTeX-add-environments "Definition")
+		       (LaTeX-add-environments "Theorem")
+		       (LaTeX-add-environments "Fact")
+		       (LaTeX-add-environments "Example")
+		       (LaTeX-add-environments "Method")
+		       (LaTeX-add-environments "Proof")
+		       (LaTeX-add-environments "VeryImportantStuff"))))))
  '(vc-annotate-background "#2B2B2B")
  '(vc-annotate-color-map
-   (quote
-    ((20 . "#BC8383")
+   '((20 . "#BC8383")
      (40 . "#CC9393")
      (60 . "#DFAF8F")
      (80 . "#D0BF8F")
@@ -1945,7 +1938,7 @@
      (300 . "#7CB8BB")
      (320 . "#8CD0D3")
      (340 . "#94BFF3")
-     (360 . "#DC8CC3"))))
+     (360 . "#DC8CC3")))
  '(vc-annotate-very-old-color "#DC8CC3"))
 
 (let ((bg (face-attribute 'default :background)))

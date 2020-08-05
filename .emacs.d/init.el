@@ -1023,7 +1023,7 @@
   (setq-default lsp-pyls-configuration-sources ["flake8"])
   ;; Other niceties
   (setq lsp-enable-semantic-highlighting t)
-  (setq lsp-enable-snippet nil)
+  (setq lsp-enable-snippet t)  ;; Enable arguments completion
   (setq lsp-signature-auto-activate nil)
   )
 
@@ -1070,7 +1070,7 @@
   (require 'company-lsp)
   (push 'company-lsp company-backends)
   (setq company-lsp-async t)
-  (setq company-lsp-enable-snippet nil)
+  (setq company-lsp-enable-snippet t) ;; Enable arguments completion
   )
 
 (use-package dap-mode

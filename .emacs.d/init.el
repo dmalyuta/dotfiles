@@ -217,6 +217,7 @@
   ;; Linux Mint:
   ;;  sudo apt-get install g++ clang libclang-dev
   ;;  M-x irony-install-server # when in c-mode or c++-mode
+  :disabled
   :ensure t
   :defer t
   :init
@@ -256,6 +257,18 @@
     :config
     (eval-after-load 'company '(add-to-list 'company-backends '(company-irony-c-headers company-irony)))
     )
+  )
+
+(use-package ccls
+  ;; ccls is a stand-alone server implementing the Language Server Protocol for
+  ;; C, C++, and Objective-C language.
+  :ensure t
+  :config
+  (setq ccls-executable "ccls") ;; Must be on PATH: assume /usr/local/bin/ccls
+  (setq lsp-prefer-flymake nil)
+  (setq-default flycheck-disabled-checkers '(c/c++-clang c/c++-cppcheck c/c++-gcc))
+  :hook ((c-mode c++-mode objc-mode) .
+         (lambda () (require 'ccls) (lsp)))
   )
 
 (use-package modern-cpp-font-lock

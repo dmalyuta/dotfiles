@@ -47,14 +47,15 @@ done
 
 ########## dotfiles that go into $HOME directory
 
-update_file ".profile"      "$dir" "$home" $symlink
-update_file ".bash_aliases" "$dir" "$home" $symlink
-update_file ".local.bashrc" "$dir" "$home" $symlink
-update_file ".screenrc"     "$dir" "$home" $symlink
-update_file ".tmux.conf"    "$dir" "$home" $symlink
-update_file ".gitk"         "$dir" "$home" $symlink
-update_file ".gitconfig"    "$dir" "$home" false
-update_file "setup.cfg"     "$dir" "$home" $symlink
+update_file ".profile"            "$dir" "$home" $symlink
+update_file ".bash_aliases"       "$dir" "$home" $symlink
+update_file ".local.bashrc"       "$dir" "$home" $symlink
+update_file ".touchpad_config.sh" "$dir" "$home" $symlink
+update_file ".screenrc"           "$dir" "$home" $symlink
+update_file ".tmux.conf"          "$dir" "$home" $symlink
+update_file ".gitk"               "$dir" "$home" $symlink
+update_file ".gitconfig"          "$dir" "$home" false
+update_file "setup.cfg"           "$dir" "$home" $symlink
 
 ########## .bin directory
 

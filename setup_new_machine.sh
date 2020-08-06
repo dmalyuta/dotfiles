@@ -23,7 +23,7 @@ programs_list=(
 
 # associated dotfile dependencies for each program
 
-dependencies_home_dotfiles=(".profile" ".bash_aliases" ".local.bashrc" ".screenrc" ".tmux.conf" ".gitk" ".gitconfig" "setup.cfg")
+dependencies_home_dotfiles=(".profile" ".bash_aliases" ".local.bashrc" ".touchpad_config.sh" ".screenrc" ".tmux.conf" ".gitk" ".gitconfig" "setup.cfg")
 dependencies_bin=(".bin")
 dependencies_dev_tools=(".config/terminator/config" ".jupyter")
 dependencies_emacs=(".emacs.d/init.el" ".emacs.d/lisp")

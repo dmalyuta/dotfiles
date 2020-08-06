@@ -57,6 +57,16 @@ if program_not_installed "synapse"; then
     apt_get_install_pkg synapse
 fi
 
+# Solaar
+# Tool for pairing Logitech's devices through the unifying receiver
+if program_not_installed "solaar"; then
+    apt_get_install_pkg solaar
+fi
+
+# Synaptics driver
+# For better Logitech touchpad experience
+apt_get_install_pkg xserver-xorg-input-synaptics
+
 # Gnome pixel saver
 # https://github.com/pixel-saver/pixel-saver
 # Merges top bar and window title bar when maximized

@@ -176,6 +176,14 @@
 		    nil t :help "Create nomenclature file")))
   )
 
+(use-package company-box
+  ;;  A company front-end with icons
+  :ensure t
+  :config
+  (require 'company-box)
+  (add-hook 'company-mode-hook 'company-box-mode)
+  )
+
 (use-package company-quickhelp
   ;; Documentation popups when idling on a completion candidate
   :ensure t
@@ -1023,7 +1031,7 @@
   (setq-default lsp-pyls-configuration-sources ["flake8"])
   ;; Other niceties
   (setq lsp-enable-semantic-highlighting t)
-  (setq lsp-enable-snippet t)  ;; Enable arguments completion
+  (setq lsp-enable-snippet nil)  ;; Enable arguments completion
   (setq lsp-signature-auto-activate nil)
   )
 
@@ -1070,7 +1078,8 @@
   (require 'company-lsp)
   (push 'company-lsp company-backends)
   (setq company-lsp-async t)
-  (setq company-lsp-enable-snippet t) ;; Enable arguments completion
+  (setq company-lsp-enable-snippet nil) ;; Enable arguments completion
+  (setq company-lsp-cache-candidates 'auto)
   )
 
 (use-package dap-mode
@@ -1405,7 +1414,7 @@
       jit-lock-defer-contextually t
       jit-lock-stealth-nice 0.5)
 (setq-default font-lock-multiline t)
-(setq font-lock-maximum-decoration 1)
+(setq font-lock-maximum-decoration t)
 
 ;; ;; CEDET tools
 ;; (require 'cc-mode)
@@ -1935,7 +1944,7 @@
    '(:foreground "yellow" :background default :scale 1.3 :html-foreground "Black" :html-background "Transparent" :html-scale 1.0 :matchers
 		 ("begin" "$1" "$" "$$" "\\(" "\\[")))
  '(package-selected-packages
-   '(default-text-scale company-graphviz-dot graphviz-dot-mode gnuplot mmm-mode helm-company org-bullets workgroups helm-lsp lsp-ui which-key dap-mode autopair julia-mode julia-emacs unfill sage-mode sage-shell-mode minimap helm-ag plantuml-mode elpy hl-todo undo-tree zoom-frm move-text magit fill-column-indicator flymd markdown-mode bash-completion workgroups2 fuzzy ess-R-data-view ess auto-compile rainbow-mode ecb realgud wgrep-helm wgrep multiple-cursors srefactor nyan-mode google-c-style yaml-mode mic-paren pdf-tools auctex helm-projectile projectile helm-ros helm-gtags helm-swoop helm company-irony-c-headers company-irony flycheck-irony irony company-shell company-quickhelp company flycheck dired+ neotree doom-themes rainbow-delimiters use-package))
+   '(company-box default-text-scale company-graphviz-dot graphviz-dot-mode gnuplot mmm-mode helm-company org-bullets workgroups helm-lsp lsp-ui which-key dap-mode autopair julia-mode julia-emacs unfill sage-mode sage-shell-mode minimap helm-ag plantuml-mode elpy hl-todo undo-tree zoom-frm move-text magit fill-column-indicator flymd markdown-mode bash-completion workgroups2 fuzzy ess-R-data-view ess auto-compile rainbow-mode ecb realgud wgrep-helm wgrep multiple-cursors srefactor nyan-mode google-c-style yaml-mode mic-paren pdf-tools auctex helm-projectile projectile helm-ros helm-gtags helm-swoop helm company-irony-c-headers company-irony flycheck-irony irony company-shell company-quickhelp company flycheck dired+ neotree doom-themes rainbow-delimiters use-package))
  '(pdf-view-midnight-colors '("#DCDCCC" . "#383838"))
  '(safe-local-variable-values
    '((eval progn

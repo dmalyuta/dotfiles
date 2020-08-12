@@ -8,18 +8,20 @@
 #####################################
 # ..:: Synaptics touchpad (designed for Logitech T650 external touchpad) ::..
 
-xinput set-prop "Logitech Rechargeable Touchpad T650" "Synaptics Edges" 113 2719 127 2237 >&2
-xinput set-prop "Logitech Rechargeable Touchpad T650" "Synaptics Finger" 1 1 0 >&2
-xinput set-prop "Logitech Rechargeable Touchpad T650" "Synaptics Tap Time" 120 >&2
-xinput set-prop "Logitech Rechargeable Touchpad T650" "Synaptics Tap Move" 200 >&2
-xinput set-prop "Logitech Rechargeable Touchpad T650" "Synaptics Tap Durations" 150 250 100 >&2
-xinput set-prop "Logitech Rechargeable Touchpad T650" "Synaptics Move Speed" 1.3 1.3 0.0542299 0 >&2
-xinput set-prop "Logitech Rechargeable Touchpad T650" "Synaptics Tap Action" 0 0 0 0 1 0 0 >&2
-xinput set-prop "Logitech Rechargeable Touchpad T650" "Synaptics Click Action" 1 3 2 >&2
-xinput set-prop "Logitech Rechargeable Touchpad T650" "Synaptics Palm Detection" 0 >&2
-xinput set-prop "Logitech Rechargeable Touchpad T650" "Synaptics Noise Cancellation" 1 1 >&2
-xinput set-prop "Logitech Rechargeable Touchpad T650" "Synaptics Circular Scrolling" 0 >&2
-xinput set-prop "Logitech Rechargeable Touchpad T650" "Synaptics Circular Pad" 0 >&2
+ERRF=/tmp/touchpad_errors
+
+(xinput set-prop "Logitech Rechargeable Touchpad T650" "Synaptics Edges" 113 2719 127 2237; \
+    xinput set-prop "Logitech Rechargeable Touchpad T650" "Synaptics Finger" 1 1 0; \
+    xinput set-prop "Logitech Rechargeable Touchpad T650" "Synaptics Tap Time" 120; \
+    xinput set-prop "Logitech Rechargeable Touchpad T650" "Synaptics Tap Move" 200; \
+    xinput set-prop "Logitech Rechargeable Touchpad T650" "Synaptics Tap Durations" 150 250 100; \
+    xinput set-prop "Logitech Rechargeable Touchpad T650" "Synaptics Move Speed" 1.3 1.3 0.0542299 0; \
+    xinput set-prop "Logitech Rechargeable Touchpad T650" "Synaptics Tap Action" 0 0 0 0 1 0 0; \
+    xinput set-prop "Logitech Rechargeable Touchpad T650" "Synaptics Click Action" 1 3 2; \
+    xinput set-prop "Logitech Rechargeable Touchpad T650" "Synaptics Palm Detection" 0; \
+    xinput set-prop "Logitech Rechargeable Touchpad T650" "Synaptics Noise Cancellation" 1 1; \
+    xinput set-prop "Logitech Rechargeable Touchpad T650" "Synaptics Circular Scrolling" 0; \
+    xinput set-prop "Logitech Rechargeable Touchpad T650" "Synaptics Circular Pad" 0) &>>$ERRF
 
 synclient HorizHysteresis=0
 synclient VertHysteresis=0

@@ -24,8 +24,8 @@ if program_not_installed "emacs"; then
     # https://askubuntu.com/questions/496549/error-you-must-put-some-source-uris-in-your-sources-list
     runcmd "apt-get --assume-yes build-dep emacs25" nonull
     # download source, build and install Emacs
-    runcmd "git clone --branch emacs-27.1-rc1 --depth 1 git://git.sv.gnu.org/emacs.git /tmp/emacs"
-    (runcmd "cd /tmp/emacs/" && runcmd "git checkout emacs-27.1-rc1" && runcmd "./autogen.sh" && runcmd "./configure --with-x-toolkit=lucid" && runcmd "make" && runcmd "make install")
+    runcmd "git clone --branch emacs-27.1 --depth 1 git://git.sv.gnu.org/emacs.git /tmp/emacs"
+    (runcmd "cd /tmp/emacs/" && runcmd "git checkout emacs-27.1" && runcmd "./autogen.sh" && runcmd "./configure --with-cairo --with-xwidgets --with-x-toolkit=gtk3 --with-modules CFLAGS='-O3' CPPFLAGS='-O3'" && runcmd "make" && runcmd "make install")
 fi
 
 # # Font for Emacs: Office Code Pro D

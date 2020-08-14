@@ -1,1 +1,2 @@
 .jupyter/migrated
+.emacs.d/**/*.elc

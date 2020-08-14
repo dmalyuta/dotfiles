@@ -1412,9 +1412,24 @@
 (setq font-lock-support-mode 'jit-lock-mode)
 (setq jit-lock-stealth-time 16
       jit-lock-defer-contextually t
+      jit-lock-contextually nil
       jit-lock-stealth-nice 0.5)
 (setq-default font-lock-multiline t)
 (setq font-lock-maximum-decoration t)
+
+;; (defun my-font-lock-function (start end)
+;; "Set faces for font-lock between START and END.")
+
+;; (defun my-font-lock-matcher (limit)
+;;     (my-font-lock-function (point) limit)
+;;    nil)
+
+;; (setq font-lock-defaults
+;;   (list 
+;;     ;; Note that the face specified here doesn't matter since
+;;     ;; my-font-lock-matcher always returns nil and sets the face on
+;;     ;; its own.
+;;     `(my-font-lock-matcher (1 font-lock-keyword-face nil))))
 
 ;; ;; CEDET tools
 ;; (require 'cc-mode)
@@ -1944,7 +1959,7 @@
    '(:foreground "yellow" :background default :scale 1.3 :html-foreground "Black" :html-background "Transparent" :html-scale 1.0 :matchers
 		 ("begin" "$1" "$" "$$" "\\(" "\\[")))
  '(package-selected-packages
-   '(company-box default-text-scale company-graphviz-dot graphviz-dot-mode gnuplot mmm-mode helm-company org-bullets workgroups helm-lsp lsp-ui which-key dap-mode autopair julia-mode julia-emacs unfill sage-mode sage-shell-mode minimap helm-ag plantuml-mode elpy hl-todo undo-tree zoom-frm move-text magit fill-column-indicator flymd markdown-mode bash-completion workgroups2 fuzzy ess-R-data-view ess auto-compile rainbow-mode ecb realgud wgrep-helm wgrep multiple-cursors srefactor nyan-mode google-c-style yaml-mode mic-paren pdf-tools auctex helm-projectile projectile helm-ros helm-gtags helm-swoop helm company-irony-c-headers company-irony flycheck-irony irony company-shell company-quickhelp company flycheck dired+ neotree doom-themes rainbow-delimiters use-package))
+   '(fast-scroll company-box default-text-scale company-graphviz-dot graphviz-dot-mode gnuplot mmm-mode helm-company org-bullets workgroups helm-lsp lsp-ui which-key dap-mode autopair julia-mode julia-emacs unfill sage-mode sage-shell-mode minimap helm-ag plantuml-mode elpy hl-todo undo-tree zoom-frm move-text magit fill-column-indicator flymd markdown-mode bash-completion workgroups2 fuzzy ess-R-data-view ess auto-compile rainbow-mode ecb realgud wgrep-helm wgrep multiple-cursors srefactor nyan-mode google-c-style yaml-mode mic-paren pdf-tools auctex helm-projectile projectile helm-ros helm-gtags helm-swoop helm company-irony-c-headers company-irony flycheck-irony irony company-shell company-quickhelp company flycheck dired+ neotree doom-themes rainbow-delimiters use-package))
  '(pdf-view-midnight-colors '("#DCDCCC" . "#383838"))
  '(safe-local-variable-values
    '((eval progn

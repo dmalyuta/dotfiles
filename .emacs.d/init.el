@@ -83,9 +83,10 @@
   )
 
 (use-package nlinum
+  :disabled
   :ensure t
   :config
-  (setq nlinum-highlight-current-line t)
+  (setq nlinum-highlight-current-line nil)
   )
 
 (use-package doom-themes
@@ -1210,7 +1211,7 @@
 (setq matlab-verify-on-save-flag nil)
 (defun my-matlab-mode-hook () (setq fill-column 80))
 (setq matlab-indent-function-body nil)
-(global-font-lock-mode t)
+;; (global-font-lock-mode t)
 (add-to-list 'load-path "~/.emacs.d/matlab-mode")
 (setq default-fill-column 80)
 (require 'matlab-mode)
@@ -1415,21 +1416,27 @@
       jit-lock-contextually nil
       jit-lock-stealth-nice 0.5)
 (setq-default font-lock-multiline t)
-(setq font-lock-maximum-decoration t)
+(setq font-lock-maximum-decoration 1)
 
+;; Some stuff that didn't work out, from this answer:
+;; https://emacs.stackexchange.com/questions/5351/optimizing-font-lock-performance
 ;; (defun my-font-lock-function (start end)
 ;; "Set faces for font-lock between START and END.")
-
 ;; (defun my-font-lock-matcher (limit)
 ;;     (my-font-lock-function (point) limit)
 ;;    nil)
-
 ;; (setq font-lock-defaults
 ;;   (list 
 ;;     ;; Note that the face specified here doesn't matter since
 ;;     ;; my-font-lock-matcher always returns nil and sets the face on
 ;;     ;; its own.
 ;;     `(my-font-lock-matcher (1 font-lock-keyword-face nil))))
+
+;; Stop highlighting current line
+(add-hook 'python-mode-hook
+  (lambda () (setq hl-line-mode nil)))
+(add-hook 'emacs-lisp-mode-hook
+  (lambda () (setq hl-line-mode nil)))
 
 ;; ;; CEDET tools
 ;; (require 'cc-mode)

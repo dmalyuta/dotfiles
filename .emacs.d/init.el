@@ -18,6 +18,10 @@
 (global-unset-key (kbd "C-<up>"))
 (global-unset-key (kbd "C-<down>"))
 
+;; Lisp deprecation
+;; https://github.com/kiwanami/emacs-epc/issues/35
+(setq byte-compile-warnings '(cl-functions))
+
 ;;;;;;;;;;;;;;;;; PACKAGE MANAGEMENT
 
 ;; MELPA
@@ -134,6 +138,85 @@
   ;; Python
   (setq flycheck-display-errors-function #'flycheck-display-error-messages-unless-error-list)
   )
+
+;; MATLAB integration
+;; --------
+;; To install, run in ~/.emacs.d/
+;;   git clone https://github.com/dmalyuta/matlab-mode
+;;   git clone https://github.com/dmalyuta/matlab-emacs
+;;   cd matlab-emacs
+;;   make
+;; --------
+(use-package matlab-load
+  :load-path "matlab-emacs/"
+  :config
+  (require 'matlab-load)
+  (require 'company-matlab-shell)
+  (matlab-cedet-setup)
+  (setq matlab-verify-on-save-flag nil)
+  (defun my-matlab-mode-hook () (setq fill-column 80))
+  (setq matlab-indent-function-body nil)
+  )
+
+(use-package matlab-mode
+  :load-path "matlab-mode/"
+  :config
+  (setq default-fill-column 80)
+  (require 'matlab-mode)
+  (require 'matlab-server)
+  )
+
+(defun matlab-my-view-doc ()
+    "look up the matlab help info and show in another buffer"
+    (interactive)
+    (let* ((word (doc-matlab-grab-current-word)))
+      (matlab-shell-describe-command word)))
+
+(add-to-list 'matlab-mode-hook 
+	     (lambda ()
+	       ;; todo mode
+	       (hl-todo-mode)
+	       ;; bind key for starting the matlab shell
+	       (local-set-key (kbd "M-s") 'matlab-shell)
+	       ;; bind the key of checking document
+	       (local-set-key (kbd "C-c h") 'matlab-my-view-doc)
+	       ;; bind the key of jump to source code
+	       (local-set-key (kbd "C-c s")
+			      'matlab-jump-to-definition-of-word-at-cursor)
+	       ;; set company-backends
+	       (setq-local company-backends '(company-files (company-matlab company-dabbrev)))
+	       ))
+
+(add-to-list 'matlab-shell-mode-hook
+	     (lambda ()
+	       ;; bind key for completion
+	       (local-set-key (kbd "S-SPC") 'matlab-shell-tab)
+	       ;; bind the key of checking document
+	       (local-set-key (kbd "C-c h") 'matlab-my-view-doc)))
+
+(defun matlab-docstring ()
+    "Print a default docstring for a MATLAB function."
+    (interactive)
+    (insert "% <FUNCTION NAME> <DESCRIPTION>\n")
+    (insert "%\n")
+    (insert "% Syntax:\n")
+    (insert "%\n")
+    (insert "% <OUT> = <FUNCTION NAME>(<IN>) : <DESCRIPTION>\n")
+    (insert "%\n")
+    (insert "% Inputs:\n")
+    (insert "%\n")
+    (insert "% <IN1> [<TYPE>] : <DESCRIPTION>\n")
+    (insert "% <IN2> [<TYPE>] : <DESCRIPTION>\n")
+    (insert "% \n")
+    (insert "% Outputs:\n")
+    (insert "%\n")
+    (insert "% <OUT1> [<TYPE>] : <DESCRIPTION>\n")
+    (insert "% <OUT2> [<TYPE>] : <DESCRIPTION>\n")
+    (insert "%\n")
+    (insert "% Other m-files required: none\n")
+    (insert "% Subfunctions: none\n")
+    (insert "% MAT-files required: none\n")
+    )
 
 (use-package company
   ;; complete anything
@@ -1196,76 +1279,6 @@
   :config
   (so-long-enable))
 
-;; MATLAB integration
-;; --------
-;; To install, run in ~/.emacs.d/
-;;   git clone https://github.com/dmalyuta/matlab-mode
-;;   git clone https://github.com/dmalyuta/matlab-emacs
-;;   cd matlab-emacs
-;;   make
-;; --------
-(add-to-list 'load-path "~/.emacs.d/matlab-emacs")
-(require 'matlab-load)
-(require 'company-matlab-shell)
-(matlab-cedet-setup)
-(setq matlab-verify-on-save-flag nil)
-(defun my-matlab-mode-hook () (setq fill-column 80))
-(setq matlab-indent-function-body nil)
-;; (global-font-lock-mode t)
-(add-to-list 'load-path "~/.emacs.d/matlab-mode")
-(setq default-fill-column 80)
-(require 'matlab-mode)
-(require 'matlab-server)
-(defun matlab-my-view-doc ()
-  "look up the matlab help info and show in another buffer"
-  (interactive)
-  (let* ((word (doc-matlab-grab-current-word)))
-    (matlab-shell-describe-command word)))
-(add-to-list 'matlab-mode-hook 
-	     (lambda ()
-	       ;; todo mode
-	       (hl-todo-mode)
-	       ;; bind key for starting the matlab shell
-	       (local-set-key (kbd "M-s") 'matlab-shell)
-	       ;; bind the key of checking document
-	       (local-set-key (kbd "C-c h") 'matlab-my-view-doc)
-	       ;; bind the key of jump to source code
-	       (local-set-key (kbd "C-c s")
-			      'matlab-jump-to-definition-of-word-at-cursor)
-	       ;; set company-backends
-	       (setq-local company-backends '(company-files (company-matlab company-dabbrev)))
-	       ))
-(add-to-list 'matlab-shell-mode-hook
-	     (lambda ()
-	       ;; bind key for completion
-	       (local-set-key (kbd "S-SPC") 'matlab-shell-tab)
-	       ;; bind the key of checking document
-	       (local-set-key (kbd "C-c h") 'matlab-my-view-doc)))
-
-(defun matlab-docstring ()
-    "Print a default docstring for a MATLAB function."
-    (interactive)
-    (insert "% <FUNCTION NAME> <DESCRIPTION>\n")
-    (insert "%\n")
-    (insert "% Syntax:\n")
-    (insert "%\n")
-    (insert "% <OUT> = <FUNCTION NAME>(<IN>) : <DESCRIPTION>\n")
-    (insert "%\n")
-    (insert "% Inputs:\n")
-    (insert "%\n")
-    (insert "% <IN1> [<TYPE>] : <DESCRIPTION>\n")
-    (insert "% <IN2> [<TYPE>] : <DESCRIPTION>\n")
-    (insert "% \n")
-    (insert "% Outputs:\n")
-    (insert "%\n")
-    (insert "% <OUT1> [<TYPE>] : <DESCRIPTION>\n")
-    (insert "% <OUT2> [<TYPE>] : <DESCRIPTION>\n")
-    (insert "%\n")
-    (insert "% Other m-files required: none\n")
-    (insert "% Subfunctions: none\n")
-    (insert "% MAT-files required: none\n")
-    )
-
 (defun code-section (start end)
     "Section delimiters for comment"
     (interactive "r")
@@ -1403,6 +1416,28 @@
 
 ;;;;;;;;;;;;;;;;; OTHER STUFF
 
+;; Fira Code font
+;; Default font and font size
+;; (add-to-list 'default-frame-alist '(font . "DejaVu Sans Mono-12"))
+;; Fira Code
+(use-package fira-code-mode
+  ;; List of ligatures to turn off
+  :custom (fira-code-mode-disabled-ligatures
+	   '("[]" "#{" "#(" "#_" "#_(" "x" "&&"))
+  :hook prog-mode ;; Enables fira-code-mode automatically for programming major modes
+  )
+(add-hook
+ 'after-init-hook
+ (lambda ()
+   (set-face-attribute 'default nil
+		       :family "Fira Code"
+		       :height 110
+		       :weight 'normal
+		       :width 'normal)
+   
+   )
+ )
+
 ;; Zoom in every buffer
 (defadvice text-scale-increase (around all-buffers (arg) activate)
   (dolist (buffer (buffer-list))
@@ -1436,6 +1471,8 @@
 (add-hook 'python-mode-hook
   (lambda () (setq hl-line-mode nil)))
 (add-hook 'emacs-lisp-mode-hook
+  (lambda () (setq hl-line-mode nil)))
+(add-hook 'c-mode-common-hook
   (lambda () (setq hl-line-mode nil)))
 
 ;; ;; CEDET tools
@@ -1610,16 +1647,6 @@
 (xterm-mouse-mode t)
 (mouse-wheel-mode t)
 (setq x-select-enable-clipboard t)
-
-;; ;; default font and font size
-;; (add-to-list 'default-frame-alist '(font . "DejaVu Sans Mono-12"))
-;; Font
-;; (add-hook 'after-init-hook (lambda ()
-;; 			     (set-face-attribute 'default nil
-;; 						 :family "Office Code Pro D"
-;; 						 :height 100
-;; 						 :weight 'normal
-;; 						 :width 'normal)))
 
 ;; Kill TRAMP stuff
 (global-set-key (kbd "C-c t k") 'tramp-cleanup-all-connections)
@@ -1966,7 +1993,7 @@
    '(:foreground "yellow" :background default :scale 1.3 :html-foreground "Black" :html-background "Transparent" :html-scale 1.0 :matchers
 		 ("begin" "$1" "$" "$$" "\\(" "\\[")))
  '(package-selected-packages
-   '(fast-scroll company-box default-text-scale company-graphviz-dot graphviz-dot-mode gnuplot mmm-mode helm-company org-bullets workgroups helm-lsp lsp-ui which-key dap-mode autopair julia-mode julia-emacs unfill sage-mode sage-shell-mode minimap helm-ag plantuml-mode elpy hl-todo undo-tree zoom-frm move-text magit fill-column-indicator flymd markdown-mode bash-completion workgroups2 fuzzy ess-R-data-view ess auto-compile rainbow-mode ecb realgud wgrep-helm wgrep multiple-cursors srefactor nyan-mode google-c-style yaml-mode mic-paren pdf-tools auctex helm-projectile projectile helm-ros helm-gtags helm-swoop helm company-irony-c-headers company-irony flycheck-irony irony company-shell company-quickhelp company flycheck dired+ neotree doom-themes rainbow-delimiters use-package))
+   '(fira-code-mode matlab-emacs matlab-mode fast-scroll company-box default-text-scale company-graphviz-dot graphviz-dot-mode gnuplot mmm-mode helm-company org-bullets workgroups helm-lsp lsp-ui which-key dap-mode autopair julia-mode julia-emacs unfill sage-mode sage-shell-mode minimap helm-ag plantuml-mode elpy hl-todo undo-tree zoom-frm move-text magit fill-column-indicator flymd markdown-mode bash-completion workgroups2 fuzzy ess-R-data-view ess auto-compile rainbow-mode ecb realgud wgrep-helm wgrep multiple-cursors srefactor nyan-mode google-c-style yaml-mode mic-paren pdf-tools auctex helm-projectile projectile helm-ros helm-gtags helm-swoop helm company-irony-c-headers company-irony flycheck-irony irony company-shell company-quickhelp company flycheck dired+ neotree doom-themes rainbow-delimiters use-package))
  '(pdf-view-midnight-colors '("#DCDCCC" . "#383838"))
  '(safe-local-variable-values
    '((eval progn

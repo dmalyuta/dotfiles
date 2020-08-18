@@ -28,6 +28,14 @@ if program_not_installed "emacs"; then
     (runcmd "cd /tmp/emacs/" && runcmd "git checkout emacs-27.1" && runcmd "./autogen.sh" && runcmd "./configure --with-cairo --with-xwidgets --with-x-toolkit=gtk3 --with-modules CFLAGS='-O3' CPPFLAGS='-O3'" && runcmd "make" && runcmd "make install")
 fi
 
+# Font for Emacs: Fira Code
+apt_get_install_pkg fonts-firacode
+(runcmd "cd /tmp" && \
+     runcmd "wget https://github.com/tonsky/FiraCode/files/412440/FiraCode-Regular-Symbol.zip" && \
+     runcmd "unzip FiraCode-Regular-Symbol.zip -d firacode" && \
+     runcmd "cd firacode/" && \
+     runcmd "sudo -H cp * /usr/share/fonts")
+
 # # Font for Emacs: Office Code Pro D
 # runcmd "cd /tmp/"
 # runcmd "git clone https://github.com/nathco/Office-Code-Pro"

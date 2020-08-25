@@ -190,6 +190,8 @@
 (add-to-list 'matlab-shell-mode-hook
 	     (lambda ()
 	       ;; bind key for completion
+	       ;; (not company-mode)
+	       ;; (define-key matlab-shell-mode-map (kbd "S-SPC") 'nil)
 	       (local-set-key (kbd "S-SPC") 'matlab-shell-tab)
 	       ;; bind the key of checking document
 	       (local-set-key (kbd "C-c h") 'matlab-my-view-doc)))
@@ -407,6 +409,9 @@
 	helm-echo-input-in-header-line t)
   (setq helm-buffers-fuzzy-matching t
 	helm-recentf-fuzzy-match    t)
+  ;; Remove duplicate entries from history
+  (setq history-delete-duplicates t)
+  ;; (setq history-length 20)
   )
 
 (use-package helm-swoop
@@ -1415,6 +1420,9 @@
   )
 
 ;;;;;;;;;;;;;;;;; OTHER STUFF
+
+;; Activate nlinum-mode (line numbers on the left)
+(global-set-key (kbd "C-x n l") 'nlinum-mode)
 
 ;; Fira Code font
 ;; Default font and font size

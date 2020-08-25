@@ -78,6 +78,6 @@ fi
 export GIT_EDITOR="`which emacsclient` -t -s git"
 
 # Synaptics touchpad config
-# if [ -f ~/.touchpad_config.sh ]; then
-#     . ~/.touchpad_config.sh
-# fi
+if [ -f ~/.touchpad_config.sh ]; then
+    . ~/.touchpad_config.sh
+fi

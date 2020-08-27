@@ -53,12 +53,14 @@
 (straight-use-package 'use-package)
 (use-package el-patch
   :straight t)
+(require 'use-package)
+(require 'bind-key)
 
 ;;;;;;;;;;;;;;;;; EMACS BUILT-IN
 
 (use-package windmove
   ;; move cursor between windows
-  :demand
+  :demand t
   :bind
   (("C-<left>" . windmove-left)
    ("C-<right>" . windmove-right)
@@ -1335,6 +1337,7 @@
 ;; Fira Code
 (use-package fira-code-mode
   ;; List of ligatures to turn off
+  :ensure t
   :custom (fira-code-mode-disabled-ligatures
 	   '("[]" "#{" "#(" "#_" "#_(" "x" "&&"))
   :hook prog-mode ;; Enables fira-code-mode automatically for programming major modes

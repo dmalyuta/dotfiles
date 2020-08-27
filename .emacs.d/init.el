@@ -32,10 +32,27 @@
 (add-to-list 'package-archives '("elpy" . "https://jorgenschaefer.github.io/packages/"))
 ;; (package-initialize)
 
+;; bootstrap 'straight.el'
+(defvar bootstrap-version)
+(let ((bootstrap-file
+       (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
+      (bootstrap-version 5))
+  (unless (file-exists-p bootstrap-file)
+    (with-current-buffer
+        (url-retrieve-synchronously
+         "https://raw.githubusercontent.com/raxod502/straight.el/develop/install.el"
+         'silent 'inhibit-cookies)
+      (goto-char (point-max))
+      (eval-print-last-sexp)))
+  (load bootstrap-file nil 'nomessage))
+
 ;; boostrap 'use-package'
-(unless (package-installed-p 'use-package)
-  (package-refresh-contents)
-  (package-install 'use-package))
+;; (unless (package-installed-p 'use-package)
+;;   (package-refresh-contents)
+;;   (package-install 'use-package))
+(straight-use-package 'use-package)
+(use-package el-patch
+  :straight t)
 
 ;;;;;;;;;;;;;;;;; EMACS BUILT-IN
 
@@ -87,7 +104,6 @@
   )
 
 (use-package nlinum
-  :disabled
   :ensure t
   :config
   (setq nlinum-highlight-current-line nil)
@@ -304,53 +320,6 @@
   :ensure t
   :config
   (add-to-list 'company-backends 'company-shell)
-  )
-
-(use-package irony
-  ;; asynchronous capabilities (improces C/C++ editing experience)
-  ;; Linux Mint:
-  ;;  sudo apt-get install g++ clang libclang-dev
-  ;;  M-x irony-install-server # when in c-mode or c++-mode
-  :disabled
-  :ensure t
-  :defer t
-  :init
-  (add-hook 'c-mode-common-hook 'irony-mode)
-  :config
-  ;; replace completion-at-point and complete-symbol by irony-mode's asynchronous functions
-  (defun my-irony-mode-hook ()
-    (define-key irony-mode-map [remap completion-at-point]
-      'irony-completion-at-point-async)
-    (define-key irony-mode-map [remap complete-symbol]
-      'irony-completion-at-point-async))
-  (add-hook 'irony-mode-hook 'my-irony-mode-hook)
-  (add-hook 'irony-mode-hook 'irony-cdb-autosetup-compile-options)
-  (setq irony-additional-clang-options '(;; use C++11
-					 "-std=c++11"))
-  ;; additional include paths
-  ;;					 "-I/home/danylo/catkin_ws/devel/include/"
-  ;;					 "-I/opt/ros/kinetic/include/"))
-  ;; asynchronous code linting
-  (use-package flycheck-irony
-    :ensure t
-    :config
-    ;; Enable Irony for Flycheck
-    (eval-after-load 'flycheck '(add-hook 'flycheck-mode-hook #'flycheck-irony-setup)))
-  ;; asynchronous completion
-  (use-package company-irony
-    :ensure t
-    :init
-    ;;(add-hook 'irony-mode-hook 'company-irony-setup-begin-commands) ;; trigger completion after typing stuff like ->, ., etc
-    (eval-after-load 'company '(add-to-list 'company-backends 'company-irony))
-    ;; :config
-    ;; (setq company-idle-delay 0.05)
-    )
-  ;; enable C/C++ header completion
-  (use-package company-irony-c-headers
-    :ensure t
-    :config
-    (eval-after-load 'company '(add-to-list 'company-backends '(company-irony-c-headers company-irony)))
-    )
   )
 
 (use-package ccls
@@ -711,28 +680,6 @@
   :config
   (add-hook 'c-mode-common-hook 'google-set-c-style))
 
-(use-package nyan-mode
-  ;; adorable cat showing progress in document
-  :disabled
-  :ensure t
-  :config
-  (defun my-nyan-mode-activation (&optional frame)
-    "Activate nyan-mode when emacs is a GUI"
-    (interactive)
-    (if (not (equal frame nil))
-	(select-frame frame))
-    (if (display-graphic-p)
-	(progn
-	  (nyan-mode 1)
-	  (setq nyan-wavy-trail nil)
-	  (setq nyan-animate-nyancat t)
-	  )
-      (nyan-mode 0))
-    )
-  (add-hook 'after-make-frame-functions 'my-nyan-mode-activation)
-  (add-hook 'after-init-hook 'my-nyan-mode-activation)
-  )
-
 (use-package srefactor
   ;; C/C++ refactoring tool based on Semantic parser framework
   :ensure t
@@ -943,16 +890,6 @@
   (setq flymd-browser-open-function 'my-flymd-browser-function)
   )
 
-(use-package fill-column-indicator
-  ;; An Emacs minor mode that graphically indicates the fill column.
-  :disabled
-  :ensure t
-  :config
-  (setq-default fill-column 80)
-  (add-hook 'c-mode-common-hook 'fci-mode)
-  ;;(add-hook 'matlab-mode-hook 'fci-mode)
-  )
-
 (use-package magit
   :ensure t
   :bind
@@ -1047,14 +984,6 @@
   :ensure t
   :config
   (require 'unfill))
-
-(use-package julia-mode
-  ;; Julia support for Emacs
-  :disabled
-  :ensure t
-  :config
-  (require 'julia-mode)
-  )
 
 (use-package ess
   ;; Emacs Speaks Statistics
@@ -1204,30 +1133,6 @@
   )
 
 ;; %%%%%%%%%%%%%%%%% Disabled pacakges
-
-(use-package lsp-python-ms
-  :disabled
-  :ensure t
-  :config
-  (require 'lsp-python-ms)
-  (add-hook 'python-mode-hook #'lsp) ; or lsp-deferred
-  )
-
-(use-package anaconda-mode
-  :disabled
-  :ensure t
-  :config
-  (add-hook 'python-mode-hook 'anaconda-mode)
-  (add-hook 'python-mode-hook 'anaconda-eldoc-mode)
-  )
-
-(use-package company-anaconda
-  :disabled
-  :ensure t
-  :config
-  (eval-after-load "company"
-    '(add-to-list 'company-backends '(company-anaconda :with company-capf)))
-  )
 
 (use-package gnuplot
   ;; A major mode for Emacs for interacting with Gnuplot

@@ -46,6 +46,11 @@ sevince() {
     nohup evince $@ &>/dev/null & disown
 }
 
+# Emacs byte-compile
+emacs-byte-compile() {
+    emacs -batch -f batch-byte-compile $@
+}
+
 # Jupyter
 alias venv_jupnb=". ~/.python_venv/jupnb/bin/activate && echo Use \'$ deactivate\' to quit the Jupyter notebook virtualenv"
 alias jn='jupyter-notebook '

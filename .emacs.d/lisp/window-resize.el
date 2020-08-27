@@ -36,7 +36,7 @@ middle"
   (cond
    ((equal "top" (win-resize-top-or-bot)) (enlarge-window -1))
    ((equal "bot" (win-resize-top-or-bot)) (enlarge-window 1))
-   ((equal "mid" (win-resize-top-or-bot)) (enlarge-window -1))
+   ((equal "mid" (win-resize-top-or-bot)) (enlarge-window 1)) ;; used to be -1
    (t (message "nil"))))
 
 (defun win-resize-minimize-horiz ()
@@ -44,7 +44,7 @@ middle"
   (cond
    ((equal "top" (win-resize-top-or-bot)) (enlarge-window 1))
    ((equal "bot" (win-resize-top-or-bot)) (enlarge-window -1))
-   ((equal "mid" (win-resize-top-or-bot)) (enlarge-window 1))
+   ((equal "mid" (win-resize-top-or-bot)) (enlarge-window -1)) ;; used to be 1
    (t (message "nil"))))
 
 (defun win-resize-enlarge-vert ()

@@ -1053,7 +1053,23 @@
   (setq lsp-enable-semantic-highlighting t)
   (setq lsp-enable-snippet nil)  ;; Enable arguments completion
   (setq lsp-signature-auto-activate nil)
+  ;; Company
+  (require 'company-capf)
   )
+
+;; (use-package company-lsp
+;;   ;; Company completion backend for lsp-mode
+;;   ;; You should use (https://github.com/davidhalter/jedi/issues/1484):
+;;   ;;  pip install --upgrade jedi==0.15.2
+;;   ;;  pip install --upgrade parso==0.5.2
+;;   :ensure t
+;;   :config
+;;   (require 'company-lsp)
+;;   (push 'company-lsp company-backends)
+;;   (setq company-lsp-async t)
+;;   (setq company-lsp-enable-snippet nil) ;; Enable arguments completion
+;;   (setq company-lsp-cache-candidates 'auto)
+;;   )
 
 (use-package lsp-ui
   :ensure t
@@ -1086,20 +1102,6 @@
 	      ;; (local-set-key (kbd "C-c l d f") 'lsp-ui-doc-focus-frame)
 	      ;; (local-set-key (kbd "C-c l d u") 'lsp-ui-doc-unfocus-frame)
 	      (local-set-key (kbd "C-c l i") 'lsp-ui-imenu)))
-  )
-
-(use-package company-lsp
-  ;; Company completion backend for lsp-mode
-  ;; You should use (https://github.com/davidhalter/jedi/issues/1484):
-  ;;  pip install --upgrade jedi==0.15.2
-  ;;  pip install --upgrade parso==0.5.2
-  :ensure t
-  :config
-  (require 'company-lsp)
-  (push 'company-lsp company-backends)
-  (setq company-lsp-async t)
-  (setq company-lsp-enable-snippet nil) ;; Enable arguments completion
-  (setq company-lsp-cache-candidates 'auto)
   )
 
 (use-package dap-mode

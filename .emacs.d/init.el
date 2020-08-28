@@ -1,3 +1,6 @@
+;; To byte-compile the Emacs init directory, run Emacs and execute
+;; M-x byte-compile-init-dir
+
 ;;;;;;;;;;;;;;;;; MOST IMPORTANT, GENERAL STUFF
 
 ;; NB: use M-x customize to search and set package variables

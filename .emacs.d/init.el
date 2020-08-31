@@ -355,12 +355,12 @@
   ;;  C-SPC : select completion candidate
   ;;  M-a : select all completion candidates
   ;;  M-y : show the kill ring
-  ;;  C-c h i : find major definitions (e.g. of functions and variables) in C/C++, Lisp and a ton of other languages
   ;;  C-M-a and C-M-e : jump to beginning/end of function definition
   ;;  C-c h m : open man pages for symbol at point or search
   ;;  C-] : toggle to show only file names in helm buffer
   ;;  C-c r : open a file with sudo permissions
   ;;  C-c q : show list of classes, functions, etc
+  ;;  C-c h i : find major definitions (e.g. of functions and variables) in C/C++, Lisp and a ton of other languages
   ;;  *<STUFF> : substring search major mode in helm-mini (i.e. after C-x b)
   :ensure t
   :demand
@@ -1553,7 +1553,9 @@
 
 ;; Fix laggy point (cursor)
 ;; In particular: cursor freezing when moving down (next-line) for a while
+;; https://emacs.stackexchange.com/questions/28736/emacs-pointcursor-movement-lag
 (setq auto-window-vscroll nil)
+(setq doom-modeline-enable-word-count nil)
 
 ;; Doxymacs
 ;; (add-to-list 'load-path "~/.emacs.d/doxymacs/")

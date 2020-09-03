@@ -1,3 +1,6 @@
+(setq gc-cons-threshold 100000000)
+(setq read-process-output-max (* 1024 1024 10)) ;; 10mb
+
 ;; To byte-compile the Emacs init directory, run Emacs and execute
 ;; M-x byte-compile-init-dir
 
@@ -916,6 +919,7 @@
   :config
   (require 'undo-tree)
   (global-undo-tree-mode)
+  (setq undo-tree-limit nil)
   )
 
 (use-package column-enforce-mode
@@ -1027,12 +1031,11 @@
 ;; Use lsp-mode (Language Server Protocol)
 ;; see https://github.com/emacs-lsp/lsp-mode/blob/master/README.org
 
-;; lsp-mode performance
-(setq gc-cons-threshold 100000000)
-(setq read-process-output-max (* 1024 1024)) ;; 1mb
-
-
 (use-package lsp-mode
+  ;; Emacs client/library for the Language Server Protocol
+  ;;
+  ;; Sometimes it is useful to restart the LSP worspace using
+  ;; `M-x lsp-workspace-restart`
   :ensure t
   :init
   (setq lsp-keymap-prefix "C-c l")
@@ -1042,7 +1045,9 @@
   ;; Optional: use company-capf . Although company-lsp also supports caching
   ;; lsp-mode’s company-capf does that by default. To achieve that uninstall
   ;; company-lsp or put these lines in your config:
+  (require 'company-capf)
   (setq lsp-prefer-capf t)
+  (setq lsp-completion-provider :capf)
   ;; Optional: fine-tune lsp-idle-delay. This variable determines how often
   ;; lsp-mode will refresh the highlights, lenses, links, etc while you type.
   (setq lsp-idle-delay 0.500)
@@ -1056,8 +1061,6 @@
   (setq lsp-enable-semantic-highlighting t)
   (setq lsp-enable-snippet nil)  ;; Enable arguments completion
   (setq lsp-signature-auto-activate nil)
-  ;; Company
-  (require 'company-capf)
   )
 
 ;; (use-package company-lsp
@@ -1130,7 +1133,7 @@
 (use-package elpy
   ;; Elpy is an Emacs package to bring powerful Python editing to Emacs.
   ;; Use it here just for some benefits:
-  ;;  - Documentation in a different buffer
+  ;;  - Documentation in a different buffer (via `C-c C-d`)
   :ensure t
   :config
   (add-hook 'python-mode-hook
@@ -1332,6 +1335,9 @@
   )
 
 ;;;;;;;;;;;;;;;;; OTHER STUFF
+
+;; No blinking for cursor
+(blink-cursor-mode 0)
 
 ;; Activate nlinum-mode (line numbers on the left)
 (global-set-key (kbd "C-x n l") 'nlinum-mode)

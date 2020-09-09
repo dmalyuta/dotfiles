@@ -1036,6 +1036,9 @@
   ;;
   ;; Sometimes it is useful to restart the LSP worspace using
   ;; `M-x lsp-workspace-restart`
+  ;;
+  ;; Useful tools:
+  ;;  M-x lsp-rename : rename all instances of a variable.
   :ensure t
   :init
   (setq lsp-keymap-prefix "C-c l")

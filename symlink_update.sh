@@ -50,7 +50,6 @@ done
 update_file ".profile"            "$dir" "$home" $symlink
 update_file ".bash_aliases"       "$dir" "$home" $symlink
 update_file ".local.bashrc"       "$dir" "$home" $symlink
-update_file ".touchpad_config.sh" "$dir" "$home" $symlink
 update_file ".screenrc"           "$dir" "$home" $symlink
 update_file ".tmux.conf"          "$dir" "$home" $symlink
 update_file ".gitk"               "$dir" "$home" $symlink
@@ -69,6 +68,11 @@ update_file ".config/terminator/config"      "$dir" "$home" $symlink
 
 update_file ".emacs.d/init.el" "$dir" "$home" $symlink
 update_file ".emacs.d/lisp"    "$dir" "$home" $symlink false
+
+########## Usability
+
+update_file "51-synaptics-quirks.conf" "$dir/.peripherals" "/usr/share/X11/xorg.conf.d" $symlink
+update_file "70-synaptics.conf"        "$dir/.peripherals" "/usr/share/X11/xorg.conf.d" $symlink
 
 ########## Python
 

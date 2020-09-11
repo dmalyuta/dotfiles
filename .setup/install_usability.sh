@@ -65,7 +65,10 @@ fi
 
 # Synaptics driver
 # For better Logitech touchpad experience
-apt_get_install_pkg xserver-xorg-input-synaptics
+runcmd "apt-get --assume-yes install --install-recommends linux-generic-hwe-18.04 xserver-xorg-hwe-18.04"
+apt_get_install_pkg xserver-xorg-input-all-hwe-18.04
+apt_get_install_pkg xserver-xorg-input-synaptics-hwe-18.04
+runcmd "gpasswd -a $USER input"
 
 # Gnome pixel saver
 # https://github.com/pixel-saver/pixel-saver

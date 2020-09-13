@@ -330,19 +330,6 @@
   (add-to-list 'company-backends 'company-shell)
   )
 
-(use-package ccls
-  ;; ccls is a stand-alone server implementing the Language Server Protocol for
-  ;; C, C++, and Objective-C language.
-  :ensure t
-  :config
-  (require 'ccls)
-  (setq ccls-executable "ccls") ;; Must be on PATH: assume /usr/local/bin/ccls
-  (setq lsp-prefer-flymake nil)
-  (setq-default flycheck-disabled-checkers '(c/c++-clang c/c++-cppcheck c/c++-gcc))
-  :hook ((c-mode c++-mode objc-mode) .
-         (lambda () (require 'ccls) (lsp)))
-  )
-
 (use-package modern-cpp-font-lock
   ;; Syntax highlighting support for "Modern C++" - until C++20 and Technical
   ;; Specification. This package aims to provide a simple highlight of the C++
@@ -812,10 +799,6 @@
   ;; also see custom-set-variables and custom-set-faces below
   )
 
-(use-package rainbow-mode
-  ;; A minor mode for Emacs which displays strings representing colors with the color they represent as background
-  :ensure t)
-
 (use-package auto-compile
   ;; Provides two minor modes which automatically recompile Emacs Lisp source files. Together these modes guarantee that Emacs never loads outdated byte code files.
   :ensure t
@@ -1044,23 +1027,38 @@
   :init
   (setq lsp-keymap-prefix "C-c l")
   :config
+  (setq lsp-clients-clangd-executable "clangd")
+  
   (require 'lsp-mode)
+
+  ;; Use clangd instead
+  ;; https://www.reddit.com/r/cpp/comments/cafj21/ccls_clangd_and_cquery/
+  (setq lsp-disabled-clients '(ccls))
+
+  ;; Which languages to activate LSP mode for
   (add-hook 'python-mode-hook #'lsp)
-  ;; Optional: use company-capf . Although company-lsp also supports caching
+  (add-hook 'c-mode-common-hook #'lsp)
+  
+  ;; Use company-capf for completion. Although company-lsp also supports caching
   ;; lsp-mode’s company-capf does that by default. To achieve that uninstall
   ;; company-lsp or put these lines in your config:
   (require 'company-capf)
   (setq lsp-prefer-capf t)
   (setq lsp-completion-provider :capf)
+  (push 'company-capf company-backends)
+  
   ;; Optional: fine-tune lsp-idle-delay. This variable determines how often
   ;; lsp-mode will refresh the highlights, lenses, links, etc while you type.
   (setq lsp-idle-delay 0.500)
+  
   ;; Recommended settings
   (add-hook 'lsp-mode-hook (lambda ()
 			     (setq company-minimum-prefix-length 1
 				   company-idle-delay 0.0)))
+  
   ;; Linting
   (setq-default lsp-pyls-configuration-sources ["flake8"])
+  
   ;; Other niceties
   (setq lsp-enable-semantic-highlighting t)
   (setq lsp-enable-snippet nil)  ;; Enable arguments completion
@@ -1113,6 +1111,20 @@
 	      ;; (local-set-key (kbd "C-c l d u") 'lsp-ui-doc-unfocus-frame)
 	      (local-set-key (kbd "C-c l i") 'lsp-ui-imenu)))
   )
+
+;; (use-package ccls
+;;   ;; ccls is a stand-alone server implementing the Language Server Protocol for
+;;   ;; C, C++, and Objective-C language.
+;;   :ensure t
+;;   :config
+;;   (require 'ccls)
+;;   (setq ccls-executable "ccls") ;; Must be on PATH: assume /usr/local/bin/ccls
+;;   ;; (setq lsp-clients-clangd-executable "/usr/bin/clang")
+;;   (setq lsp-prefer-flymake nil)
+;;   (setq-default flycheck-disabled-checkers '(c/c++-clang c/c++-cppcheck c/c++-gcc))
+;;   :hook ((c-mode c++-mode objc-mode) .
+;;          (lambda () (require 'ccls) (lsp)))
+;;   )
 
 (use-package dap-mode
   ;; Emacs client/library for Debug Adapter Protocol is a wire protocol for

@@ -43,17 +43,22 @@ apt_get_install_pkg fonts-firacode
 # runcmd "cd 'Office-Code-Pro/Fonts/Office Code Pro D/TTF/'"
 # runcmd "sudo -H cp * /usr/share/fonts/"
 
-# [C++] language server protocol (ccls)
+# [C++] language server protocol (clangd)
 
-(runcmd "cd /tmp" && \
-     runcmd "git clone --depth=1 --recursive https://github.com/MaskRay/ccls" && \
-     runcmd "cd ccls" && \
-     runcmd "wget -c http://releases.llvm.org/8.0.0/clang+llvm-8.0.0-x86_64-linux-gnu-ubuntu-18.04.tar.xz" && \
-     runcmd "tar xf clang+llvm-8.0.0-x86_64-linux-gnu-ubuntu-18.04.tar.xz" && \
-     runcmd "cmake -H. -BRelease -DCMAKE_BUILD_TYPE=Release
-    -DCMAKE_PREFIX_PATH=/tmp/ccls/clang+llvm-8.0.0-x86_64-linux-gnu-ubuntu-18.04" && \
-     runcmd "cmake --build Release" && \
-     runcnmd "cmake --build Release --target install")
+# Installation instructions:
+# https://clangd.llvm.org/installation.html
+apt_get_install_pkg clangd-9
+runcmd "sudo update-alternatives --install /usr/bin/clangd clangd /usr/bin/clangd-9 100"
+
+# (runcmd "cd /tmp" && \
+#      runcmd "git clone --depth=1 --recursive https://github.com/MaskRay/ccls" && \
+#      runcmd "cd ccls" && \
+#      runcmd "wget -c http://releases.llvm.org/8.0.0/clang+llvm-8.0.0-x86_64-linux-gnu-ubuntu-18.04.tar.xz" && \
+#      runcmd "tar xf clang+llvm-8.0.0-x86_64-linux-gnu-ubuntu-18.04.tar.xz" && \
+#      runcmd "cmake -H. -BRelease -DCMAKE_BUILD_TYPE=Release
+#     -DCMAKE_PREFIX_PATH=/tmp/ccls/clang+llvm-8.0.0-x86_64-linux-gnu-ubuntu-18.04" && \
+#      runcmd "cmake --build Release" && \
+#      runcnmd "cmake --build Release --target install")
 
 # [Python] JEDI auto-completion
 

@@ -1015,6 +1015,13 @@
 ;; Use lsp-mode (Language Server Protocol)
 ;; see https://github.com/emacs-lsp/lsp-mode/blob/master/README.org
 
+(use-package company-c-headers
+  :ensure t
+  :config
+  (add-to-list 'company-backends 'company-c-headers)
+  (add-to-list 'company-c-headers-path-system "/usr/include/c++/7/")
+  )
+
 (use-package lsp-mode
   ;; Emacs client/library for the Language Server Protocol
   ;;
@@ -1027,13 +1034,13 @@
   :init
   (setq lsp-keymap-prefix "C-c l")
   :config
-  (setq lsp-clients-clangd-executable "clangd")
+  ;; (setq lsp-clients-clangd-executable "clangd")
   
   (require 'lsp-mode)
 
   ;; Use clangd instead
   ;; https://www.reddit.com/r/cpp/comments/cafj21/ccls_clangd_and_cquery/
-  (setq lsp-disabled-clients '(ccls))
+  ;; (setq lsp-disabled-clients '(ccls))
 
   ;; Which languages to activate LSP mode for
   (add-hook 'python-mode-hook #'lsp)
@@ -1044,8 +1051,9 @@
   ;; company-lsp or put these lines in your config:
   (require 'company-capf)
   (setq lsp-prefer-capf t)
-  (setq lsp-completion-provider :capf)
+  ;; (setq lsp-completion-provider :capf)
   (push 'company-capf company-backends)
+  (push 'company-c-headers company-backends)
   
   ;; Optional: fine-tune lsp-idle-delay. This variable determines how often
   ;; lsp-mode will refresh the highlights, lenses, links, etc while you type.
@@ -1112,19 +1120,19 @@
 	      (local-set-key (kbd "C-c l i") 'lsp-ui-imenu)))
   )
 
-;; (use-package ccls
-;;   ;; ccls is a stand-alone server implementing the Language Server Protocol for
-;;   ;; C, C++, and Objective-C language.
-;;   :ensure t
-;;   :config
-;;   (require 'ccls)
-;;   (setq ccls-executable "ccls") ;; Must be on PATH: assume /usr/local/bin/ccls
-;;   ;; (setq lsp-clients-clangd-executable "/usr/bin/clang")
-;;   (setq lsp-prefer-flymake nil)
-;;   (setq-default flycheck-disabled-checkers '(c/c++-clang c/c++-cppcheck c/c++-gcc))
-;;   :hook ((c-mode c++-mode objc-mode) .
-;;          (lambda () (require 'ccls) (lsp)))
-;;   )
+(use-package ccls
+  ;; ccls is a stand-alone server implementing the Language Server Protocol for
+  ;; C, C++, and Objective-C language.
+  :ensure t
+  :config
+  (require 'ccls)
+  (setq ccls-executable "ccls") ;; Must be on PATH: assume /usr/local/bin/ccls
+  ;; (setq lsp-clients-clangd-executable "/usr/bin/clang")
+  (setq lsp-prefer-flymake nil)
+  (setq-default flycheck-disabled-checkers '(c/c++-clang c/c++-cppcheck c/c++-gcc))
+  :hook ((c-mode c++-mode objc-mode) .
+         (lambda () (require 'ccls) (lsp)))
+  )
 
 (use-package dap-mode
   ;; Emacs client/library for Debug Adapter Protocol is a wire protocol for

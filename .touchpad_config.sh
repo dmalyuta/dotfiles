@@ -15,7 +15,7 @@ xinput set-prop "Logitech Rechargeable Touchpad T650" "Synaptics Finger" 1 1 0 &
 xinput set-prop "Logitech Rechargeable Touchpad T650" "Synaptics Tap Time" 100 &>>$ERRF
 xinput set-prop "Logitech Rechargeable Touchpad T650" "Synaptics Tap Move" 200 &>>$ERRF
 xinput set-prop "Logitech Rechargeable Touchpad T650" "Synaptics Tap Durations" 150 250 100 &>>$ERRF
-xinput set-prop "Logitech Rechargeable Touchpad T650" "Synaptics Move Speed" 1.1 1.1 0 0 &>>$ERRF
+xinput set-prop "Logitech Rechargeable Touchpad T650" "Synaptics Move Speed" 1.6 1.6 0 0 &>>$ERRF
 xinput set-prop "Logitech Rechargeable Touchpad T650" "Synaptics Tap Action" 0 0 0 0 0 0 0 &>>$ERRF
 xinput set-prop "Logitech Rechargeable Touchpad T650" "Synaptics Click Action" 1 3 0 &>>$ERRF
 xinput set-prop "Logitech Rechargeable Touchpad T650" "Synaptics Palm Detection" 0 &>>$ERRF

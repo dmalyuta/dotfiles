@@ -1051,7 +1051,21 @@
   ;; company-lsp or put these lines in your config:
   (require 'company-capf)
   (setq lsp-prefer-capf t)
-  ;; (setq lsp-completion-provider :capf)
+  ;; From Gitter chat for lsp-mode:
+  ;; @kiennq wrote:
+  ;; @dmalyuta clangd should be able to find and suggest iostream with correct
+  ;; configuration for compilation database json.  You can try to use
+  ;; https://github.com/rizsotto/Bear or CMAKE to generate that.
+  ;; 
+  ;; To get both completion providers to contribute you can try to use multiple
+  ;; backends, set company-backends to something like (setq
+  ;; company-backends(company-capf company-c-headers))and
+  ;; setlsp-completion-providerto:noneso it will not change
+  ;; yourcompany-backends` setup.
+  ;; 
+  ;; Also a note about your configuration: You should put all of setq to :init
+  ;; block, so it will work regardless of that setting is checked when lsp-mode
+  ;; is running or just after load.  (setq lsp-completion-provider :capf)
   (push 'company-capf company-backends)
   (push 'company-c-headers company-backends)
   

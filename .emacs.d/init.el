@@ -1499,9 +1499,12 @@
   "Print in comint buffer the file that is being executed"
   ;;(message "%s" (buffer-file-name))
   ;;(python-shell-send-file buffer-file-name 'nil 'nil 'nil "Hello world")
-  (python-shell-send-string (concat "print('%run " buffer-file-name "')"))
+  ;; The -i in `%run -i` maintains the current Python namespace, which
+  ;; means that current variables in the workspace are seen by the script
+  ;; See: https://stackoverflow.com/a/13300775/4605946
+  (python-shell-send-string (concat "print('%run -i " buffer-file-name "')"))
   (python-shell-send-string "print('Running... ')")
-  (python-shell-send-string (concat "%run " buffer-file-name))
+  (python-shell-send-string (concat "%run -i " buffer-file-name))
   (python-shell-send-string "print('done')")
   )
 (defun ipython-print-region ()

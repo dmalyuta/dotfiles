@@ -72,6 +72,7 @@ update_file ".emacs.d/lisp"    "$dir" "$home" $symlink false
 
 ########## Usability
 
+update_file "40-libinput.conf"         "$dir/.peripherals" "/usr/share/X11/xorg.conf.d" $symlink
 update_file "51-synaptics-quirks.conf" "$dir/.peripherals" "/usr/share/X11/xorg.conf.d" $symlink
 update_file "70-synaptics.conf"        "$dir/.peripherals" "/usr/share/X11/xorg.conf.d" $symlink
 

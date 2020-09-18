@@ -27,7 +27,7 @@ dependencies_home_dotfiles=(".profile" ".bash_aliases" ".local.bashrc" ".screenr
 dependencies_bin=(".bin")
 dependencies_dev_tools=(".config/terminator/config" ".jupyter")
 dependencies_emacs=(".emacs.d/init.el" ".emacs.d/lisp")
-dependencies_usability=(".peripherals/51-synaptics-quirks.conf" ".peripherals/70-synaptics.conf")
+dependencies_usability=(".peripherals/40-libinput.conf" ".peripherals/51-synaptics-quirks.conf" ".peripherals/70-synaptics.conf")
 
 # question to ask user when determining which programs to install
 

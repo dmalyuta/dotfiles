@@ -1180,8 +1180,6 @@
 	      ))
   )
 
-;; %%%%%%%%%%%%%%%%% Disabled pacakges
-
 (use-package gnuplot
   ;; A major mode for Emacs for interacting with Gnuplot
   :ensure t

@@ -4,6 +4,10 @@
 # Install usability-related things for Linux like the theme, the text
 # editor, etc.
 #
+# To make Logitech K380 keyboard function keys behave as function keys by
+# default, build from source and install the following program:
+# https://github.com/jergusg/k380-function-keys-conf
+#
 # ----------------------------------------------------------------------
 
 echo_prefix_temp="$echo_prefix"

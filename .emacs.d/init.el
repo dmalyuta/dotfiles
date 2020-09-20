@@ -1379,6 +1379,21 @@
 
 ;;;;;;;;;;;;;;;;; OTHER STUFF
 
+;; Python triple-quote electric complete
+;; From: https://stackoverflow.com/a/19715115/4605946
+;; (defun python-electric-pair-string-delimiter ()
+;;   (when (and electric-pair-mode
+;;              (memq last-command-event '(?\" ?\'))
+;;              (let ((count 0))
+;;                (while (eq (char-before (- (point) count)) last-command-event)
+;;                  (setq count (1+ count)))
+;;                (= count 3)))
+;;     (save-excursion (insert (make-string 3 last-command-event)))))
+;; (add-hook 'python-mode-hook
+;;           (lambda ()
+;;             (add-hook 'post-self-insert-hook
+;;                       #'python-electric-pair-string-delimiter 'append t)))
+
 ;; No blinking for cursor
 (blink-cursor-mode 0)
 
@@ -1951,6 +1966,7 @@
  '(fci-rule-color "#383838")
  '(flymake-fringe-indicator-position nil)
  '(lsp-pyls-plugins-autopep8-enabled t)
+ '(lsp-pyls-plugins-flake8-config "~/setup.cfg")
  '(lsp-pyls-plugins-flake8-enabled t)
  '(lsp-pyls-plugins-flake8-exclude '("E231"))
  '(lsp-pyls-plugins-pycodestyle-enabled nil)

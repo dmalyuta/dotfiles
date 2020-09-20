@@ -1022,6 +1022,13 @@
   (add-to-list 'company-c-headers-path-system "/usr/include/c++/7/")
   )
 
+(use-package lsp-python-ms
+  :ensure t
+  :init (setq lsp-python-ms-auto-install-server t)
+  :hook (python-mode . (lambda ()
+                         (require 'lsp-python-ms)
+                         (lsp))))  ; or lsp-deferred
+
 (use-package lsp-mode
   ;; Emacs client/library for the Language Server Protocol
   ;;
@@ -1930,7 +1937,7 @@
  '(ansi-color-faces-vector
    [default default default italic underline success warning error])
  '(ansi-color-names-vector
-   ["#3F3F3F" "#CC9393" "#7F9F7F" "#F0DFAF" "#8CD0D3" "#DC8CC3" "#93E0E3" "#DCDCCC"])
+   ["#282c34" "#CC9393" "#7F9F7F" "#F0DFAF" "#8CD0D3" "#DC8CC3" "#93E0E3" "#DCDCCC"])
  '(company-begin-commands nil)
  '(ecb-auto-expand-tag-tree 'expand-spec)
  '(ecb-auto-expand-tag-tree-collapse-other nil)
@@ -1943,7 +1950,8 @@
  '(ecb-options-version "2.50")
  '(fci-rule-color "#383838")
  '(flymake-fringe-indicator-position nil)
- '(lsp-pyls-plugins-autopep8-enabled nil)
+ '(lsp-pyls-plugins-autopep8-enabled t)
+ '(lsp-pyls-plugins-flake8-enabled t)
  '(lsp-pyls-plugins-flake8-exclude '("E231"))
  '(lsp-pyls-plugins-pycodestyle-enabled nil)
  '(lsp-pyls-plugins-pycodestyle-ignore '("E231"))

@@ -31,11 +31,15 @@ xinput set-prop "Logitech Rechargeable Touchpad T650" "Device Accel Profile" 2 &
 
 # ..:: Seenda external touchpad ::..
 
+MaxTapTime=100
+SingleTapTimeout=200
+MaxDoubleTapTime=$((MaxTapTime+SingleTapTimeout))
+
 xinput set-prop "HTX USB HID Device HTX HID Device Touchpad" "Synaptics Finger" 1 1 0 &>>$ERRF
-xinput set-prop "HTX USB HID Device HTX HID Device Touchpad" "Synaptics Tap Time" 90 &>>$ERRF
-xinput set-prop "HTX USB HID Device HTX HID Device Touchpad" "Synaptics Tap Move" 40 &>>$ERRF
+xinput set-prop "HTX USB HID Device HTX HID Device Touchpad" "Synaptics Tap Time" $MaxTapTime &>>$ERRF
+xinput set-prop "HTX USB HID Device HTX HID Device Touchpad" "Synaptics Tap Move" 150 &>>$ERRF
 # SingleTapTimeout, MaxDoubleTapTime, ClickTime
-xinput set-prop "HTX USB HID Device HTX HID Device Touchpad" "Synaptics Tap Durations" 120 200 100 &>>$ERRF
+xinput set-prop "HTX USB HID Device HTX HID Device Touchpad" "Synaptics Tap Durations" $SingleTapTimeout $MaxDoubleTapTime 50 &>>$ERRF
 xinput set-prop "HTX USB HID Device HTX HID Device Touchpad" "Synaptics Move Speed" 2.2 2.2 0 0 &>>$ERRF
 xinput set-prop "HTX USB HID Device HTX HID Device Touchpad" "Synaptics Tap Action" 0 0 0 0 1 3 2 &>>$ERRF
 xinput set-prop "HTX USB HID Device HTX HID Device Touchpad" "Synaptics Click Action" 0 0 0 &>>$ERRF

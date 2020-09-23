@@ -44,22 +44,22 @@ MaxDoubleTapTime=150 #$((MaxTapTime+SingleTapTimeout))
 MaxTapMove=180
 Speed=3.0
 
-xinput set-prop "HTX USB HID Device HTX HID Device Touchpad" "Synaptics Finger" $FingerLow $FingerHigh 0 &>>$ERRF
-xinput set-prop "HTX USB HID Device HTX HID Device Touchpad" "Synaptics Tap Time" $MaxTapTime &>>$ERRF
-xinput set-prop "HTX USB HID Device HTX HID Device Touchpad" "Synaptics Tap Move" $MaxTapMove &>>$ERRF
-# SingleTapTimeout, MaxDoubleTapTime, ClickTime
-xinput set-prop "HTX USB HID Device HTX HID Device Touchpad" "Synaptics Tap Durations" $SingleTapTimeout $MaxDoubleTapTime 60 &>>$ERRF
-xinput set-prop "HTX USB HID Device HTX HID Device Touchpad" "Synaptics Move Speed" $Speed $Speed 0 0 &>>$ERRF
-xinput set-prop "HTX USB HID Device HTX HID Device Touchpad" "Synaptics Tap Action" 0 0 0 0 1 3 2 &>>$ERRF
-xinput set-prop "HTX USB HID Device HTX HID Device Touchpad" "Synaptics Click Action" 0 0 0 &>>$ERRF
-xinput set-prop "HTX USB HID Device HTX HID Device Touchpad" "Synaptics Palm Detection" 0 &>>$ERRF
-# Noise cancellation = (horizontal,vertical) hysteresis
-xinput set-prop "HTX USB HID Device HTX HID Device Touchpad" "Synaptics Noise Cancellation" 0 0 &>>$ERRF
-xinput set-prop "HTX USB HID Device HTX HID Device Touchpad" "Synaptics Circular Scrolling" 0 &>>$ERRF
-xinput set-prop "HTX USB HID Device HTX HID Device Touchpad" "Synaptics Coasting Speed" 0 0 &>>$ERRF
-xinput set-prop "HTX USB HID Device HTX HID Device Touchpad" "Synaptics Circular Pad" 0 &>>$ERRF
-# Quadratic acceleration profile -- feels better
-xinput set-prop "HTX USB HID Device HTX HID Device Touchpad" "Device Accel Profile" 2 &>>$ERRF
-xinput set-prop "HTX USB HID Device HTX HID Device Touchpad" "Device Accel Constant Deceleration" 2.4 &>>$ERRF
-xinput set-prop "HTX USB HID Device HTX HID Device Touchpad" "Device Accel Adaptive Deceleration" 1.0 &>>$ERRF
-xinput set-prop "HTX USB HID Device HTX HID Device Touchpad" "Device Accel Velocity Scaling" 9.0 &>>$ERRF
+# xinput set-prop "HTX USB HID Device HTX HID Device Touchpad" "Synaptics Finger" $FingerLow $FingerHigh 0 &>>$ERRF
+# xinput set-prop "HTX USB HID Device HTX HID Device Touchpad" "Synaptics Tap Time" $MaxTapTime &>>$ERRF
+# xinput set-prop "HTX USB HID Device HTX HID Device Touchpad" "Synaptics Tap Move" $MaxTapMove &>>$ERRF
+# # SingleTapTimeout, MaxDoubleTapTime, ClickTime
+# xinput set-prop "HTX USB HID Device HTX HID Device Touchpad" "Synaptics Tap Durations" $SingleTapTimeout $MaxDoubleTapTime 60 &>>$ERRF
+# xinput set-prop "HTX USB HID Device HTX HID Device Touchpad" "Synaptics Move Speed" $Speed $Speed 0 0 &>>$ERRF
+# xinput set-prop "HTX USB HID Device HTX HID Device Touchpad" "Synaptics Tap Action" 0 0 0 0 1 3 2 &>>$ERRF
+# xinput set-prop "HTX USB HID Device HTX HID Device Touchpad" "Synaptics Click Action" 0 0 0 &>>$ERRF
+# xinput set-prop "HTX USB HID Device HTX HID Device Touchpad" "Synaptics Palm Detection" 0 &>>$ERRF
+# # Noise cancellation = (horizontal,vertical) hysteresis
+# xinput set-prop "HTX USB HID Device HTX HID Device Touchpad" "Synaptics Noise Cancellation" 0 0 &>>$ERRF
+# xinput set-prop "HTX USB HID Device HTX HID Device Touchpad" "Synaptics Circular Scrolling" 0 &>>$ERRF
+# xinput set-prop "HTX USB HID Device HTX HID Device Touchpad" "Synaptics Coasting Speed" 0 0 &>>$ERRF
+# xinput set-prop "HTX USB HID Device HTX HID Device Touchpad" "Synaptics Circular Pad" 0 &>>$ERRF
+# # Quadratic acceleration profile -- feels better
+# xinput set-prop "HTX USB HID Device HTX HID Device Touchpad" "Device Accel Profile" 2 &>>$ERRF
+# xinput set-prop "HTX USB HID Device HTX HID Device Touchpad" "Device Accel Constant Deceleration" 2.4 &>>$ERRF
+# xinput set-prop "HTX USB HID Device HTX HID Device Touchpad" "Device Accel Adaptive Deceleration" 1.0 &>>$ERRF
+# xinput set-prop "HTX USB HID Device HTX HID Device Touchpad" "Device Accel Velocity Scaling" 9.0 &>>$ERRF

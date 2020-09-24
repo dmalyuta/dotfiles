@@ -4,6 +4,15 @@
 # Install script for setting up my working environment on a new Linux
 # computer.
 #
+# Run as root using: sudo --preserve-env=HOME
+# (to preserve the home directory of the user, necessary for 
+#  Ubuntu >=19.10)
+#
+# For Ubuntu 20.04, I also find needing to apply the following answer:
+# https://askubuntu.com/a/787491/596413
+# (Namely, uncomment the line '# precedence ::ffff:0:0/96 100' in 
+#  /etc/gai.conf)
+#
 # ----------------------------------------------------------------------
 
 ########## list of dotfiles(folders) to install
@@ -69,7 +78,7 @@ source .setup/functions.sh
 ########## check that run as root
 
 if [[ $EUID -ne 0 ]]; then
-    echoerr "must be root (hint: run with sudo)"
+    echoerr "must be root (hint: run with 'sudo --preserve-env=HOME')"
     echo_warnings_errors
     exit 1
 fi
@@ -175,6 +184,11 @@ do
         copy_foo "$foo" "$dir" "$home" $symlink
     fi
 done
+
+########## Fix IPv4 precedence
+# Seems to be necessary for Ubuntu 20.04
+
+#runcmd "sudo sh -c \"sed '/# precedence ::ffff:0:0\/96  100/c\precedence ::ffff:0:0\/96  100' /etc/gai.conf > /tmp/gai.conf && mv /tmp/gai.conf /etc/gai.conf\""
 
 ########## Development tools
 

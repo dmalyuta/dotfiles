@@ -6,6 +6,10 @@
 # repository's folder to a different folder, now symlinks of $HOME
 # dotfiles are broken
 #
+# Run as root using: sudo --preserve-env=HOME
+# (to preserve the home directory of the user, necessary for 
+#  Ubuntu >=19.10)
+#
 # ----------------------------------------------------------------------
 
 dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )" # directory where symlink_update.sh located

@@ -22,11 +22,11 @@ if program_not_installed "FoxitReader"; then
     if [[ "$bit_number" == "x86_64" ]]; then
 		# 64-bit
 		echo "Detected that you're running a 64-bit OS, will install 64-bit version of Foxit PDF Reader"
-		runcmd "wget https://www.foxitsoftware.com/downloads/latest.php?product=Foxit-Reader&platform=Linux-64-bit&version=2.4.0.14978&package_type=run&language=English -O /tmp/foxit.tar.gz"
+		runcmd "wget -4 https://www.foxitsoftware.com/downloads/latest.php?product=Foxit-Reader&platform=Linux-64-bit&version=2.4.0.14978&package_type=run&language=English -O /tmp/foxit.tar.gz"
     else
 		# 32-bit
 		echo "Detected that you're running a 32-bit OS, will install 32-bit version of Foxit PDF Reader"
-		runcmd "wget https://www.foxitsoftware.com/downloads/latest.php?product=Foxit-Reader&platform=Linux-32-bit&version=2.4.0.14978&package_type=run&language=English -O /tmp/foxit.tar.gz"
+		runcmd "wget -4 https://www.foxitsoftware.com/downloads/latest.php?product=Foxit-Reader&platform=Linux-32-bit&version=2.4.0.14978&package_type=run&language=English -O /tmp/foxit.tar.gz"
     fi
 
     # unpack the installer

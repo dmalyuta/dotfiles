@@ -1,13 +1,22 @@
 # Ubuntu dotfiles
 
-Ubuntu 18.04.4 LTS auto-configuration.
+Ubuntu 20.04.1 LTS auto-configuration.
 
-## Necessary manual steps
+## Automatic install script
 
-The script `setup_new_machine.sh` does most of the work for you. You can also
-use `symlink_update.sh` to link files back to this repository (use the `-s`
-options to keep the files as symbolic links). Here are some remaining necessary
-manual steps.
+Use the script `setup.sh` to interact with the install program. To setup a new
+machine:
+```
+./setup.sh setup -? # -? shows the possible options
+```
+
+To update symlinks from dotfiles back to this repository (effectively making
+them version-controlled):
+```
+./setup.sh symlink -? # -? shows the possible options
+```
+
+## Manual steps
 
 Synapse app launcher setup:
 
@@ -36,7 +45,6 @@ Emacs:
 	$ make
 	```
   - Font setup: `M-x all-the-icons-install-fonts`
-  - C++: with a C/C++ file open, run `irony-install-server`
 
 ## License
 

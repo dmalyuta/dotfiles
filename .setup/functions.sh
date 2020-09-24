@@ -199,10 +199,17 @@ wget_targz_install()
     local url="$2"
 
     # download and install
-    runcmd "wget $url -P /tmp/"
+    runcmd "wget -4 $url -P /tmp/"
     runcmd "tar -zxvf /tmp/${name}.tar.gz -C /tmp"
     (runcmd "cd /tmp/${name}/" && configure_make_install)
     subshell_check $?
+}
+
+function_not_defined()
+{ # return true if bash function is not defined
+    local function_name="$1"
+    # ! which "$program_name" &>/dev/null # maybe works too/is better?
+    ! type -t "$function_name" > /dev/null 2>&1
 }
 
 program_not_installed()

@@ -22,23 +22,23 @@ if ! dpkg-query -W numix-gtk-theme &>/dev/null; then
     apt_get_install_pkg numix-gtk-theme
     runcmd "gsettings set org.gnome.desktop.interface gtk-theme \"Numix\""
     runcmd "gsettings set org.gnome.desktop.wm.preferences theme \"Numix\""
-    runcmd "add-apt-repository ppa:numix/ppa -y"
-    runcmd "apt-get update"
+    #runcmd "add-apt-repository ppa:numix/ppa -y"
+    #runcmd "apt-get update"
     apt_get_install_pkg numix-icon-theme
     apt_get_install_pkg numix-icon-theme-circle
 fi
 
-# Mendeley
-# Research bibliography organizer
-if program_not_installed "mendeleydesktop"; then
-    runcmd "wget https://www.mendeley.com/repositories/ubuntu/stable/amd64/mendeleydesktop-latest -O /tmp/mendeley.deb"
-    runcmd_noexit "dpkg -i /tmp/mendeley.deb" nonull
-    runcmd "apt-get --assume-yes install -f" nonull
-fi
+# # Mendeley
+# # Research bibliography organizer
+# if program_not_installed "mendeleydesktop"; then
+#     runcmd "wget -4 https://www.mendeley.com/repositories/ubuntu/stable/amd64/mendeleydesktop-latest -O /tmp/mendeley.deb"
+#     runcmd_noexit "dpkg -i /tmp/mendeley.deb" nonull
+#     runcmd "apt-get --assume-yes install -f" nonull
+# fi
 
 # Autorandr
 # Automatic detection and changing of display configuration
-runcmd "sudo -H pip install autorandr"
+# runcmd "sudo -H pip install autorandr"
 
 # Compiz
 # Graphics/desktop customization program
@@ -46,7 +46,11 @@ apt_get_install_pkg compizconfig-settings-manager
 
 # Shutter
 # Screenshot program
-apt_get_install_pkg shutter
+if program_not_installed "shutter"; then
+    runcmd "add-apt-repository ppa:linuxuprising/shutter -y"
+    runcmd "apt-get update"
+    apt_get_install_pkg shutter
+fi
 
 # Recoll
 # Document search through whole system
@@ -56,8 +60,6 @@ apt_get_install_pkg pdfgrep
 # Synapse
 # Instant search
 if program_not_installed "synapse"; then
-    runcmd "add-apt-repository ppa:synapse-core/testing -y"
-    runcmd "apt-get update"
     apt_get_install_pkg synapse
 fi
 

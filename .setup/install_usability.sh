@@ -65,9 +65,9 @@ fi
 
 # Solaar
 # Tool for pairing Logitech's devices through the unifying receiver
-if program_not_installed "solaar"; then
-    apt_get_install_pkg solaar
-fi
+# if program_not_installed "solaar"; then
+#     apt_get_install_pkg solaar
+# fi
 
 # Synaptics driver
 # For better Logitech touchpad experience

@@ -66,6 +66,10 @@ if program_not_installed "ccls"; then
 	 runcnmd "cmake --build Release --target install")
 fi
 
+# [Python] language server protocol (pyls)
+
+runcmd "pip install python-language-server[all]"
+
 # [Python] JEDI auto-completion
 
 runcmd "sudo -H pip3 install virtualenv jedi"

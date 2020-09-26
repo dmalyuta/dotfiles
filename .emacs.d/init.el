@@ -161,6 +161,7 @@
   (setq flycheck-check-syntax-automatically '(mode-enabled save))
   ;; Python
   (setq flycheck-display-errors-function #'flycheck-display-error-messages-unless-error-list)
+  (add-to-list 'flycheck-checkers 'python-flake8)
   )
 
 ;; MATLAB integration
@@ -1049,6 +1050,9 @@
   ;; https://www.reddit.com/r/cpp/comments/cafj21/ccls_clangd_and_cquery/
   ;; (setq lsp-disabled-clients '(ccls))
 
+  ;; Use user-installed pyls instead of auto-installed mspyls
+  (setq lsp-disabled-clients '(mspyls))
+
   ;; Which languages to activate LSP mode for
   (add-hook 'python-mode-hook #'lsp)
   (add-hook 'c-mode-common-hook #'lsp)
@@ -1086,7 +1090,12 @@
 				   company-idle-delay 0.0)))
   
   ;; Linting
+  ;; See more options via M-x customize-group lsp-pyls
   (setq-default lsp-pyls-configuration-sources ["flake8"])
+  (setq lsp-pyls-plugins-pyflakes-enabled nil)
+  (setq lsp-pyls-plugins-pylint-enabled nil)
+  (setq lsp-pyls-plugins-mccabe-enabled nil)
+  ;; (setq lsp-diagnostic-package :none)
   
   ;; Other niceties
   (setq lsp-enable-semantic-highlighting t)

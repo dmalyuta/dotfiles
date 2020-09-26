@@ -25,4 +25,22 @@ if function_not_defined "conda"; then
     runcmd_noexit "/tmp/anaconda.sh" nonull
 fi
 
+########################
+# Python 3.8.5
+########################
+
+PYENV_NAME=py385
+CONDA_CONFIG_PATH=$(conda info --base)/etc/profile.d/conda.sh
+
+if ! (conda info --envs | grep $PYENV_NAME > /dev/null 2>&1); then
+    (runcmd "source $CONDA_CONFIG_PATH" &&
+	 runcmd "conda create -y -n $PYENV_NAME python=3.8.5" nonull &&
+	 runcmd "conda activate $PYENV_NAME" &&
+	 runcmd "conda install -y ipython" nonull)
+
+    # Make it the default virtualenv on bash startup
+    runcmd "eval builtin echo \"\" >> ${home}/.bashrc" nonull
+    runcmd "eval builtin echo \"conda activate py385\" >> ${home}/.bashrc" nonull
+fi
+
 echo_prefix="$echo_prefix_temp"

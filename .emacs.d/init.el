@@ -45,28 +45,28 @@
 (add-to-list 'package-archives '("elpy" . "https://jorgenschaefer.github.io/packages/"))
 ;; (package-initialize)
 
-;; bootstrap 'straight.el'
-(defvar bootstrap-version)
-(let ((bootstrap-file
-       (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
-      (bootstrap-version 5))
-  (unless (file-exists-p bootstrap-file)
-    (with-current-buffer
-        (url-retrieve-synchronously
-         "https://raw.githubusercontent.com/raxod502/straight.el/develop/install.el"
-         'silent 'inhibit-cookies)
-      (goto-char (point-max))
-      (eval-print-last-sexp)))
-  (load bootstrap-file nil 'nomessage))
+;; ;; bootstrap 'straight.el'
+;; (defvar bootstrap-version)
+;; (let ((bootstrap-file
+;;        (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
+;;       (bootstrap-version 5))
+;;   (unless (file-exists-p bootstrap-file)
+;;     (with-current-buffer
+;;         (url-retrieve-synchronously
+;;          "https://raw.githubusercontent.com/raxod502/straight.el/develop/install.el"
+;;          'silent 'inhibit-cookies)
+;;       (goto-char (point-max))
+;;       (eval-print-last-sexp)))
+;;   (load bootstrap-file nil 'nomessage))
 
 ;; boostrap 'use-package'
-;; (unless (package-installed-p 'use-package)
-;;   (package-refresh-contents)
-;;   (package-install 'use-package))
-(straight-use-package 'use-package)
-(use-package el-patch
-  :straight t)
-(require 'use-package)
+(unless (package-installed-p 'use-package)
+  (package-refresh-contents)
+  (package-install 'use-package))
+;; (straight-use-package 'use-package)
+;; (use-package el-patch
+;;   :straight t)
+;; (require 'use-package)
 (require 'bind-key)
 
 ;;;;;;;;;;;;;;;;; EMACS BUILT-IN
@@ -450,7 +450,8 @@
 	(require 'helm-ros)
 	(global-helm-ros-mode t)
 	))
-  (message "ROS environment variables not defined, won't load helm-ros"))
+  ;; (message "ROS environment variables not defined, won't load helm-ros")
+  )
 
 (use-package projectile
   ;; project interaction library offering tools to operate on a project level
@@ -479,14 +480,15 @@
 						  projectile-globally-ignored-files))
   (projectile-global-mode)
   (projectile-mode +1)
-  (define-key projectile-mode-map (kbd "C-c p") 'projectile-command-map)
-  (use-package helm-projectile
-    ;; Helm UI for Projectile
-    :ensure t
-    :config
-    (setq projectile-completion-system 'helm)
-    (helm-projectile-on)
-    (setq projectile-switch-project-action 'helm-projectile)))
+  (define-key projectile-mode-map (kbd "C-c p") 'projectile-command-map))
+
+(use-package helm-projectile
+  ;; Helm UI for Projectile
+  :ensure t
+  :config
+  (setq projectile-completion-system 'helm)
+  (helm-projectile-on)
+  (setq projectile-switch-project-action 'helm-projectile))
 
 (use-package tex
   ;; AUCTeX
@@ -760,7 +762,8 @@
 
 (use-package realgud
   ;; A extensible, modular GNU Emacs front-end for interacting with external debuggers
-  :ensure t)
+  :ensure t
+  :defer t)
 
 (use-package org
   ;; Org mode is for keeping notes, maintaining TODO lists, planning projects,

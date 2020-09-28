@@ -23,6 +23,9 @@ alias killgrep='~/.bin/killgrep.sh'
 # Open file or URL in default application
 alias easyopen='xdg-open'
 
+# Restart networking
+alias restart-network='sudo systemctl restart NetworkManager.service'
+
 # Directory making
 now() { date "+%d%m%YT%H%M%S"; } # shortcut for timestamps
 

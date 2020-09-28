@@ -1,4 +1,11 @@
-(setq gc-cons-threshold 100000000)
+(setq gc-cons-threshold (eval-when-compile (* 1024 1024 1024))) ;; 1GB of garbage collection space
+(setq gc-cons-percentage 0.5)
+;; (setq gc-cons-threshold most-positive-fixnum)
+;; (setq gc-cons-threshold 1600000)
+(setq garbage-collection-messages t)
+(run-with-idle-timer 30 t (lambda ()
+			    ;; Garbage-collect after 30 seconds of idleness
+			    (garbage-collect)))
 (setq read-process-output-max (* 1024 1024 10)) ;; 10mb
 
 ;; To byte-compile the Emacs init directory, run Emacs and execute
@@ -542,6 +549,9 @@
 	 (define-key LaTeX-mode-map (kbd "C-c l") 'company-auctex-labels)
 	 (define-key LaTeX-mode-map (kbd "C-c s") 'company-auctex-symbols)
 	 ))
+    ;; Makke completion case sensitive
+    (add-hook 'LaTeX-mode-hook (lambda ()
+				 (setq company-dabbrev-downcase nil)))
     )
   ;; Other environments
   (add-hook 'LaTeX-mode-hook
@@ -551,8 +561,8 @@
 	      (LaTeX-add-environments "pgfonlayer")
 	      ))
   ;; Spell checking
-  (add-hook 'LaTeX-mode-hook 'flyspell-mode)
-  (add-hook 'LaTeX-mode-hook 'flyspell-buffer)
+  ;; (add-hook 'LaTeX-mode-hook 'flyspell-mode)
+  ;; (add-hook 'LaTeX-mode-hook 'flyspell-buffer)
   ;; Line breaking math
   (add-hook 'LaTeX-mode-hook
 	    (lambda ()
@@ -898,13 +908,20 @@
   (move-text-default-bindings)
   )
 
-(use-package undo-tree
-  ;; Better undo/redo functionality, including undo tree browsing
-  :ensure t
+;; (use-package undo-tree
+;;   ;; Better undo/redo functionality, including undo tree browsing
+;;   :ensure t
+;;   :config
+;;   (require 'undo-tree)
+;;   (global-undo-tree-mode)
+;;   (setq undo-tree-limit nil)
+;;   )
+(use-package redo+
+  :load-path "lisp/"
   :config
-  (require 'undo-tree)
-  (global-undo-tree-mode)
-  (setq undo-tree-limit nil)
+  (require 'redo+)
+  (global-set-key (kbd "C-/") 'undo)
+  (global-set-key (kbd "C-?") 'redo)
   )
 
 (use-package column-enforce-mode
@@ -1227,6 +1244,25 @@
   :config
   (default-text-scale-mode)
   )
+
+(use-package rainbow-mode
+  ;; This minor mode sets background color to strings that match color names,
+  ;; e.g. #0000ff is displayed in white with a blue background.
+  ;; See: https://jblevins.org/log/rainbow-mode
+  :ensure t
+  :config
+  (add-hook 'LaTeX-mode-hook
+	    (lambda ()
+	      (rainbow-mode 1)))
+  )
+
+;; (use-package gcmh
+;;   ;; Enforce a sneaky Garbage Collection strategy to minimize GC interference
+;;   ;; with the activity.
+;;   :ensure t
+;;   :config
+;;   (gcmh-mode 1)
+;;   )
 
 ;;;;;;;;;;;;;;;;; NON-MELPA PACKAGES
 

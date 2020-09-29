@@ -1,14 +1,23 @@
 #!/bin/bash
 # ----------------------------------------------------------------------
 #
-# Synaptics touchpad configuration.
+# Input device configuration (mouse, touchpad, keyboard, tablet, etc).
 #
 # ----------------------------------------------------------------------
 
-#####################################
-# ..:: Synaptics touchpad ::..
+ERRF=/tmp/input_config_errors
 
-ERRF=/tmp/touchpad_errors
+#####################################
+########## KEYBOARD
+#####################################
+
+# Key stickiness and move speed
+gsettings set org.gnome.desktop.peripherals.keyboard delay 212 &>>$ERRF
+gsettings set org.gnome.desktop.peripherals.keyboard repeat-interval 19 &>>$ERRF
+
+#####################################
+########## TOUCHPAD
+#####################################
 
 # ..:: Logitech T650 external touchpad ::..
 
@@ -34,15 +43,29 @@ xinput set-prop "Logitech Rechargeable Touchpad T650" "Device Accel Constant Dec
 xinput set-prop "Logitech Rechargeable Touchpad T650" "Device Accel Adaptive Deceleration" 1.0 &>>$ERRF
 xinput set-prop "Logitech Rechargeable Touchpad T650" "Device Accel Velocity Scaling" 9.0 &>>$ERRF
 
-# ..:: Seenda external touchpad ::..
+#####################################
+########## STYLUS
+#####################################
 
-FingerLow=3 # Release when pressure below this value
-FingerHigh=5 # Touch when pressure above this value
-MaxTapTime=150
-SingleTapTimeout=150
-MaxDoubleTapTime=150 #$((MaxTapTime+SingleTapTimeout))
-MaxTapMove=180
-Speed=3.0
+# ..:: Wacom Intuos S BT Pad/Stylus ::..
+# Some command line commands you can run:
+# - To view devices:
+#  $ xsetwacom --list devices
+# - To view all options:
+#  $ xsetwacom -s get "Wacom Intuos BT S Pen stylus" all
+
+xsetwacom --set "Wacom Intuos BT S Pen stylus" "Button" 2 "pan" &>>$ERRF
+xsetwacom --set "Wacom Intuos BT S Pen stylus" "PanScrollThreshold" 300 &>>$ERRF
+
+# ..:: Seenda external touchpad (DEPRECATED) ::..
+
+# FingerLow=3 # Release when pressure below this value
+# FingerHigh=5 # Touch when pressure above this value
+# MaxTapTime=150
+# SingleTapTimeout=150
+# MaxDoubleTapTime=150 #$((MaxTapTime+SingleTapTimeout))
+# MaxTapMove=180
+# Speed=3.0
 
 # xinput set-prop "HTX USB HID Device HTX HID Device Touchpad" "Synaptics Finger" $FingerLow $FingerHigh 0 &>>$ERRF
 # xinput set-prop "HTX USB HID Device HTX HID Device Touchpad" "Synaptics Tap Time" $MaxTapTime &>>$ERRF

@@ -91,3 +91,6 @@ gitpushoverleaf() {
     pswd overleaf.com
     git push
 }
+
+# Shortcut Ctrl+Alt+F for Firefox
+python ~/.bin/set_customshortcut.py 'launch-firefox' 'firefox' '<Ctrl><Alt>F'

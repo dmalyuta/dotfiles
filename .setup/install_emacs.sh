@@ -67,8 +67,20 @@ if program_not_installed "ccls"; then
 fi
 
 # [Python] language server protocol (pyls)
+# Completion and such
 
 runcmd "pip install python-language-server[all]"
+# Static type checking using mypy:
+runcmd "pip install pyls-mypy"
+runcmd "pip install --user future"
+
+# [Python] language server protocol (pyright)
+# Static type checking: https://github.com/microsoft/pyright
+apt_get_install_pkg curl
+runcmd "curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -"
+apt_get_install_pkg nodejs
+apt_get_install_pkg npm
+runcmd "sudo npm install -g pyright"
 
 # [Python] JEDI auto-completion
 

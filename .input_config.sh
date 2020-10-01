@@ -55,7 +55,7 @@ xinput set-prop "Logitech Rechargeable Touchpad T650" "Device Accel Velocity Sca
 #  $ xsetwacom -s get "Wacom Intuos BT S Pen stylus" all
 
 xsetwacom --set "Wacom Intuos BT S Pen stylus" "Button" 2 "pan" &>>$ERRF
-xsetwacom --set "Wacom Intuos BT S Pen stylus" "PanScrollThreshold" 300 &>>$ERRF
+xsetwacom --set "Wacom Intuos BT S Pen stylus" "PanScrollThreshold" 200 &>>$ERRF
 
 # ..:: Seenda external touchpad (DEPRECATED) ::..
 

@@ -3,9 +3,12 @@
 ;; (setq gc-cons-threshold most-positive-fixnum)
 ;; (setq gc-cons-threshold 1600000)
 (setq garbage-collection-messages t)
-(run-with-idle-timer 30 t (lambda ()
-			    ;; Garbage-collect after 30 seconds of idleness
-			    (garbage-collect)))
+(setq my-gc-collect-interval 30)
+(run-with-idle-timer my-gc-collect-interval t
+		     (lambda ()
+		       ;; Garbage-collect after 30 seconds of idleness
+		       (garbage-collect)
+		       (message "Routine %ds garbage collection" my-gc-collect-interval)))
 (setq read-process-output-max (* 1024 1024 10)) ;; 10mb
 
 ;; To byte-compile the Emacs init directory, run Emacs and execute
@@ -1044,11 +1047,22 @@
   )
 
 (use-package lsp-python-ms
+  ;; Microsoft Python Language Server implements the Language Server Protocol.
   :ensure t
   :init (setq lsp-python-ms-auto-install-server t)
   :hook (python-mode . (lambda ()
                          (require 'lsp-python-ms)
                          (lsp))))  ; or lsp-deferred
+
+(use-package lsp-pyright
+  ;; Pyright is a fast type checker meant for large Python source bases. It can
+  ;; run in a “watch” mode and performs fast incremental updates when files are
+  ;; modified.
+  :disabled
+  :ensure t
+  :hook (python-mode . (lambda ()
+                          (require 'lsp-pyright)
+                          (lsp))))  ; or lsp-deferred
 
 (use-package lsp-mode
   ;; Emacs client/library for the Language Server Protocol
@@ -2018,7 +2032,7 @@
    '(:foreground "yellow" :background default :scale 1.3 :html-foreground "Black" :html-background "Transparent" :html-scale 1.0 :matchers
 		 ("begin" "$1" "$" "$$" "\\(" "\\[")))
  '(package-selected-packages
-   '(fira-code-mode matlab-emacs matlab-mode fast-scroll company-box default-text-scale company-graphviz-dot graphviz-dot-mode gnuplot mmm-mode helm-company org-bullets workgroups helm-lsp lsp-ui which-key dap-mode autopair julia-mode julia-emacs unfill sage-mode sage-shell-mode minimap helm-ag plantuml-mode elpy hl-todo undo-tree zoom-frm move-text magit fill-column-indicator flymd markdown-mode bash-completion workgroups2 fuzzy ess-R-data-view ess auto-compile rainbow-mode ecb realgud wgrep-helm wgrep multiple-cursors srefactor nyan-mode google-c-style yaml-mode mic-paren pdf-tools auctex helm-projectile projectile helm-ros helm-gtags helm-swoop helm company-irony-c-headers company-irony flycheck-irony irony company-shell company-quickhelp company flycheck dired+ neotree doom-themes rainbow-delimiters use-package))
+   '(lsp-pyright fira-code-mode matlab-emacs matlab-mode fast-scroll company-box default-text-scale company-graphviz-dot graphviz-dot-mode gnuplot mmm-mode helm-company org-bullets workgroups helm-lsp lsp-ui which-key dap-mode autopair julia-mode julia-emacs unfill sage-mode sage-shell-mode minimap helm-ag plantuml-mode elpy hl-todo undo-tree zoom-frm move-text magit fill-column-indicator flymd markdown-mode bash-completion workgroups2 fuzzy ess-R-data-view ess auto-compile rainbow-mode ecb realgud wgrep-helm wgrep multiple-cursors srefactor nyan-mode google-c-style yaml-mode mic-paren pdf-tools auctex helm-projectile projectile helm-ros helm-gtags helm-swoop helm company-irony-c-headers company-irony flycheck-irony irony company-shell company-quickhelp company flycheck dired+ neotree doom-themes rainbow-delimiters use-package))
  '(pdf-view-midnight-colors '("#DCDCCC" . "#383838"))
  '(safe-local-variable-values
    '((eval progn

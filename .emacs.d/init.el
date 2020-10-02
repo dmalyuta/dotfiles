@@ -1046,19 +1046,24 @@
   (add-to-list 'company-c-headers-path-system "/usr/include/c++/7/")
   )
 
-(use-package lsp-python-ms
-  ;; Microsoft Python Language Server implements the Language Server Protocol.
+(use-package ccls
+  ;; ccls is a stand-alone server implementing the Language Server Protocol for
+  ;; C, C++, and Objective-C language.
   :ensure t
-  :init (setq lsp-python-ms-auto-install-server t)
-  :hook (python-mode . (lambda ()
-                         (require 'lsp-python-ms)
-                         (lsp))))  ; or lsp-deferred
+  :config
+  (require 'ccls)
+  (setq ccls-executable "ccls") ;; Must be on PATH: assume /usr/local/bin/ccls
+  ;; (setq lsp-clients-clangd-executable "/usr/bin/clang")
+  (setq lsp-prefer-flymake nil)
+  (setq-default flycheck-disabled-checkers '(c/c++-clang c/c++-cppcheck c/c++-gcc))
+  :hook ((c-mode c++-mode objc-mode) .
+         (lambda () (require 'ccls) (lsp)))
+  )
 
 (use-package lsp-pyright
   ;; Pyright is a fast type checker meant for large Python source bases. It can
   ;; run in a “watch” mode and performs fast incremental updates when files are
   ;; modified.
-  :disabled
   :ensure t
   :hook (python-mode . (lambda ()
                           (require 'lsp-pyright)
@@ -1085,7 +1090,7 @@
   ;; (setq lsp-disabled-clients '(ccls))
 
   ;; Use user-installed pyls instead of auto-installed mspyls
-  (setq lsp-disabled-clients '(mspyls))
+  ;; (setq lsp-disabled-clients '(mspyls))
 
   ;; Which languages to activate LSP mode for
   (add-hook 'python-mode-hook #'lsp)
@@ -1105,7 +1110,7 @@
   ;; To get both completion providers to contribute you can try to use multiple
   ;; backends, set company-backends to something like (setq
   ;; company-backends(company-capf company-c-headers))and
-  ;; setlsp-completion-providerto:noneso it will not change
+  ;; setlsp-completion-providerto:none so it will not change
   ;; yourcompany-backends` setup.
   ;; 
   ;; Also a note about your configuration: You should put all of setq to :init
@@ -1117,19 +1122,14 @@
   ;; Optional: fine-tune lsp-idle-delay. This variable determines how often
   ;; lsp-mode will refresh the highlights, lenses, links, etc while you type.
   (setq lsp-idle-delay 0.500)
+
+  ;; Linting
+  (setq lsp-diagnostic-package :none)
   
   ;; Recommended settings
   (add-hook 'lsp-mode-hook (lambda ()
 			     (setq company-minimum-prefix-length 1
 				   company-idle-delay 0.0)))
-  
-  ;; Linting
-  ;; See more options via M-x customize-group lsp-pyls
-  (setq-default lsp-pyls-configuration-sources ["flake8"])
-  (setq lsp-pyls-plugins-pyflakes-enabled nil)
-  (setq lsp-pyls-plugins-pylint-enabled nil)
-  (setq lsp-pyls-plugins-mccabe-enabled nil)
-  ;; (setq lsp-diagnostic-package :none)
   
   ;; Other niceties
   (setq lsp-enable-semantic-highlighting t)
@@ -1137,19 +1137,22 @@
   (setq lsp-signature-auto-activate nil)
   )
 
-;; (use-package company-lsp
-;;   ;; Company completion backend for lsp-mode
-;;   ;; You should use (https://github.com/davidhalter/jedi/issues/1484):
-;;   ;;  pip install --upgrade jedi==0.15.2
-;;   ;;  pip install --upgrade parso==0.5.2
-;;   :ensure t
-;;   :config
-;;   (require 'company-lsp)
-;;   (push 'company-lsp company-backends)
-;;   (setq company-lsp-async t)
-;;   (setq company-lsp-enable-snippet nil) ;; Enable arguments completion
-;;   (setq company-lsp-cache-candidates 'auto)
-;;   )
+;;===============================================================
+;;===============================================================
+;; ..:: Code linting for Python ::..
+(add-hook 'python-mode-hook
+	  (lambda ()
+	    (flycheck-mode)
+	    (setq flycheck-enabled-checkers '(python-flake8 python-pyright))
+	    (setq flycheck-disabled-checkers '(python-mypy python-pylint))
+	    ;; Multiple checkers: flake8, then pyright
+	    ;; See: https://www.flycheck.org/en/latest/user/syntax-checkers.html#configuring-checker-chains
+	    (flycheck-add-next-checker 'python-flake8 'python-pyright)
+	    ))
+(global-set-key (kbd "C-c f l") 'flycheck-list-errors) ;; List all errors
+(global-set-key (kbd "C-c f v") 'flycheck-verify-setup) ;; Show active/disabled checkers
+;;===============================================================
+;;===============================================================
 
 (use-package lsp-ui
   :ensure t
@@ -1164,14 +1167,15 @@
    		    lsp-ui-doc-include-signature t
 		    
    		    lsp-ui-sideline-enable t
-		    lsp-ui-sideline-delay 0.5
+		    lsp-ui-sideline-delay 0.2
 		    lsp-ui-sideline-show-code-actions nil
 		    lsp-ui-sideline-show-hover nil
 		    
    		    lsp-ui-flycheck-enable t
    		    lsp-ui-flycheck-list-position 'right
    		    lsp-ui-flycheck-live-reporting t
-   		    lsp-ui-peek-enable nil
+
+		    lsp-ui-peek-enable nil
    		    ;; lsp-ui-peek-list-width 60
    		    ;; lsp-ui-peek-peek-height 25
 
@@ -1182,40 +1186,6 @@
 	      ;; (local-set-key (kbd "C-c l d f") 'lsp-ui-doc-focus-frame)
 	      ;; (local-set-key (kbd "C-c l d u") 'lsp-ui-doc-unfocus-frame)
 	      (local-set-key (kbd "C-c l i") 'lsp-ui-imenu)))
-  )
-
-(use-package ccls
-  ;; ccls is a stand-alone server implementing the Language Server Protocol for
-  ;; C, C++, and Objective-C language.
-  :ensure t
-  :config
-  (require 'ccls)
-  (setq ccls-executable "ccls") ;; Must be on PATH: assume /usr/local/bin/ccls
-  ;; (setq lsp-clients-clangd-executable "/usr/bin/clang")
-  (setq lsp-prefer-flymake nil)
-  (setq-default flycheck-disabled-checkers '(c/c++-clang c/c++-cppcheck c/c++-gcc))
-  :hook ((c-mode c++-mode objc-mode) .
-         (lambda () (require 'ccls) (lsp)))
-  )
-
-(use-package dap-mode
-  ;; Emacs client/library for Debug Adapter Protocol is a wire protocol for
-  ;; communication between client and Debug Server. It’s similar to the LSP but
-  ;; provides integration with debug server.
-  ;;
-  ;; Require to run in terminal:
-  ;;  pip install "ptvsd>=4.2"
-  :ensure t
-  :config
-  (dap-mode 1)
-  (add-hook 'python-mode-hook (lambda () (dap-ui-mode 1)))
-  ;; enables mouse hover support
-  (dap-tooltip-mode 1)
-  ;; use tooltips for mouse hover
-  ;; if it is not enabled `dap-mode' will use the minibuffer.
-  (tooltip-mode 1)
-  ;; Activations
-  (require 'dap-python)
   )
 
 (use-package elpy

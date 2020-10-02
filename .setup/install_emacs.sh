@@ -81,6 +81,7 @@ runcmd "curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -"
 apt_get_install_pkg nodejs
 apt_get_install_pkg npm
 runcmd "sudo npm install -g pyright"
+runcmd "pip install git+https://github.com/predictive-analytics-lab/data-science-types" # Stubs for numpy, scipy etc.
 
 # [Python] JEDI auto-completion
 

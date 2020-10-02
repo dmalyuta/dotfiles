@@ -41,6 +41,11 @@ if ! (conda info --envs | grep $PYENV_NAME > /dev/null 2>&1); then
     # Make it the default virtualenv on bash startup
     runcmd "eval builtin echo \"\" >> ${home}/.bashrc" nonull
     runcmd "eval builtin echo \"conda activate py385\" >> ${home}/.bashrc" nonull
+
+    # Install some modules
+    runcmd "pip install pandas"
+    runcmd "pip install pytest"
+    runcmd "pip install black"
 fi
 
 echo_prefix="$echo_prefix_temp"

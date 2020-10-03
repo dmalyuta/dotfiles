@@ -63,7 +63,7 @@ if program_not_installed "ccls"; then
 	 runcmd "tar xf clang+llvm-8.0.0-x86_64-linux-gnu-ubuntu-18.04.tar.xz" && \
 	 runcmd "cmake -H. -BRelease -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=/tmp/ccls/clang+llvm-8.0.0-x86_64-linux-gnu-ubuntu-18.04" && \
 	 runcmd "cmake --build Release" && \
-	 runcnmd "cmake --build Release --target install")
+	 runcmd "cmake --build Release --target install")
 fi
 
 # [Python] language server protocol (pyls)
@@ -85,12 +85,12 @@ runcmd "pip install git+https://github.com/predictive-analytics-lab/data-science
 
 # [Python] JEDI auto-completion
 
-runcmd "sudo -H pip3 install virtualenv jedi"
+runcmd "pip install virtualenv jedi"
 runcmd "eval builtin echo 'export PATH=\$PATH'\":$(which virtualenv) # Python virtualenv path\" >> ${HOME}/.bashrc" nonull # add the virtualenv path to the PATH
 
 # [Python] Flake8 linting
 
-runcmd "sudo -H pip3 install flake8"
+runcmd "pip install flake8"
 
 # flycheck in shell-script-mode
 

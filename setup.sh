@@ -11,7 +11,7 @@
 
 mode="$1"
 normal_user="${SUDO_USER:-$USER}"
-base_cmd="sudo --preserve-env=HOME,PATH -u $normal_user"
+base_cmd="sudo --preserve-env=HOME,PATH" #-u $normal_user"
 
 if [ "$mode" == "setup" ]; then
     $base_cmd ./setup_new_machine.sh "${@:2}"

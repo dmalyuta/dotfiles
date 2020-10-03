@@ -32,7 +32,7 @@ programs_list=(
 
 # associated dotfile dependencies for each program
 
-dependencies_home_dotfiles=(".profile" ".bash_aliases" ".local.bashrc" ".dircolors" ".screenrc" ".tmux.conf" ".gitk" ".gitconfig" "setup.cfg" ".touchpad_config.sh")
+dependencies_home_dotfiles=(".profile" ".bash_aliases" ".local.bashrc" ".dircolors" ".screenrc" ".tmux.conf" ".gitk" ".gitconfig" "setup.cfg" ".input_config.sh")
 dependencies_bin=(".bin")
 dependencies_dev_tools=(".config/terminator/config" ".jupyter")
 dependencies_emacs=(".emacs.d/init.el" ".emacs.d/lisp")
@@ -185,11 +185,6 @@ do
     fi
 done
 
-########## Fix IPv4 precedence
-# Seems to be necessary for Ubuntu 20.04
-
-#runcmd "sudo sh -c \"sed '/# precedence ::ffff:0:0\/96  100/c\precedence ::ffff:0:0\/96  100' /etc/gai.conf > /tmp/gai.conf && mv /tmp/gai.conf /etc/gai.conf\""
-
 ########## Development tools
 
 install_program "dev_tools" .setup/install_python.sh
@@ -198,7 +193,6 @@ install_program "dev_tools" .setup/install_dev_tools.sh
 ########## Usability
 
 install_program "usability" .setup/install_usability.sh
-install_program "usability" .setup/install_foxit.sh
 
 ########## LaTeX
 

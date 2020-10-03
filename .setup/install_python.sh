@@ -8,6 +8,7 @@
 echo_prefix_temp="$echo_prefix"
 echo_prefix="[python tools setup] "
 
+apt_get_install_pkg python
 # install fresh pip
 #apt_get_install_pkg python-dev
 #apt_get_install_pkg python-pip

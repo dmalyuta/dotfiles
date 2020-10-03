@@ -1,5 +1,9 @@
-(setq gc-cons-threshold (eval-when-compile (* 1024 1024 1024))) ;; 1GB of garbage collection space
-(setq gc-cons-percentage 0.5)
+(setq gc-cons-threshold most-positive-fixnum) ;; no garbage collection at startup
+(add-hook 'after-init-hook (lambda ()
+			     ;; 16MB of garbage collection space once running
+			     (setq gc-cons-threshold (eval-when-compile (* 1024 1024 16)))
+			     ))
+;; (setq gc-cons-percentage 0.5)
 ;; (setq gc-cons-threshold most-positive-fixnum)
 ;; (setq gc-cons-threshold 1600000)
 (setq garbage-collection-messages t)

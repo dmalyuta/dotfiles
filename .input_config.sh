@@ -12,7 +12,7 @@ ERRF=/tmp/input_config_errors
 #####################################
 
 # Key stickiness and move speed
-gsettings set org.gnome.desktop.peripherals.keyboard delay 212 &>>$ERRF
+gsettings set org.gnome.desktop.peripherals.keyboard delay 250 &>>$ERRF
 gsettings set org.gnome.desktop.peripherals.keyboard repeat-interval 19 &>>$ERRF
 
 #####################################

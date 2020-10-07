@@ -12,8 +12,8 @@ ERRF=/tmp/input_config_errors
 #####################################
 
 # Key stickiness and move speed
-gsettings set org.gnome.desktop.peripherals.keyboard delay 250 &>>$ERRF
-gsettings set org.gnome.desktop.peripherals.keyboard repeat-interval 19 &>>$ERRF
+gsettings set org.gnome.desktop.peripherals.keyboard delay 200 &>>$ERRF
+gsettings set org.gnome.desktop.peripherals.keyboard repeat-interval 15 &>>$ERRF
 
 #####################################
 ########## TOUCHPAD
@@ -55,7 +55,7 @@ xinput set-prop "Logitech Rechargeable Touchpad T650" "Device Accel Velocity Sca
 #  $ xsetwacom -s get "Wacom Intuos BT S Pen stylus" all
 
 xsetwacom --set "Wacom Intuos BT S Pen stylus" "Button" 2 "pan" &>>$ERRF
-xsetwacom --set "Wacom Intuos BT S Pen stylus" "PanScrollThreshold" 200 &>>$ERRF
+xsetwacom --set "Wacom Intuos BT S Pen stylus" "PanScrollThreshold" 100 &>>$ERRF
 
 # ..:: Seenda external touchpad (DEPRECATED) ::..
 

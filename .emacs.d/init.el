@@ -1064,18 +1064,21 @@
          (lambda () (require 'ccls) (lsp)))
   )
 
-(use-package lsp-pyright
-  ;; Pyright is a fast type checker meant for large Python source bases. It can
-  ;; run in a “watch” mode and performs fast incremental updates when files are
-  ;; modified.
+(use-package pyvenv
   :ensure t
-  :hook (python-mode . (lambda ()
-                          (require 'lsp-pyright)
-                          (lsp))))  ; or lsp-deferred
+  :diminish
+  :config
+
+  (setenv "WORKON_HOME" "/home/danylo/anaconda3/envs")
+  ;; Show python venv name in modeline
+  (setq pyvenv-mode-line-indicator
+	'(pyvenv-virtual-env-name
+	  ("[venv:" pyvenv-virtual-env-name "] ")))
+  (pyvenv-mode t))
 
 (use-package lsp-mode
   ;; Emacs client/library for the Language Server Protocol
-  ;;
+  ;;y
   ;; Sometimes it is useful to restart the LSP worspace using
   ;; `M-x lsp-workspace-restart`
   ;;
@@ -1094,7 +1097,7 @@
   ;; (setq lsp-disabled-clients '(ccls))
 
   ;; Use user-installed pyls instead of auto-installed mspyls
-  ;; (setq lsp-disabled-clients '(mspyls))
+  ;; (setq lsp-disabled-clients '(pyls))
 
   ;; Which languages to activate LSP mode for
   (add-hook 'python-mode-hook #'lsp)
@@ -1129,6 +1132,11 @@
 
   ;; Linting
   (setq lsp-diagnostic-package :none)
+  ;; See more options via M-x customize-group lsp-pyls
+  (setq-default lsp-pyls-configuration-sources ["flake8"])
+  (setq lsp-pyls-plugins-pyflakes-enabled nil)
+  (setq lsp-pyls-plugins-pylint-enabled nil)
+  (setq lsp-pyls-plugins-mccabe-enabled nil)
   
   ;; Recommended settings
   (add-hook 'lsp-mode-hook (lambda ()
@@ -1147,11 +1155,13 @@
 (add-hook 'python-mode-hook
 	  (lambda ()
 	    (flycheck-mode)
-	    (setq flycheck-enabled-checkers '(python-flake8 python-pyright))
-	    (setq flycheck-disabled-checkers '(python-mypy python-pylint))
+	    ;; Flake8: config file defined at the global level via
+	    ;; M-x flycheck-flake8rc --> set to "~/setup.cfg"
+	    (setq flycheck-enabled-checkers '(python-flake8 python-mypy))
+	    (setq flycheck-disabled-checkers '(python-pylint python-pyright))
 	    ;; Multiple checkers: flake8, then pyright
 	    ;; See: https://www.flycheck.org/en/latest/user/syntax-checkers.html#configuring-checker-chains
-	    (flycheck-add-next-checker 'python-flake8 'python-pyright)
+	    (flycheck-add-next-checker 'python-flake8 'python-mypy)
 	    ))
 (global-set-key (kbd "C-c f l") 'flycheck-list-errors) ;; List all errors
 (global-set-key (kbd "C-c f v") 'flycheck-verify-setup) ;; Show active/disabled checkers
@@ -1414,6 +1424,9 @@
   )
 
 ;;;;;;;;;;;;;;;;; OTHER STUFF
+
+;; Delete trailing whitespace
+(add-hook 'before-save-hook 'delete-trailing-whitespace)
 
 ;; No blinking for cursor
 (blink-cursor-mode 0)
@@ -1985,6 +1998,7 @@
       (ecb-history-buffer-name 0.17901234567901234 . 0.275))))
  '(ecb-options-version "2.50")
  '(fci-rule-color "#383838")
+ '(flycheck-flake8rc "~/setup.cfg")
  '(flymake-fringe-indicator-position nil)
  '(lsp-pyls-plugins-autopep8-enabled t)
  '(lsp-pyls-plugins-flake8-config "~/setup.cfg")
@@ -2009,7 +2023,8 @@
    '(lsp-pyright fira-code-mode matlab-emacs matlab-mode fast-scroll company-box default-text-scale company-graphviz-dot graphviz-dot-mode gnuplot mmm-mode helm-company org-bullets workgroups helm-lsp lsp-ui which-key dap-mode autopair julia-mode julia-emacs unfill sage-mode sage-shell-mode minimap helm-ag plantuml-mode elpy hl-todo undo-tree zoom-frm move-text magit fill-column-indicator flymd markdown-mode bash-completion workgroups2 fuzzy ess-R-data-view ess auto-compile rainbow-mode ecb realgud wgrep-helm wgrep multiple-cursors srefactor nyan-mode google-c-style yaml-mode mic-paren pdf-tools auctex helm-projectile projectile helm-ros helm-gtags helm-swoop helm company-irony-c-headers company-irony flycheck-irony irony company-shell company-quickhelp company flycheck dired+ neotree doom-themes rainbow-delimiters use-package))
  '(pdf-view-midnight-colors '("#DCDCCC" . "#383838"))
  '(safe-local-variable-values
-   '((eval progn
+   '((lsp-python-ms-python-executable . "/home/danylo/anaconda3/envs/py385/bin/python")
+     (eval progn
 	   (add-hook 'LaTeX-mode-hook
 		     (lambda nil
 		       (LaTeX-add-environments "Definition")

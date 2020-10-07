@@ -51,5 +51,8 @@ if program_not_installed "lpass"; then
     apt_get_install_pkg lastpass-cli
 fi
 
+# Networking tools
+apt_get_install_pkg net-tools
+
 
 echo_prefix="$echo_prefix_temp"

@@ -24,10 +24,11 @@ if program_not_installed "emacs"; then
     # https://askubuntu.com/questions/496549/error-you-must-put-some-source-uris-in-your-sources-list
     runcmd "apt-get --assume-yes build-dep emacs" nonull
     apt_get_install_pkg libwebkit2gtk-4.0-dev
+    apt_get_install_pkg libjansson-dev
     # download source, build and install Emacs
     runcmd "rm -rf /tmp/emacs/"
     runcmd "git clone --branch emacs-27.1 --depth 1 git://git.sv.gnu.org/emacs.git /tmp/emacs"
-    (runcmd "cd /tmp/emacs/" && runcmd "git checkout emacs-27.1" && runcmd "./autogen.sh" && runcmd "./configure --with-cairo --with-xwidgets --with-x-toolkit=gtk3 --with-modules" && runcmd "make" && runcmd "make install")
+    (runcmd "cd /tmp/emacs/" && runcmd "git checkout emacs-27.1" && runcmd "./autogen.sh" && runcmd "./configure --with-cairo --with-xwidgets --with-x-toolkit=gtk3 --with-modules --with-json" && runcmd "make" && runcmd "make install")
     # including " CFLAGS='-O3' CPPFLAGS='-O3' " in ./configure seems to make Emacs a bit unstable
 fi
 
@@ -100,7 +101,7 @@ apt_get_install_pkg shellcheck
 if program_not_installed "global"; then
     # GNU GLOBAL not installed --> install it
 
-    # install dependencies    
+    # install dependencies
     apt_get_install_pkg libncurses5
     apt_get_install_pkg libncurses5-dev
 

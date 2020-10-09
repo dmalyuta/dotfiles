@@ -1,12 +1,15 @@
 (setq gc-cons-threshold most-positive-fixnum) ;; no garbage collection at startup
 (add-hook 'after-init-hook (lambda ()
 			     ;; 16MB of garbage collection space once running
-			     (setq gc-cons-threshold (eval-when-compile (* 1024 1024 16)))
+			     (setq gc-cons-threshold (eval-when-compile (* 1024 1024 100)))
 			     ))
 ;; (setq gc-cons-percentage 0.5)
 ;; (setq gc-cons-threshold most-positive-fixnum)
 ;; (setq gc-cons-threshold 1600000)
-(setq garbage-collection-messages t)
+
+;; Show message in mode line whenever garbage collection occurs
+;; (setq garbage-collection-messages t)
+
 (setq my-gc-collect-interval 30)
 (run-with-idle-timer my-gc-collect-interval t
 		     (lambda ()
@@ -211,7 +214,7 @@
     (let* ((word (doc-matlab-grab-current-word)))
       (matlab-shell-describe-command word)))
 
-(add-to-list 'matlab-mode-hook 
+(add-to-list 'matlab-mode-hook
 	     (lambda ()
 	       ;; todo mode
 	       (hl-todo-mode)
@@ -293,7 +296,7 @@
   (setq company-auto-select-first-candidate nil)
   ;; nomenclature for latex
   (eval-after-load "tex"
-    '(add-to-list 'TeX-command-list 
+    '(add-to-list 'TeX-command-list
 		  '("Nomenclature" "makeindex %s.nlo -s nomencl.ist -o %s.nls"
 		    (lambda (name command file)
 		      (TeX-run-compile name command file)
@@ -447,7 +450,7 @@
 	;;   C-x C-r h : Starts helm-ros with all available sources.
 	;;   C-x C-r m : Start a roscore.
 	;;   C-x C-r i : Invalidate helm-ros cache (if you create a new file).
-	
+
 	;; In ros-process buffers, you can use the following keybindings:
 	;;   c : Interrupts the ROS process associated with the buffer.
 	;;   k : Kills the ROS process associated with the buffer.
@@ -502,7 +505,7 @@
   ;;
   ;; Commands:
   ;;   C-c & : find citation in bib file (when cursor over \cite{...})
-  ;;   
+  ;;
   :ensure auctex
   :demand
   :config
@@ -552,7 +555,7 @@
 	 (define-key LaTeX-mode-map (kbd "C-c e") 'nil)
 	 (define-key LaTeX-mode-map (kbd "C-c l") 'nil)
 	 (define-key LaTeX-mode-map (kbd "C-c s") 'nil)
-	 
+
 	 (define-key LaTeX-mode-map (kbd "C-c m") 'company-auctex-macros)
 	 (define-key LaTeX-mode-map (kbd "C-c e") 'company-auctex-environments)
 	 (define-key LaTeX-mode-map (kbd "C-c l") 'company-auctex-labels)
@@ -579,7 +582,7 @@
   ;; Latex mode for TikZ
   (add-to-list 'auto-mode-alist '("\\.tikz\\'" . latex-mode))
   ;; shell-escape stuff
-  (eval-after-load "tex" 
+  (eval-after-load "tex"
     '(setcdr (assoc "LaTeX" TeX-command-list)
 	     '("%`%l%(mode) -shell-escape%' %t"
 	       TeX-run-TeX nil (latex-mode doctex-mode) :help "Run LaTeX")
@@ -619,7 +622,7 @@
     (unless (featurep 'tex-buf)
       (require 'tex-buf))
     (TeX-save-document (TeX-master-file))
-    (TeX-command-sequence '("LaTeX" "PythonTeX" "LaTeX") 
+    (TeX-command-sequence '("LaTeX" "PythonTeX" "LaTeX")
                           t))
   (define-key LaTeX-mode-map (kbd "C-c C-p C-l") #'my/TeX-run-TeX-pythontex)
   ;;
@@ -785,7 +788,7 @@
   ;;   M-<uparrow> : move heading up in subtree
   ;;   M-<downarrow> : move heading down in subtree
   ;;   C-c C-o : open link at point
-  ;;   
+  ;;
   :ensure t
   :config
 
@@ -795,7 +798,7 @@
     (require 'org-bullets)
     (add-hook 'org-mode-hook (lambda () (org-bullets-mode 1)))
     )
-  
+
   (require 'org)
   (add-hook 'org-mode-hook 'turn-on-auto-fill)
   (define-key global-map "\C-cl" 'org-store-link)
@@ -870,7 +873,7 @@
       )
     )
   ;;(add-to-list 'after-make-frame-functions #'my-start-emacs)
-  
+
   ;; Exit function
   (defun my-exit-emacs ()
     "Leaves session and saves all workgroup states. Will not continue if there is no workgroups open."
@@ -1065,16 +1068,23 @@
   )
 
 (use-package pyvenv
+  :disabled
   :ensure t
   :diminish
   :config
 
-  (setenv "WORKON_HOME" "/home/danylo/anaconda3/envs")
+  (setenv "WORKON_HOME" "~/anaconda3/envs")
   ;; Show python venv name in modeline
   (setq pyvenv-mode-line-indicator
 	'(pyvenv-virtual-env-name
 	  ("[venv:" pyvenv-virtual-env-name "] ")))
   (pyvenv-mode t))
+
+(use-package lsp-pyright
+  :ensure t
+  :hook (python-mode . (lambda ()
+                         (require 'lsp-pyright)
+                         (lsp))))  ; or lsp-deferred
 
 (use-package lsp-mode
   ;; Emacs client/library for the Language Server Protocol
@@ -1089,7 +1099,7 @@
   (setq lsp-keymap-prefix "C-c l")
   :config
   ;; (setq lsp-clients-clangd-executable "clangd")
-  
+
   (require 'lsp-mode)
 
   ;; Use clangd instead
@@ -1102,7 +1112,7 @@
   ;; Which languages to activate LSP mode for
   (add-hook 'python-mode-hook #'lsp)
   (add-hook 'c-mode-common-hook #'lsp)
-  
+
   ;; Use company-capf for completion. Although company-lsp also supports caching
   ;; lsp-mode’s company-capf does that by default. To achieve that uninstall
   ;; company-lsp or put these lines in your config:
@@ -1113,19 +1123,19 @@
   ;; @dmalyuta clangd should be able to find and suggest iostream with correct
   ;; configuration for compilation database json.  You can try to use
   ;; https://github.com/rizsotto/Bear or CMAKE to generate that.
-  ;; 
+  ;;
   ;; To get both completion providers to contribute you can try to use multiple
   ;; backends, set company-backends to something like (setq
   ;; company-backends(company-capf company-c-headers))and
   ;; setlsp-completion-providerto:none so it will not change
   ;; yourcompany-backends` setup.
-  ;; 
+  ;;
   ;; Also a note about your configuration: You should put all of setq to :init
   ;; block, so it will work regardless of that setting is checked when lsp-mode
   ;; is running or just after load.  (setq lsp-completion-provider :capf)
   (push 'company-capf company-backends)
   (push 'company-c-headers company-backends)
-  
+
   ;; Optional: fine-tune lsp-idle-delay. This variable determines how often
   ;; lsp-mode will refresh the highlights, lenses, links, etc while you type.
   (setq lsp-idle-delay 0.500)
@@ -1133,16 +1143,16 @@
   ;; Linting
   (setq lsp-diagnostic-package :none)
   ;; See more options via M-x customize-group lsp-pyls
-  (setq-default lsp-pyls-configuration-sources ["flake8"])
-  (setq lsp-pyls-plugins-pyflakes-enabled nil)
-  (setq lsp-pyls-plugins-pylint-enabled nil)
-  (setq lsp-pyls-plugins-mccabe-enabled nil)
-  
+  ;; (setq-default lsp-pyls-configuration-sources ["flake8"])
+  ;; (setq lsp-pyls-plugins-pyflakes-enabled nil)
+  ;; (setq lsp-pyls-plugins-pylint-enabled nil)
+  ;; (setq lsp-pyls-plugins-mccabe-enabled nil)
+
   ;; Recommended settings
   (add-hook 'lsp-mode-hook (lambda ()
 			     (setq company-minimum-prefix-length 1
 				   company-idle-delay 0.0)))
-  
+
   ;; Other niceties
   (setq lsp-enable-semantic-highlighting t)
   (setq lsp-enable-snippet nil)  ;; Enable arguments completion
@@ -1157,11 +1167,12 @@
 	    (flycheck-mode)
 	    ;; Flake8: config file defined at the global level via
 	    ;; M-x flycheck-flake8rc --> set to "~/setup.cfg"
-	    (setq flycheck-enabled-checkers '(python-flake8 python-mypy))
-	    (setq flycheck-disabled-checkers '(python-pylint python-pyright))
+	    ;; (setq flycheck-enabled-checkers '(python-flake8 python-pyright))
+	    (setq flycheck-enabled-checkers '(python-flake8))
+	    (setq flycheck-disabled-checkers '(python-mypy python-pylint python-pyright))
 	    ;; Multiple checkers: flake8, then pyright
 	    ;; See: https://www.flycheck.org/en/latest/user/syntax-checkers.html#configuring-checker-chains
-	    (flycheck-add-next-checker 'python-flake8 'python-mypy)
+	    ;; (flycheck-add-next-checker 'python-flake8 'python-pyright)
 	    ))
 (global-set-key (kbd "C-c f l") 'flycheck-list-errors) ;; List all errors
 (global-set-key (kbd "C-c f v") 'flycheck-verify-setup) ;; Show active/disabled checkers
@@ -1179,12 +1190,12 @@
    		    lsp-ui-doc-position 'bottom
 		    lsp-ui-doc-max-height 20
    		    lsp-ui-doc-include-signature t
-		    
+
    		    lsp-ui-sideline-enable t
 		    lsp-ui-sideline-delay 0.2
 		    lsp-ui-sideline-show-code-actions nil
 		    lsp-ui-sideline-show-hover nil
-		    
+
    		    lsp-ui-flycheck-enable t
    		    lsp-ui-flycheck-list-position 'right
    		    lsp-ui-flycheck-live-reporting t
@@ -1453,7 +1464,7 @@
 		       :height 110
 		       :weight 'normal
 		       :width 'normal)
-   
+
    )
  )
 
@@ -1480,7 +1491,7 @@
 ;;     (my-font-lock-function (point) limit)
 ;;    nil)
 ;; (setq font-lock-defaults
-;;   (list 
+;;   (list
 ;;     ;; Note that the face specified here doesn't matter since
 ;;     ;; my-font-lock-matcher always returns nil and sets the face on
 ;;     ;; its own.
@@ -1523,16 +1534,16 @@
 ;; Python shell
 ;; Make sure you are running IPython 5.7.0, because buggy for later versions
 ;; ``$ pip install -U ipython==5.7.0``
-;; 
+;;
 ;; Fix autoreload problem (answer by DmitrySemenov at
 ;; https://tinyurl.com/ipython-autoreload):
-;; 
+;;
 ;; I found a better solution that needs no emacs config: simply do
-;; 
+;;
 ;; $ ipython profile create
-;; 
+;;
 ;; that should create ipython profile in
-;; $HOME/.ipython/profile_default/ipython_config.py  
+;; $HOME/.ipython/profile_default/ipython_config.py
 ;; then put the following inside
 ;; ```
 ;; c = get_config()
@@ -1540,7 +1551,7 @@
 ;; c.InteractiveShellApp.extensions = [
 ;;      'autoreload'
 ;; ]
-;; 
+;;
 ;; c.InteractiveShellApp.exec_lines = []
 ;; c.InteractiveShellApp.exec_lines.append('%load_ext autoreload')
 ;; c.InteractiveShellApp.exec_lines.append('%autoreload 2')
@@ -1642,7 +1653,7 @@
 (defun who-called-me? (old-fun format &rest args)
   (let ((trace nil) (n 1) (frame nil))
       (while (setf frame (backtrace-frame n))
-        (setf n     (1+ n) 
+        (setf n     (1+ n)
               trace (cons (cadr frame) trace)) )
       (apply old-fun (concat "<<%S>>\n" format) (cons trace args))))
 ;; (advice-add 'message :around #'who-called-me?)
@@ -1776,7 +1787,7 @@
 
      ;; unbind C-z, which minimizes current frame
      (define-key term-raw-map (kbd "C-z") 'nil)
-     
+
      ;; make sure typical key combos work in term-char-mode
      (define-key term-raw-map (kbd "M-x") 'nil)
      (define-key term-raw-map (kbd "M-&") 'nil)
@@ -1785,7 +1796,7 @@
      ;; make sure C-c t e launches a new ansi-term buffer when current
      ;; buffer is also ansi-term
      (define-key term-raw-map (kbd "C-c t e") 'nil)
-     
+
      ;; move by whole words fix
      (defun term-send-Cright () (interactive) (term-send-raw-string "\e[1;5C"))
      (defun term-send-Cleft  () (interactive) (term-send-raw-string "\e[1;5D"))
@@ -1793,8 +1804,8 @@
 
      ;; word deletion fix
      (define-key term-raw-map (kbd "C-w") 'term-send-Mbackspace)
-     (define-key term-raw-map (kbd "M-<backspace>") 'term-send-Mbackspace)     
-     
+     (define-key term-raw-map (kbd "M-<backspace>") 'term-send-Mbackspace)
+
      ;; switch between char and line mode with logical keystrokes make
      ;; sure that in line mode, the buffer is auto-set to read-only
      ;; such that I don't accidentally edit the terminal in

@@ -1157,6 +1157,9 @@
   (setq lsp-enable-semantic-highlighting t)
   (setq lsp-enable-snippet nil)  ;; Enable arguments completion
   (setq lsp-signature-auto-activate nil)
+
+  ;; Turn off the annoying progress spinner
+  (setq lsp-progress-via-spinner nil)
   )
 
 ;;===============================================================
@@ -1435,6 +1438,20 @@
   )
 
 ;;;;;;;;;;;;;;;;; OTHER STUFF
+
+;; Enable semantic only for specific modes
+;; E.g. Python semantic doesn't work for type-annotated code, so don't use it
+;; (see https://stackoverflow.com/a/56618164/4605946)
+(setq semantic-new-buffer-setup-functions
+      '((c-mode                . semantic-default-c-setup)
+        (c++-mode              . semantic-default-c-setup)
+        (srecode-template-mode . srecode-template-setup-parser)
+        (texinfo-mode          . semantic-default-texi-setup)
+        ;; etc.
+        ;; (makefile-automake-mode . semantic-default-make-setup)
+        ;; (makefile-mode         . semantic-default-make-setup)
+        ;; (makefile-gmake-mode   . semantic-default-make-setup)
+        ))
 
 ;; Delete trailing whitespace
 (add-hook 'before-save-hook 'delete-trailing-whitespace)

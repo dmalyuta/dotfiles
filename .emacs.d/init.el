@@ -1100,6 +1100,8 @@
   :config
   ;; (setq lsp-clients-clangd-executable "clangd")
 
+  (setq lsp-enable-imenu nil)
+
   (require 'lsp-mode)
 
   ;; Use clangd instead
@@ -1207,19 +1209,21 @@
    		    ;; lsp-ui-peek-list-width 60
    		    ;; lsp-ui-peek-peek-height 25
 
-		    lsp-ui-imenu-enable t
-		    lsp-ui-imenu-kind-position 'top
+		    lsp-ui-imenu-enable nil
+		    ;; lsp-ui-imenu-kind-position 'top
 		    )
 	      ;; (local-set-key (kbd "C-c l d s") 'lsp-ui-doc-show)
 	      ;; (local-set-key (kbd "C-c l d f") 'lsp-ui-doc-focus-frame)
 	      ;; (local-set-key (kbd "C-c l d u") 'lsp-ui-doc-unfocus-frame)
-	      (local-set-key (kbd "C-c l i") 'lsp-ui-imenu)))
+	      (local-set-key (kbd "C-c l i") 'lsp-ui-imenu)
+	      ))
   )
 
 (use-package elpy
   ;; Elpy is an Emacs package to bring powerful Python editing to Emacs.
   ;; Use it here just for some benefits:
   ;;  - Documentation in a different buffer (via `C-c C-d`)
+  :disabled
   :ensure t
   :config
   (add-hook 'python-mode-hook
@@ -1270,14 +1274,6 @@
 	    (lambda ()
 	      (rainbow-mode 1)))
   )
-
-;; (use-package gcmh
-;;   ;; Enforce a sneaky Garbage Collection strategy to minimize GC interference
-;;   ;; with the activity.
-;;   :ensure t
-;;   :config
-;;   (gcmh-mode 1)
-;;   )
 
 ;;;;;;;;;;;;;;;;; NON-MELPA PACKAGES
 
@@ -1438,6 +1434,25 @@
   )
 
 ;;;;;;;;;;;;;;;;; OTHER STUFF
+
+;; Python Imenu
+;; From: https://steelkiwi.com/blog/emacs-configuration-working-python/
+;; https://stackoverflow.com/a/21656063/4605946
+(defun my-python-imenu ()
+  (interactive)
+  (let ((python-imenu (imenu--generic-function imenu-generic-expression)))
+    (append python-imenu)))
+(defun my-python-imenu-hooks ()
+  (interactive)
+  (setq imenu-generic-expression
+	'(("Function" "^[[:blank:]]*def \\(.*\\).*(.*$" 1)
+	  ("Class" "^class \\(.*\\).*:$" 1)))
+  (setq imenu-create-index-function 'my-python-imenu)
+  ;; Rescan the buffer as contents are added
+  (setq imenu-auto-rescan t)
+  )
+(add-hook 'python-mode-hook 'my-python-imenu-hooks)
+(add-hook 'lsp-mode-hook 'my-python-imenu-hooks)
 
 ;; Enable semantic only for specific modes
 ;; E.g. Python semantic doesn't work for type-annotated code, so don't use it
@@ -2048,7 +2063,7 @@
    '(:foreground "yellow" :background default :scale 1.3 :html-foreground "Black" :html-background "Transparent" :html-scale 1.0 :matchers
 		 ("begin" "$1" "$" "$$" "\\(" "\\[")))
  '(package-selected-packages
-   '(lsp-pyright fira-code-mode matlab-emacs matlab-mode fast-scroll company-box default-text-scale company-graphviz-dot graphviz-dot-mode gnuplot mmm-mode helm-company org-bullets workgroups helm-lsp lsp-ui which-key dap-mode autopair julia-mode julia-emacs unfill sage-mode sage-shell-mode minimap helm-ag plantuml-mode elpy hl-todo undo-tree zoom-frm move-text magit fill-column-indicator flymd markdown-mode bash-completion workgroups2 fuzzy ess-R-data-view ess auto-compile rainbow-mode ecb realgud wgrep-helm wgrep multiple-cursors srefactor nyan-mode google-c-style yaml-mode mic-paren pdf-tools auctex helm-projectile projectile helm-ros helm-gtags helm-swoop helm company-irony-c-headers company-irony flycheck-irony irony company-shell company-quickhelp company flycheck dired+ neotree doom-themes rainbow-delimiters use-package))
+   '(helm-cscope lsp-pyright fira-code-mode matlab-emacs matlab-mode fast-scroll company-box default-text-scale company-graphviz-dot graphviz-dot-mode gnuplot mmm-mode helm-company org-bullets workgroups helm-lsp lsp-ui which-key dap-mode autopair julia-mode julia-emacs unfill sage-mode sage-shell-mode minimap helm-ag plantuml-mode elpy hl-todo undo-tree zoom-frm move-text magit fill-column-indicator flymd markdown-mode bash-completion workgroups2 fuzzy ess-R-data-view ess auto-compile rainbow-mode ecb realgud wgrep-helm wgrep multiple-cursors srefactor nyan-mode google-c-style yaml-mode mic-paren pdf-tools auctex helm-projectile projectile helm-ros helm-gtags helm-swoop helm company-irony-c-headers company-irony flycheck-irony irony company-shell company-quickhelp company flycheck dired+ neotree doom-themes rainbow-delimiters use-package))
  '(pdf-view-midnight-colors '("#DCDCCC" . "#383838"))
  '(safe-local-variable-values
    '((lsp-python-ms-python-executable . "/home/danylo/anaconda3/envs/py385/bin/python")

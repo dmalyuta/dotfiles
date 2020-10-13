@@ -1100,6 +1100,10 @@
   :config
   ;; (setq lsp-clients-clangd-executable "clangd")
 
+  ;; Turn off the annoying progress spinner
+  (setq lsp-progress-via-spinner nil)
+
+  ;; Turn off LSP-mode imenu
   (setq lsp-enable-imenu nil)
 
   (require 'lsp-mode)
@@ -1159,9 +1163,6 @@
   (setq lsp-enable-semantic-highlighting t)
   (setq lsp-enable-snippet nil)  ;; Enable arguments completion
   (setq lsp-signature-auto-activate nil)
-
-  ;; Turn off the annoying progress spinner
-  (setq lsp-progress-via-spinner nil)
   )
 
 ;;===============================================================

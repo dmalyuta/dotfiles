@@ -1653,12 +1653,41 @@
   ;; (python-shell-send-string (concat "%run " buffer-file-name))
   ;; (python-shell-send-string "print('done')")
   )
+(defun my-run-python (&optional cmd dedicated show)
+  "Run an inferior Python process.
+See the docstring of run-python in python.el This function does
+the same thing, but instead of pop-to-buffer, which open the
+process in another window, this command does switch-to-buffer
+which opens the Python shell in the current buffer."
+  (interactive
+   (if current-prefix-arg
+       (list
+        (read-shell-command "Run Python: " (python-shell-calculate-command))
+        (y-or-n-p "Make dedicated process? ")
+        (= (prefix-numeric-value current-prefix-arg) 4))
+     (list (python-shell-calculate-command) nil t)))
+  (let ((buffer
+         (python-shell-make-comint
+          (or cmd (python-shell-calculate-command))
+          (python-shell-get-process-name dedicated) show)))
+    (switch-to-buffer buffer)
+    (get-buffer-process buffer)))
+(defun my-python-shell-start ()
+  (interactive)
+  (apply 'my-run-python '(nil nil nil)))
 (add-hook 'python-mode-hook
 	  (lambda ()
-	    (define-key python-mode-map (kbd "C-c C-l")
-	      'ipython-print-runfile)
-	    (define-key python-mode-map (kbd "C-c C-r")
-	      'ipython-print-region)))
+	    ;; Open a Python shell
+	    (define-key python-mode-map (kbd "C-c C-p") 'my-python-shell-start)
+	    ;; Key bindings
+	    (define-key python-mode-map (kbd "C-c C-l") 'ipython-print-runfile)
+	    (define-key python-mode-map (kbd "C-c C-r") 'ipython-print-region)))
+;; Make <S-SPC> run the appropriate completion engine in a Python shell
+(add-hook 'inferior-python-mode-hook
+	  (lambda ()
+	    (company-mode -1)
+	    (define-key inferior-python-mode-map (kbd "S-SPC")
+	      'python-shell-completion-complete-or-indent)))
 
 ;; Automatically reload files when they change on disk
 ;; (global-auto-revert-mode)

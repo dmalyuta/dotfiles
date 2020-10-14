@@ -15,7 +15,8 @@
 		     (lambda ()
 		       ;; Garbage-collect after 30 seconds of idleness
 		       (garbage-collect)
-		       (message "Routine %ds garbage collection" my-gc-collect-interval)))
+		       (message "%s Routine %ds garbage collection"
+				(all-the-icons-faicon "trash-o") my-gc-collect-interval)))
 (setq read-process-output-max (* 1024 1024 10)) ;; 10mb
 
 ;; To byte-compile the Emacs init directory, run Emacs and execute
@@ -55,29 +56,31 @@
 (add-to-list 'package-archives '("elpy" . "https://jorgenschaefer.github.io/packages/"))
 ;; (package-initialize)
 
-;; ;; bootstrap 'straight.el'
-;; (defvar bootstrap-version)
-;; (let ((bootstrap-file
-;;        (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
-;;       (bootstrap-version 5))
-;;   (unless (file-exists-p bootstrap-file)
-;;     (with-current-buffer
-;;         (url-retrieve-synchronously
-;;          "https://raw.githubusercontent.com/raxod502/straight.el/develop/install.el"
-;;          'silent 'inhibit-cookies)
-;;       (goto-char (point-max))
-;;       (eval-print-last-sexp)))
-;;   (load bootstrap-file nil 'nomessage))
+;; ..:: bootstrap 'straight.el' ::..
+(defvar bootstrap-version)
+(let ((bootstrap-file
+       (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
+      (bootstrap-version 5))
+  (unless (file-exists-p bootstrap-file)
+    (with-current-buffer
+        (url-retrieve-synchronously
+         "https://raw.githubusercontent.com/raxod502/straight.el/develop/install.el"
+         'silent 'inhibit-cookies)
+      (goto-char (point-max))
+      (eval-print-last-sexp)))
+  (load bootstrap-file nil 'nomessage))
 
-;; boostrap 'use-package'
-(unless (package-installed-p 'use-package)
-  (package-refresh-contents)
-  (package-install 'use-package))
-;; (straight-use-package 'use-package)
-;; (use-package el-patch
-;;   :straight t)
-;; (require 'use-package)
+;; ..:: boostrap 'use-package' ::..
+;; (unless (package-installed-p 'use-package)
+;;   (package-refresh-contents)
+;;   (package-install 'use-package))
+(straight-use-package 'use-package)
+(use-package el-patch
+  :straight t)
+(require 'use-package)
 (require 'bind-key)
+(setq straight-enable-use-package-integration t)
+(setq straight-use-package-by-default t)
 
 ;;;;;;;;;;;;;;;;; EMACS BUILT-IN
 
@@ -92,6 +95,7 @@
 
 (use-package buffer-menu
   ;; show all current buffers
+  :straight nil
   :init
   (setq Buffer-menu-name-width 25)
   (setq Buffer-menu-mode-width 6)
@@ -179,6 +183,8 @@
   ;; Python
   (setq flycheck-display-errors-function #'flycheck-display-error-messages-unless-error-list)
   (add-to-list 'flycheck-checkers 'python-flake8)
+  ;; Delay in showing errors
+  (setq flycheck-display-errors-delay 0.1)
   )
 
 ;; MATLAB integration
@@ -190,6 +196,7 @@
 ;;   make
 ;; --------
 (use-package matlab-load
+  :straight nil
   :load-path "matlab-emacs/"
   :config
   (require 'matlab-load)
@@ -201,6 +208,7 @@
   )
 
 (use-package matlab-mode
+  :straight nil
   :load-path "matlab-mode/"
   :config
   (setq default-fill-column 80)
@@ -506,6 +514,7 @@
   ;; Commands:
   ;;   C-c & : find citation in bib file (when cursor over \cite{...})
   ;;
+  :straight nil
   :ensure auctex
   :demand
   :config
@@ -930,6 +939,7 @@
 ;;   (setq undo-tree-limit nil)
 ;;   )
 (use-package redo+
+  :straight nil
   :load-path "lisp/"
   :config
   (require 'redo+)
@@ -1082,9 +1092,17 @@
 
 (use-package lsp-pyright
   :ensure t
+  :straight (:host github
+		   :repo "emacs-lsp/lsp-pyright"
+		   :branch "master")
   :hook (python-mode . (lambda ()
                          (require 'lsp-pyright)
-                         (lsp))))  ; or lsp-deferred
+                         (lsp)))  ;; or lsp-deferred
+  :config
+  ;; Do not print "analyzing... Done" in the minibuffer
+  ;; (I find it distracting)
+  (setq lsp-pyright-show-analyzing nil)
+  )
 
 (use-package lsp-mode
   ;; Emacs client/library for the Language Server Protocol
@@ -1100,13 +1118,17 @@
   :config
   ;; (setq lsp-clients-clangd-executable "clangd")
 
+  (require 'lsp-mode)
+
   ;; Turn off the annoying progress spinner
   (setq lsp-progress-via-spinner nil)
 
   ;; Turn off LSP-mode imenu
   (setq lsp-enable-imenu nil)
 
-  (require 'lsp-mode)
+  ;; Optional: fine-tune lsp-idle-delay. This variable determines how often
+  ;; lsp-mode will refresh the highlights, lenses, links, etc while you type.
+  (setq lsp-idle-delay 0.5) ;; seconds
 
   ;; Use clangd instead
   ;; https://www.reddit.com/r/cpp/comments/cafj21/ccls_clangd_and_cquery/
@@ -1142,10 +1164,6 @@
   (push 'company-capf company-backends)
   (push 'company-c-headers company-backends)
 
-  ;; Optional: fine-tune lsp-idle-delay. This variable determines how often
-  ;; lsp-mode will refresh the highlights, lenses, links, etc while you type.
-  (setq lsp-idle-delay 0.500)
-
   ;; Linting
   (setq lsp-diagnostic-package :none)
   ;; See more options via M-x customize-group lsp-pyls
@@ -1153,6 +1171,11 @@
   ;; (setq lsp-pyls-plugins-pyflakes-enabled nil)
   ;; (setq lsp-pyls-plugins-pylint-enabled nil)
   ;; (setq lsp-pyls-plugins-mccabe-enabled nil)
+
+  ;; Modeline mode
+  (with-eval-after-load 'lsp-mode
+    ;; :project/:workspace/:file
+    (setq lsp-modeline-diagnostics-scope :none))
 
   ;; Recommended settings
   (add-hook 'lsp-mode-hook (lambda ()
@@ -1181,6 +1204,7 @@
 	    ;; (flycheck-add-next-checker 'python-flake8 'python-pyright)
 	    ))
 (global-set-key (kbd "C-c f l") 'flycheck-list-errors) ;; List all errors
+(global-set-key (kbd "C-c f e") 'flycheck-display-error-at-point) ;; Show error at current cursor position
 (global-set-key (kbd "C-c f v") 'flycheck-verify-setup) ;; Show active/disabled checkers
 ;;===============================================================
 ;;===============================================================
@@ -1197,8 +1221,8 @@
 		    lsp-ui-doc-max-height 20
    		    lsp-ui-doc-include-signature t
 
-   		    lsp-ui-sideline-enable t
-		    lsp-ui-sideline-delay 0.2
+   		    lsp-ui-sideline-enable nil
+		    lsp-ui-sideline-delay 0.05
 		    lsp-ui-sideline-show-code-actions nil
 		    lsp-ui-sideline-show-hover nil
 
@@ -1286,6 +1310,7 @@
   (require 'filladapt)
   (setq-default filladapt-mode t)
   (add-hook 'c-mode-common-hook 'turn-on-filladapt-mode)
+  (add-hook 'python-mode-hook 'turn-on-filladapt-mode)
   (add-hook 'c-mode-common-hook
 	    (lambda ()
 	      (when (featurep 'filladapt)
@@ -1295,6 +1320,7 @@
 ;; so-long
 ;; Improve performance for long lines
 (use-package so-long
+  :straight nil
   :load-path "lisp/"
   :config
   (so-long-enable))
@@ -1350,14 +1376,17 @@
   ;; automatically type C-style block comments
   ;; Use M-; to insert /* */ around the point
   ;; Use M-j to go to next line in a multi-line block comment
+  :straight nil
   :load-path "lisp/")
 
 (use-package setup-helm
   ;; https://github.com/tuhdo/emacs-c-ide-demo/blob/master/custom/setup-helm.el
+  :straight nil
   :load-path "lisp/")
 
 (use-package buffer-move
   ;; swap buffers between windows
+  :straight nil
   :load-path "lisp/"
   :bind
   (("S-M-<up>" . buf-move-up)
@@ -1367,6 +1396,7 @@
 
 (use-package my-cursor-commands
   ;; paragraph scrolling key bindings
+  :straight nil
   :load-path "lisp/"
   :bind
   (("M-p" . xah-backward-block)
@@ -1374,6 +1404,7 @@
 
 (use-package delete-without-copy
   ;;  delete words without putting them into the kill ring
+  :straight nil
   :load-path "lisp/"
   :bind
   (("M-d" . my-forward-delete-word)
@@ -1381,18 +1412,21 @@
 
 (use-package sr-speedbar
   ;; makes Speedbar (source file browser) show in the current frame as a new window
+  :straight nil
   :load-path "lisp/"
   :bind
   ("C-c C-b" . sr-speedbar-toggle))
 
 (use-package duplicate-line
   ;; duplicate current line
+  :straight nil
   :load-path "lisp/"
   :bind
   (("C-c d" . duplicate-current-line-or-region)))
 
 (use-package cmake-mode
   ;; major-mode for editing CMake sources
+  :straight nil
   :load-path "lisp/"
   :config
   (add-to-list 'auto-mode-alist '("\\.cmake\\'" . cmake-mode))
@@ -1400,6 +1434,7 @@
 
 (use-package ros-cmake-mode
   ;; major-mode for editing CMakeLists.txt files with ROS-style indentation
+  :straight nil
   :load-path "lisp/"
   :config
   (add-to-list 'auto-mode-alist '("CMakeLists\\.txt\\'" . ros-cmake-mode))
@@ -1407,9 +1442,11 @@
 
 (use-package gdb-setup
   ;; customize GDB layout and functionality
+  :straight nil
   :load-path "lisp/")
 
 (use-package window-resize
+  :straight nil
   :load-path "lisp/"
   :demand
   :bind
@@ -1425,6 +1462,7 @@
    ))
 
 (use-package theme-setup
+  :straight nil
   :load-path "lisp/"
   :demand
   :config
@@ -2044,6 +2082,8 @@
  '(fci-rule-color "#383838")
  '(flycheck-flake8rc "~/setup.cfg")
  '(flymake-fringe-indicator-position nil)
+ '(lsp-diagnostic-clean-after-change t)
+ '(lsp-progress-via-spinner nil)
  '(lsp-pyls-plugins-autopep8-enabled t)
  '(lsp-pyls-plugins-flake8-config "~/setup.cfg")
  '(lsp-pyls-plugins-flake8-enabled t)

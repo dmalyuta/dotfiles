@@ -6,6 +6,11 @@ set_title() {
     printf "\e]2;$*\a";
 }
 
+# vterm setup
+if [ -f ~/.emacs-vterm-bash.sh ]; then
+    . ~/.emacs-vterm-bash.sh
+fi
+
 # ROS setup
 if [ -f "/opt/ros/indigo/setup.bash" ]; then
     . /opt/ros/indigo/setup.bash

@@ -163,7 +163,12 @@
   ;; Need to run M-x all-the-icons-install-fonts
   :ensure t
   :config
-  (use-package all-the-icons))
+  ;; Fix MATLAB icon
+  (setq all-the-icons-icon-alist
+	(append '(("\\.m$" all-the-icons-fileicon "matlab"
+		   :face all-the-icons-orange))
+		all-the-icons-icon-alist))
+  )
 
 (use-package flycheck
   ;; code error highlighting
@@ -1300,6 +1305,26 @@
 	      (rainbow-mode 1)))
   )
 
+(use-package vterm
+  ;; Emacs-libvterm (vterm) is fully-fledged terminal emulator inside GNU Emacs
+  ;; based on libvterm, a C library. As a result of using compiled code (instead
+  ;; of elisp), emacs-libvterm is fully capable, fast, and it can seamlessly
+  ;; handle large outputs.
+  :ensure t
+  :init
+  ;; Always compile vterm-module if missing
+  (setq vterm-always-compile-module t)
+  :config
+  ;; Kill buffer on exit
+  (setq vterm-kill-buffer-on-exit t)
+  ;; Launch vterm
+  (global-set-key (kbd "C-c C-v C-v") 'vterm)
+  ;; Copy mode (allows to move cursor through history)
+  (global-set-key (kbd "C-c C-v C-c") 'vterm-copy-mode)
+  ;; Rename buffer
+  (define-key vterm-mode-map (kbd "C-c r") 'rename-buffer)
+  )
+
 ;;;;;;;;;;;;;;;;; NON-MELPA PACKAGES
 
 ;; filladapt
@@ -1472,6 +1497,15 @@
   (add-hook 'after-make-frame-functions 'pick-color-theme)
   )
 
+(use-package my-python
+  :straight nil
+  :load-path "lisp/"
+  :demand
+  :config
+  (require 'my-python)
+  (my-python-config)
+  )
+
 ;;;;;;;;;;;;;;;;; OTHER STUFF
 
 ;; Python Imenu
@@ -1601,93 +1635,6 @@
   (interactive "@")
   (shell-command (concat "terminator > /dev/null 2>&1 & disown") nil nil))
 (global-set-key (kbd "C-c t r") 'run-terminator-here)
-
-;; Python shell
-;; Make sure you are running IPython 5.7.0, because buggy for later versions
-;; ``$ pip install -U ipython==5.7.0``
-;;
-;; Fix autoreload problem (answer by DmitrySemenov at
-;; https://tinyurl.com/ipython-autoreload):
-;;
-;; I found a better solution that needs no emacs config: simply do
-;;
-;; $ ipython profile create
-;;
-;; that should create ipython profile in
-;; $HOME/.ipython/profile_default/ipython_config.py
-;; then put the following inside
-;; ```
-;; c = get_config()
-;; c.TerminalInteractiveShell.editor = 'emacsclient'
-;; c.InteractiveShellApp.extensions = [
-;;      'autoreload'
-;; ]
-;;
-;; c.InteractiveShellApp.exec_lines = []
-;; c.InteractiveShellApp.exec_lines.append('%load_ext autoreload')
-;; c.InteractiveShellApp.exec_lines.append('%autoreload 2')
-;; ```
-(setq python-shell-interpreter "ipython"
-      python-shell-interpreter-args "-i --simple-prompt --pprint")
-;; Printout what file is being run
-(defun ipython-print-runfile ()
-  (interactive)
-  "Print in comint buffer the file that is being executed"
-  ;;(message "%s" (buffer-file-name))
-  ;;(python-shell-send-file buffer-file-name 'nil 'nil 'nil "Hello world")
-  ;; The -i in `%run -i` maintains the current Python namespace, which
-  ;; means that current variables in the workspace are seen by the script
-  ;; See: https://stackoverflow.com/a/13300775/4605946
-  (python-shell-send-string (concat "print('%run -i " buffer-file-name "')"))
-  (python-shell-send-string "print('Running... ')")
-  (python-shell-send-string (concat "%run -i " buffer-file-name))
-  (python-shell-send-string "print('done')")
-  )
-(defun ipython-print-region ()
-  (interactive)
-  "Print in comint buffer the region that is being executed"
-  ;; (message "%s" (buffer-substring (region-beginning) (region-end)))
-  (python-shell-send-string (concat "print(\"\"\"<<<Running region>>>\n" (buffer-substring (region-beginning) (region-end)) "\"\"\")"))
-  (python-shell-send-string (buffer-substring (region-beginning) (region-end)))
-  ;; (python-shell-send-string "print('Running... ')")
-  ;; (python-shell-send-string (concat "%run " buffer-file-name))
-  ;; (python-shell-send-string "print('done')")
-  )
-(defun my-run-python (&optional cmd dedicated show)
-  "Run an inferior Python process.
-See the docstring of run-python in python.el This function does
-the same thing, but instead of pop-to-buffer, which open the
-process in another window, this command does switch-to-buffer
-which opens the Python shell in the current buffer."
-  (interactive
-   (if current-prefix-arg
-       (list
-        (read-shell-command "Run Python: " (python-shell-calculate-command))
-        (y-or-n-p "Make dedicated process? ")
-        (= (prefix-numeric-value current-prefix-arg) 4))
-     (list (python-shell-calculate-command) nil t)))
-  (let ((buffer
-         (python-shell-make-comint
-          (or cmd (python-shell-calculate-command))
-          (python-shell-get-process-name dedicated) show)))
-    (switch-to-buffer buffer)
-    (get-buffer-process buffer)))
-(defun my-python-shell-start ()
-  (interactive)
-  (apply 'my-run-python '(nil nil nil)))
-(add-hook 'python-mode-hook
-	  (lambda ()
-	    ;; Open a Python shell
-	    (define-key python-mode-map (kbd "C-c C-p") 'my-python-shell-start)
-	    ;; Key bindings
-	    (define-key python-mode-map (kbd "C-c C-l") 'ipython-print-runfile)
-	    (define-key python-mode-map (kbd "C-c C-r") 'ipython-print-region)))
-;; Make <S-SPC> run the appropriate completion engine in a Python shell
-(add-hook 'inferior-python-mode-hook
-	  (lambda ()
-	    (company-mode -1)
-	    (define-key inferior-python-mode-map (kbd "S-SPC")
-	      'python-shell-completion-complete-or-indent)))
 
 ;; Automatically reload files when they change on disk
 ;; (global-auto-revert-mode)
@@ -1850,117 +1797,6 @@ which opens the Python shell in the current buffer."
 				 (message "Windows disposition loaded"))) ;; load window config
 (global-set-key (kbd "<f9>") '(lambda () (interactive) (window-configuration-to-register 9)
 				(message "Windows disposition saved"))) ;; save window config
-
-;;;;;; Improving ansi-term
-;; make that C-c t e launches an ansi-term buffer in the current window
-(global-set-key (kbd "C-c t e") 'ansi-term)
-;; avoid ansi-term asking always which shell to run (always run bash)
-(defvar my-term-shell "/bin/bash")
-(defadvice ansi-term (before force-bash)
-  (interactive (list my-term-shell)))
-(ad-activate 'ansi-term)
-;; display of certain characters and control codes to UTF-8
-(defun my-term-use-utf8 ()
-  (set-buffer-process-coding-system 'utf-8-unix 'utf-8-unix))
-(add-hook 'term-exec-hook 'my-term-use-utf8)
-;; clickable URLs
-(defun my-term-hook ()
-  (goto-address-mode))
-(add-hook 'term-mode-hook 'my-term-hook)
-;; make that typing exit in ansi-term (which exits the shell) also
-;; closes the buffer
-(defadvice term-sentinel (around my-advice-term-sentinel (proc msg))
-  (if (memq (process-status proc) '(signal exit))
-      (let ((buffer (process-buffer proc)))
-	ad-do-it
-	(kill-buffer buffer))
-    ad-do-it))
-(ad-activate 'term-sentinel)
-;; fix the problem of moving cursor left/right being captured by emacs
-;; instead of underlying terminal, leading to jumbling when jumping
-;; words then editing the middle of a command. Same for deleting
-;; backward/forward whole words.
-(eval-after-load "term"
-  '(progn
-     ;; rename buffer
-     (define-key term-raw-map (kbd "C-c r") 'rename-buffer)
-
-     ;; unbind C-z, which minimizes current frame
-     (define-key term-raw-map (kbd "C-z") 'nil)
-
-     ;; make sure typical key combos work in term-char-mode
-     (define-key term-raw-map (kbd "M-x") 'nil)
-     (define-key term-raw-map (kbd "M-&") 'nil)
-     (define-key term-raw-map (kbd "M-!") 'nil)
-
-     ;; make sure C-c t e launches a new ansi-term buffer when current
-     ;; buffer is also ansi-term
-     (define-key term-raw-map (kbd "C-c t e") 'nil)
-
-     ;; move by whole words fix
-     (defun term-send-Cright () (interactive) (term-send-raw-string "\e[1;5C"))
-     (defun term-send-Cleft  () (interactive) (term-send-raw-string "\e[1;5D"))
-     (defun term-send-Mbackspace () (interactive)(term-send-raw-string "\e\d"))
-
-     ;; word deletion fix
-     (define-key term-raw-map (kbd "C-w") 'term-send-Mbackspace)
-     (define-key term-raw-map (kbd "M-<backspace>") 'term-send-Mbackspace)
-
-     ;; switch between char and line mode with logical keystrokes make
-     ;; sure that in line mode, the buffer is auto-set to read-only
-     ;; such that I don't accidentally edit the terminal in
-     ;; term-line-mode, thus messing up the command in term-char-mode
-     ;; (the mode in which I normally work, with term-line-mode used
-     ;; for scrolling up/down the buffer)
-     (defun my-switch-to-term-line-mode ()
-       (interactive)
-       (term-line-mode)
-       (if (not buffer-read-only)
-	   (toggle-read-only)))
-     (defun my-switch-to-term-char-mode ()
-       (interactive)
-       (term-char-mode)
-       (if buffer-read-only
-	   (toggle-read-only)))
-     (add-hook 'term-mode-hook (lambda () (local-set-key (kbd "C-c t c") 'my-switch-to-term-char-mode)))
-     (define-key term-raw-map (kbd "C-c t l") 'my-switch-to-term-line-mode)
-
-     ;; copy/paste native Emacs keystrokes
-     (define-key term-raw-map (kbd "C-k") 'term-send-raw)
-     (define-key term-raw-map (kbd "C-y") 'term-paste)
-
-     ;; ensure that scrolling doesn't break on output
-     ;;(setq term-scroll-show-maximum-output t)
-     (setq term-scroll-to-bottom-on-output t)
-
-     ;; max history (# lines) to keep (0 == keep everything)
-     (setq term-buffer-maximum-size 50000)))
-;; make sure window movement keys are not captured by shell
-(add-hook 'matlab-shell-mode-hook
-	  (lambda ()
-	    (define-key matlab-shell-mode-map (kbd "C-<up>") 'nil)
-	    (define-key matlab-shell-mode-map (kbd "C-<down>") 'nil)
-	    (define-key matlab-shell-mode-map (kbd "C-<left>") 'nil)
-	    (define-key matlab-shell-mode-map (kbd "C-<right>") 'nil)))
-;; make sure window movement keys are not captured by terminal
-(add-hook 'term-mode-hook
-	  (lambda ()
-	    (define-key term-raw-map (kbd "C-<up>") 'nil)
-	    (define-key term-raw-map (kbd "C-<down>") 'nil)
-	    (define-key term-raw-map (kbd "C-<left>") 'nil)
-	    (define-key term-raw-map (kbd "C-<right>") 'nil)))
-;; Turn off line wrap in ansi term
-(add-hook 'term-mode-hook
-	  (lambda ()
-	    (setq truncate-lines t)))
-
-;; make sure window movement keys are not captured by GUD's comint
-(add-hook 'comint-mode-hook
-	  (lambda ()
-	    (define-key comint-mode-map (kbd "C-<up>") 'nil)
-	    (define-key comint-mode-map (kbd "C-<down>") 'nil)
-	    (define-key comint-mode-map (kbd "C-<left>") 'nil)
-	    (define-key comint-mode-map (kbd "C-<right>") 'nil)))
 
 ;; fix Semantic package issue of uncompressing/parsing tons of .eg.gz
 ;; files when editing certain buffers (primarily Emacs-Lisp, but also

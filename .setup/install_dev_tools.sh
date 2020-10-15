@@ -45,6 +45,13 @@ if program_not_installed "terminator"; then
     runcmd "ln -s /usr/bin/terminator /usr/bin/gnome-terminal"
 fi
 
+# Cmake 3.18.4
+if function_not_defined "cmake"; then
+    runcmd "wget -4 https://github.com/Kitware/CMake/releases/download/v3.18.4/cmake-3.18.4.tar.gz -O /tmp/cmake.tar.gz"
+    runcmd_noexit "tar -xvf /tmp/cmake.tar.gz -C /tmp" nonull
+    (runcmd "cd /tmp/cmake/" && runcmd "./bootstrap" && runcmd "make" && runcmd "make install")
+fi
+
 # Other command line utilities
 apt_get_install_pkg aptitude
 apt_get_install_pkg xclip

@@ -49,4 +49,32 @@ if ! (conda info --envs | grep $PYENV_NAME > /dev/null 2>&1); then
     runcmd "pip install black"
 fi
 
+########################
+# Setup reloading in Ipython
+########################
+
+# Make sure you are running IPython 5.7.0, because buggy for later versions
+# ``$ pip install -U ipython==5.7.0``
+#
+# Fix autoreload problem (answer by DmitrySemenov at
+# https://tinyurl.com/ipython-autoreload):
+#
+# I found a better solution that needs no emacs config: simply do
+#
+# $ ipython profile create
+#
+# that should create ipython profile in
+# $HOME/.ipython/profile_default/ipython_config.py
+# then put the following inside
+# ```
+# c = get_config()
+# c.TerminalInteractiveShell.editor = 'emacsclient'
+# c.InteractiveShellApp.extensions = [
+#      'autoreload'
+# ]
+#
+# c.InteractiveShellApp.exec_lines = []
+# c.InteractiveShellApp.exec_lines.append('%load_ext autoreload')
+# c.InteractiveShellApp.exec_lines.append('%autoreload 2')
+
 echo_prefix="$echo_prefix_temp"

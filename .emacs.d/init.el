@@ -1522,8 +1522,10 @@
   :load-path "lisp/"
   :demand
   :config
-  (require 'my-python)
-  (my-python-config)
+  (add-hook 'python-mode-hook
+	    (lambda ()
+	      (require 'my-python)
+	      (my-python-config)))
   )
 
 ;;;;;;;;;;;;;;;;; OTHER STUFF

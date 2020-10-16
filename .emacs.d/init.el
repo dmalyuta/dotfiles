@@ -1188,9 +1188,29 @@
 				   company-idle-delay 0.0)))
 
   ;; Other niceties
-  (setq lsp-enable-semantic-highlighting t)
-  (setq lsp-enable-snippet nil)  ;; Enable arguments completion
-  (setq lsp-signature-auto-activate nil)
+  (setq lsp-signature-auto-activate nil
+	lsp-signature-doc-lines 1
+	lsp-eldoc-enable-hover nil ;; Show variable info on hover
+	eldoc-idle-delay 0 ;; Delay before showing variable info on hover
+	lsp-enable-semantic-highlighting t
+	lsp-enable-snippet nil ;; Enable arguments completion
+	)
+
+  (defun my-lsp-eldoc-toggle-hover ()
+    (interactive)
+    (if lsp-eldoc-enable-hover
+	(progn
+	  (setq lsp-eldoc-enable-hover nil)
+	  (eldoc-mode -1))
+      (progn
+	(setq lsp-eldoc-enable-hover t)
+	(eldoc-mode 1)))
+    )
+  (add-hook 'python-mode-hook
+	    (lambda ()
+	      (local-set-key (kbd "C-c l v")
+			     'my-lsp-eldoc-toggle-hover)))
+
   )
 
 ;;===============================================================
@@ -1318,9 +1338,9 @@
   ;; Kill buffer on exit
   (setq vterm-kill-buffer-on-exit t)
   ;; Launch vterm
-  (global-set-key (kbd "C-c C-v C-v") 'vterm)
+  (global-set-key (kbd "C-c v v") 'vterm)
   ;; Copy mode (allows to move cursor through history)
-  (global-set-key (kbd "C-c C-v C-c") 'vterm-copy-mode)
+  (global-set-key (kbd "C-c v c") 'vterm-copy-mode)
   ;; Rename buffer
   (define-key vterm-mode-map (kbd "C-c r") 'rename-buffer)
   )

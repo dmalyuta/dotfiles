@@ -8,7 +8,7 @@
 ;; (setq gc-cons-threshold 1600000)
 
 ;; Show message in mode line whenever garbage collection occurs
-;; (setq garbage-collection-messages t)
+(setq garbage-collection-messages t)
 
 (setq my-gc-collect-interval 30)
 (run-with-idle-timer my-gc-collect-interval t
@@ -18,6 +18,11 @@
 		       (message "%s Routine %ds garbage collection"
 				(all-the-icons-faicon "trash-o") my-gc-collect-interval)))
 (setq read-process-output-max (* 1024 1024 10)) ;; 10mb
+
+;; Remove warnings like:
+;;   ad-handle-definition: ‘ansi-term’ got redefined
+;; Source: https://andrewjamesjohnson.com/suppressing-ad-handle-definition-warnings-in-emacs/
+(setq ad-redefinition-action 'accept)
 
 ;; To byte-compile the Emacs init directory, run Emacs and execute
 ;; M-x byte-compile-init-dir
@@ -104,6 +109,14 @@
   (("C-x C-b" . buffer-menu)))
 
 ;;;;;;;;;;;;;;;;; MELPA PACKAGES
+
+(use-package gcmh
+  ;; The Garbage Collector Magic Hack
+  ;; Enforce a sneaky Garbage Collection strategy to minimize GC interference
+  ;; with the activity.
+  :ensure t
+  :config
+  (gcmh-mode 1))
 
 (use-package dash
   :ensure t)
@@ -335,25 +348,6 @@
     '(define-key company-active-map (kbd "M-h") #'company-quickhelp-manual-begin))
   )
 
-(use-package helm-company
-  ;; Helm interface for company-mode
-  :ensure t
-  ;; :load-path "elpa/helm-company"
-  ;;:ensure t ;; Waiting for MELPA update (fix was made by maintainer to
-  ;;             autofill "pattern" in response to my issue)
-  :config
-  (autoload 'helm-company "helm-company") ;; Not necessary if using ELPA package
-  ;; (eval-after-load 'company
-  ;;   '(progn
-  ;;      (define-key company-mode-map (kbd "C-:") 'helm-company)
-  ;;      (define-key company-active-map (kbd "C-:") 'helm-company)))
-  (eval-after-load 'company
-    '(progn
-       (set-variable 'helm-company-initialize-pattern-with-prefix t)
-       (define-key company-mode-map (kbd "<S-SPC>") 'helm-company)
-       (define-key company-active-map (kbd "<S-SPC>") 'helm-company)))
-  )
-
 (use-package company-shell
   ;; company mode completion backends for your shell functions:
   :ensure t
@@ -368,112 +362,6 @@
   :ensure t
   :config
   (add-hook 'c++-mode-hook #'modern-c++-font-lock-mode)
-  )
-
-(use-package helm
-  ;; incremental completion and selection narrowing framework
-  ;; Useful bindinds:
-  ;;  C-t : cycle helm buffer position (up/down/left/right)
-  ;;  C-SPC : select completion candidate
-  ;;  M-a : select all completion candidates
-  ;;  M-y : show the kill ring
-  ;;  C-M-a and C-M-e : jump to beginning/end of function definition
-  ;;  C-c h m : open man pages for symbol at point or search
-  ;;  C-] : toggle to show only file names in helm buffer
-  ;;  C-c r : open a file with sudo permissions
-  ;;  C-c q : show list of classes, functions, etc
-  ;;  C-c h i : find major definitions (e.g. of functions and variables) in C/C++, Lisp and a ton of other languages
-  ;;  *<STUFF> : substring search major mode in helm-mini (i.e. after C-x b)
-  :ensure t
-  :demand
-  :bind
-  (("M-x" . helm-M-x)
-   ("M-y" . helm-show-kill-ring)
-   ("C-x b" . helm-mini)
-   ("C-x C-f" . helm-find-files)
-   ("C-c q" . helm-semantic-or-imenu))
-  :config
-  (require 'helm)
-  (require 'helm-config)
-  (helm-mode 1)
-  (add-to-list 'helm-sources-using-default-as-input 'helm-source-man-pages)
-  (setq helm-buffer-max-length 30) ;; nil to show full name always
-  (setq helm-buffers-truncate-lines nil)
-  (setq helm-split-window-in-side-p           t ; open helm buffer inside current window, not occupy whole other window
-	helm-move-to-line-cycle-in-source     t ; move to end or beginning of source when reaching top or bottom of source.
-	helm-ff-file-name-history-use-recentf t
-	helm-echo-input-in-header-line t)
-  (setq helm-buffers-fuzzy-matching t
-	helm-recentf-fuzzy-match    t)
-  ;; Remove duplicate entries from history
-  (setq history-delete-duplicates t)
-  ;; (setq history-length 20)
-  )
-
-(use-package helm-swoop
-  ;; Helm version of C-s (I-search) and C-r (I-search backward)
-  :ensure t
-  :demand
-  :bind
-  (("M-i" . helm-swoop)
-   ("M-I" . helm-swoop-back-to-last-point)
-   ("C-c M-i" . helm-multi-swoop)
-   ("C-x M-i" . helm-multi-swoop-all)
-   :map isearch-mode-map
-   ("M-i" . helm-swoop-from-isearch))
-  :config
-  (setq helm-swoop-use-line-number-face t)
-  (setq helm-swoop-split-direction 'split-window-vertically)
-  (setq helm-swoop-split-with-multiple-windows nil))
-
-(use-package helm-gtags
-  ;; GNU GLOBAL helm interface
-  ;; Useful keys:
-  ;; C-c g a : helm-gtags-tags-in-this-function, finds functions that current function calls
-  ;; M-.     : helm-gtags-dwim, execute actions based on context (where point currently is)
-  ;; M-,     : tags-loop-continue, go back (after pressing M-.)
-  ;; C-c g h : show chronological history of tags visited (instead of pressing M-, repeatedly)
-  :ensure t
-  :init
-  (add-hook 'c-mode-common-hook 'helm-gtags-mode)
-  :bind
-  (:map c-mode-base-map
-	("C-c g a" . helm-gtags-tags-in-this-function)
-	("C-c g h" . helm-gtags-show-stack)
-	("C-j" . helm-gtags-select)
-	("M-." . helm-gtags-dwim)
-	("M-," . helm-gtags-pop-stack)
-	("C-c o" . helm-gtags-find-tag-other-window)
-	("C-c <" . helm-gtags-previous-history)
-	("C-c >" . helm-gtags-next-history))
-  :config
-  (setq helm-gtags-ignore-case t)
-  (setq helm-gtags-auto-update t)
-  (setq helm-gtags-use-input-at-cursor t)
-  (setq helm-gtags-pulse-at-cursor t)
-  (setq helm-gtags-prefix-key "\C-cg")
-  (setq helm-gtags-suggested-key-mapping t))
-
-(if (getenv "ROS_ROOT")
-    (progn
-      (message "Loading helm-ros")
-      (use-package helm-ros
-	;; An Emacs package that interfaces ROS with the helm completion facilities.
-	;; Keybindings:
-	;;   C-x C-r h : Starts helm-ros with all available sources.
-	;;   C-x C-r m : Start a roscore.
-	;;   C-x C-r i : Invalidate helm-ros cache (if you create a new file).
-
-	;; In ros-process buffers, you can use the following keybindings:
-	;;   c : Interrupts the ROS process associated with the buffer.
-	;;   k : Kills the ROS process associated with the buffer.
-	;;   q : Closes the buffer.
-	:ensure t
-	:config
-	(require 'helm-ros)
-	(global-helm-ros-mode t)
-	))
-  ;; (message "ROS environment variables not defined, won't load helm-ros")
   )
 
 (use-package projectile
@@ -504,14 +392,6 @@
   (projectile-global-mode)
   (projectile-mode +1)
   (define-key projectile-mode-map (kbd "C-c p") 'projectile-command-map))
-
-(use-package helm-projectile
-  ;; Helm UI for Projectile
-  :ensure t
-  :config
-  (setq projectile-completion-system 'helm)
-  (helm-projectile-on)
-  (setq projectile-switch-project-action 'helm-projectile))
 
 (use-package tex
   ;; AUCTeX
@@ -775,14 +655,7 @@
   ;;    3) Rename whatever you want by editing the names (e.g. use replace-string or multiple-curscors (see above))
   ;;    4) "C-c C-e" to save changes or "C-c C-k" to discard changes or "C-x C-q" to exit wgrep
   ;;       and prompt whether to save changes
-  :ensure t
-  :config
-  (use-package wgrep-helm
-    :ensure t
-    :config
-    (require 'wgrep)
-    (require 'wgrep-helm)
-    (setq wgrep-auto-save-buffer t)))
+  :ensure t)
 
 (use-package realgud
   ;; A extensible, modular GNU Emacs front-end for interacting with external debuggers
@@ -975,19 +848,6 @@
   (add-to-list 'auto-mode-alist '("\\.plantuml\\'" . plantuml-mode))
   )
 
-(use-package helm-ag
-  ;; provides interfaces of The Silver Searcher with helm.
-  ;; Workflow to edit multiple files:
-  ;; C-c p s s : runs helm-projectile-ag, can do something like
-  ;;             `-G.[cpph]$ foobar' to search for foobar in .cpp and .h files
-  ;;             in the project
-  ;; C-c C-e : while in the helm-ag buffer, make it into a new buffer for editing
-  ;; <do your replacements...>
-  ;; C-c C-c : save edits across all files and close the helm-ag buffer. Done!
-  :ensure t
-  :config
-  )
-
 (use-package all-the-icons
   ;; Icons font - needed for doom-modeline
   :ensure t)
@@ -1096,6 +956,7 @@
   (pyvenv-mode t))
 
 (use-package lsp-pyright
+  :after my-python
   :ensure t
   :straight (:host github
 		   :repo "emacs-lsp/lsp-pyright"
@@ -1107,6 +968,9 @@
   ;; Do not print "analyzing... Done" in the minibuffer
   ;; (I find it distracting)
   (setq lsp-pyright-show-analyzing nil)
+  ;; Disable auto-import completions
+  ;; This messes with helm-company, it seems
+  (setq lsp-pyright-auto-import-completions nil)
   )
 
 (use-package lsp-mode
@@ -1116,7 +980,8 @@
   ;; `M-x lsp-workspace-restart`
   ;;
   ;; Useful tools:
-  ;;  M-x lsp-rename : rename all instances of a variable.
+  ;;  =M-x lsp-rename= : rename all instances of a variable.
+  ;;  =C-c l v= : toggle variable info on hover from elpy.
   :ensure t
   :init
   (setq lsp-keymap-prefix "C-c l")
@@ -1196,6 +1061,7 @@
 	lsp-enable-snippet nil ;; Enable arguments completion
 	)
 
+  ;; Use =C-c l v= to toggle variable info
   (defun my-lsp-eldoc-toggle-hover ()
     (interactive)
     (if lsp-eldoc-enable-hover
@@ -1325,24 +1191,105 @@
 	      (rainbow-mode 1)))
   )
 
-(use-package vterm
-  ;; Emacs-libvterm (vterm) is fully-fledged terminal emulator inside GNU Emacs
-  ;; based on libvterm, a C library. As a result of using compiled code (instead
-  ;; of elisp), emacs-libvterm is fully capable, fast, and it can seamlessly
-  ;; handle large outputs.
+;;;;;;;;;;;;;;;;; IVY
+
+(use-package ivy
+  ;; Ivy is a generic completion mechanism for Emacs. While it operates
+  ;; similarly to other completion schemes such as icomplete-mode, Ivy aims to
+  ;; be more efficient, smaller, simpler, and smoother to use yet highly
+  ;; customizable.
   :ensure t
-  :init
-  ;; Always compile vterm-module if missing
-  (setq vterm-always-compile-module t)
+  :bind
+  (("M-i" . swiper-thing-at-point)
+   ("M-x" . counsel-M-x)
+   ("C-x b" . counsel-switch-buffer)
+   ("C-x C-f" . counsel-find-file)
+   ("C-c q" . counsel-semantic-or-imenu))
   :config
-  ;; Kill buffer on exit
-  (setq vterm-kill-buffer-on-exit t)
-  ;; Launch vterm
-  (global-set-key (kbd "C-c v v") 'vterm)
-  ;; Copy mode (allows to move cursor through history)
-  (global-set-key (kbd "C-c v c") 'vterm-copy-mode)
-  ;; Rename buffer
-  (define-key vterm-mode-map (kbd "C-c r") 'rename-buffer)
+  ;;
+  ;; ..:: Ivy ::..
+  ;;
+
+  (ivy-mode 1)
+  (setq ivy-use-virtual-buffers nil) ;; Shows "recentf buffers"
+  (setq enable-recursive-minibuffers t)
+
+  (defun ivy-with-thing-at-point (cmd)
+    ;; Auto-populate search with current thing at point
+    ;; Source: https://github.com/abo-abo/swiper/issues/1068
+    (let ((ivy-initial-inputs-alist
+           (list
+            (cons cmd (thing-at-point 'symbol)))))
+      (funcall cmd)))
+
+  ;; Remove the default "^" in search string
+  ;; Source: https://emacs.stackexchange.com/a/38842/13661
+  (setq ivy-initial-inputs-alist nil)
+
+  ;; Default height
+  (setq ivy-height 20)
+
+  ;; Wrap-around scroll C-n and C-p
+  ;; Source: https://oremacs.com/swiper/
+  (setq ivy-wrap t)
+
+  ;; Key bindings
+  ;; C-l to go up a directory
+  (define-key ivy-minibuffer-map (kbd "C-l") 'ivy-backward-delete-char)
+  ;; Complete on first TAB press
+  (define-key ivy-minibuffer-map (kbd "TAB") 'ivy-alt-done)
+
+  ;;
+  ;; ..:: Counsel ::..
+  ;;
+  (eval-after-load 'company
+    '(progn
+       (define-key company-mode-map (kbd "<S-SPC>") 'counsel-company)
+       (define-key company-active-map (kbd "<S-SPC>") 'counsel-company)))
+  (setq counsel-switch-buffer-preview-virtual-buffers nil)
+
+  (defun counsel-ag-thing-at-point ()
+    (interactive)
+    (ivy-with-thing-at-point 'counsel-ag))
+
+  ;;
+  ;; ..:: Swiper ::..
+  ;;
+
+  (defun swiper-thing-at-point ()
+    (interactive)
+    (ivy-with-thing-at-point 'swiper))
+
+  )
+
+(use-package counsel-projectile
+  ;; Ivy UI for Projectile
+  :ensure t
+  :config
+  (setq projectile-completion-system 'ivy)
+  (define-key projectile-mode-map (kbd "C-c p") 'projectile-command-map)
+  )
+
+(use-package counsel-gtags
+  ;;  GNU Global with ivy completion
+  :ensure t
+  :bind
+  (:map c-mode-base-map
+	;; ("C-c g a" . helm-gtags-tags-in-this-function)
+	;; ("C-c g h" . helm-gtags-show-stack)
+	;; ("C-j" . helm-gtags-select)
+	("M-." . counsel-gtags-dwim)
+	;; ("M-," . helm-gtags-pop-stack)
+	;; ("C-c o" . helm-gtags-find-tag-other-window)
+	;; ("C-c <" . helm-gtags-previous-history)
+	;; ("C-c >" . helm-gtags-next-history)
+	)
+  )
+
+(use-package smex
+  ;; A smart M-x enhancement for Emacs.
+  ;; Namely, show most recently used M-x commands up top.
+  :ensure t
   )
 
 ;;;;;;;;;;;;;;;;; NON-MELPA PACKAGES
@@ -1421,11 +1368,6 @@
   ;; automatically type C-style block comments
   ;; Use M-; to insert /* */ around the point
   ;; Use M-j to go to next line in a multi-line block comment
-  :straight nil
-  :load-path "lisp/")
-
-(use-package setup-helm
-  ;; https://github.com/tuhdo/emacs-c-ide-demo/blob/master/custom/setup-helm.el
   :straight nil
   :load-path "lisp/")
 
@@ -1517,6 +1459,11 @@
   (add-hook 'after-make-frame-functions 'pick-color-theme)
   )
 
+(use-package my-ansi-term
+  ;; Improve ansi-term experience
+  :straight nil
+  :load-path "lisp/")
+
 (use-package my-python
   :straight nil
   :load-path "lisp/"
@@ -1526,6 +1473,10 @@
 	    (lambda ()
 	      (require 'my-python)
 	      (my-python-config)))
+  ;; Some Python configs
+  ;; Source: https://stackoverflow.com/a/51966682/4605946
+  (setq python-indent-guess-indent-offset t)
+  (setq python-indent-guess-indent-offset-verbose nil)
   )
 
 ;;;;;;;;;;;;;;;;; OTHER STUFF
@@ -1630,6 +1581,8 @@
 (add-hook 'emacs-lisp-mode-hook
   (lambda () (setq hl-line-mode nil)))
 (add-hook 'c-mode-common-hook
+  (lambda () (setq hl-line-mode nil)))
+(add-hook 'sh-mode-hook
   (lambda () (setq hl-line-mode nil)))
 
 ;; ;; CEDET tools
@@ -1852,30 +1805,6 @@
 
 ;; Color roslaunch files correctly
 (add-to-list 'auto-mode-alist '("\\.launch$" . xml-mode))
-
-;; ansi-term bi-directional text support problem fix, which seems to
-;; be the cause of text jumbling when going back commands in
-;; ansi-term. This fixes it, yay!
-(add-hook 'term-mode-hook 'my-term-mode-hook)
-(defun my-term-mode-hook ()
-  ;; https://debbugs.gnu.org/cgi/bugreport.cgi?bug=20611
-  (setq bidi-paragraph-direction 'left-to-right))
-
-(eval-after-load 'term
-  '(progn
-     (defun my-term-send-delete-word-forward () (interactive) (term-send-raw-string "\ed"))
-     (defun my-term-send-delete-word-backward () (interactive) (term-send-raw-string "\e\C-h"))
-     (define-key term-raw-map [C-delete] 'my-term-send-delete-word-forward)
-     (define-key term-raw-map [C-backspace] 'my-term-send-delete-word-backward)
-     (defun my-term-send-forward-word () (interactive) (term-send-raw-string "\ef"))
-     (defun my-term-send-backward-word () (interactive) (term-send-raw-string "\eb"))
-     (define-key term-raw-map [C-left] 'my-term-send-backward-word)
-     (define-key term-raw-map [C-right] 'my-term-send-forward-word)
-     (defun my-term-send-m-right () (interactive) (term-send-raw-string "\e[1;3C"))
-     (defun my-term-send-m-left () (interactive) (term-send-raw-string "\e[1;3D"))
-     (define-key term-raw-map [M-right] 'my-term-send-m-right)
-     (define-key term-raw-map [M-left] 'my-term-send-m-left)
-     ))
 
 ;; byte-compilation for performance boost
 (defun byte-compile-init-dir ()

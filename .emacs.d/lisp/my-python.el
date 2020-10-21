@@ -10,7 +10,6 @@
 ;;
 ;;; Code:
 
-(require 'vterm)
 (require 'python)
 
 (defcustom my-python-shell-type "ipython"
@@ -54,21 +53,14 @@ Placed in the current buffer."
       ;; The Python shell buffer does not exist
       (let ((this-buffer (buffer-name)))
 	(progn
-	  ;; Create a vterm buffer
-	  (vterm my-python-buffer-name)
+	  ;; Create a shell buffer
+	  (ansi-term my-python-shell-type)
+	  (rename-buffer my-python-buffer-name)
 	  ;; Create a side window to hold the vterm buffer
 	  (display-buffer-in-side-window
 	   my-python-buffer-name my-python-shell-position)
-	  ;; Switch to current buffer
+	  ;; Switch back to current buffer
 	  (switch-to-buffer this-buffer)
-	  ;; Open ipython in vterm
-	  (with-current-buffer my-python-buffer-name
-	    ;; Execute commands in Python shell buffer
-	    (progn
-	      (sit-for 0.5) ;; Wait for 0.5 seconds before issuing python
-	      (vterm-send-string my-python-shell-type)
-	      (vterm-send-return)
-	      ))
 	  )
 	)
       )
@@ -86,8 +78,7 @@ If there is to python shell open, prints a message to inform."
 	      (this-buffer (buffer-name)))
 	  (progn
 	    (pop-to-buffer my-python-buffer-name)
-	    (vterm-send-string (format "%%run -i %s" file-name))
-	    (vterm-send-return)
+	    (term-send-raw-string (format "%%run -i %s\n" file-name))
 	    (pop-to-buffer this-buffer))
 	  )
 	)
@@ -95,9 +86,13 @@ If there is to python shell open, prints a message to inform."
   )
 
 (defun my-python-config ()
-  (define-key vterm-mode-map (kbd "S-SPC") 'vterm-send-tab)
+  ;; Key bindings
   (define-key python-mode-map (kbd "C-c C-p") 'my-python-shell)
   (define-key python-mode-map (kbd "C-c C-l") 'my-python-run-file)
+  ;; Hide shell buffers from buffer list, so they may only be accessed
+  ;; through the above key bindings
+  ;; See https://github.com/abo-abo/swiper/issues/644
+  (setq ivy-ignore-buffers '("\\*MyPython\\*"))
   )
 
 (provide 'my-python)

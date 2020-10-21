@@ -109,9 +109,4 @@ if program_not_installed "global"; then
     wget_targz_install "global-6.5.5" "ftp://ftp.gnu.org/pub/gnu/global/global-6.5.5.tar.gz"
 fi
 
-# Better terminal emulation inside Emacs (via vterm)
-# https://github.com/akermu/emacs-libvterm
-apt_get_install_pkg libtool-bin
-apt_get_install_pkg libvterm-dev
-
 echo_prefix="$echo_prefix_temp"

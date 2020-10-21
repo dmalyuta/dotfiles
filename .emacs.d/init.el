@@ -16,7 +16,12 @@
 		       ;; Garbage-collect after 30 seconds of idleness
 		       (garbage-collect)
 		       (message "%s Routine %ds garbage collection"
-				(all-the-icons-faicon "trash-o") my-gc-collect-interval)))
+				(propertize (all-the-icons-faicon "trash-o")
+					    'face `(:family ,(all-the-icons-faicon-family)
+							    :height 1.0
+							    :background nil)
+					    'display '(raise -0.05))
+				my-gc-collect-interval)))
 (setq read-process-output-max (* 1024 1024 10)) ;; 10mb
 
 ;; Remove warnings like:
@@ -980,8 +985,9 @@
   ;; `M-x lsp-workspace-restart`
   ;;
   ;; Useful tools:
-  ;;  =M-x lsp-rename= : rename all instances of a variable.
-  ;;  =C-c l v= : toggle variable info on hover from elpy.
+  ;;  M-x lsp-rename : rename all instances of a variable.
+  ;;  C-c l v : toggle variable info on hover from lsp-eldoc.
+  ;;  C-c l i : display info about hovered object from lsp-eldoc.
   :ensure t
   :init
   (setq lsp-keymap-prefix "C-c l")
@@ -1061,7 +1067,7 @@
 	lsp-enable-snippet nil ;; Enable arguments completion
 	)
 
-  ;; Use =C-c l v= to toggle variable info
+  ;; Use [C-c l v] to toggle variable info
   (defun my-lsp-eldoc-toggle-hover ()
     (interactive)
     (if lsp-eldoc-enable-hover
@@ -1072,10 +1078,46 @@
 	(setq lsp-eldoc-enable-hover t)
 	(eldoc-mode 1)))
     )
-  (add-hook 'python-mode-hook
+  (add-hook 'lsp-mode-hook
 	    (lambda ()
 	      (local-set-key (kbd "C-c l v")
 			     'my-lsp-eldoc-toggle-hover)))
+
+  ;; Display variable info
+  ;; Use [C-c l i] to do so
+  (defun my-lsp-variable-info-message (string)
+    (message "%s %s"
+	     (propertize (all-the-icons-faicon "info")
+			 'face `(:family ,(all-the-icons-faicon-family)
+					 :height 1.0
+					 :background nil
+					 :foreground "yellow")
+			 'display '(raise -0.05))
+	     (propertize string
+			 'face '(:background nil
+					     :foreground "yellow"))))
+  (defun my-lsp-display-variable-info ()
+    (interactive)
+    (if (not (looking-at "[[:space:]\n]"))
+      (when (lsp--capability :hoverProvider)
+        (lsp-request-async
+         "textDocument/hover"
+         (lsp--text-document-position-params)
+         (-lambda ((hover &as &Hover? :range? :contents))
+           (when hover
+	     (my-lsp-variable-info-message
+	      (and contents
+		   (lsp--render-on-hover-content
+		    contents
+		    lsp-eldoc-render-all)))
+	     ))
+         :error-handler #'ignore
+         :mode 'tick
+         :cancel-token :eldoc-hover)))
+    )
+  (add-hook 'lsp-mode-hook (lambda ()
+			     (define-key lsp-mode-map (kbd "C-c l i")
+			       'my-lsp-display-variable-info)))
 
   )
 

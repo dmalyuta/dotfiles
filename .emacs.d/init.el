@@ -1228,9 +1228,11 @@
   ;; See: https://jblevins.org/log/rainbow-mode
   :ensure t
   :config
-  (add-hook 'LaTeX-mode-hook
-	    (lambda ()
-	      (rainbow-mode 1)))
+  (mapc (lambda (mode)
+	  (add-hook mode
+		    (lambda ()
+		      (rainbow-mode 1))))
+	'(LaTeX-mode-hook emacs-lisp-mode-hook))
   )
 
 ;;;;;;;;;;;;;;;;; IVY
@@ -1333,6 +1335,52 @@
   ;; Namely, show most recently used M-x commands up top.
   :ensure t
   )
+
+(use-package ivy-posframe
+  ;; ivy-posframe is a ivy extension, which let ivy use posframe to show its
+  ;; candidate menu.
+  :after ivy
+  :ensure t
+  :custom-face
+  ;; (ivy-posframe-border ((t (:background "#ffffff"))))
+  :config
+  (require 'ivy-posframe)
+  ;; How to display at `ivy-posframe-style'
+  ;; (setq ivy-posframe-display-functions-alist '((t . ivy-posframe-display)))
+  ;; (setq ivy-posframe-display-functions-alist '((t . ivy-posframe-display-at-frame-center)))
+  ;; (setq ivy-posframe-display-functions-alist '((t . ivy-posframe-display-at-window-center)))
+  ;; (setq ivy-posframe-display-functions-alist '((t . ivy-posframe-display-at-frame-bottom-left)))
+  (setq ivy-posframe-display-functions-alist '((t . ivy-posframe-display-at-window-bottom-left)))
+  ;; (setq ivy-posframe-display-functions-alist '((t . ivy-posframe-display-at-frame-top-center)))
+
+  ;; Minibuffer display
+  (setq ivy-posframe-hide-minibuffer t)
+  ;; This makes sure that the minibuffer background matches face-background,
+  ;; which ensures that the minibuffer display by ivy is "correctly" hidden away
+  (add-hook 'minibuffer-setup-hook
+	    (lambda ()
+	      ;; (setq max-mini-window-height nil)
+	      ;; (setq resize-mini-frames nil)
+	      ;; (setq truncate-lines t)
+              (make-local-variable 'face-remapping-alist)
+	      (let ((bg-color (face-background 'default nil)))
+		(add-to-list 'face-remapping-alist '(default (:background ,bg-color))))))
+
+  ;; Activate ivy-posframe
+  (ivy-posframe-mode 1)
+
+  ;; Width of posframe (full window width)
+  (setq ivy-posframe-parameters
+	'((left-fringe . 8)
+	  (right-fringe . 8)))
+  (defun ivy-posframe-get-size ()
+    "The default functon used by `ivy-posframe-size-function'."
+    (list
+     :height ivy-posframe-height
+     :width ivy-posframe-width
+     :min-height (or ivy-posframe-min-height (+ ivy-height 1))
+     :min-width (or ivy-posframe-min-width (round (* (window-width) 1.0)))))
+)
 
 ;;;;;;;;;;;;;;;;; NON-MELPA PACKAGES
 

@@ -1380,7 +1380,13 @@
      :width ivy-posframe-width
      :min-height (or ivy-posframe-min-height (+ ivy-height 1))
      :min-width (or ivy-posframe-min-width (round (* (window-width) 1.0)))))
-)
+  )
+
+(use-package ivy-xref
+  ;;  Ivy interface for xref results
+  :ensure t
+  :init
+  (setq xref-show-definitions-function #'ivy-xref-show-defs))
 
 ;;;;;;;;;;;;;;;;; NON-MELPA PACKAGES
 

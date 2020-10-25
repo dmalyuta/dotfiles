@@ -1,4 +1,4 @@
-;;; theme-setup.el --- 
+;;; theme-setup.el ---
 
 ;;; Commentary:
 

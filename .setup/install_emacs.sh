@@ -97,6 +97,9 @@ runcmd "pip install flake8"
 
 apt_get_install_pkg shellcheck
 
+# Powerline support for telephone-line
+apt_get_install_pkg fonts-powerline
+
 # helm-gtags GNU GLOBAL
 if program_not_installed "global"; then
     # GNU GLOBAL not installed --> install it

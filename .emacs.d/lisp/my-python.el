@@ -77,9 +77,8 @@ If there is to python shell open, prints a message to inform."
 	(let ((file-name (file-name-nondirectory (buffer-file-name)))
 	      (this-buffer (buffer-name)))
 	  (progn
-	    (pop-to-buffer my-python-buffer-name)
-	    (term-send-raw-string (format "%%run -i %s\n" file-name))
-	    (pop-to-buffer this-buffer))
+	    (with-current-buffer my-python-buffer-name
+	      (term-send-raw-string (format "%%run -i %s\n" file-name))))
 	  )
 	)
     (message "No Python buffer."))

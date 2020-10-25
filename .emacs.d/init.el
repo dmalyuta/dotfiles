@@ -8,7 +8,7 @@
 ;; (setq gc-cons-threshold 1600000)
 
 ;; Show message in mode line whenever garbage collection occurs
-(setq garbage-collection-messages t)
+(setq garbage-collection-messages nil)
 
 (setq my-gc-collect-interval 30)
 (run-with-idle-timer my-gc-collect-interval t
@@ -157,27 +157,41 @@
   )
 
 (use-package doom-themes
-  ;; DOOM Themes is an opinionated UI plugin and pack of themes extracted from my emacs.d, inspired by the One Dark/Light UI and syntax themes in Atom.
+  ;; DOOM Themes is an opinionated UI plugin and pack of themes extracted from
+  ;; my emacs.d, inspired by the One Dark/Light UI and syntax themes in Atom.
   :ensure t
-  :config
-  (require 'doom-themes)
-  ;; Load the theme (doom-one, doom-dark, etc.)
-  (load-theme 'doom-one t)
-  ;; Enable custom neotree theme
-  (doom-themes-neotree-config)
   )
 
-(use-package neotree
-  ;; Good tree-based project file browser
-  ;; Need to follow up with M-x all-the-icons-install-fonts
+(use-package telephone-line
+  ;; Telephone Line is a new implementation of Powerline for emacs
+  :after (doom-themes theme-setup)
   :ensure t
-  :after (all-the-icons)
   :config
-  (require 'neotree)
-  (global-set-key (kbd "C-c n") 'neotree-toggle))
+  (add-hook 'after-init-hook
+	    (lambda ()
+	      ;; Customization
+	      (setq telephone-line-primary-left-separator 'telephone-line-cubed-left
+		    telephone-line-secondary-left-separator 'telephone-line-cubed-hollow-left
+		    telephone-line-primary-right-separator 'telephone-line-cubed-right
+		    telephone-line-secondary-right-separator 'telephone-line-cubed-hollow-right)
+	      (setq ;; telephone-line-height 24
+		    telephone-line-evil-use-short-tag t)
+	      (setq telephone-line-lhs
+		    '((accent . (telephone-line-vc-segment
+				 telephone-line-erc-modified-channels-segment
+				 telephone-line-process-segment))
+		      (nil    . (telephone-line-buffer-segment))))
+	      (setq telephone-line-rhs
+		    '((nil    . (telephone-line-misc-info-segment))
+		      (accent . (telephone-line-major-mode-segment))
+		      (evil   . (telephone-line-airline-position-segment))))
+	      ;; Activate
+	      (telephone-line-mode 1)
+	      ))
+  )
 
 (use-package all-the-icons
-  ;; Icons for NeoTree
+  ;; Pretty icons
   ;; Need to run M-x all-the-icons-install-fonts
   :ensure t
   :config
@@ -209,89 +223,6 @@
   ;; Delay in showing errors
   (setq flycheck-display-errors-delay 0.1)
   )
-
-;; MATLAB integration
-;; --------
-;; To install, run in ~/.emacs.d/
-;;   git clone https://github.com/dmalyuta/matlab-mode
-;;   git clone https://github.com/dmalyuta/matlab-emacs
-;;   cd matlab-emacs
-;;   make
-;; --------
-(use-package matlab-load
-  :straight nil
-  :load-path "matlab-emacs/"
-  :config
-  (require 'matlab-load)
-  (require 'company-matlab-shell)
-  (matlab-cedet-setup)
-  (setq matlab-verify-on-save-flag nil)
-  (defun my-matlab-mode-hook () (setq fill-column 80))
-  (setq matlab-indent-function-body nil)
-  )
-
-(use-package matlab-mode
-  :straight nil
-  :load-path "matlab-mode/"
-  :config
-  (setq default-fill-column 80)
-  (require 'matlab-mode)
-  (require 'matlab-server)
-  )
-
-(defun matlab-my-view-doc ()
-    "look up the matlab help info and show in another buffer"
-    (interactive)
-    (let* ((word (doc-matlab-grab-current-word)))
-      (matlab-shell-describe-command word)))
-
-(add-to-list 'matlab-mode-hook
-	     (lambda ()
-	       ;; todo mode
-	       (hl-todo-mode)
-	       ;; bind key for starting the matlab shell
-	       (local-set-key (kbd "M-s") 'matlab-shell)
-	       ;; bind the key of checking document
-	       (local-set-key (kbd "C-c h") 'matlab-my-view-doc)
-	       ;; bind the key of jump to source code
-	       (local-set-key (kbd "C-c s")
-			      'matlab-jump-to-definition-of-word-at-cursor)
-	       ;; set company-backends
-	       (setq-local company-backends '(company-files (company-matlab company-dabbrev)))
-	       ))
-
-(add-to-list 'matlab-shell-mode-hook
-	     (lambda ()
-	       ;; bind key for completion
-	       ;; (not company-mode)
-	       ;; (define-key matlab-shell-mode-map (kbd "S-SPC") 'nil)
-	       (local-set-key (kbd "S-SPC") 'matlab-shell-tab)
-	       ;; bind the key of checking document
-	       (local-set-key (kbd "C-c h") 'matlab-my-view-doc)))
-
-(defun matlab-docstring ()
-    "Print a default docstring for a MATLAB function."
-    (interactive)
-    (insert "% <FUNCTION NAME> <DESCRIPTION>\n")
-    (insert "%\n")
-    (insert "% Syntax:\n")
-    (insert "%\n")
-    (insert "% <OUT> = <FUNCTION NAME>(<IN>) : <DESCRIPTION>\n")
-    (insert "%\n")
-    (insert "% Inputs:\n")
-    (insert "%\n")
-    (insert "% <IN1> [<TYPE>] : <DESCRIPTION>\n")
-    (insert "% <IN2> [<TYPE>] : <DESCRIPTION>\n")
-    (insert "% \n")
-    (insert "% Outputs:\n")
-    (insert "%\n")
-    (insert "% <OUT1> [<TYPE>] : <DESCRIPTION>\n")
-    (insert "% <OUT2> [<TYPE>] : <DESCRIPTION>\n")
-    (insert "%\n")
-    (insert "% Other m-files required: none\n")
-    (insert "% Subfunctions: none\n")
-    (insert "% MAT-files required: none\n")
-    )
 
 (use-package company
   ;; complete anything
@@ -358,6 +289,94 @@
   :ensure t
   :config
   (add-to-list 'company-backends 'company-shell)
+  )
+
+;; MATLAB integration
+;; --------
+;; To install, run in ~/.emacs.d/
+;;   git clone https://github.com/dmalyuta/matlab-mode
+;;   git clone https://github.com/dmalyuta/matlab-emacs
+;;   cd matlab-emacs
+;;   make
+;; --------
+(use-package matlab-load
+  :straight nil
+  :load-path "matlab-emacs/"
+  :config
+  (require 'matlab-load)
+  (require 'company-matlab-shell)
+  (matlab-cedet-setup)
+  (setq matlab-verify-on-save-flag nil)
+  (defun my-matlab-mode-hook () (setq fill-column 80))
+  (setq matlab-indent-function-body nil)
+  )
+
+(use-package s
+  :ensure t)
+
+(use-package matlab-mode
+  ;; s.el : The long lost Emacs string manipulation library.
+  :after s
+  :straight nil
+  :load-path "matlab-mode/"
+  :config
+  (setq default-fill-column 80)
+  (require 'matlab-mode)
+  (require 'matlab-server)
+  )
+
+(defun matlab-my-view-doc ()
+  "look up the matlab help info and show in another buffer"
+  (interactive)
+  (let* ((word (doc-matlab-grab-current-word)))
+    (matlab-shell-describe-command word)))
+
+(add-to-list 'matlab-mode-hook
+	     (lambda ()
+	       ;; todo mode
+	       (hl-todo-mode)
+	       ;; bind key for starting the matlab shell
+	       (local-set-key (kbd "M-s") 'matlab-shell)
+	       ;; bind the key of checking document
+	       (local-set-key (kbd "C-c h") 'matlab-my-view-doc)
+	       ;; bind the key of jump to source code
+	       (local-set-key (kbd "C-c s")
+			      'matlab-jump-to-definition-of-word-at-cursor)
+	       ;; set company-backends
+	       (setq-local company-backends '(company-files (company-matlab company-dabbrev)))
+	       ))
+
+(add-to-list 'matlab-shell-mode-hook
+	     (lambda ()
+	       ;; bind key for completion
+	       ;; (not company-mode)
+	       ;; (define-key matlab-shell-mode-map (kbd "S-SPC") 'nil)
+	       (local-set-key (kbd "S-SPC") 'matlab-shell-tab)
+	       ;; bind the key of checking document
+	       (local-set-key (kbd "C-c h") 'matlab-my-view-doc)))
+
+(defun matlab-docstring ()
+  "Print a default docstring for a MATLAB function."
+  (interactive)
+  (insert "% <FUNCTION NAME> <DESCRIPTION>\n")
+  (insert "%\n")
+  (insert "% Syntax:\n")
+  (insert "%\n")
+  (insert "% <OUT> = <FUNCTION NAME>(<IN>) : <DESCRIPTION>\n")
+  (insert "%\n")
+  (insert "% Inputs:\n")
+  (insert "%\n")
+  (insert "% <IN1> [<TYPE>] : <DESCRIPTION>\n")
+  (insert "% <IN2> [<TYPE>] : <DESCRIPTION>\n")
+  (insert "% \n")
+  (insert "% Outputs:\n")
+  (insert "%\n")
+  (insert "% <OUT1> [<TYPE>] : <DESCRIPTION>\n")
+  (insert "% <OUT2> [<TYPE>] : <DESCRIPTION>\n")
+  (insert "%\n")
+  (insert "% Other m-files required: none\n")
+  (insert "% Subfunctions: none\n")
+  (insert "% MAT-files required: none\n")
   )
 
 (use-package modern-cpp-font-lock
@@ -591,12 +610,6 @@
   (add-to-list 'auto-mode-alist '("\\.srv$" . yaml-mode))
   (add-to-list 'auto-mode-alist '("\\.msg$" . yaml-mode))
   )
-
-(use-package google-c-style
-  ;; provides the Google C/C++ coding style
-  :ensure t
-  :config
-  (add-hook 'c-mode-common-hook 'google-set-c-style))
 
 (use-package srefactor
   ;; C/C++ refactoring tool based on Semantic parser framework
@@ -857,11 +870,6 @@
   ;; Icons font - needed for doom-modeline
   :ensure t)
 
-(use-package doom-modeline
-  ;; Sexy modeline
-  :ensure t
-  :hook (after-init . doom-modeline-mode))
-
 (use-package sage-shell-mode
   :ensure t
   :config
@@ -921,6 +929,53 @@
 	    (lambda ()
 	      (setq set-mark-command-repeat-pop t)))
   )
+
+(use-package gnuplot
+  ;; A major mode for Emacs for interacting with Gnuplot
+  :ensure t
+  :config
+  ;; these lines enable the use of gnuplot mode
+  (autoload 'gnuplot-mode "gnuplot" "gnuplot major mode" t)
+  (autoload 'gnuplot-make-buffer "gnuplot" "open a buffer in gnuplot mode" t)
+
+  ;; this line automatically causes all files with the .gp extension to be loaded into gnuplot mode
+  (setq auto-mode-alist (append '(("\\.gp$" . gnuplot-mode)) auto-mode-alist))
+  (setq auto-mode-alist (append '(("\\.gnu$" . gnuplot-mode)) auto-mode-alist))
+
+  ;; This line binds the function-9 key so that it opens a buffer into gnuplot mode
+  (global-set-key [(f9)] 'gnuplot-make-buffer)
+  )
+
+(use-package graphviz-dot-mode
+  ;; Emacs package for working with Graphviz DOT-format files.
+  :ensure t
+  :config
+  (setq graphviz-dot-indent-width 4))
+
+(use-package default-text-scale
+  ;; Easily adjust the font size in all Emacs frames
+  ;; Key bindings:
+  ;;   C-M-= : zoom in
+  ;;   C-M-- : zoom out
+  :ensure t
+  :config
+  (default-text-scale-mode)
+  )
+
+(use-package rainbow-mode
+  ;; This minor mode sets background color to strings that match color names,
+  ;; e.g. #0000ff is displayed in white with a blue background.
+  ;; See: https://jblevins.org/log/rainbow-mode
+  :ensure t
+  :config
+  (mapc (lambda (mode)
+	  (add-hook mode
+		    (lambda ()
+		      (rainbow-mode 1))))
+	'(LaTeX-mode-hook emacs-lisp-mode-hook))
+  )
+
+;;;;;;;;;;;;;;;;; LSP
 
 ;; LANGUAGE LINTING/IDE FEATURES
 ;; Use lsp-mode (Language Server Protocol)
@@ -1190,49 +1245,35 @@
 	      ))
   )
 
-(use-package gnuplot
-  ;; A major mode for Emacs for interacting with Gnuplot
+(use-package treemacs
+  ;; Treemacs is a file and project explorer similar to NeoTree or vim’s
+  ;; NerdTree, but largely inspired by the Project Explorer in Eclipse.
   :ensure t
   :config
-  ;; these lines enable the use of gnuplot mode
-  (autoload 'gnuplot-mode "gnuplot" "gnuplot major mode" t)
-  (autoload 'gnuplot-make-buffer "gnuplot" "open a buffer in gnuplot mode" t)
-
-  ;; this line automatically causes all files with the .gp extension to be loaded into gnuplot mode
-  (setq auto-mode-alist (append '(("\\.gp$" . gnuplot-mode)) auto-mode-alist))
-  (setq auto-mode-alist (append '(("\\.gnu$" . gnuplot-mode)) auto-mode-alist))
-
-  ;; This line binds the function-9 key so that it opens a buffer into gnuplot mode
-  (global-set-key [(f9)] 'gnuplot-make-buffer)
+  (treemacs-fringe-indicator-mode t)
+  (setq lsp-prefer-flymake nil)
+  (global-set-key (kbd "C-c t t") 'treemacs)
   )
 
-(use-package graphviz-dot-mode
-  ;; Emacs package for working with Graphviz DOT-format files.
-  :ensure t
-  :config
-  (setq graphviz-dot-indent-width 4))
+(use-package treemacs-projectile
+  :after treemacs projectile
+  :ensure t)
 
-(use-package default-text-scale
-  ;; Easily adjust the font size in all Emacs frames
-  ;; Key bindings:
-  ;;   C-M-= : zoom in
-  ;;   C-M-- : zoom out
+(use-package treemacs-icons-dired
+  :after treemacs dired
   :ensure t
-  :config
-  (default-text-scale-mode)
-  )
+  :config (treemacs-icons-dired-mode))
 
-(use-package rainbow-mode
-  ;; This minor mode sets background color to strings that match color names,
-  ;; e.g. #0000ff is displayed in white with a blue background.
-  ;; See: https://jblevins.org/log/rainbow-mode
+(use-package lsp-treemacs
+  ;; Integration between lsp-mode and treemacs and implementation of treeview
+  ;; controls using treemacs as a tree renderer.
   :ensure t
   :config
-  (mapc (lambda (mode)
-	  (add-hook mode
-		    (lambda ()
-		      (rainbow-mode 1))))
-	'(LaTeX-mode-hook emacs-lisp-mode-hook))
+  (lsp-treemacs-sync-mode 1)
+  (add-hook 'lsp-mode-hook
+	    (lambda ()
+	      (local-set-key (kbd "C-c l t e") 'lsp-treemacs-errors-list)
+	      ))
   )
 
 ;;;;;;;;;;;;;;;;; IVY
@@ -1244,9 +1285,9 @@
   ;; customizable.
   :ensure t
   :bind
-  (("M-i" . swiper-thing-at-point)
+  (("M-i" . my-swiper-thing-at-point)
    ("M-x" . counsel-M-x)
-   ("C-x b" . counsel-switch-buffer)
+   ("C-x b" . my-counsel-switch-buffer-no-preview)
    ("C-x C-f" . counsel-find-file)
    ("C-c q" . counsel-semantic-or-imenu))
   :config
@@ -1292,17 +1333,22 @@
        (define-key company-active-map (kbd "<S-SPC>") 'counsel-company)))
   (setq counsel-switch-buffer-preview-virtual-buffers nil)
 
-  (defun counsel-ag-thing-at-point ()
+  ;; Switch buffer without preview
+  (defun my-counsel-switch-buffer-no-preview ()
+    "Switch to another buffer."
     (interactive)
-    (ivy-with-thing-at-point 'counsel-ag))
+    (ivy-switch-buffer))
 
   ;;
   ;; ..:: Swiper ::..
   ;;
 
-  (defun swiper-thing-at-point ()
+  ;; Put thing at point in swiper buffer
+  (defun my-swiper-thing-at-point ()
     (interactive)
-    (ivy-with-thing-at-point 'swiper))
+    (deactivate-mark)
+    (ivy-with-thing-at-point 'swiper)
+    )
 
   )
 
@@ -1357,14 +1403,14 @@
   (setq ivy-posframe-hide-minibuffer t)
   ;; This makes sure that the minibuffer background matches face-background,
   ;; which ensures that the minibuffer display by ivy is "correctly" hidden away
-  (add-hook 'minibuffer-setup-hook
-	    (lambda ()
-	      ;; (setq max-mini-window-height nil)
-	      ;; (setq resize-mini-frames nil)
-	      ;; (setq truncate-lines t)
-              (make-local-variable 'face-remapping-alist)
-	      (let ((bg-color (face-background 'default nil)))
-		(add-to-list 'face-remapping-alist '(default (:background ,bg-color))))))
+  ;; (add-hook 'minibuffer-setup-hook
+  ;; 	    (lambda ()
+  ;; 	      ;; (setq max-mini-window-height nil)
+  ;; 	      ;; (setq resize-mini-frames nil)
+  ;; 	      ;; (setq truncate-lines t)
+  ;;             (make-local-variable 'face-remapping-alist)
+  ;; 	      (let ((bg-color (face-background 'default nil)))
+  ;; 		(add-to-list 'face-remapping-alist '(default (:background ,bg-color))))))
 
   ;; Activate ivy-posframe
   (ivy-posframe-mode 1)
@@ -1623,24 +1669,27 @@
 ;; Default font and font size
 ;; (add-to-list 'default-frame-alist '(font . "DejaVu Sans Mono-12"))
 ;; Fira Code
-(use-package fira-code-mode
-  ;; List of ligatures to turn off
-  :ensure t
-  :custom (fira-code-mode-disabled-ligatures
-	   '("[]" "#{" "#(" "#_" "#_(" "x" "&&"))
-  :hook prog-mode ;; Enables fira-code-mode automatically for programming major modes
-  )
-(add-hook
- 'after-init-hook
- (lambda ()
-   (set-face-attribute 'default nil
-		       :family "Fira Code"
-		       :height 110
-		       :weight 'normal
-		       :width 'normal)
+(when (window-system)
+  (progn
+    (use-package fira-code-mode
+      ;; List of ligatures to turn off
+      :ensure t
+      :custom (fira-code-mode-disabled-ligatures
+	       '("[]" "#{" "#(" "#_" "#_(" "x" "&&"))
+      :hook prog-mode ;; Enables fira-code-mode automatically for programming major modes
+      )
+    (add-hook
+     'after-init-hook
+     (lambda ()
+       (set-face-attribute 'default nil
+			   :family "Fira Code"
+			   :height 110
+			   :weight 'normal
+			   :width 'normal)
 
-   )
- )
+       )
+     )
+    ))
 
 ;; Zoom in every buffer
 (defadvice text-scale-increase (around all-buffers (arg) activate)
@@ -1785,7 +1834,6 @@
 ;; In particular: cursor freezing when moving down (next-line) for a while
 ;; https://emacs.stackexchange.com/questions/28736/emacs-pointcursor-movement-lag
 (setq auto-window-vscroll nil)
-(setq doom-modeline-enable-word-count nil)
 
 ;; Doxymacs
 ;; (add-to-list 'load-path "~/.emacs.d/doxymacs/")
@@ -2016,7 +2064,7 @@
    '(:foreground "yellow" :background default :scale 1.3 :html-foreground "Black" :html-background "Transparent" :html-scale 1.0 :matchers
 		 ("begin" "$1" "$" "$$" "\\(" "\\[")))
  '(package-selected-packages
-   '(helm-cscope lsp-pyright fira-code-mode matlab-emacs matlab-mode fast-scroll company-box default-text-scale company-graphviz-dot graphviz-dot-mode gnuplot mmm-mode helm-company org-bullets workgroups helm-lsp lsp-ui which-key dap-mode autopair julia-mode julia-emacs unfill sage-mode sage-shell-mode minimap helm-ag plantuml-mode elpy hl-todo undo-tree zoom-frm move-text magit fill-column-indicator flymd markdown-mode bash-completion workgroups2 fuzzy ess-R-data-view ess auto-compile rainbow-mode ecb realgud wgrep-helm wgrep multiple-cursors srefactor nyan-mode google-c-style yaml-mode mic-paren pdf-tools auctex helm-projectile projectile helm-ros helm-gtags helm-swoop helm company-irony-c-headers company-irony flycheck-irony irony company-shell company-quickhelp company flycheck dired+ neotree doom-themes rainbow-delimiters use-package))
+   '(helm-cscope lsp-pyright fira-code-mode matlab-emacs matlab-mode fast-scroll company-box default-text-scale company-graphviz-dot graphviz-dot-mode gnuplot mmm-mode helm-company org-bullets workgroups helm-lsp lsp-ui which-key dap-mode autopair julia-mode julia-emacs unfill sage-mode sage-shell-mode minimap helm-ag plantuml-mode elpy hl-todo undo-tree zoom-frm move-text magit fill-column-indicator flymd markdown-mode bash-completion workgroups2 fuzzy ess-R-data-view ess auto-compile rainbow-mode ecb realgud wgrep-helm wgrep multiple-cursors srefactor nyan-mode yaml-mode mic-paren pdf-tools auctex helm-projectile projectile helm-ros helm-gtags helm-swoop helm company-irony-c-headers company-irony flycheck-irony irony company-shell company-quickhelp company flycheck dired+ doom-themes rainbow-delimiters use-package))
  '(pdf-view-midnight-colors '("#DCDCCC" . "#383838"))
  '(safe-local-variable-values
    '((lsp-python-ms-python-executable . "/home/danylo/anaconda3/envs/py385/bin/python")

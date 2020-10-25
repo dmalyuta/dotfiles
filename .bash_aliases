@@ -98,3 +98,8 @@ python ~/.bin/set_customshortcut.py 'launch-firefox' 'firefox' '<Ctrl><Alt>F'
 # Show kernel log
 # See for more info: https://www.digitalocean.com/community/tutorials/how-to-use-journalctl-to-view-and-manipulate-systemd-logs
 alias viewkernel='journalctl -k --no-pager'
+
+# Show sleep mode
+# For most battery savings during sleep, the output should be (deep sleep):
+# $ s2idle [deep]
+alias sleep_mode='cat /sys/power/mem_sleep'

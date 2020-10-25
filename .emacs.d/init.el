@@ -18,8 +18,7 @@
 		       (message "%s Routine %ds garbage collection"
 				(propertize (all-the-icons-faicon "trash-o")
 					    'face `(:family ,(all-the-icons-faicon-family)
-							    :height 1.0
-							    :background nil)
+							    :height 1.0)
 					    'display '(raise -0.05))
 				my-gc-collect-interval)))
 (setq read-process-output-max (* 1024 1024 10)) ;; 10mb
@@ -175,11 +174,15 @@
 		    telephone-line-primary-right-separator 'telephone-line-cubed-right
 		    telephone-line-secondary-right-separator 'telephone-line-cubed-hollow-right)
 	      (setq ;; telephone-line-height 24
-		    telephone-line-evil-use-short-tag t)
+	       telephone-line-evil-use-short-tag t)
+	      (defface my-telephone-yellow
+		'((t (:foreground "black" :background "yellow"))) "")
+	      (add-to-list 'telephone-line-faces
+			   '(yellow . (my-telephone-yellow . telephone-line-accent-inactive)))
 	      (setq telephone-line-lhs
-		    '((accent . (telephone-line-vc-segment
-				 telephone-line-erc-modified-channels-segment
-				 telephone-line-process-segment))
+		    '((yellow . (telephone-line-vc-segment))
+		      ;; (accent . (telephone-line-erc-modified-channels-segment
+		      ;; 		 telephone-line-process-segment))
 		      (nil    . (telephone-line-buffer-segment))))
 	      (setq telephone-line-rhs
 		    '((nil    . (telephone-line-misc-info-segment))
@@ -429,7 +432,7 @@
   :config
   (add-hook 'LaTeX-mode-hook 'LaTeX-math-mode)
   (add-hook 'LaTeX-mode-hook 'turn-on-reftex)
-  (add-hook 'LaTeX-mode-hook 'visual-line-mode)
+  ;; (add-hook 'LaTeX-mode-hook 'visual-line-mode)
   (add-hook 'LaTeX-mode-hook 'TeX-source-correlate-mode)
   (add-hook 'LaTeX-mode-hook 'TeX-PDF-mode)
   (setq TeX-source-correlate-method 'synctex) ;; use SyncTeX for forward/backward search between source/PDF output
@@ -1295,7 +1298,6 @@
   ;; ..:: Ivy ::..
   ;;
 
-  (ivy-mode 1)
   (setq ivy-use-virtual-buffers nil) ;; Shows "recentf buffers"
   (setq enable-recursive-minibuffers t)
 
@@ -1312,7 +1314,7 @@
   (setq ivy-initial-inputs-alist nil)
 
   ;; Default height
-  (setq ivy-height 20)
+  (setq ivy-height 15)
 
   ;; Wrap-around scroll C-n and C-p
   ;; Source: https://oremacs.com/swiper/
@@ -1323,6 +1325,8 @@
   (define-key ivy-minibuffer-map (kbd "C-l") 'ivy-backward-delete-char)
   ;; Complete on first TAB press
   (define-key ivy-minibuffer-map (kbd "TAB") 'ivy-alt-done)
+
+  (ivy-mode 1)
 
   ;;
   ;; ..:: Counsel ::..
@@ -1347,7 +1351,7 @@
   (defun my-swiper-thing-at-point ()
     (interactive)
     (deactivate-mark)
-    (ivy-with-thing-at-point 'swiper)
+    (ivy-with-thing-at-point 'swiper-isearch)
     )
 
   )
@@ -1403,14 +1407,11 @@
   (setq ivy-posframe-hide-minibuffer t)
   ;; This makes sure that the minibuffer background matches face-background,
   ;; which ensures that the minibuffer display by ivy is "correctly" hidden away
-  ;; (add-hook 'minibuffer-setup-hook
-  ;; 	    (lambda ()
-  ;; 	      ;; (setq max-mini-window-height nil)
-  ;; 	      ;; (setq resize-mini-frames nil)
-  ;; 	      ;; (setq truncate-lines t)
-  ;;             (make-local-variable 'face-remapping-alist)
-  ;; 	      (let ((bg-color (face-background 'default nil)))
-  ;; 		(add-to-list 'face-remapping-alist '(default (:background ,bg-color))))))
+  (add-hook 'minibuffer-setup-hook
+	    (lambda ()
+	      (make-local-variable 'face-remapping-alist)
+	      (let ((bg-color (face-background 'default nil)))
+		(add-to-list 'face-remapping-alist `(default (:background ,bg-color))))))
 
   ;; Activate ivy-posframe
   (ivy-posframe-mode 1)
@@ -1418,14 +1419,16 @@
   ;; Width of posframe (full window width)
   (setq ivy-posframe-parameters
 	'((left-fringe . 8)
-	  (right-fringe . 8)))
+	  (right-fringe . 8)
+	  (lines-truncate . t)))
   (defun ivy-posframe-get-size ()
     "The default functon used by `ivy-posframe-size-function'."
     (list
      :height ivy-posframe-height
-     :width ivy-posframe-width
-     :min-height (or ivy-posframe-min-height (+ ivy-height 1))
-     :min-width (or ivy-posframe-min-width (round (* (window-width) 1.0)))))
+     :width (window-width)
+     :min-height (or ivy-posframe-min-height ivy-height)
+     :min-width (or ivy-posframe-min-width (round (* (window-width) 1.0))))
+    )
   )
 
 (use-package ivy-xref

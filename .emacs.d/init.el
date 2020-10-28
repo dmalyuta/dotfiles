@@ -1,51 +1,109 @@
-(setq gc-cons-threshold most-positive-fixnum) ;; no garbage collection at startup
-(add-hook 'after-init-hook (lambda ()
-			     ;; 16MB of garbage collection space once running
-			     (setq gc-cons-threshold (eval-when-compile (* 1024 1024 100)))
-			     ))
-;; (setq gc-cons-percentage 0.5)
-;; (setq gc-cons-threshold most-positive-fixnum)
-;; (setq gc-cons-threshold 1600000)
+;;; init.el
+;; To byte-compile: [M-x byte-compile-init-dir]
 
-;; Show message in mode line whenever garbage collection occurs
-(setq garbage-collection-messages nil)
+;; No garbage collection at startup
+(setq gc-cons-threshold most-positive-fixnum)
 
-(setq my-gc-collect-interval 30)
-(run-with-idle-timer my-gc-collect-interval t
-		     (lambda ()
-		       ;; Garbage-collect after 30 seconds of idleness
-		       (garbage-collect)
-		       (message "%s Routine %ds garbage collection"
-				(propertize (all-the-icons-faicon "trash-o")
-					    'face `(:family ,(all-the-icons-faicon-family)
-							    :height 1.0)
-					    'display '(raise -0.05))
-				my-gc-collect-interval)))
-(setq read-process-output-max (* 1024 1024 10)) ;; 10mb
+;;; ..:: Package management ::..
 
-;; Remove warnings like:
-;;   ad-handle-definition: ‘ansi-term’ got redefined
-;; Source: https://andrewjamesjohnson.com/suppressing-ad-handle-definition-warnings-in-emacs/
-(setq ad-redefinition-action 'accept)
+(require 'package)
+(setq package-enable-at-startup nil)
+(setq package-check-signature nil)
+(add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/"))
 
-;; To byte-compile the Emacs init directory, run Emacs and execute
-;; M-x byte-compile-init-dir
+;; Install use-package
+(package-initialize)
+(unless (package-installed-p 'use-package)
+  (package-refresh-contents)
+  (package-install 'use-package))
+(require 'use-package-ensure)
+(setq use-package-always-ensure t)
 
-;;;;;;;;;;;;;;;;; MOST IMPORTANT, GENERAL STUFF
+;; Install Quelpa
+(unless (package-installed-p 'quelpa)
+  (with-temp-buffer
+    (url-insert-file-contents
+     "https://raw.githubusercontent.com/quelpa/quelpa/master/quelpa.el")
+    (eval-buffer)
+    (quelpa-self-upgrade)))
+(setq quelpa-update-melpa-p nil
+      quelpa-upgrade-p nil
+      quelpa-verbose nil
+      quelpa-build-verbose nil)
 
-;; NB: use M-x customize to search and set package variables
+(quelpa
+ '(quelpa-use-package
+   :fetcher git
+   :url "https://github.com/quelpa/quelpa-use-package.git")
+ :upgrade nil)
+(require 'quelpa-use-package)
+
+;;; ..:: Garbage collection ::..
+
+;; 16MB of garbage collection space once running
+(add-hook 'after-init-hook (lambda () (setq gc-cons-threshold
+				       (eval-when-compile
+					 (* 1024 1024 100)))))
+
+;; Garbage-collect on focus-out, Emacs should feel snappier.
+;; Source: https://github.com/angrybacon/dotemacs/blob/master/
+;;         dotemacs.org#load-customel
+(add-hook 'focus-out-hook
+	  (lambda ()
+	    (unless (equal major-mode 'dashboard-mode)
+	      (add-hook 'focus-out-hook #'garbage-collect))))
+
+;; Garbage collection message
+
+;;;###autoload
+(defun danylo/gc-message ()
+  "Garbage collection message."
+  (message "%s Collecting garbage"
+	   (propertize (all-the-icons-faicon "trash-o")
+		       'face `(:family
+			       ,(all-the-icons-faicon-family)
+			       :height 1.0)
+		       'display '(raise -0.05)))
+  )
+
+;;;###autoload
+(defun garbage-collect (&rest args)
+  (danylo/gc-message))
+
+(setq garbage-collection-messages t)
+
+(use-package gcmh
+  ;; https://github.com/emacsmirror/gcmh"
+  ;; The Garbage Collector Magic Hack
+  :config
+  (gcmh-mode 1))
+
+;;; ..:: Keybinding management ::..
+
+(use-package general
+  ;; https://github.com/noctuid/general.el
+  ;; More convenient key definitions in emacs
+  )
+
+;;; ..:: General usability ::..
+
+;; Remove GUI elements
+(when (window-system)
+  (menu-bar-mode 0)
+  (tool-bar-mode 0)
+  (scroll-bar-mode 0)
+  (tooltip-mode 0)
+  (blink-cursor-mode 0))
+
+;; Frame size
+(setq default-frame-alist
+      (append default-frame-alist '((height . 50) (width . 100))))
 
 ;; Default directory
 (setq default-directory "~/")
 
-;; Frame size
-(add-to-list 'default-frame-alist '(height . 50))
-(add-to-list 'default-frame-alist '(width . 100))
-
-;; sensible GUI
-(menu-bar-mode -1)  ;; disable menubar
-(tool-bar-mode -1) ;; disable toolbar
-(toggle-scroll-bar -1) ;; disable scrollbar
+;; Remove warnings like: ad-handle-definition: ‘ansi-term’ got redefined
+(setq ad-redefinition-action 'accept)
 
 ;; Comint unset C-up C-down
 (global-unset-key (kbd "C-<up>"))
@@ -55,2074 +113,1098 @@
 ;; https://github.com/kiwanami/emacs-epc/issues/35
 (setq byte-compile-warnings '(cl-functions))
 
-;;;;;;;;;;;;;;;;; PACKAGE MANAGEMENT
-
-;; MELPA
-(require 'package)
-(setq package-enable-at-startup nil)
-(setq package-check-signature nil)
-(add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/"))
-(add-to-list 'package-archives '("elpy" . "https://jorgenschaefer.github.io/packages/"))
-;; (package-initialize)
-
-;; ..:: bootstrap 'straight.el' ::..
-(defvar bootstrap-version)
-(let ((bootstrap-file
-       (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
-      (bootstrap-version 5))
-  (unless (file-exists-p bootstrap-file)
-    (with-current-buffer
-        (url-retrieve-synchronously
-         "https://raw.githubusercontent.com/raxod502/straight.el/develop/install.el"
-         'silent 'inhibit-cookies)
-      (goto-char (point-max))
-      (eval-print-last-sexp)))
-  (load bootstrap-file nil 'nomessage))
-
-;; ..:: boostrap 'use-package' ::..
-;; (unless (package-installed-p 'use-package)
-;;   (package-refresh-contents)
-;;   (package-install 'use-package))
-(straight-use-package 'use-package)
-(use-package el-patch
-  :straight t)
-(require 'use-package)
-(require 'bind-key)
-(setq straight-enable-use-package-integration t)
-(setq straight-use-package-by-default t)
-
-;;;;;;;;;;;;;;;;; EMACS BUILT-IN
-
-(use-package windmove
-  ;; move cursor between windows
-  :demand t
-  :bind
-  (("C-<left>" . windmove-left)
-   ("C-<right>" . windmove-right)
-   ("C-<up>" . windmove-up)
-   ("C-<down>" . windmove-down)))
-
-(use-package buffer-menu
-  ;; show all current buffers
-  :straight nil
-  :init
-  (setq Buffer-menu-name-width 25)
-  (setq Buffer-menu-mode-width 6)
-  (setq Buffer-menu-size-width 10)
-  :bind
-  (("C-x C-b" . buffer-menu)))
-
-;;;;;;;;;;;;;;;;; MELPA PACKAGES
-
-(use-package gcmh
-  ;; The Garbage Collector Magic Hack
-  ;; Enforce a sneaky Garbage Collection strategy to minimize GC interference
-  ;; with the activity.
-  :ensure t
-  :config
-  (gcmh-mode 1))
-
-(use-package dash
-  :ensure t)
-
-(use-package dash-functional
-  :ensure t)
-
-(use-package rainbow-delimiters
-  ;; highlights delimiters such as parentheses, brackets or braces according to their depth.
-  :ensure t
-  :config
-  (require 'rainbow-delimiters)
-  (add-hook 'prog-mode-hook 'rainbow-delimiters-mode))
-
-(use-package solaire-mode
-  :ensure t
-  :config
-  (require 'solaire-mode)
-  ;; brighten buffers (that represent real files)
-  (add-hook 'after-change-major-mode-hook #'turn-on-solaire-mode)
-  ;; To enable solaire-mode unconditionally for certain modes:
-  (add-hook 'ediff-prepare-buffer-hook #'solaire-mode)
-  ;; ...if you use auto-revert-mode:
-  (add-hook 'after-revert-hook #'turn-on-solaire-mode)
-  ;; highlight the minibuffer when it is activated:
-  (add-hook 'minibuffer-setup-hook #'solaire-mode-in-minibuffer)
-  )
-
-(use-package nlinum
-  :ensure t
-  :config
-  (setq nlinum-highlight-current-line nil)
-  )
-
-(use-package doom-themes
-  ;; DOOM Themes is an opinionated UI plugin and pack of themes extracted from
-  ;; my emacs.d, inspired by the One Dark/Light UI and syntax themes in Atom.
-  :ensure t
-  )
-
-(use-package telephone-line
-  ;; Telephone Line is a new implementation of Powerline for emacs
-  :after (doom-themes theme-setup)
-  :ensure t
-  :config
-  (add-hook 'after-init-hook
-	    (lambda ()
-	      ;; Customization
-	      (setq telephone-line-primary-left-separator 'telephone-line-cubed-left
-		    telephone-line-secondary-left-separator 'telephone-line-cubed-hollow-left
-		    telephone-line-primary-right-separator 'telephone-line-cubed-right
-		    telephone-line-secondary-right-separator 'telephone-line-cubed-hollow-right)
-	      (setq ;; telephone-line-height 24
-	       telephone-line-evil-use-short-tag t)
-	      (defface my-telephone-yellow
-		'((t (:foreground "black" :background "yellow"))) "")
-	      (add-to-list 'telephone-line-faces
-			   '(yellow . (my-telephone-yellow . telephone-line-accent-inactive)))
-	      (setq telephone-line-lhs
-		    '((yellow . (telephone-line-vc-segment))
-		      ;; (accent . (telephone-line-erc-modified-channels-segment
-		      ;; 		 telephone-line-process-segment))
-		      (nil    . (telephone-line-buffer-segment))))
-	      (setq telephone-line-rhs
-		    '((nil    . (telephone-line-misc-info-segment))
-		      (accent . (telephone-line-major-mode-segment))
-		      (evil   . (telephone-line-airline-position-segment))))
-	      ;; Activate
-	      (telephone-line-mode 1)
-	      ))
-  )
-
-(use-package all-the-icons
-  ;; Pretty icons
-  ;; Need to run M-x all-the-icons-install-fonts
-  :ensure t
-  :config
-  ;; Fix MATLAB icon
-  (setq all-the-icons-icon-alist
-	(append '(("\\.m$" all-the-icons-fileicon "matlab"
-		   :face all-the-icons-orange))
-		all-the-icons-icon-alist))
-  )
-
-(use-package flycheck
-  ;; code error highlighting
-  ;; Linux Mint:
-  ;;  sudo apt-get install shellcheck # bash script linter
-  :ensure t
-  :defer t
-  :init
-  (add-hook 'c-mode-common-hook 'flycheck-mode)
-  (add-hook 'sh-mode-hook 'flycheck-mode)
-  ;; (add-hook 'python-mode-hook 'flycheck-mode)
-  (setq flycheck-enabled-checkers '(c/c++-gcc))
-  ;;(add-hook 'python-mode-hook 'flycheck-mode)
-  :config
-  ;; Check buffer on save and immediately after opening buffer
-  (setq flycheck-check-syntax-automatically '(mode-enabled save))
-  ;; Python
-  (setq flycheck-display-errors-function #'flycheck-display-error-messages-unless-error-list)
-  (add-to-list 'flycheck-checkers 'python-flake8)
-  ;; Delay in showing errors
-  (setq flycheck-display-errors-delay 0.1)
-  )
-
-(use-package company
-  ;; complete anything
-  ;;
-  ;; Other useful shortcuts:
-  ;;   C-M-/ runs the command dabbrev-completion (search all current buffers for
-  ;;   completion candidates)
-  :ensure t
-  :bind
-  (("<S-SPC>" . company-complete)
-   )
-  :init
-  ;;(add-hook 'after-init-hook 'global-company-mode)
-  (add-hook 'c-mode-common-hook 'company-mode)
-  (add-hook 'emacs-lisp-mode-hook 'company-mode)
-  (add-hook 'comint-mode-hook 'company-mode)
-  (add-hook 'LaTeX-mode-hook 'company-mode)
-  (add-hook 'sh-mode-hook 'company-mode)
-  (add-hook 'matlab-mode-hook 'company-mode)
-  ;;(add-hook 'sh-mode-hook 'company-mode)
-  ;; (add-hook 'python-mode-hook 'company-mode)
-  :config
-  (setq company-dabbrev-downcase 0)
-  ;; set timeout to 10 seconds
-  (setq company-async-timeout 10)
-  ;; Cancel selections by typing non-mathcing characters
-  (setq company-require-match 'never)
-  ;; Minimum length of word to start completion
-  (setq company-minimum-prefix-length 0)
-  ;; Autocomplete only when I explicitly mean to
-  (setq company-auto-complete nil)
-  (set 'company-idle-delay nil)
-  (setq company-auto-select-first-candidate nil)
-  ;; nomenclature for latex
-  (eval-after-load "tex"
-    '(add-to-list 'TeX-command-list
-		  '("Nomenclature" "makeindex %s.nlo -s nomencl.ist -o %s.nls"
-		    (lambda (name command file)
-		      (TeX-run-compile name command file)
-		      (TeX-process-set-variable file 'TeX-command-next TeX-command-default))
-		    nil t :help "Create nomenclature file")))
-  )
-
-(use-package company-box
-  ;;  A company front-end with icons
-  :ensure t
-  :config
-  (require 'company-box)
-  (add-hook 'company-mode-hook 'company-box-mode)
-  )
-
-(use-package company-quickhelp
-  ;; Documentation popups when idling on a completion candidate
-  :ensure t
-  :config
-  (company-quickhelp-mode 1)
-  (setq company-quickhelp-delay 0.5)
-  (eval-after-load 'company
-    '(define-key company-active-map (kbd "M-h") #'company-quickhelp-manual-begin))
-  )
-
-(use-package company-shell
-  ;; company mode completion backends for your shell functions:
-  :ensure t
-  :config
-  (add-to-list 'company-backends 'company-shell)
-  )
-
-;; MATLAB integration
-;; --------
-;; To install, run in ~/.emacs.d/
-;;   git clone https://github.com/dmalyuta/matlab-mode
-;;   git clone https://github.com/dmalyuta/matlab-emacs
-;;   cd matlab-emacs
-;;   make
-;; --------
-(use-package matlab-load
-  :straight nil
-  :load-path "matlab-emacs/"
-  :config
-  (require 'matlab-load)
-  (require 'company-matlab-shell)
-  (matlab-cedet-setup)
-  (setq matlab-verify-on-save-flag nil)
-  (defun my-matlab-mode-hook () (setq fill-column 80))
-  (setq matlab-indent-function-body nil)
-  )
-
-(use-package s
-  :ensure t)
-
-(use-package matlab-mode
-  ;; s.el : The long lost Emacs string manipulation library.
-  :after s
-  :straight nil
-  :load-path "matlab-mode/"
-  :config
-  (setq default-fill-column 80)
-  (require 'matlab-mode)
-  (require 'matlab-server)
-  )
-
-(defun matlab-my-view-doc ()
-  "look up the matlab help info and show in another buffer"
-  (interactive)
-  (let* ((word (doc-matlab-grab-current-word)))
-    (matlab-shell-describe-command word)))
-
-(add-to-list 'matlab-mode-hook
-	     (lambda ()
-	       ;; todo mode
-	       (hl-todo-mode)
-	       ;; bind key for starting the matlab shell
-	       (local-set-key (kbd "M-s") 'matlab-shell)
-	       ;; bind the key of checking document
-	       (local-set-key (kbd "C-c h") 'matlab-my-view-doc)
-	       ;; bind the key of jump to source code
-	       (local-set-key (kbd "C-c s")
-			      'matlab-jump-to-definition-of-word-at-cursor)
-	       ;; set company-backends
-	       (setq-local company-backends '(company-files (company-matlab company-dabbrev)))
-	       ))
-
-(add-to-list 'matlab-shell-mode-hook
-	     (lambda ()
-	       ;; bind key for completion
-	       ;; (not company-mode)
-	       ;; (define-key matlab-shell-mode-map (kbd "S-SPC") 'nil)
-	       (local-set-key (kbd "S-SPC") 'matlab-shell-tab)
-	       ;; bind the key of checking document
-	       (local-set-key (kbd "C-c h") 'matlab-my-view-doc)))
-
-(defun matlab-docstring ()
-  "Print a default docstring for a MATLAB function."
-  (interactive)
-  (insert "% <FUNCTION NAME> <DESCRIPTION>\n")
-  (insert "%\n")
-  (insert "% Syntax:\n")
-  (insert "%\n")
-  (insert "% <OUT> = <FUNCTION NAME>(<IN>) : <DESCRIPTION>\n")
-  (insert "%\n")
-  (insert "% Inputs:\n")
-  (insert "%\n")
-  (insert "% <IN1> [<TYPE>] : <DESCRIPTION>\n")
-  (insert "% <IN2> [<TYPE>] : <DESCRIPTION>\n")
-  (insert "% \n")
-  (insert "% Outputs:\n")
-  (insert "%\n")
-  (insert "% <OUT1> [<TYPE>] : <DESCRIPTION>\n")
-  (insert "% <OUT2> [<TYPE>] : <DESCRIPTION>\n")
-  (insert "%\n")
-  (insert "% Other m-files required: none\n")
-  (insert "% Subfunctions: none\n")
-  (insert "% MAT-files required: none\n")
-  )
-
-(use-package modern-cpp-font-lock
-  ;; Syntax highlighting support for "Modern C++" - until C++20 and Technical
-  ;; Specification. This package aims to provide a simple highlight of the C++
-  ;; language without dependency.
-  :ensure t
-  :config
-  (add-hook 'c++-mode-hook #'modern-c++-font-lock-mode)
-  )
-
-(use-package projectile
-  ;; project interaction library offering tools to operate on a project level
-  ;; Useful commands:
-  ;;  C-c p p   : the first thing to run when starting to work in a project
-  ;;  C-c p f   : find file in current project
-  ;;  C-c p g   : find file based on context (can place cursor on header file, executing command will take you to header file)
-  ;;  C-c p d   : find directory in current project
-  ;;  C-c p a   : switch between files with same name but different extensions (e.g. .cpp and .h)
-  ;;  C-c p i   : rebuild cache (otherwise if new files made, old cache causes them to not be seen)
-  ;;  C-c p f, C-SPC, C-f: create a virtual Dired buffer from files selected with C-SPC with C-c p f
-  ;;  C-c p b   : switch to open buffer of file/directory that belongs to current project
-  ;;  C-c p s g : find a word/string in project files  (using grep), autofill with symbol at point
-  :ensure t
-  :config
-  (setq projectile-enable-caching nil)
-  (setq projectile-globally-ignored-directories (append '(
-							  ".svn"
-							  ".git"
-							  )
-							projectile-globally-ignored-directories))
-  (setq projectile-globally-ignored-files (append '(
-						    ".DS_Store"
-						    ".gitignore"
-						    )
-						  projectile-globally-ignored-files))
-  (projectile-global-mode)
-  (projectile-mode +1)
-  (define-key projectile-mode-map (kbd "C-c p") 'projectile-command-map))
-
-(use-package tex
-  ;; AUCTeX
-  ;;
-  ;; Commands:
-  ;;   C-c & : find citation in bib file (when cursor over \cite{...})
-  ;;
-  :straight nil
-  :ensure auctex
-  :demand
-  :config
-  (add-hook 'LaTeX-mode-hook 'LaTeX-math-mode)
-  (add-hook 'LaTeX-mode-hook 'turn-on-reftex)
-  ;; (add-hook 'LaTeX-mode-hook 'visual-line-mode)
-  (add-hook 'LaTeX-mode-hook 'TeX-source-correlate-mode)
-  (add-hook 'LaTeX-mode-hook 'TeX-PDF-mode)
-  (setq TeX-source-correlate-method 'synctex) ;; use SyncTeX for forward/backward search between source/PDF output
-  (setq TeX-auto-save t)
-  (setq TeX-parse-self t)
-  (setq TeX-auto-regexp-list 'TeX-auto-full-regexp-list)
-  (setq TeX-auto-parse-length 999999)
-  (setq TeX-save-query nil)
-  (setq-default TeX-master nil)
-  ;; View program
-  (add-hook 'LaTeX-mode-hook
-	    (lambda ()
-	      (setq TeX-view-program-list '(("Evince" "evince --page-index=%(outpage) %o")))
-	      (setq TeX-view-program-selection '((output-pdf "Evince")))))
-  (add-hook 'LaTeX-mode-hook 'TeX-source-correlate-mode)
-  ;; Spelling
-  (global-set-key (kbd "M-s") 'ispell-word)
-  ;; (setq ispell-program-name "aspell") ; could be ispell as well, depending on your preferences
-  ;; (setq ispell-dictionary "english") ; this can obviously be set to any language your spell-checking program supports
-  (setq reftex-plug-into-AUCTeX t)
-  ;; Enable auto-fill mode, nice for text
-  (add-hook 'LaTeX-mode-hook 'auto-fill-mode)
-  (add-hook 'LaTeX-mode-hook 'turn-on-reftex)
-  (setq reftex-plug-into-AUCTeX t)
-  ;; Set fill to 80 columns
-  (add-hook 'LaTeX-mode-hook
-	    (lambda ()
-	      (setq fill-column 80)))
-  ;; Completion
-  ;; (add-hook 'LaTeX-mode-hook
-  ;; 	      (lambda ()
-  ;; 		(define-key LaTeX-mode-map (kbd "<S-SPC>") 'TeX-complete-symbol)))
-  (use-package company-auctex
-    :ensure t
-    :config
-    (require 'company-auctex)
-    (company-auctex-init)
-    (eval-after-load "latex"
-      '(progn
-	 (define-key LaTeX-mode-map (kbd "C-c m") 'nil)
-	 (define-key LaTeX-mode-map (kbd "C-c e") 'nil)
-	 (define-key LaTeX-mode-map (kbd "C-c l") 'nil)
-	 (define-key LaTeX-mode-map (kbd "C-c s") 'nil)
-
-	 (define-key LaTeX-mode-map (kbd "C-c m") 'company-auctex-macros)
-	 (define-key LaTeX-mode-map (kbd "C-c e") 'company-auctex-environments)
-	 (define-key LaTeX-mode-map (kbd "C-c l") 'company-auctex-labels)
-	 (define-key LaTeX-mode-map (kbd "C-c s") 'company-auctex-symbols)
-	 ))
-    ;; Makke completion case sensitive
-    (add-hook 'LaTeX-mode-hook (lambda ()
-				 (setq company-dabbrev-downcase nil)))
-    )
-  ;; Other environments
-  (add-hook 'LaTeX-mode-hook
-	    (lambda ()
-	      (LaTeX-add-environments "equation*")
-	      (LaTeX-add-environments "tikzpicture")
-	      (LaTeX-add-environments "pgfonlayer")
-	      ))
-  ;; Spell checking
-  ;; (add-hook 'LaTeX-mode-hook 'flyspell-mode)
-  ;; (add-hook 'LaTeX-mode-hook 'flyspell-buffer)
-  ;; Line breaking math
-  (add-hook 'LaTeX-mode-hook
-	    (lambda ()
-	      (add-to-list 'fill-nobreak-predicate 'texmathp)))
-  ;; Latex mode for TikZ
-  (add-to-list 'auto-mode-alist '("\\.tikz\\'" . latex-mode))
-  ;; shell-escape stuff
-  (eval-after-load "tex"
-    '(setcdr (assoc "LaTeX" TeX-command-list)
-	     '("%`%l%(mode) -shell-escape%' %t"
-	       TeX-run-TeX nil (latex-mode doctex-mode) :help "Run LaTeX")
-	     )
-    )
-  ;; latexmk
-  ;; (add-hook 'LaTeX-mode-hook (lambda ()
-  ;; 			       (push
-  ;; 				'("latexmk" "latexmk -pdf %s" TeX-run-TeX nil t
-  ;; 				  :help "Run latexmk on file")
-  ;; 				TeX-command-list)))
-  ;; Pairing
-  ;; brace electric pair
-  (setq LaTeX-electric-left-right-brace t)
-  (setq TeX-electric-math '("$" . "$"))
-  (add-hook 'LaTeX-mode-hook (lambda ()
-			       (define-key LaTeX-mode-map (kbd "C-x C-<backspace>")
-				 'electric-pair-delete-pair)))
-  ;;
-  ;;
-  ;; Command sequence for Pythontex
-  ;;
-  ;;
-  (with-eval-after-load "tex"
-    (add-to-list 'TeX-command-list
-		 '("PythonTeX" "pythontex %s" TeX-run-command nil (latex-mode)
-                   :help "Run PythonTeX script")
-		 t))
-  (with-eval-after-load "tex"
-    (add-to-list 'TeX-command-list
-		 '("CSM-BibTeX" "bibtex main && bibtex sidebar" TeX-run-command nil (latex-mode)
-                   :help "Run BibTeX for CSM")
-		 t))
-  (defun my/TeX-run-TeX-pythontex ()
-    "Save current master file, run LaTeX, PythonTeX and start the viewer."
-    (interactive)
-    (unless (featurep 'tex-buf)
-      (require 'tex-buf))
-    (TeX-save-document (TeX-master-file))
-    (TeX-command-sequence '("LaTeX" "PythonTeX" "LaTeX")
-                          t))
-  (define-key LaTeX-mode-map (kbd "C-c C-p C-l") #'my/TeX-run-TeX-pythontex)
-  ;;
-  ;; Customization for Pythontex
-  ;;
-  (add-to-list 'LaTeX-verbatim-environments "pycode")
-  (add-to-list 'LaTeX-verbatim-environments "pykzmathinline")
-  (add-to-list 'LaTeX-verbatim-environments "pykzmathblock")
-  (add-to-list 'LaTeX-verbatim-environments "@pie@shell")
-  (add-to-list 'LaTeX-indent-environment-list '("pycode" current-indentation))
-  (add-to-list 'LaTeX-indent-environment-list '("pykzmathblock" current-indentation))
-  (add-to-list 'LaTeX-indent-environment-list '("@pie@shell" current-indentation))
-  )
-
-;; (use-package mmm-mode
-;;   :ensure t
-;;   :config
-;;   (require 'mmm-auto)
-;;   (mmm-add-group 'latex-python
-;; 		 '((latex-python-envs
-;; 		    :submode python-mode
-;; 		    :face mmm-default-submode-face
-;; 		    :front "\\\\begin{\\(pycode\\|pykzmath\\)}\n"
-;; 		    :back "\\\\end{~1}\n"
-;; 		    :save-matches 1)))
-;;   ;; (mmm-add-classes
-;;   ;;  '((latex-python
-;;   ;;     :submode python-mode
-;;   ;;     :face mmm-delimiter-face
-;;   ;;     :front "\\\\begin{pycode}\n"
-;;   ;;     :back "\\\\end{pycode}\n")))
-
-;;   (setq mmm-global-mode 'maybe)
-;;   (mmm-add-mode-ext-class 'latex-mode nil 'latex-python)
-;;   )
-
-;; (use-package yasnippet
-;;   ;; YASnippet is a template system for Emacs
-;;   :ensure t
-;;   :config
-;;   (require 'yasnippet)
-;;   (yas-global-mode 1)
-;;   )
-
-;; (use-package pdf-tools
-;;   ;; advanced PDF viewing capbilities inside Emacs (DocView deplacement)
-;;   :ensure t
-;;   :config
-;;   (pdf-tools-install)
-;;   (add-hook 'TeX-after-compilation-finished-functions #'TeX-revert-document-buffer)
-;;   (setq TeX-view-program-selection '((output-pdf "PDF Tools"))))
-
-(use-package mic-paren
-  ;; highlight matching parentheses
-  :ensure t
-  :config
-  (electric-pair-mode 1) ;; auto-create matching closing bracket
-  (paren-activate))
-
-(use-package yaml-mode
-  ;; for some work with ROS
-  :ensure t
-  :defer t
-  :init
-  (add-to-list 'auto-mode-alist '("\\.yml$" . yaml-mode))
-  (add-to-list 'auto-mode-alist '("\\.yaml$" . yaml-mode))
-  (add-to-list 'auto-mode-alist '("\\.srv$" . yaml-mode))
-  (add-to-list 'auto-mode-alist '("\\.msg$" . yaml-mode))
-  )
-
-(use-package srefactor
-  ;; C/C++ refactoring tool based on Semantic parser framework
-  :ensure t
-  :demand
-  :bind
-  (("M-RET o" . srefactor-lisp-one-line)
-   ("M-RET m" . srefactor-lisp-format-sexp)
-   ("M-RET d" . srefactor-lisp-format-defun)
-   ("M-RET b" . srefactor-lisp-format-buffer)
-   :map c-mode-map
-   ("M-RET" . srefactor-refactor-at-point)
-   :map c++-mode-map
-   ("M-RET" . srefactor-refactor-at-point))
-  :config
-  (require 'semantic)
-  (require 'srefactor)
-  (require 'srefactor-lisp)
-  (setq srefactor-ui-menu-show-help nil) ;; hide menu help message
-  (semantic-mode 1))
-
-(use-package multiple-cursors
-  ;; multiple cursors for emacs (live editing of same word at multiple points)
-  ;; use case: edit grep buffer using wgrep for refactoring
-  :ensure t
-  :demand
-  :bind
-  (("C->" . mc/mark-next-like-this)
-   ("C-<" . mc/mark-previous-like-this)
-   ("C-*" . mc/mark-all-like-this))
-  :config
-  (require 'multiple-cursors)
-  ;; Make sure prompts for stuff like (, [, <, delete-word, etc. default to "yes"
-  ;; see https://github.com/magnars/multiple-cursors.el/issues/287#issuecomment-306571652
-  (eval-after-load "multiple-cursors"
-    '(progn
-       (setq mc/cmds-to-run-for-all
-	     (append
-	      '(c-electric-star
-		c-electric-brace
-		c-electric-paren
-		c-electric-colon
-		c-electric-slash
-		c-electric-lt-gt
-		c-electric-pound
-		c-electric-delete
-		c-electric-backspace
-		c-electric-semi&comma
-		c-electric-delete-forward)
-	      mc/cmds-to-run-for-all))))
-  )
-
-(use-package wgrep
-  ;; edit a grep buffer and apply those changes to the file buffer
-  ;; use-case: local/global rename variables, functions, classes, namespaces, etc.
-  ;; workflow:
-  ;;    1) Way 1: Do grep within project using grep-projectile "C-c p s g" then "C-x C-s" to save
-  ;;              helm-grep results to grep buffer
-  ;;       Way 2: Do grep on certain files of your choice using M-x rgrep
-  ;;    2) In the grep buffer, active wgrep with "C-c C-p"
-  ;;    3) Rename whatever you want by editing the names (e.g. use replace-string or multiple-curscors (see above))
-  ;;    4) "C-c C-e" to save changes or "C-c C-k" to discard changes or "C-x C-q" to exit wgrep
-  ;;       and prompt whether to save changes
-  :ensure t)
-
-(use-package realgud
-  ;; A extensible, modular GNU Emacs front-end for interacting with external debuggers
-  :ensure t
-  :defer t)
-
-(use-package org
-  ;; Org mode is for keeping notes, maintaining TODO lists, planning projects,
-  ;; and authoring documents with a fast and effective plain-text system.
-  ;;
-  ;; Commands:
-  ;;
-  ;;   TAB : collapse a section
-  ;;   M-RET : insert new heading at this level
-  ;;   M-S-<leftarrow> : demote current subtree
-  ;;   M-S-<rightarrow> : promote current subtree
-  ;;   M-<uparrow> : move heading up in subtree
-  ;;   M-<downarrow> : move heading down in subtree
-  ;;   C-c C-o : open link at point
-  ;;
-  :ensure t
-  :config
-
-  (use-package org-bullets
-    :ensure t
-    :config
-    (require 'org-bullets)
-    (add-hook 'org-mode-hook (lambda () (org-bullets-mode 1)))
-    )
-
-  (require 'org)
-  (add-hook 'org-mode-hook 'turn-on-auto-fill)
-  (define-key global-map "\C-cl" 'org-store-link)
-  (define-key global-map "\C-ca" 'org-agenda)
-  (setq org-format-latex-options (plist-put org-format-latex-options :scale 1.3))
-  (setq org-log-done t)
-  (setq org-agenda-files (list "~/Dropbox/shared_files/org/work.org"
-			       "~/Dropbox/shared_files/org/home.org")))
-
-(use-package ecb
-  ;; Emacs Code Browser
-  :ensure t
-  :bind
-  (("C-c e a" . ecb-activate)
-   ("C-c e d" . ecb-deactivate)
-   )
-  :config
-  (require 'ecb)
-  ;;(setq ecb-auto-activate t) ;; auto-activate ECB at startup
-  (setq ecb-layout-name "left11") ;; set ECB layout
-  (setq ecb-tip-of-the-day nil) ;; turn off ECB tip of the day message
-  ;; also see custom-set-variables and custom-set-faces below
-  )
-
-(use-package auto-compile
-  ;; Provides two minor modes which automatically recompile Emacs Lisp source files. Together these modes guarantee that Emacs never loads outdated byte code files.
-  :ensure t
-  :config
-    ;;; init.el --- user init file      -*- no-byte-compile: t -*-
-  (setq load-prefer-newer t)
-  (package-initialize)
-  (require 'auto-compile)
-  (auto-compile-on-load-mode)
-  (auto-compile-on-save-mode)
-  )
-
-(use-package workgroups2
-  ;; Restore layout. I use it only for keeping a persistent layout
-  ;; for an emacs --daemon server
-  :ensure t
-  :config
-  (if (daemonp)
-      (workgroups-mode 1) ;; turn on workgroups mode when running as daemon
-    )
-  (setq wg-morph-on nil) ;; No silly workgroup switching animation
-
-  ;; Start function
-  (defun my-start-emacs ();;(frame)
-    "Switch client frames of an emacs daemon to the 'server' workgroup."
-    (interactive)
-    ;;(select-frame frame)
-    (if (daemonp)
-	(progn
-	  (if (not (boundp 'server-wg))
-	      (progn
-		(wg-create-workgroup "server")
-		(setq server-wg (wg-current-workgroup))
-		)
-	    (progn
-	      (setq current-wg (condition-case nil
-				   (wg-current-workgroup)
-				 (error nil)))
-	      (if (not current-wg)
-		  (wg-switch-to-workgroup server-wg)
-		(if (not (eq current-wg server-wg))
-		    (wg-switch-to-workgroup server-wg)
-		  )
-		)
-	      )
-	    )
-	  )
-      )
-    )
-  ;;(add-to-list 'after-make-frame-functions #'my-start-emacs)
-
-  ;; Exit function
-  (defun my-exit-emacs ()
-    "Leaves session and saves all workgroup states. Will not continue if there is no workgroups open."
-    (interactive)
-    (if (daemonp)
-	(progn
-	  ;;(wg-update-all-workgroups)
-	  (save-buffers-kill-terminal)
-	  )
-      (save-buffers-kill-terminal)
-      ))
-  (global-set-key (kbd "C-x C-c") 'my-exit-emacs)
-  )
-
-(use-package markdown-mode
-  :ensure t
-  :commands (markdown-mode gfm-mode)
-  :mode (("README\\.md\\'" . gfm-mode)
-	 ("\\.md\\'" . markdown-mode)
-	 ("\\.markdown\\'" . markdown-mode))
-  :init (setq markdown-command "multimarkdown"))
-
-(use-package flymd
-  :ensure t
-  :config
-  (require 'flymd)
-  (defun my-flymd-browser-function (url)
-    (let ((browse-url-browser-function 'browse-url-firefox))
-      (browse-url url)))
-  (setq flymd-browser-open-function 'my-flymd-browser-function)
-  )
-
-(use-package magit
-  :ensure t
-  :bind
-  (("C-x g" . magit-status)
-   )
-  :config
-  )
-
-(use-package move-text
-  ;; Move current line or region up or down
-  :ensure t
-  :config
-  (move-text-default-bindings)
-  )
-
-;; (use-package undo-tree
-;;   ;; Better undo/redo functionality, including undo tree browsing
-;;   :ensure t
-;;   :config
-;;   (require 'undo-tree)
-;;   (global-undo-tree-mode)
-;;   (setq undo-tree-limit nil)
-;;   )
-(use-package redo+
-  :straight nil
-  :load-path "lisp/"
-  :config
-  (require 'redo+)
-  (global-set-key (kbd "C-/") 'undo)
-  (global-set-key (kbd "C-?") 'redo)
-  )
-
-(use-package column-enforce-mode
-  :ensure t
-  :config
-  (setq-default fill-column 80)
-  (setq column-enforce-column fill-column)
-  (add-hook 'c-mode-common-hook 'column-enforce-mode)
-  (add-hook 'python-mode-hook 'column-enforce-mode)
-  (add-hook 'matlab-mode-hook 'column-enforce-mode)
-  )
-
-(use-package hl-todo
-  :ensure t
-  :config
-  (global-hl-todo-mode)
-  )
-
-(use-package plantuml-mode
-  :ensure t
-  :config
-  ;; Enable plantuml-mode for PlantUML files
-  (add-to-list 'auto-mode-alist '("\\.plantuml\\'" . plantuml-mode))
-  )
-
-(use-package all-the-icons
-  ;; Icons font - needed for doom-modeline
-  :ensure t)
-
-(use-package sage-shell-mode
-  :ensure t
-  :config
-  (setq ac-sage-show-quick-help t))
-
+;; Better start screen
 (use-package dashboard
-  ;; An extensible emacs startup screen showing you what’s most important.
-  :ensure t
+  ;; https://github.com/emacs-dashboard/emacs-dashboard
+  ;; An extensible emacs startup screen showing you what’s most important
   :diminish dashboard-mode
+  :init
+  (setq dashboard-banner-logo-title "Change the world, step by step"
+	;; dashboard-startup-banner nil ; No image
+	dashboard-items '((recents  . 5) (projects . 5) (bookmarks . 5))
+	dashboard-center-content t
+	dashboard-set-heading-icons t
+	dashboard-set-file-icons t
+	)
   :config
-  (setq dashboard-banner-logo-title "Change the world, step by step")
-  ;;(setq dashboard-startup-banner "/path/to/image")
-  (setq dashboard-items '((recents  . 5)
-			  (bookmarks . 5)
-			  (projects . 5)))
-  (setq dashboard-center-content t)
-  (setq dashboard-set-heading-icons t)
-  (setq dashboard-set-file-icons t)
-  (dashboard-setup-startup-hook)
-  )
+  (dashboard-setup-startup-hook))
 
-(use-package unfill
-  ;; Opposite of Emacs fill
-  :ensure t
-  :config
-  (require 'unfill))
+;; A welcome message after startup
+(defun display-startup-echo-area-message ())
+(add-hook 'dashboard-mode-hook (lambda () (message "Welcome back")))
 
-(use-package ess
-  ;; Emacs Speaks Statistics
-  ;; For Julia
-  ;; First run M-x julia to have the inferior shell.
-  ;; Then useful commands:
-  ;;   C-c C-j : run Julia shell
-  ;;   C-c C-c : run next contiguous block of code
-  ;;   C-c C-l : send file to buffer via include()
-  ;;   C-c C-d C-d : help at point
-  ;;   C-c C-h C-i : show all functions list, or go to function at point
-  ;;   C-u C-c C-l : replace with latex character
-  ;;   M-/ : cycle through completion candidates
-  ;;   C-RET : execute current line and step to next line
-  :ensure t
-  :config
-  (require 'ess-site)
-  (setq ess-use-company t)
-  (setq ess-tab-complete-in-script t)
-  (add-hook 'ess-julia-mode-hook
-	    (lambda ()
-	      (define-key ess-julia-mode-map (kbd "C-u C-x C-;") 'uncomment-region)
-	      (define-key ess-julia-mode-map (kbd "S-SPC") 'complete-symbol)
-	      (define-key ess-julia-mode-map (kbd "C-u C-c C-l") 'julia-latexsub-or-indent)
-	      (define-key ess-julia-mode-map (kbd "C-u C-j") 'run-ess-julia)
-	      (define-key ess-julia-mode-map (kbd "C-u C-SPC")
-		(lambda () (interactive) (set-mark-command -1))) ;; Go to previous mark
-	      (define-key inferior-ess-julia-mode-map (kbd "C-u C-c C-l") 'julia-latexsub-or-indent)))
-  (add-to-list 'ess-tracebug-search-path "~/julia/julia-1.2.0/share/julia/base")
-  (add-hook 'ess-julia-mode-hook
-	    (lambda ()
-	      (setq set-mark-command-repeat-pop t)))
-  )
+(setq inhibit-splash-screen t)
+(setq initial-scratch-message ";; Change The World")
 
-(use-package gnuplot
-  ;; A major mode for Emacs for interacting with Gnuplot
-  :ensure t
-  :config
-  ;; these lines enable the use of gnuplot mode
-  (autoload 'gnuplot-mode "gnuplot" "gnuplot major mode" t)
-  (autoload 'gnuplot-make-buffer "gnuplot" "open a buffer in gnuplot mode" t)
+;; Keep init.el clean from custom-set-variable
+(setq-default custom-file
+	      (expand-file-name ".custom.el" user-emacs-directory))
+(when (file-exists-p custom-file)
+  (load custom-file))
 
-  ;; this line automatically causes all files with the .gp extension to be loaded into gnuplot mode
-  (setq auto-mode-alist (append '(("\\.gp$" . gnuplot-mode)) auto-mode-alist))
-  (setq auto-mode-alist (append '(("\\.gnu$" . gnuplot-mode)) auto-mode-alist))
-
-  ;; This line binds the function-9 key so that it opens a buffer into gnuplot mode
-  (global-set-key [(f9)] 'gnuplot-make-buffer)
-  )
-
-(use-package graphviz-dot-mode
-  ;; Emacs package for working with Graphviz DOT-format files.
-  :ensure t
-  :config
-  (setq graphviz-dot-indent-width 4))
-
+;; Zoom in/out
 (use-package default-text-scale
+  ;; https://github.com/purcell/default-text-scale
   ;; Easily adjust the font size in all Emacs frames
   ;; Key bindings:
   ;;   C-M-= : zoom in
   ;;   C-M-- : zoom out
-  :ensure t
+  :bind (("C-M--" . default-text-scale-decrease)
+	 ("C-M-+" . default-text-scale-increase)
+	 ("C-M-0" . default-text-scale-reset))
   :config
-  (default-text-scale-mode)
-  )
-
-(use-package rainbow-mode
-  ;; This minor mode sets background color to strings that match color names,
-  ;; e.g. #0000ff is displayed in white with a blue background.
-  ;; See: https://jblevins.org/log/rainbow-mode
-  :ensure t
-  :config
-  (mapc (lambda (mode)
-	  (add-hook mode
-		    (lambda ()
-		      (rainbow-mode 1))))
-	'(LaTeX-mode-hook emacs-lisp-mode-hook))
-  )
-
-;;;;;;;;;;;;;;;;; LSP
-
-;; LANGUAGE LINTING/IDE FEATURES
-;; Use lsp-mode (Language Server Protocol)
-;; see https://github.com/emacs-lsp/lsp-mode/blob/master/README.org
-
-(use-package company-c-headers
-  :ensure t
-  :config
-  (add-to-list 'company-backends 'company-c-headers)
-  (add-to-list 'company-c-headers-path-system "/usr/include/c++/7/")
-  )
-
-(use-package ccls
-  ;; ccls is a stand-alone server implementing the Language Server Protocol for
-  ;; C, C++, and Objective-C language.
-  :ensure t
-  :config
-  (require 'ccls)
-  (setq ccls-executable "ccls") ;; Must be on PATH: assume /usr/local/bin/ccls
-  ;; (setq lsp-clients-clangd-executable "/usr/bin/clang")
-  (setq lsp-prefer-flymake nil)
-  (setq-default flycheck-disabled-checkers '(c/c++-clang c/c++-cppcheck c/c++-gcc))
-  :hook ((c-mode c++-mode objc-mode) .
-         (lambda () (require 'ccls) (lsp)))
-  )
-
-(use-package pyvenv
-  :disabled
-  :ensure t
-  :diminish
-  :config
-
-  (setenv "WORKON_HOME" "~/anaconda3/envs")
-  ;; Show python venv name in modeline
-  (setq pyvenv-mode-line-indicator
-	'(pyvenv-virtual-env-name
-	  ("[venv:" pyvenv-virtual-env-name "] ")))
-  (pyvenv-mode t))
-
-(use-package lsp-pyright
-  :after my-python
-  :ensure t
-  :straight (:host github
-		   :repo "emacs-lsp/lsp-pyright"
-		   :branch "master")
-  :hook (python-mode . (lambda ()
-                         (require 'lsp-pyright)
-                         (lsp)))  ;; or lsp-deferred
-  :config
-  ;; Do not print "analyzing... Done" in the minibuffer
-  ;; (I find it distracting)
-  (setq lsp-pyright-show-analyzing nil)
-  ;; Disable auto-import completions
-  ;; This messes with helm-company, it seems
-  (setq lsp-pyright-auto-import-completions nil)
-  )
-
-(use-package lsp-mode
-  ;; Emacs client/library for the Language Server Protocol
-  ;;y
-  ;; Sometimes it is useful to restart the LSP worspace using
-  ;; `M-x lsp-workspace-restart`
-  ;;
-  ;; Useful tools:
-  ;;  M-x lsp-rename : rename all instances of a variable.
-  ;;  C-c l v : toggle variable info on hover from lsp-eldoc.
-  ;;  C-c l i : display info about hovered object from lsp-eldoc.
-  :ensure t
-  :init
-  (setq lsp-keymap-prefix "C-c l")
-  :config
-  ;; (setq lsp-clients-clangd-executable "clangd")
-
-  (require 'lsp-mode)
-
-  ;; Turn off the annoying progress spinner
-  (setq lsp-progress-via-spinner nil)
-
-  ;; Turn off LSP-mode imenu
-  (setq lsp-enable-imenu nil)
-
-  ;; Optional: fine-tune lsp-idle-delay. This variable determines how often
-  ;; lsp-mode will refresh the highlights, lenses, links, etc while you type.
-  (setq lsp-idle-delay 0.5) ;; seconds
-
-  ;; Use clangd instead
-  ;; https://www.reddit.com/r/cpp/comments/cafj21/ccls_clangd_and_cquery/
-  ;; (setq lsp-disabled-clients '(ccls))
-
-  ;; Use user-installed pyls instead of auto-installed mspyls
-  ;; (setq lsp-disabled-clients '(pyls))
-
-  ;; Which languages to activate LSP mode for
-  (add-hook 'python-mode-hook #'lsp)
-  (add-hook 'c-mode-common-hook #'lsp)
-
-  ;; Use company-capf for completion. Although company-lsp also supports caching
-  ;; lsp-mode’s company-capf does that by default. To achieve that uninstall
-  ;; company-lsp or put these lines in your config:
-  (require 'company-capf)
-  (setq lsp-prefer-capf t)
-  ;; From Gitter chat for lsp-mode:
-  ;; @kiennq wrote:
-  ;; @dmalyuta clangd should be able to find and suggest iostream with correct
-  ;; configuration for compilation database json.  You can try to use
-  ;; https://github.com/rizsotto/Bear or CMAKE to generate that.
-  ;;
-  ;; To get both completion providers to contribute you can try to use multiple
-  ;; backends, set company-backends to something like (setq
-  ;; company-backends(company-capf company-c-headers))and
-  ;; setlsp-completion-providerto:none so it will not change
-  ;; yourcompany-backends` setup.
-  ;;
-  ;; Also a note about your configuration: You should put all of setq to :init
-  ;; block, so it will work regardless of that setting is checked when lsp-mode
-  ;; is running or just after load.  (setq lsp-completion-provider :capf)
-  (push 'company-capf company-backends)
-  (push 'company-c-headers company-backends)
-
-  ;; Linting
-  (setq lsp-diagnostic-package :none)
-  ;; See more options via M-x customize-group lsp-pyls
-  ;; (setq-default lsp-pyls-configuration-sources ["flake8"])
-  ;; (setq lsp-pyls-plugins-pyflakes-enabled nil)
-  ;; (setq lsp-pyls-plugins-pylint-enabled nil)
-  ;; (setq lsp-pyls-plugins-mccabe-enabled nil)
-
-  ;; Modeline mode
-  (with-eval-after-load 'lsp-mode
-    ;; :project/:workspace/:file
-    (setq lsp-modeline-diagnostics-scope :none))
-
-  ;; Recommended settings
-  (add-hook 'lsp-mode-hook (lambda ()
-			     (setq company-minimum-prefix-length 1
-				   company-idle-delay 0.0)))
-
-  ;; Other niceties
-  (setq lsp-signature-auto-activate nil
-	lsp-signature-doc-lines 1
-	lsp-eldoc-enable-hover nil ;; Show variable info on hover
-	eldoc-idle-delay 0 ;; Delay before showing variable info on hover
-	lsp-enable-semantic-highlighting t
-	lsp-enable-snippet nil ;; Enable arguments completion
-	)
-
-  ;; Use [C-c l v] to toggle variable info
-  (defun my-lsp-eldoc-toggle-hover ()
-    (interactive)
-    (if lsp-eldoc-enable-hover
-	(progn
-	  (setq lsp-eldoc-enable-hover nil)
-	  (eldoc-mode -1))
-      (progn
-	(setq lsp-eldoc-enable-hover t)
-	(eldoc-mode 1)))
-    )
-  (add-hook 'lsp-mode-hook
-	    (lambda ()
-	      (local-set-key (kbd "C-c l v")
-			     'my-lsp-eldoc-toggle-hover)))
-
-  ;; Display variable info
-  ;; Use [C-c l i] to do so
-  (defun my-lsp-variable-info-message (string)
-    (message "%s %s"
-	     (propertize (all-the-icons-faicon "info")
-			 'face `(:family ,(all-the-icons-faicon-family)
-					 :height 1.0
-					 :background nil
-					 :foreground "yellow")
-			 'display '(raise -0.05))
-	     (propertize string
-			 'face '(:background nil
-					     :foreground "yellow"))))
-  (defun my-lsp-display-variable-info ()
-    (interactive)
-    (if (not (looking-at "[[:space:]\n]"))
-      (when (lsp--capability :hoverProvider)
-        (lsp-request-async
-         "textDocument/hover"
-         (lsp--text-document-position-params)
-         (-lambda ((hover &as &Hover? :range? :contents))
-           (when hover
-	     (my-lsp-variable-info-message
-	      (and contents
-		   (lsp--render-on-hover-content
-		    contents
-		    lsp-eldoc-render-all)))
-	     ))
-         :error-handler #'ignore
-         :mode 'tick
-         :cancel-token :eldoc-hover)))
-    )
-  (add-hook 'lsp-mode-hook (lambda ()
-			     (define-key lsp-mode-map (kbd "C-c l i")
-			       'my-lsp-display-variable-info)))
-
-  )
-
-;;===============================================================
-;;===============================================================
-;; ..:: Code linting for Python ::..
-(add-hook 'python-mode-hook
-	  (lambda ()
-	    (flycheck-mode)
-	    ;; Flake8: config file defined at the global level via
-	    ;; M-x flycheck-flake8rc --> set to "~/setup.cfg"
-	    ;; (setq flycheck-enabled-checkers '(python-flake8 python-pyright))
-	    (setq flycheck-enabled-checkers '(python-flake8))
-	    (setq flycheck-disabled-checkers '(python-mypy python-pylint python-pyright))
-	    ;; Multiple checkers: flake8, then pyright
-	    ;; See: https://www.flycheck.org/en/latest/user/syntax-checkers.html#configuring-checker-chains
-	    ;; (flycheck-add-next-checker 'python-flake8 'python-pyright)
-	    ))
-(global-set-key (kbd "C-c f l") 'flycheck-list-errors) ;; List all errors
-(global-set-key (kbd "C-c f e") 'flycheck-display-error-at-point) ;; Show error at current cursor position
-(global-set-key (kbd "C-c f v") 'flycheck-verify-setup) ;; Show active/disabled checkers
-;;===============================================================
-;;===============================================================
-
-(use-package lsp-ui
-  :ensure t
-  :config
-  (add-hook 'lsp-mode-hook
-	    (lambda ()
-	      (setq lsp-ui-doc-enable nil ;; disable docs
-		    ;; lsp-ui-doc-delay 1
-   		    ;; lsp-ui-doc-use-childframe t
-   		    lsp-ui-doc-position 'bottom
-		    lsp-ui-doc-max-height 20
-   		    lsp-ui-doc-include-signature t
-
-   		    lsp-ui-sideline-enable nil
-		    lsp-ui-sideline-delay 0.05
-		    lsp-ui-sideline-show-code-actions nil
-		    lsp-ui-sideline-show-hover nil
-
-   		    lsp-ui-flycheck-enable t
-   		    lsp-ui-flycheck-list-position 'right
-   		    lsp-ui-flycheck-live-reporting t
-
-		    lsp-ui-peek-enable nil
-   		    ;; lsp-ui-peek-list-width 60
-   		    ;; lsp-ui-peek-peek-height 25
-
-		    lsp-ui-imenu-enable nil
-		    ;; lsp-ui-imenu-kind-position 'top
-		    )
-	      ;; (local-set-key (kbd "C-c l d s") 'lsp-ui-doc-show)
-	      ;; (local-set-key (kbd "C-c l d f") 'lsp-ui-doc-focus-frame)
-	      ;; (local-set-key (kbd "C-c l d u") 'lsp-ui-doc-unfocus-frame)
-	      (local-set-key (kbd "C-c l i") 'lsp-ui-imenu)
-	      ))
-  )
-
-(use-package elpy
-  ;; Elpy is an Emacs package to bring powerful Python editing to Emacs.
-  ;; Use it here just for some benefits:
-  ;;  - Documentation in a different buffer (via `C-c C-d`)
-  :disabled
-  :ensure t
-  :config
-  (add-hook 'python-mode-hook
-	    (lambda ()
-	      (local-set-key (kbd "C-c C-d") 'elpy-doc) ;; Documentation for thing at point
-	      ))
-  )
-
-(use-package treemacs
-  ;; Treemacs is a file and project explorer similar to NeoTree or vim’s
-  ;; NerdTree, but largely inspired by the Project Explorer in Eclipse.
-  :ensure t
-  :config
-  (treemacs-fringe-indicator-mode t)
-  (setq lsp-prefer-flymake nil)
-  (global-set-key (kbd "C-c t t") 'treemacs)
-  )
-
-(use-package treemacs-projectile
-  :after treemacs projectile
-  :ensure t)
-
-(use-package treemacs-icons-dired
-  :after treemacs dired
-  :ensure t
-  :config (treemacs-icons-dired-mode))
-
-(use-package lsp-treemacs
-  ;; Integration between lsp-mode and treemacs and implementation of treeview
-  ;; controls using treemacs as a tree renderer.
-  :ensure t
-  :config
-  (lsp-treemacs-sync-mode 1)
-  (add-hook 'lsp-mode-hook
-	    (lambda ()
-	      (local-set-key (kbd "C-c l t e") 'lsp-treemacs-errors-list)
-	      ))
-  )
-
-;;;;;;;;;;;;;;;;; IVY
-
-(use-package ivy
-  ;; Ivy is a generic completion mechanism for Emacs. While it operates
-  ;; similarly to other completion schemes such as icomplete-mode, Ivy aims to
-  ;; be more efficient, smaller, simpler, and smoother to use yet highly
-  ;; customizable.
-  :ensure t
-  :bind
-  (("M-i" . my-swiper-thing-at-point)
-   ("M-x" . counsel-M-x)
-   ("C-x b" . my-counsel-switch-buffer-no-preview)
-   ("C-x C-f" . counsel-find-file)
-   ("C-c q" . counsel-semantic-or-imenu))
-  :config
-  ;;
-  ;; ..:: Ivy ::..
-  ;;
-
-  (setq ivy-use-virtual-buffers nil) ;; Shows "recentf buffers"
-  (setq enable-recursive-minibuffers t)
-
-  (defun ivy-with-thing-at-point (cmd)
-    ;; Auto-populate search with current thing at point
-    ;; Source: https://github.com/abo-abo/swiper/issues/1068
-    (let ((ivy-initial-inputs-alist
-           (list
-            (cons cmd (thing-at-point 'symbol)))))
-      (funcall cmd)))
-
-  ;; Remove the default "^" in search string
-  ;; Source: https://emacs.stackexchange.com/a/38842/13661
-  (setq ivy-initial-inputs-alist nil)
-
-  ;; Default height
-  (setq ivy-height 15)
-
-  ;; Wrap-around scroll C-n and C-p
-  ;; Source: https://oremacs.com/swiper/
-  (setq ivy-wrap t)
-
-  ;; Key bindings
-  ;; C-l to go up a directory
-  (define-key ivy-minibuffer-map (kbd "C-l") 'ivy-backward-delete-char)
-  ;; Complete on first TAB press
-  (define-key ivy-minibuffer-map (kbd "TAB") 'ivy-alt-done)
-
-  (ivy-mode 1)
-
-  ;;
-  ;; ..:: Counsel ::..
-  ;;
-  (eval-after-load 'company
-    '(progn
-       (define-key company-mode-map (kbd "<S-SPC>") 'counsel-company)
-       (define-key company-active-map (kbd "<S-SPC>") 'counsel-company)))
-  (setq counsel-switch-buffer-preview-virtual-buffers nil)
-
-  ;; Switch buffer without preview
-  (defun my-counsel-switch-buffer-no-preview ()
-    "Switch to another buffer."
-    (interactive)
-    (ivy-switch-buffer))
-
-  ;;
-  ;; ..:: Swiper ::..
-  ;;
-
-  ;; Put thing at point in swiper buffer
-  (defun my-swiper-thing-at-point ()
-    (interactive)
-    (deactivate-mark)
-    (ivy-with-thing-at-point 'swiper-isearch)
-    )
-
-  )
-
-(use-package counsel-projectile
-  ;; Ivy UI for Projectile
-  :ensure t
-  :config
-  (setq projectile-completion-system 'ivy)
-  (define-key projectile-mode-map (kbd "C-c p") 'projectile-command-map)
-  )
-
-(use-package counsel-gtags
-  ;;  GNU Global with ivy completion
-  :ensure t
-  :bind
-  (:map c-mode-base-map
-	;; ("C-c g a" . helm-gtags-tags-in-this-function)
-	;; ("C-c g h" . helm-gtags-show-stack)
-	;; ("C-j" . helm-gtags-select)
-	("M-." . counsel-gtags-dwim)
-	;; ("M-," . helm-gtags-pop-stack)
-	;; ("C-c o" . helm-gtags-find-tag-other-window)
-	;; ("C-c <" . helm-gtags-previous-history)
-	;; ("C-c >" . helm-gtags-next-history)
-	)
-  )
-
-(use-package smex
-  ;; A smart M-x enhancement for Emacs.
-  ;; Namely, show most recently used M-x commands up top.
-  :ensure t
-  )
-
-(use-package ivy-posframe
-  ;; ivy-posframe is a ivy extension, which let ivy use posframe to show its
-  ;; candidate menu.
-  :after ivy
-  :ensure t
-  :custom-face
-  ;; (ivy-posframe-border ((t (:background "#ffffff"))))
-  :config
-  (require 'ivy-posframe)
-  ;; How to display at `ivy-posframe-style'
-  ;; (setq ivy-posframe-display-functions-alist '((t . ivy-posframe-display)))
-  ;; (setq ivy-posframe-display-functions-alist '((t . ivy-posframe-display-at-frame-center)))
-  ;; (setq ivy-posframe-display-functions-alist '((t . ivy-posframe-display-at-window-center)))
-  ;; (setq ivy-posframe-display-functions-alist '((t . ivy-posframe-display-at-frame-bottom-left)))
-  (setq ivy-posframe-display-functions-alist '((t . ivy-posframe-display-at-window-bottom-left)))
-  ;; (setq ivy-posframe-display-functions-alist '((t . ivy-posframe-display-at-frame-top-center)))
-
-  ;; Minibuffer display
-  (setq ivy-posframe-hide-minibuffer t)
-  ;; This makes sure that the minibuffer background matches face-background,
-  ;; which ensures that the minibuffer display by ivy is "correctly" hidden away
-  (add-hook 'minibuffer-setup-hook
-	    (lambda ()
-	      (make-local-variable 'face-remapping-alist)
-	      (let ((bg-color (face-background 'default nil)))
-		(add-to-list 'face-remapping-alist `(default (:background ,bg-color))))))
-
-  ;; Activate ivy-posframe
-  (ivy-posframe-mode 1)
-
-  ;; Width of posframe (full window width)
-  (setq ivy-posframe-parameters
-	'((left-fringe . 8)
-	  (right-fringe . 8)
-	  (lines-truncate . t)))
-  (defun ivy-posframe-get-size ()
-    "The default functon used by `ivy-posframe-size-function'."
-    (list
-     :height ivy-posframe-height
-     :width (window-width)
-     :min-height (or ivy-posframe-min-height ivy-height)
-     :min-width (or ivy-posframe-min-width (round (* (window-width) 1.0))))
-    )
-  )
-
-(use-package ivy-xref
-  ;;  Ivy interface for xref results
-  :ensure t
-  :init
-  (setq xref-show-definitions-function #'ivy-xref-show-defs))
-
-;;;;;;;;;;;;;;;;; NON-MELPA PACKAGES
-
-;; filladapt
-;;
-(use-package filladapt
-  :ensure t
-  :config
-  (require 'filladapt)
-  (setq-default filladapt-mode t)
-  (add-hook 'c-mode-common-hook 'turn-on-filladapt-mode)
-  (add-hook 'python-mode-hook 'turn-on-filladapt-mode)
-  (add-hook 'c-mode-common-hook
-	    (lambda ()
-	      (when (featurep 'filladapt)
-		(c-setup-filladapt))))
-  )
-
-;; so-long
-;; Improve performance for long lines
-(use-package so-long
-  :straight nil
-  :load-path "lisp/"
-  :config
-  (so-long-enable))
-
-(defun code-section (start end)
-    "Section delimiters for comment"
-    (interactive "r")
-    (if (use-region-p)
-        (let ((regionp (buffer-substring start end)))
-	  (delete-region start end)
-          (insert "..:: " regionp " ::.."))
-      (insert "..:: SECTION ::.."))
-    )
-
-(defun code-subsection (start end)
-    "Subsection delimiters for comment"
-    (interactive "r")
-    (if (use-region-p)
-        (let ((regionp (buffer-substring start end)))
-	  (delete-region start end)
-          (insert ">> " regionp " <<"))
-      (insert ">> SUBSECTION <<"))
-    )
-
-(defun code-subsubsection (start end)
-    "Subsubsection delimiters for comment"
-    (interactive "r")
-    (if (use-region-p)
-        (let ((regionp (buffer-substring start end)))
-	  (delete-region start end)
-          (insert "@ " regionp " @"))
-      (insert "@ SUBSUBSECTION @"))
-    )
-
-;; Julia integration
-;; --------
-;; Emacs major mode for an interactive Julia shell
-;; To install, run in ~/.emacs.d/
-;;   git clone https://github.com/dmalyuta/julia-shell-mode
-;; --------
-(add-to-list 'load-path "~/.emacs.d/julia-shell-mode")
-;; (require 'julia-shell)
-;; (defun my-julia-mode-hooks ()
-;;   (require 'julia-shell-mode))
-;; (add-hook 'julia-mode-hook 'my-julia-mode-hooks)
-;; (define-key julia-mode-map (kbd "C-c C-c") 'julia-shell-run-region-or-line)
-;; (define-key julia-mode-map (kbd "C-c C-s") 'julia-shell-save-and-go)
-;; (define-key inferior-julia-shell-mode-map (kbd "C-u C-c C-l") 'latexsub-or-indent)
-
-;;;;;;;;;;;;;;;;; PERSONAL PACKAGES
-
-(use-package c-block-comment
-  ;; automatically type C-style block comments
-  ;; Use M-; to insert /* */ around the point
-  ;; Use M-j to go to next line in a multi-line block comment
-  :straight nil
-  :load-path "lisp/")
-
-(use-package buffer-move
-  ;; swap buffers between windows
-  :straight nil
-  :load-path "lisp/"
-  :bind
-  (("S-M-<up>" . buf-move-up)
-   ("S-M-<down>" . buf-move-down)
-   ("S-M-<left>" . buf-move-left)
-   ("S-M-<right>" . buf-move-right)))
-
-(use-package my-cursor-commands
-  ;; paragraph scrolling key bindings
-  :straight nil
-  :load-path "lisp/"
-  :bind
-  (("M-p" . xah-backward-block)
-   ("M-n" . xah-forward-block)))
-
-(use-package delete-without-copy
-  ;;  delete words without putting them into the kill ring
-  :straight nil
-  :load-path "lisp/"
-  :bind
-  (("M-d" . my-forward-delete-word)
-   ("M-<backspace>" . my-backward-delete-word)))
-
-(use-package sr-speedbar
-  ;; makes Speedbar (source file browser) show in the current frame as a new window
-  :straight nil
-  :load-path "lisp/"
-  :bind
-  ("C-c C-b" . sr-speedbar-toggle))
-
-(use-package duplicate-line
-  ;; duplicate current line
-  :straight nil
-  :load-path "lisp/"
-  :bind
-  (("C-c d" . duplicate-current-line-or-region)))
-
-(use-package cmake-mode
-  ;; major-mode for editing CMake sources
-  :straight nil
-  :load-path "lisp/"
-  :config
-  (add-to-list 'auto-mode-alist '("\\.cmake\\'" . cmake-mode))
-  (autoload 'cmake-mode "lisp/cmake-mode.el" t))
-
-(use-package ros-cmake-mode
-  ;; major-mode for editing CMakeLists.txt files with ROS-style indentation
-  :straight nil
-  :load-path "lisp/"
-  :config
-  (add-to-list 'auto-mode-alist '("CMakeLists\\.txt\\'" . ros-cmake-mode))
-  (autoload 'ros-cmake-mode "lisp/ros-cmake-mode.el" t))
-
-(use-package gdb-setup
-  ;; customize GDB layout and functionality
-  :straight nil
-  :load-path "lisp/")
-
-(use-package window-resize
-  :straight nil
-  :load-path "lisp/"
-  :demand
-  :bind
-  (
-   ("S-C-<down>" . win-resize-minimize-vert)
-   ("S-C-<up>" . win-resize-enlarge-vert)
-   ("S-C-<left>" . win-resize-minimize-horiz)
-   ("S-C-<right>" . win-resize-enlarge-horiz)
-   ("S-C-<up>" . win-resize-enlarge-horiz)
-   ("S-C-<down>" . win-resize-minimize-horiz)
-   ("S-C-<left>" . win-resize-enlarge-vert)
-   ("S-C-<right>" . win-resize-minimize-vert)
-   ))
-
-(use-package theme-setup
-  :straight nil
-  :load-path "lisp/"
-  :demand
-  :config
-  ;; For when started with emacs or emacs -nw rather than emacs --daemon
-  (add-hook 'after-init-hook 'my-normal-startup-pick-color-theme)
-  ;; For when started as emacs --daemon
-  (add-hook 'after-make-frame-functions 'pick-color-theme)
-  )
-
-(use-package my-ansi-term
-  ;; Improve ansi-term experience
-  :straight nil
-  :load-path "lisp/")
-
-(use-package my-python
-  :straight nil
-  :load-path "lisp/"
-  :demand
-  :config
-  (add-hook 'python-mode-hook
-	    (lambda ()
-	      (require 'my-python)
-	      (my-python-config)))
-  ;; Some Python configs
-  ;; Source: https://stackoverflow.com/a/51966682/4605946
-  (setq python-indent-guess-indent-offset t)
-  (setq python-indent-guess-indent-offset-verbose nil)
-  )
-
-;;;;;;;;;;;;;;;;; OTHER STUFF
-
-;; Python Imenu
-;; From: https://steelkiwi.com/blog/emacs-configuration-working-python/
-;; https://stackoverflow.com/a/21656063/4605946
-(defun my-python-imenu ()
-  (interactive)
-  (let ((python-imenu (imenu--generic-function imenu-generic-expression)))
-    (append python-imenu)))
-(defun my-python-imenu-hooks ()
-  (interactive)
-  (setq imenu-generic-expression
-	'(("Function" "^[[:blank:]]*def \\(.*\\).*(.*$" 1)
-	  ("Class" "^class \\(.*\\).*:$" 1)))
-  (setq imenu-create-index-function 'my-python-imenu)
-  ;; Rescan the buffer as contents are added
-  (setq imenu-auto-rescan t)
-  )
-(add-hook 'python-mode-hook 'my-python-imenu-hooks)
-(add-hook 'lsp-mode-hook 'my-python-imenu-hooks)
-
-;; Enable semantic only for specific modes
-;; E.g. Python semantic doesn't work for type-annotated code, so don't use it
-;; (see https://stackoverflow.com/a/56618164/4605946)
-(setq semantic-new-buffer-setup-functions
-      '((c-mode                . semantic-default-c-setup)
-        (c++-mode              . semantic-default-c-setup)
-        (srecode-template-mode . srecode-template-setup-parser)
-        (texinfo-mode          . semantic-default-texi-setup)
-        ;; etc.
-        ;; (makefile-automake-mode . semantic-default-make-setup)
-        ;; (makefile-mode         . semantic-default-make-setup)
-        ;; (makefile-gmake-mode   . semantic-default-make-setup)
-        ))
-
-;; Delete trailing whitespace
-(add-hook 'before-save-hook 'delete-trailing-whitespace)
-
-;; No blinking for cursor
-(blink-cursor-mode 0)
-
-;; Activate nlinum-mode (line numbers on the left)
-(global-set-key (kbd "C-x n l") 'nlinum-mode)
-
-;; Fira Code font
-;; Default font and font size
-;; (add-to-list 'default-frame-alist '(font . "DejaVu Sans Mono-12"))
-;; Fira Code
-(when (window-system)
-  (progn
-    (use-package fira-code-mode
-      ;; List of ligatures to turn off
-      :ensure t
-      :custom (fira-code-mode-disabled-ligatures
-	       '("[]" "#{" "#(" "#_" "#_(" "x" "&&"))
-      :hook prog-mode ;; Enables fira-code-mode automatically for programming major modes
-      )
-    (add-hook
-     'after-init-hook
-     (lambda ()
-       (set-face-attribute 'default nil
-			   :family "Fira Code"
-			   :height 110
-			   :weight 'normal
-			   :width 'normal)
-
-       )
-     )
-    ))
-
-;; Zoom in every buffer
-(defadvice text-scale-increase (around all-buffers (arg) activate)
-  (dolist (buffer (buffer-list))
-    (with-current-buffer buffer
-      ad-do-it)))
-
-;; Try to speed up font-lock mode speed (causes laggy scrolling in C++)
-(setq font-lock-support-mode 'jit-lock-mode)
-(setq jit-lock-stealth-time 16
-      jit-lock-defer-contextually t
-      jit-lock-contextually nil
-      jit-lock-stealth-nice 0.5)
-(setq-default font-lock-multiline t)
-(setq font-lock-maximum-decoration 1)
-
-;; Some stuff that didn't work out, from this answer:
-;; https://emacs.stackexchange.com/questions/5351/optimizing-font-lock-performance
-;; (defun my-font-lock-function (start end)
-;; "Set faces for font-lock between START and END.")
-;; (defun my-font-lock-matcher (limit)
-;;     (my-font-lock-function (point) limit)
-;;    nil)
-;; (setq font-lock-defaults
-;;   (list
-;;     ;; Note that the face specified here doesn't matter since
-;;     ;; my-font-lock-matcher always returns nil and sets the face on
-;;     ;; its own.
-;;     `(my-font-lock-matcher (1 font-lock-keyword-face nil))))
-
-;; Stop highlighting current line
-(add-hook 'python-mode-hook
-  (lambda () (setq hl-line-mode nil)))
-(add-hook 'emacs-lisp-mode-hook
-  (lambda () (setq hl-line-mode nil)))
-(add-hook 'c-mode-common-hook
-  (lambda () (setq hl-line-mode nil)))
-(add-hook 'sh-mode-hook
-  (lambda () (setq hl-line-mode nil)))
-
-;; ;; CEDET tools
-;; (require 'cc-mode)
-;; (require 'semantic)
-;; (global-semanticdb-minor-mode 1)
-;; (global-semantic-idle-scheduler-mode 1)
-;; (semantic-mode 1)
-
-;; No auto-newline for C/C++
-(add-hook 'c-mode-common-hook
-	  (lambda ()
-	    (setq c-auto-newline nil)
-	    ))
-
-;; Kill buffer and window
-(global-set-key (kbd "C-x w") 'kill-buffer-and-window)
-
-;; Go back to previous buffer
-(global-set-key (kbd "C-c <prior>") 'previous-buffer) ;; prior: page up
-(global-set-key (kbd "C-c <next>") 'next-buffer) ;; prior: page down
-
-;; Run terminal from current buffer
-(defun run-terminator-here ()
-  (interactive "@")
-  (shell-command (concat "terminator > /dev/null 2>&1 & disown") nil nil))
-(global-set-key (kbd "C-c t r") 'run-terminator-here)
-
-;; Automatically reload files when they change on disk
-;; (global-auto-revert-mode)
-
-;; Source: http://www.emacswiki.org/emacs-en/download/misc-cmds.el
-(defun revert-buffer-no-confirm ()
-  "Revert buffer without confirmation."
-  (interactive)
-  (revert-buffer :ignore-auto :noconfirm))
-(global-set-key (kbd "C-c b r") 'revert-buffer-no-confirm)
-
-;; Turn off Abbrev mode
-(setq-default abbrev-mode nil)
-
-;; Print current date
-(defun insert-current-date () (interactive)
-       (insert (shell-command-to-string "echo -n $(date \"+%Y/%m/%d %H:%M:%S\")")))
-
-;; Keep a history of recent files
-(recentf-mode 1)
-(setq-default recent-save-file "~/.emacs.d/recentf")
-
-;; C files do not indent extern "C" { <HERE> }
-(add-hook 'c-mode-common-hook
-	  (lambda()
-	    (c-set-offset 'inextern-lang 0)))
-
-;; copy pwd
-(defun show-file-name ()
-  "Show the full path file name in the minibuffer."
-  (interactive)
-  (kill-new (buffer-file-name))
-  (message (buffer-file-name)))
-
-;; fill-region hotkey
-(global-set-key (kbd "M-r") 'fill-region)
-
-;; Fill to column
-(defun fill-to-end (char)
-  (interactive "cFill Character:")
-  (save-excursion
-    (end-of-line)
-    (while (< (current-column) fill-column)
-      (message "column = %d, fill-colummn = %d" (current-column) fill-column)
-      (insert-char char))
-    (while (> (current-column) fill-column)
-      (delete-backward-char 1))
-    ))
-(global-set-key (kbd "C-c f c") 'fill-to-end)
-(global-set-key (kbd "C-c f *") (lambda () (interactive) (
-							  fill-to-end ?*
-								      )))
-
-;; Semantic be quiet
-;; by selectively suppressing messages, see the full technique at
-;; https://superuser.com/a/1025827/512940 (answer by Bernard Hurley)
-(defun suppress-messages (old-fun &rest args)
-  (cl-flet ((silence (&rest args1) (ignore)))
-    (advice-add 'message :around #'silence)
-    (unwind-protect
-         (apply old-fun args)
-      (advice-remove 'message #'silence))))
-(defun who-called-me? (old-fun format &rest args)
-  (let ((trace nil) (n 1) (frame nil))
-      (while (setf frame (backtrace-frame n))
-        (setf n     (1+ n)
-              trace (cons (cadr frame) trace)) )
-      (apply old-fun (concat "<<%S>>\n" format) (cons trace args))))
-;; (advice-add 'message :around #'who-called-me?)
-(advice-add 'semantic-idle-scheduler-function :around #'suppress-messages)
-
-;; Unbind Pesky Sleep Button
-(global-unset-key [(control z)])
-(global-unset-key [(control x)(control z)])
+  (default-text-scale-mode))
+(global-unset-key (kbd "C-x C--"))
+(global-unset-key (kbd "C-x C-="))
 
 ;; Fix laggy point (cursor)
 ;; In particular: cursor freezing when moving down (next-line) for a while
 ;; https://emacs.stackexchange.com/questions/28736/emacs-pointcursor-movement-lag
 (setq auto-window-vscroll nil)
 
-;; Doxymacs
-;; (add-to-list 'load-path "~/.emacs.d/doxymacs/")
-;; (require 'doxymacs)
-;; (add-hook 'c-mode-common-hook'doxymacs-mode)
-;; (defun my-doxymacs-font-lock-hook ()
-;;   (if (or (eq major-mode 'c-mode) (eq major-mode 'c++-mode))
-;;       (doxymacs-font-lock)))
-;; (add-hook 'font-lock-mode-hook 'my-doxymacs-font-lock-hook)
+;; Turn off Abbrev mode
+(setq-default abbrev-mode nil)
 
-;; enable clipboard in emacs
+;; Unbind Pesky Sleep Button
+(global-unset-key (kbd "C-z"))
+(global-unset-key (kbd "C-x C-z"))
+
+;; Disable system sounds
+(setq ring-bell-function 'ignore)
+
+;;;; Working with buffers
+
+;;;###autoload
+(defun danylo/revert-buffer-no-confirm ()
+  "Revert buffer without confirmation."
+  (interactive)
+  (revert-buffer :ignore-auto :noconfirm))
+
+(general-define-key
+ "C-c b r" 'danylo/revert-buffer-no-confirm
+ "C-x w" 'kill-buffer-and-window
+ "C-c r" 'rename-buffer
+ "C-c <prior>" 'previous-buffer  ; prior: page up
+ "C-c <next>" 'next-buffer)      ; next: page down
+
+;; Enable clipboard in emacs
 (xterm-mouse-mode t)
 (mouse-wheel-mode t)
 (setq x-select-enable-clipboard t)
 
-;; Kill TRAMP stuff
-(global-set-key (kbd "C-c t k") 'tramp-cleanup-all-connections)
+;;;; Backing up
 
-;; rename buffer shortcut
-(global-set-key (kbd "C-c r") 'rename-buffer)
+;; Make sure Emacs doesn't break hard links
+(setq backup-by-copying t)
 
-;; winner-mode, which lets you go back (C-c <left>) and forward (C-c <right>) in window layout history
-;; NB: NOT COMPATIBLE WITH ECB :'(
-(when (fboundp 'winner-mode)
-  (winner-mode 1))
-
-;;(setq backup-inhibited t) ;; disable backup
-;;(setq make-backup-files nil) ;; stop creating backup ~ files
-(setq backup-by-copying t) ;; make sure Emacs doesn't break hard links
-;; backup behaviour: store everything in single location
+;; Backup behaviour: store everything in single location
 (defvar backup-dir "~/.emacs.d/backups/")
 (setq backup-directory-alist (list (cons "." backup-dir)))
 
-;; do not truncate windows that are too narrow
-(setq truncate-partial-width-windows nil)
+(defun danylo/byte-compile-init-dir ()
+  "Byte-compile Emacs config."
+  (interactive)
+  (byte-recompile-file "~/.emacs.d/init.el" nil 0))
 
-;; require file ending with a newline
-(setq require-final-newline t)
+;;; ..:: Searching ::..
 
-;; show tooltips in echo area
-(tooltip-mode -1)
-(setq tooltip-use-echo-area t)
-(global-set-key (kbd "C-x t") 'display-local-help) ;; show tooltip
+;;;###autoload
+(defun danylo/ivy-with-thing-at-point (cmd)
+  "Auto-populate search with current thing at point.
+Source: https://github.com/abo-abo/swiper/issues/1068"
+  (let ((ivy-initial-inputs-alist
+         (list
+          (cons cmd (thing-at-point 'symbol)))))
+    (funcall cmd)))
 
-(setq bookmark-save-flag 1) ; everytime bookmark is changed, automatically save it
+;;;###autoload
+(defun danylo/swiper-thing-at-point ()
+    "Put thing at point in swiper buffer"
+    (interactive)
+    (deactivate-mark)
+    (danylo/ivy-with-thing-at-point 'swiper-isearch)
+    )
 
-(setq gdb-non-stop-setting nil) ;; run GDB in all-stop mode by default (i.e. all threads stopped at breakpoint)
+;;;###autoload
+(defun danylo/counsel-switch-buffer-no-preview ()
+  "Switch to another buffer without preview."
+  (interactive)
+  (ivy-switch-buffer))
 
-(setq inhibit-splash-screen t)
+(use-package counsel)
+(use-package swiper)
+(use-package ivy
+  ;; https://github.com/abo-abo/swiper
+  ;; Ivy - a generic completion frontend for Emacs
+  :after (company counsel swiper)
+  :bind (("M-i" . danylo/swiper-thing-at-point)
+	 ("C-x b" . danylo/counsel-switch-buffer-no-preview)
+	 ("M-x" . counsel-M-x)
+	 ("C-x C-f" . counsel-find-file)
+	 ("C-c q" . counsel-semantic-or-imenu)
+	 :map company-mode-map
+	 ("<S-SPC>" . counsel-company)
+	 :map ivy-minibuffer-map
+	 ("C-l" . ivy-backward-delete-char)
+	 ("TAB" . ivy-alt-done))
+  :init
+  (setq ivy-use-virtual-buffers nil
+	enable-recursive-minibuffers t
+	;; Remove the default "^" in search string
+	;; Source: https://emacs.stackexchange.com/a/38842/13661
+	ivy-initial-inputs-alist nil
+	ivy-height 15
+	;; Wrap-around scroll C-n and C-p
+	ivy-wrap t
+	counsel-switch-buffer-preview-virtual-buffers nil
+	ivy-truncate-lines t)
+  :config
+  (ivy-mode 1))
 
-(setq inhibit-startup-message t)
+(use-package ivy-posframe
+  ;; https://github.com/tumashu/ivy-posframe
+  ;; Let ivy use posframe to show its candidate menu
+  :after ivy
+  :init
+  (setq ivy-posframe-display-functions-alist
+	'((t . ivy-posframe-display-at-window-bottom-left))
+	ivy-posframe-hide-minibuffer nil
+	ivy-posframe--ignore-prompt t
+	ivy-posframe-parameters '((left-fringe . 8)
+				  (right-fringe . 8)
+				  (lines-truncate . t)))
+  :config
+  (ivy-posframe-mode 1))
 
-(setq initial-scratch-message ";; Change The World")
+;;;###autoload
+(defun danylo/ivy-posframe-get-size ()
+  "The function which is used to deal with ivy posframe's size."
+  (list
+   :height ivy-posframe-height
+   :width ivy-posframe-height
+   :min-height (or ivy-posframe-min-height ivy-height)
+   :min-width (or ivy-posframe-min-width (round (* (frame-width) 1.0)))))
 
-(setq ring-bell-function 'ignore) ;; Disable system sounds
+(with-eval-after-load "ivy-posframe"
+  (setq ivy-posframe-size-function #'danylo/ivy-posframe-get-size))
 
-(global-set-key (kbd "C-x C-;") 'comment-region) ;; Comment region in Lisp
+(use-package counsel-projectile
+  ;; https://github.com/ericdanan/counsel-projectile
+  ;; Ivy UI for Projectile
+  :init (setq projectile-completion-system 'ivy))
 
-(add-to-list 'auto-mode-alist '("\\.launch?\\'" . xml-mode)) ;; xml-mode for .launch files (xml)
+(use-package counsel-gtags
+  ;; https://github.com/syohex/emacs-counsel-gtags
+  ;; GNU Global with ivy completion
+  :bind
+  (:map c-mode-base-map
+	("M-." . counsel-gtags-dwim)))
 
-(define-key global-map (kbd "RET") 'newline-and-indent)
+(use-package smex
+  ;; https://github.com/nonsequitur/smex
+  ;; A smart M-x enhancement for Emacs.
+  ;; Namely, show most recently used M-x commands up top.
+  )
 
-(put 'downcase-region 'disabled nil)
+(use-package ivy-xref
+  ;; https://github.com/alexmurray/ivy-xref
+  ;; Ivy interface for xref results
+  :init
+  (setq xref-show-definitions-function #'ivy-xref-show-defs))
 
-;; remove scrollbar any new frames
-(defun my/disable-scroll-bars (frame)
-  (modify-frame-parameters frame
-			   '((vertical-scroll-bars . nil)
-			     (horizontal-scroll-bars . nil))))
-(add-hook 'after-make-frame-functions 'my/disable-scroll-bars)
+;;; ..:: Code editing ::..
 
-;; scroll one line at a time (less "jumpy" than defaults)
-;; (setq mouse-wheel-scroll-amount '(1 ((shift) . 1))) ;; one line at a time
-;; (setq mouse-wheel-progressive-speed nil) ;; don't accelerate scrolling
-;; (setq mouse-wheel-follow-mouse 't) ;; scroll window under mouse
-;; (setq scroll-step 1) ;; keyboard scroll one line at a time
+(use-package multiple-cursors
+  ;; https://github.com/magnars/multiple-cursors.el
+  ;; Multiple cursors for emacs.
+  :bind
+  (("C->" . mc/mark-next-like-this)
+   ("C-<" . mc/mark-previous-like-this)
+   ("C-*" . mc/mark-all-like-this)))
 
-;; Save/load window configurations
-(global-set-key (kbd "<f10>") '(lambda () (interactive) (jump-to-register 9)
-				 (message "Windows disposition loaded"))) ;; load window config
-(global-set-key (kbd "<f9>") '(lambda () (interactive) (window-configuration-to-register 9)
-				(message "Windows disposition saved"))) ;; save window config
+(use-package wgrep
+  ;; https://github.com/mhayashi1120/Emacs-wgrep
+  ;; Writable grep buffer and apply the changes to files.
+  ;; workflow:
+  ;;    1) Way 1: Do grep within project using grep-projectile
+  ;;              "C-c p s g" then "C-x C-s" to save
+  ;;              helm-grep results to grep buffer
+  ;;       Way 2: Do grep on certain files of your choice using
+  ;;              M-x rgrep
+  ;;    2) In the grep buffer, active wgrep with "C-c C-p"
+  ;;    3) Rename whatever you want by editing the names (e.g.
+  ;;       use replace-string or multiple-curscors (see above))
+  ;;    4) "C-c C-e" to save changes or "C-c C-k" to discard
+  ;;       changes or "C-x C-q" to exit wgrep and prompt whether
+  ;;       to save changes
+  )
 
-;; fix Semantic package issue of uncompressing/parsing tons of .eg.gz
-;; files when editing certain buffers (primarily Emacs-Lisp, but also
-;; the GDB buffer, for instance)
-(eval-after-load 'semantic
-  (add-hook 'semantic-mode-hook
-	    (lambda ()
-	      (dolist (x (default-value 'completion-at-point-functions))
-		(when (string-prefix-p "semantic-" (symbol-name x))
-		  (remove-hook 'completion-at-point-functions x))))))
+(use-package move-text
+  ;; https://github.com/emacsfodder/move-text
+  ;; Move current line or region up or down
+  :config
+  (move-text-default-bindings))
 
-;; remove a significant contributor to line scan slowness
+(use-package redo+
+  ;;  Redo/undo system for Emacs
+  :ensure nil
+  :quelpa ((redo+ :fetcher github
+		  :repo "emacsmirror/redo-plus"))
+  :bind (("C-/" . undo)
+	 ("C-?" . redo)))
+
+(use-package hl-todo
+  ;; https://github.com/tarsius/hl-todo
+  ;; Highlight TODO keywords
+  :config
+  (global-hl-todo-mode)
+  )
+
+(use-package rainbow-mode
+  ;; https://github.com/emacsmirror/rainbow-mode
+  ;; Colorize color names in buffers
+  :hook ((LaTeX-mode . (lambda () (rainbow-mode 1)))
+	 (emacs-lisp-mode . (lambda () (rainbow-mode 1))))
+  )
+
+(use-package filladapt
+  ;; https://elpa.gnu.org/packages/filladapt.html
+  ;; Enhance the behavior of Emacs' Auto Fill mode
+  :init (setq-default filladapt-mode t))
+
+(use-package so-long
+  ;; https://www.emacswiki.org/emacs/SoLong
+  ;; Improve performance for long lines
+  :config
+  (global-so-long-mode 1))
+
+;; Remove a significant contributor to line scan slowness
 (setq bidi-display-reordering nil)
 
-;; auto-fill comments in programming modes
-;; if you want to have automatic auto-fill:
-;; (defun comment-auto-fill ()
-;;       (setq-local comment-auto-fill-only-comments t)
-;;       (auto-fill-mode 1))
-;; (add-hook 'c-mode-common-hook (lambda () (comment-auto-fill)))
-;; if you want to manually auto-fill (M-q), but for that to only apply to comments
-;; (add-hook 'c-mode-common-hook (lambda () (setq-local comment-auto-fill-only-comments t)))
+;; Delete trailing whitespace
+(add-hook 'before-save-hook 'delete-trailing-whitespace)
 
-;; /*  */ style comments with C-x M-; in c++-mode
-;; (defun my-block-comment ()
-;;   (interactive)
-;;   (let ((comment-start "/* ")
-;; 	  (comment-end " */"))
-;;     (comment-dwim nil)))
-;; (add-hook 'c++-mode-hook (lambda () (local-set-key (kbd "C-x M-;") 'my-block-comment)))
+;; Activate nlinum-mode (line numbers on the left)
+(general-define-key
+ "C-x n l" 'nlinum-mode)
 
-;; Color roslaunch files correctly
-(add-to-list 'auto-mode-alist '("\\.launch$" . xml-mode))
+;;;; Section delimiters
 
-;; byte-compilation for performance boost
-(defun byte-compile-init-dir ()
-  "Byte-compile all your dotfiles."
-  (interactive)
-  (byte-recompile-file "~/.emacs.d/init.el" nil 0) ;; byte-compile init file
-  (byte-recompile-directory "~/.emacs.d/lisp" 0) ;; byte-compile personal custom lisp code
+;;;###autoload
+(defun danylo/section-msg (left msg right start end)
+  "Section delimiters for comment.
+LEFT and RIGHT are the section delimineters.
+MSG is the section name.
+START and END give the start/end of current selection."
+  (interactive "r")
+  (if (use-region-p)
+      (let ((regionp (buffer-substring start end)))
+	(delete-region start end)
+	(insert (format "%s %s %s" left regionp right)))
+    (insert (insert (format "%s %s %s" left msg right))))
   )
 
-;; Open ROS .msg, .srv and .action files in gdb-script-mode for syntax highlighting
-(add-to-list 'auto-mode-alist '("\\.msg\\'" . gdb-script-mode))
-(add-to-list 'auto-mode-alist '("\\.srv\\'" . gdb-script-mode))
-(add-to-list 'auto-mode-alist '("\\.action\\'" . gdb-script-mode))
+;;;###autoload
+(defun danylo/code-section (start end)
+  "Section delimiters for comment."
+  (interactive "r")
+  (danylo/section-msg "..::" "SECTION" "::.." start end))
 
-;; Enable C++ mode by default for .h header files
-(add-to-list 'auto-mode-alist '("\\.h\\'" . c++-mode))
+;;;###autoload
+(defun danylo/code-subsection (start end)
+  "Subsection delimiters for comment."
+  (interactive "r")
+  (danylo/section-msg ">>" "SUBSECTION" "<<" start end))
 
-;; Highlight matching parentheses
-(require 'paren)
-(show-paren-mode 1)
-(setq show-paren-delay 0)
+;;;###autoload
+(defun danylo/code-subsubsection (start end)
+  "Subsubsection delimiters for comment."
+  (interactive "r")
+  (danylo/section-msg "@" "SUBSUBSECTION" "@" start end))
 
-;; Highlight comments like TODO
-(add-hook 'c-mode-common-hook
+;; Duplicate line
+(global-set-key (kbd "C-c d")
+		(kbd "C-a C-SPC C-e M-w RET SPC C-SPC C-a <backspace> C-y"))
+
+;; Require file ending with a newline
+(setq require-final-newline t)
+
+;;; ..:: Window management ::..
+
+;;;; >> Movement across windows <<
+
+(general-define-key
+ "C-<left>" 'windmove-left
+ "C-<right>" 'windmove-right
+ "C-<up>" 'windmove-up
+ "C-<down>" 'windmove-down)
+
+;;;; >> Resizing windows <<
+
+(use-package windsize
+  ;; https://github.com/grammati/windsize
+  ;; Easy resizing of emacs windows
+  :init (setq windsize-cols 1
+	      windsize-rows 1)
+  :config
+  (windsize-default-keybindings))
+
+;;;; >> Swapping windows between buffers <<
+
+(use-package buffer-move
+  ;; https://github.com/lukhas/buffer-move
+  ;; Swap buffers between windows
+  :bind (("S-M-<up>" . buf-move-up)
+	 ("S-M-<down>" . buf-move-down)
+	 ("S-M-<left>" . buf-move-left)
+	 ("S-M-<right>" . buf-move-right)))
+
+;; winner-mode, which lets you go back (C-c <left>) and forward (C-c <right>) in
+;; window layout history
+(when (fboundp 'winner-mode) (winner-mode 1))
+
+;;;; >> Buffer menu <<
+
+(general-define-key
+ "C-x C-b" 'buffer-menu)
+
+;;; ..:: Terminal emulator ::..
+
+;;;###autoload
+(defun danylo/run-terminator-here ()
+  "Run terminal from current buffer"
+  (interactive "@")
+  (shell-command (concat "terminator > /dev/null 2>&1 & disown") nil nil))
+
+(general-define-key
+ "C-c t e" 'ansi-term
+ "C-c t r" 'danylo/run-terminator-here)
+
+;; Always use bash
+(defadvice ansi-term (before force-bash)
+  (interactive (list "/bin/bash")))
+(ad-activate 'ansi-term)
+
+;;;###autoload
+(defun danylo/ansi-term-use-utf8 ()
+  "Display of certain characters and control codes to UTF-8"
+  (set-buffer-process-coding-system 'utf-8-unix 'utf-8-unix))
+(add-hook 'term-exec-hook 'danylo/ansi-term-use-utf8)
+
+;; Clickable URLs
+(add-hook 'term-mode-hook (lambda () (goto-address-mode)))
+
+;; Make that typing exit in ansi-term (which exits the shell) also closes
+;; the buffer
+(defadvice term-sentinel (around my-advice-term-sentinel (proc msg))
+  (if (memq (process-status proc)
+	    '(signal exit))
+      (let ((buffer (process-buffer proc)))
+	ad-do-it
+	(kill-buffer buffer))
+    ad-do-it))
+(ad-activate 'term-sentinel)
+
+(defun danylo/set-no-process-query-on-exit ()
+  "No 'are you sure' query on exit"
+  (let ((proc (get-buffer-process (current-buffer))))
+    (when (processp proc)
+      (set-process-query-on-exit-flag proc nil))))
+(add-hook 'term-exec-hook 'danylo/set-no-process-query-on-exit)
+
+;; Key bindings
+
+;;;###autoload
+(defun danylo/switch-to-term-line-mode ()
+  (interactive)
+  (term-line-mode)
+  (if (not buffer-read-only) (toggle-read-only)))
+
+;;;###autoload
+(defun danylo/switch-to-term-char-mode ()
+  (interactive)
+  (term-char-mode)
+  (if buffer-read-only (toggle-read-only)))
+
+(with-eval-after-load "term"
+  (define-key term-raw-map (kbd "C-c r") 'rename-buffer)
+  ;; Make sure typical key combos work in term-char-mode
+  (define-key term-raw-map (kbd "M-x") 'nil)
+  (define-key term-raw-map (kbd "M-&") 'nil)
+  (define-key term-raw-map (kbd "M-!") 'nil)
+  ;; Make sure C-c t e launches a new ansi-term buffer when current buffer is
+  ;; also ansi-term
+  (define-key term-raw-map (kbd "C-c t e") 'nil)
+  ;; Word deletion fix
+  (defun danylo/term-send-Mbackspace ()
+    (interactive) (term-send-raw-string "\e\d"))
+  (define-key term-raw-map (kbd "C-w") 'danylo/term-send-Mbackspace)
+  (define-key term-raw-map (kbd "M-<backspace>") 'danylo/term-send-Mbackspace)
+  ;; Completion via S-SPC as well as TAB
+  (defun danylo/term-send-tab () (interactive) (term-send-raw-string "\t"))
+  (define-key term-raw-map (kbd "S-SPC") 'danylo/term-send-tab)
+  ;; Switch between char and line move
+  (define-key term-raw-map (kbd "C-c t c") 'danylo/switch-to-term-char-mode)
+  (define-key term-raw-map (kbd "C-c t l") 'danylo/switch-to-term-line-mode)
+  ;; Copy/paste native Emacs keystrokes
+  (define-key term-raw-map (kbd "C-k") 'term-send-raw)
+  (define-key term-raw-map (kbd "C-y") 'term-paste)
+  ;; Ensure that scrolling doesn't break on output
+  (setq term-scroll-to-bottom-on-output t)
+  ;; Max history
+  (setq term-buffer-maximum-size 50000)
+  ;; Make sure window movement keys are not captured by terminal
+  (define-key term-raw-map (kbd "C-<up>") 'nil)
+  (define-key term-raw-map (kbd "C-<down>") 'nil)
+  (define-key term-raw-map (kbd "C-<left>") 'nil)
+  (define-key term-raw-map (kbd "C-<right>") 'nil)
+  ;; Cursor movement key bindings
+  (defun danylo/term-send-delete-word-forward ()
+    (interactive) (term-send-raw-string "\ed"))
+  (defun danylo/term-send-delete-word-backward ()
+    (interactive) (term-send-raw-string "\e\C-h"))
+  (defun danylo/term-send-m-right ()
+    (interactive) (term-send-raw-string "\e[1;3C"))
+  (defun danylo/term-send-m-left ()
+    (interactive) (term-send-raw-string "\e[1;3D"))
+  (define-key term-raw-map (kbd "C-<del>")
+    'danylo/term-send-delete-word-forward)
+  (define-key term-raw-map (kbd "C-<backspace>")
+    'danylo/term-send-delete-word-backward)
+  (define-key term-raw-map (kbd "M-<right>") 'danylo/term-send-m-right)
+  (define-key term-raw-map (kbd "M-<left>") 'danylo/term-send-m-left))
+
+;; Turn off line wrap
+(add-hook 'term-mode-hook (lambda () (setq truncate-lines t)))
+
+;; Bi-directional text support problem fix, which seems to be the cause of text
+;; jumbling when going back commands in ansi-term. This fixes it, yay!
+(add-hook 'term-mode-hook (lambda () (setq bidi-paragraph-direction 'left-to-right)))
+
+;;; ..:: Theming and code aesthetics ::..
+
+;; Auto-create matching closing parentheses
+(electric-pair-mode 1)
+
+(use-package rainbow-delimiters
+  ;; https://github.com/Fanael/rainbow-delimiters
+  ;; Highlights delimiters such as parentheses, brackets or braces
+  ;; according to their depth.
+  :hook ((prog-mode . rainbow-delimiters-mode)))
+
+(use-package solaire-mode
+  ;; https://github.com/hlissner/emacs-solaire-mode
+  ;; Distinguish file-visiting buffers with slightly different background
+  :hook ((change-major-mode . turn-on-solaire-mode))
+  :config
+  (solaire-global-mode +1))
+
+(use-package nlinum
+  ;; https://elpa.gnu.org/packages/nlinum.html
+  ;; Show line numbers in the margin
+  :config
+  (setq nlinum-highlight-current-line nil))
+(general-define-key
+ "C-x n l" nlinum-mode)
+
+(use-package doom-themes
+  ;; https://github.com/hlissner/emacs-doom-themes
+  ;; An opinionated pack of modern color-themes
+  :config
+  (load-theme 'doom-one t)
+  (unless (window-system)
+    (set-face-attribute 'region nil :background "#666"))
+  )
+
+(add-hook 'after-init-hook
 	  (lambda ()
-	    (font-lock-add-keywords nil
-				    '(("\\<\\(FIXME\\|TODO\\|BUG\\):" 1 font-lock-warning-face t)))))
+	    (when (window-system)
+	      (set-face-attribute 'default nil
+				  :family "Fira Code"
+				  :height 110
+				  :weight 'normal
+				  :width 'normal))))
 
-;; Rename current file and buffer
-(defun rename-file-and-buffer ()
-  "Rename the current buffer and file it is visiting."
-  (interactive)
-  (let ((filename (buffer-file-name)))
-    (if (not (and filename (file-exists-p filename)))
-	(message "Buffer is not visiting a file!")
-      (let ((new-name (read-file-name "New name: " filename)))
-	(cond
-	 ((vc-backend filename) (vc-rename-file filename new-name))
-	 (t
-	  (rename-file filename new-name t)
-	  (set-visited-file-name new-name t t)))))))
-(global-set-key (kbd "C-c f r")  'rename-file-and-buffer)
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; nXML mode
-(setq auto-mode-alist (cons '("\\.xml$" . nxml-mode) auto-mode-alist))
-(setq auto-mode-alist (cons '("\\.xsl$" . nxml-mode) auto-mode-alist))
-(setq auto-mode-alist (cons '("\\.xhtml$" . nxml-mode) auto-mode-alist))
-(setq auto-mode-alist (cons '("\\.page$" . nxml-mode) auto-mode-alist))
-(autoload 'xml-mode "nxml" "XML editing mode" t)
-(eval-after-load 'rng-loc
-  '(add-to-list 'rng-schema-locating-files "~/.schema/schemas.xml"))
-(global-set-key [C-return] 'completion-at-point)
-;; Auto-set the schema
-(defun my-xml-schema-hook ()
-  (when (string= (file-name-extension buffer-file-name) "ts")
-    (rng-auto-set-schema))
-  (add-hook 'find-file-hook 'my-xml-schema-hook))
-
-;;;;;;;;;;;;;;;;;;;;;;; ToDos
-;; Future things to think about (most important generally up top):
-;;
-;;       . bashdb (use realgud)
-;;       . Python linting
-;;       . Python debugging
-;;       . Python shell
-
-(custom-set-variables
- ;; custom-set-variables was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(Man-notify-method 'pushy)
- '(TeX-PDF-mode t)
- '(TeX-source-correlate-method 'synctex)
- '(TeX-source-correlate-mode t)
- '(TeX-source-correlate-start-server t)
- '(ansi-color-faces-vector
-   [default default default italic underline success warning error])
- '(ansi-color-names-vector
-   ["#282c34" "#CC9393" "#7F9F7F" "#F0DFAF" "#8CD0D3" "#DC8CC3" "#93E0E3" "#DCDCCC"])
- '(company-begin-commands nil)
- '(ecb-auto-expand-tag-tree 'expand-spec)
- '(ecb-auto-expand-tag-tree-collapse-other nil)
- '(ecb-highlight-tag-with-point 'highlight-scroll)
- '(ecb-highlight-tag-with-point-delay 0.25)
- '(ecb-layout-window-sizes
-   '(("left11"
-      (ecb-methods-buffer-name 0.17901234567901234 . 0.7)
-      (ecb-history-buffer-name 0.17901234567901234 . 0.275))))
- '(ecb-options-version "2.50")
- '(fci-rule-color "#383838")
- '(flycheck-flake8rc "~/setup.cfg")
- '(flymake-fringe-indicator-position nil)
- '(lsp-diagnostic-clean-after-change t)
- '(lsp-progress-via-spinner nil)
- '(lsp-pyls-plugins-autopep8-enabled t)
- '(lsp-pyls-plugins-flake8-config "~/setup.cfg")
- '(lsp-pyls-plugins-flake8-enabled t)
- '(lsp-pyls-plugins-flake8-exclude '("E231"))
- '(lsp-pyls-plugins-pycodestyle-enabled nil)
- '(lsp-pyls-plugins-pycodestyle-ignore '("E231"))
- '(matlab-fill-fudge 0)
- '(matlab-fill-fudge-hard-maximum 80)
- '(matlab-indent-function-body nil)
- '(matlab-shell-command-switches '("-nodesktop -nosplash"))
- '(matlab-show-mlint-warnings t)
- '(matlab-show-periodic-code-details-flag nil)
- '(mlint-programs '("/usr/local/MATLAB/R2019b/bin/glnxa64/mlint"))
- '(mmm-submode-decoration-level 0)
- '(nrepl-message-colors
-   '("#CC9393" "#DFAF8F" "#F0DFAF" "#7F9F7F" "#BFEBBF" "#93E0E3" "#94BFF3" "#DC8CC3"))
- '(org-format-latex-options
-   '(:foreground "yellow" :background default :scale 1.3 :html-foreground "Black" :html-background "Transparent" :html-scale 1.0 :matchers
-		 ("begin" "$1" "$" "$$" "\\(" "\\[")))
- '(package-selected-packages
-   '(helm-cscope lsp-pyright fira-code-mode matlab-emacs matlab-mode fast-scroll company-box default-text-scale company-graphviz-dot graphviz-dot-mode gnuplot mmm-mode helm-company org-bullets workgroups helm-lsp lsp-ui which-key dap-mode autopair julia-mode julia-emacs unfill sage-mode sage-shell-mode minimap helm-ag plantuml-mode elpy hl-todo undo-tree zoom-frm move-text magit fill-column-indicator flymd markdown-mode bash-completion workgroups2 fuzzy ess-R-data-view ess auto-compile rainbow-mode ecb realgud wgrep-helm wgrep multiple-cursors srefactor nyan-mode yaml-mode mic-paren pdf-tools auctex helm-projectile projectile helm-ros helm-gtags helm-swoop helm company-irony-c-headers company-irony flycheck-irony irony company-shell company-quickhelp company flycheck dired+ doom-themes rainbow-delimiters use-package))
- '(pdf-view-midnight-colors '("#DCDCCC" . "#383838"))
- '(safe-local-variable-values
-   '((lsp-python-ms-python-executable . "/home/danylo/anaconda3/envs/py385/bin/python")
-     (eval progn
-	   (add-hook 'LaTeX-mode-hook
-		     (lambda nil
-		       (LaTeX-add-environments "Definition")
-		       (LaTeX-add-environments "Theorem")
-		       (LaTeX-add-environments "Fact")
-		       (LaTeX-add-environments "Example")
-		       (LaTeX-add-environments "Method")
-		       (LaTeX-add-environments "Proof")
-		       (LaTeX-add-environments "VeryImportantStuff"))))))
- '(vc-annotate-background "#2B2B2B")
- '(vc-annotate-color-map
-   '((20 . "#BC8383")
-     (40 . "#CC9393")
-     (60 . "#DFAF8F")
-     (80 . "#D0BF8F")
-     (100 . "#E0CF9F")
-     (120 . "#F0DFAF")
-     (140 . "#5F7F5F")
-     (160 . "#7F9F7F")
-     (180 . "#8FB28F")
-     (200 . "#9FC59F")
-     (220 . "#AFD8AF")
-     (240 . "#BFEBBF")
-     (260 . "#93E0E3")
-     (280 . "#6CA0A3")
-     (300 . "#7CB8BB")
-     (320 . "#8CD0D3")
-     (340 . "#94BFF3")
-     (360 . "#DC8CC3")))
- '(vc-annotate-very-old-color "#DC8CC3"))
-
-(let ((bg (face-attribute 'default :background)))
-  (custom-set-faces
-   ;; custom-set-faces was added by Custom.
-   ;; If you edit it by hand, you could mess it up, so be careful.
-   ;; Your init file should contain only one such instance.
-   ;; If there is more than one, they won't work right.
-   '(ecb-default-highlight-face ((((class color) (background dark)) (:background "yellow" :foreground "black"))))
-   '(ecb-tag-header-face ((((class color) (background dark)) (:background "yellow" :foreground "black"))))
-   )
+(use-package fira-code-mode
+  ;; https://github.com/jming422/fira-code-mode
+  ;; Fira Code ligatures using prettify-symbols
+  :ensure t
+  :custom (fira-code-mode-disabled-ligatures
+	   '("[]" "#{" "#(" "#_" "#_(" "x" "&&"))
+  :config
+  (add-hook 'prog-mode (lambda () (when (window-system) (fira-code-mode))))
   )
-(custom-set-faces
- ;; custom-set-faces was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(column-enforce-face ((t (:background "yellow" :foreground "black" :slant oblique))))
- '(ecb-default-highlight-face ((((class color) (background dark)) (:background "yellow" :foreground "black"))))
- '(ecb-tag-header-face ((((class color) (background dark)) (:background "yellow" :foreground "black"))))
- '(flymake-error ((t (:background "red" :slant italic))))
- '(flymake-warning ((t (:background "orange" :slant italic))))
- '(helm-ff-directory ((t (:foreground "yellow" :weight bold)))))
-(put 'narrow-to-region 'disabled nil)
-(put 'narrow-to-page 'disabled nil)
+
+;; Speed up font-lock mode speed (can causes laggy scrolling)
+(setq font-lock-support-mode 'jit-lock-mode
+      jit-lock-stealth-time 16
+      jit-lock-defer-contextually t
+      jit-lock-contextually nil
+      jit-lock-stealth-nice 0.5
+      font-lock-maximum-decoration 1)
+
+;;;###autoload
+(defun danylo/modeline-setup ()
+  "Configure the modeline."
+  (setq telephone-line-primary-left-separator 'telephone-line-cubed-left
+	telephone-line-secondary-left-separator 'telephone-line-cubed-hollow-left
+	telephone-line-primary-right-separator 'telephone-line-cubed-right
+	telephone-line-secondary-right-separator 'telephone-line-cubed-hollow-right)
+
+  (defface my-telephone-yellow
+    '((t (:foreground "black" :background "yellow"))) "")
+
+  (add-to-list 'telephone-line-faces
+	       '(yellow . (my-telephone-yellow . telephone-line-accent-inactive)))
+
+  (setq telephone-line-lhs
+	'((yellow . (telephone-line-vc-segment))
+	  (nil    . (telephone-line-buffer-segment))))
+
+  (setq telephone-line-rhs
+	'((nil    . (telephone-line-misc-info-segment))
+	  (accent . (telephone-line-major-mode-segment))
+	  (evil   . (telephone-line-airline-position-segment))))
+
+  ;; Activate
+  (telephone-line-mode 1)
+  )
+
+(use-package telephone-line
+  ;; https://github.com/dbordak/telephone-line
+  ;; Telephone Line is a new implementation of Powerline for emacs
+  :after (doom-themes)
+  :config
+  (add-hook 'after-init-hook (danylo/modeline-setup))
+  )
+
+(use-package all-the-icons
+  ;; https://github.com/domtronn/all-the-icons.el
+  ;; Pretty icons
+  :config
+  (unless (member "all-the-icons" (font-family-list))
+    (all-the-icons-install-fonts t))
+  ;; Fix MATLAB icon
+  (setq all-the-icons-icon-alist
+	(add-to-list 'all-the-icons-icon-alist
+		     '("\\.m$" all-the-icons-fileicon "matlab"
+		       :face all-the-icons-orange)))
+  )
+
+(use-package mic-paren
+  ;; https://github.com/emacsattic/mic-paren
+  ;; Advanced highlighting of matching parentheses
+  :config
+  (paren-activate))
+
+;;; ..:: Syntax checking ::..
+
+(use-package flycheck
+  ;; https://github.com/flycheck/flycheck
+  ;; A modern on-the-fly syntax checking extension
+  :hook ((c-mode-common . flycheck-mode)
+	 (python-mode . flycheck-mode)
+	 (sh-mode . flycheck-mode))
+  :bind (("C-c f l" . flycheck-list-errors)
+	 ("C-c f e" . flycheck-display-error-at-point)
+	 ("C-c f v" . flycheck-verify-setup))
+  :init
+  (setq flycheck-enabled-checkers '(c/c++-gcc)
+	flycheck-check-syntax-automatically '(mode-enabled save)
+	flycheck-display-errors-delay 0.1))
+
+;;; ..:: Completion ::..
+
+(use-package company
+  ;; https://github.com/company-mode/company-mode
+  ;;  Modular in-buffer completion framework for Emacs
+  :hook ((c-mode-common . company-mode)
+	 (emacs-lisp-mode . company-mode)
+	 (comint-mode . company-mode)
+	 (LaTeX-mode . company-mode)
+	 (sh-mode . company-mode)
+	 (matlab-mode . company-mode))
+  :bind (("<S-SPC>" . company-complete))
+  :init
+  (setq company-dabbrev-downcase 0
+	company-async-timeout 10
+	company-require-match 'never
+	company-minimum-prefix-length 0
+	company-auto-complete nil
+	company-idle-delay nil
+	company-auto-select-first-candidate nil)
+  )
+
+(use-package company-shell
+  ;; https://github.com/Alexander-Miller/company-shell
+  ;; company mode completion backends for your shell functions
+  :config
+  (add-to-list 'company-backends 'company-shell)
+  )
+
+;;; ..:: File management ::..
+
+(use-package projectile
+  ;; https://github.com/bbatsov/projectile
+  ;; Project interaction library offering tools to operate on a project level
+  :init (setq projectile-enable-caching nil)
+  :bind (:map projectile-mode-map
+	      ("C-c p" . projectile-command-map))
+  :config
+  (setq projectile-globally-ignored-directories
+	(append '(".svn" ".git")
+		projectile-globally-ignored-directories)
+	projectile-globally-ignored-files
+	(append '(".DS_Store" ".gitignore")
+		projectile-globally-ignored-files))
+  (projectile-global-mode))
+
+;;; ..:: Git ::..
+
+(use-package magit
+  ;; https://github.com/magit/magit
+  ;; An interface to the version control system Git
+  :bind (("C-x g" . magit-status))
+  )
+
+;;; ..:: Language server protocol ::..
+
+;; Increase the amount of data which Emacs reads from the process
+;; Source: https://emacs-lsp.github.io/lsp-mode/page/performance/
+(setq read-process-output-max (* 1024 1024 10)) ;; 10mb
+
+(use-package lsp-mode
+  ;; https://github.com/emacs-lsp/lsp-mode
+  ;; Emacs client/library for the Language Server Protocol
+  :init
+  (setq lsp-keymap-prefix "C-c l"
+	;; Turn off the annoying progress spinner
+	lsp-progress-via-spinner nil
+	;; Turn off LSP-mode imenu
+	lsp-enable-imenu nil
+	;; Optional: fine-tune lsp-idle-delay. This variable determines how
+	;; often lsp-mode will refresh the highlights, lenses, links, etc
+	;; while you type.
+	lsp-idle-delay 0.5
+	;; Use clangd instead
+	;; https://www.reddit.com/r/cpp/comments/cafj21/ccls_clangd_and_cquery/
+	;; lsp-disabled-clients '(ccls)
+	;; lsp-clients-clangd-executable "clangd"
+	;; Use company-capf for completion. Although company-lsp also
+	;; supports caching lsp-mode’s company-capf does that by default. To
+	;; achieve that uninstall company-lsp or put these lines in your
+	;; config:
+	lsp-prefer-capf t
+	lsp-prefer-flymake nil
+	;; Linting
+	lsp-diagnostic-package :none
+	;; Diagnostics turn off
+	lsp-modeline-diagnostics-scope :none
+	;; Other niceties
+	lsp-signature-auto-activate nil
+	lsp-signature-doc-lines 1
+	lsp-eldoc-enable-hover nil ;; Show variable info on hover
+	eldoc-idle-delay 0 ;; Delay before showing variable info on hover
+	lsp-enable-semantic-highlighting t
+	lsp-enable-snippet nil ;; Enable arguments completion
+	)
+  :hook
+  ((lsp-mode . (lambda ()
+		 (setq company-minimum-prefix-length 1)
+		 (push 'company-capf company-backends))))
+  )
+
+;;; ..:: C/C++ ::..
+
+;;;; Code editing
+(add-hook 'c-mode-common-hook (lambda () (setq c-auto-newline nil)))
+
+(use-package modern-cpp-font-lock
+  ;; https://github.com/ludwigpacifici/modern-cpp-font-lock
+  ;; C++ font-lock for Emacs
+  :hook ((c++-mode . modern-c++-font-lock-mode)))
+
+(use-package srefactor
+  ;; https://github.com/tuhdo/semantic-refactor
+  ;; C/C++ refactoring tool based on Semantic parser framework
+  :bind (:map c-mode-base-map
+	      ("M-RET" . srefactor-refactor-at-point))
+  :hook ((c-mode-common . semantic-mode))
+  :init
+  (setq srefactor-ui-menu-show-help nil))
+
+(use-package ccls
+  ;; https://github.com/MaskRay/emacs-ccls
+  ;; Emacs client for ccls, a C/C++ language server
+  :after lsp-mode
+  :hook ((c-mode-common . lsp))
+  :init
+  (setq ccls-executable "ccls" ; Must be on PATH: assume /usr/local/bin/ccls
+        ))
+
+;;; ..:: Python ::..
+
+;;;; Code editing
+
+(setq python-indent-guess-indent-offset t
+      python-indent-guess-indent-offset-verbose nil)
+
+;;;;; Imenu setup
+
+;;;###autoload
+(defun danylo/python-imenu ()
+  (interactive)
+  (let ((python-imenu (imenu--generic-function
+		       imenu-generic-expression)))
+    (append python-imenu)))
+
+;;;###autoload
+(defun danylo/python-imenu-hooks ()
+  (interactive)
+  (setq imenu-generic-expression
+	'(("Function" "^[[:blank:]]*def \\(.*\\).*(.*$" 1)
+	  ("Class" "^class \\(.*\\).*:$" 1)))
+  (setq imenu-create-index-function 'danylo/python-imenu)
+  ;; Rescan the buffer as contents are added
+  (setq imenu-auto-rescan t)
+  )
+
+(add-hook 'python-mode-hook 'danylo/python-imenu-hooks)
+
+;;;; LSP
+
+(use-package lsp-pyright
+  ;; https://github.com/emacs-lsp/lsp-pyright
+  ;; lsp-mode client leveraging Pyright language server
+  :hook ((python-mode . (lambda () (require 'lsp-pyright) (lsp))))
+  :init
+  (setq
+   ;; Do not print "analyzing... Done" in the minibuffer
+   ;; (I find it distracting)
+   lsp-pyright-show-analyzing nil
+   ;; Disable auto-import completions
+   lsp-pyright-auto-import-completions nil
+   ))
+
+;; Configure Flycheck
+(add-hook 'python-mode-hook
+	  (lambda ()
+	    (setq flycheck-enabled-checkers '(python-flake8))
+	    (setq flycheck-disabled-checkers
+		  '(python-mypy
+		    python-pylint
+		    python-pyright))))
+
+;;;###autoload
+(defun danylo/lsp-eldoc-toggle-hover ()
+  "Toggle variable info"
+  (interactive)
+  (if lsp-eldoc-enable-hover
+      (progn (setq lsp-eldoc-enable-hover nil)
+	     (eldoc-mode -1))
+    (progn (setq lsp-eldoc-enable-hover t)
+	   (eldoc-mode 1))))
+
+;;;###autoload
+(defun danylo/lsp-variable-info-message (string)
+  "Display variable info"
+  (message "%s %s"
+	   (propertize (all-the-icons-faicon "info")
+		       'face `(:family ,(all-the-icons-faicon-family)
+				       :height 1.0
+				       :background nil
+				       :foreground "yellow")
+		       'display '(raise -0.05))
+	   (propertize string 'face '(:background nil
+						  :foreground "yellow"))))
+
+;;;###autoload
+(defun danylo/lsp-display-variable-info ()
+  (interactive)
+  (if (not (looking-at "[[:space:]\n]"))
+      (when (lsp--capability :hoverProvider)
+        (lsp-request-async
+         "textDocument/hover"
+         (lsp--text-document-position-params)
+         (-lambda ((hover &as &Hover? :range? :contents))
+	   (when hover
+	     (danylo/lsp-variable-info-message
+	      (and contents (lsp--render-on-hover-content
+			     contents
+			     lsp-eldoc-render-all)))))
+         :error-handler #'ignore
+         :mode 'tick
+         :cancel-token :eldoc-hover))))
+
+(general-define-key
+ :prefix "C-c l"
+ :keymaps 'lsp-mode-map
+ "i" 'danylo/lsp-eldoc-toggle-hover
+ "v" 'danylo/lsp-display-variable-info)
+
+;;;; Python shell interaction
+
+(defcustom danylo/python-shell-type "ipython"
+  "Which shell type to use?."
+  :type 'string)
+
+(defcustom danylo/python-buffer-name "*PythonProcess*"
+  "Name of the Python buffer."
+  :type 'string)
+
+(defcustom danylo/python-shell-position '((side . right))
+  "Position of the python shell."
+  :type 'alist)
+
+;;;###autoload
+(defun danylo/python-check-open-shell ()
+  "Check if a shell is running."
+  (if (get-buffer danylo/python-buffer-name) t nil))
+
+;;;###autoload
+(defun danylo/python-shell ()
+  "Create a Python shell.
+Placed in the current buffer."
+  (interactive)
+  (if (danylo/python-check-open-shell)
+      (progn
+	;; The Python shell buffer exists
+	(if (get-buffer-window danylo/python-buffer-name)
+	    ;; The buffer is already displayed, switch to it
+	    (progn
+	      (pop-to-buffer danylo/python-buffer-name))
+	  ;; The buffer is hidden, show it
+	  (progn
+	    (switch-to-buffer danylo/python-buffer-name)
+	    (display-buffer-in-side-window
+	     danylo/python-buffer-name danylo/python-shell-position)
+	    (switch-to-buffer (other-buffer))
+	    ))
+	)
+    (progn
+      ;; The Python shell buffer does not exist
+      (let ((this-buffer (buffer-name)))
+	(progn
+	  ;; Create a shell buffer
+	  (ansi-term danylo/python-shell-type)
+	  (rename-buffer danylo/python-buffer-name)
+	  ;; Create a side window to hold the vterm buffer
+	  (display-buffer-in-side-window
+	   danylo/python-buffer-name danylo/python-shell-position)
+	  ;; Switch back to current buffer
+	  (switch-to-buffer this-buffer)
+	  )
+	)
+      )
+    )
+  )
+
+;;;###autoload
+(defun danylo/python-run-file ()
+  "Run the current file in the python shell.
+If there is to python shell open, prints a message to inform."
+  (interactive)
+  (if (danylo/python-check-open-shell)
+      (progn
+	;; Send a run command for the current file
+	(let ((file-name (file-name-nondirectory (buffer-file-name)))
+	      (this-buffer (buffer-name)))
+	  (progn
+	    (with-current-buffer danylo/python-buffer-name
+	      (term-send-raw-string (format "%%run -i %s\n" file-name))))
+	  )
+	)
+    (message "No Python buffer.")))
+
+;;;###autoload
+(defun danylo/python-config ()
+  ;; Key bindings
+  (define-key python-mode-map (kbd "C-c C-p") 'danylo/python-shell)
+  (define-key python-mode-map (kbd "C-c C-l") 'danylo/python-run-file)
+  ;; Hide shell buffers from buffer list, so they may only be accessed
+  ;; through the above key bindings
+  ;; See https://github.com/abo-abo/swiper/issues/644
+  (let ((buf-name (replace-regexp-in-string
+		   "*+" "\\\\*" danylo/python-buffer-name t t)))
+    (setq ivy-ignore-buffers `(,buf-name))))
+
+(add-hook 'python-mode-hook (lambda () (danylo/python-config)))
+
+;;; ..:: Julia ::..
+
+(use-package ess
+  ;; https://github.com/emacs-ess/ESS
+  ;; Emacs Speaks Statistics
+  :hook (ess-julia-mode . (lambda () (setq set-mark-command-repeat-pop t)))
+  :init (setq ess-use-company t
+	      ess-tab-complete-in-script t))
+
+(with-eval-after-load "ess-julia"
+  (define-key ess-julia-mode-map (kbd "C-u C-j") 'run-ess-julia)
+  (define-key ess-julia-mode-map (kbd "S-SPC") 'complete-symbol)
+  (define-key ess-julia-mode-map (kbd "C-u C-x C-;") 'uncomment-region)
+  (define-key ess-julia-mode-map (kbd "C-u C-c C-l") 'julia-latexsub-or-indent)
+  (define-key ess-julia-mode-map (kbd "C-u C-SPC") (lambda () (set-mark-command -1)))
+  (define-key inferior-ess-julia-mode-map
+    (kbd "C-u C-c C-l") 'julia-latexsub-or-indent))
+
+;;; ..:: MATLAB ::..
+
+(use-package s
+  ;; https://github.com/magnars/s.el
+  ;; The long lost Emacs string manipulation library.
+  )
+
+(use-package matlab
+  ;; https://github.com/dmalyuta/matlab-emacs
+  ;; MATLAB and Emacs integration
+  :ensure nil
+  :quelpa ((matlab :fetcher github
+		   :repo "dmalyuta/matlab-emacs"))
+  :init
+  (setq matlab-verify-on-save-flag nil
+	matlab-indent-function-body nil)
+  )
+
+;;;###autoload
+(defun danylo/matlab-view-doc ()
+  "Look up the matlab help info and show in another buffer."
+  (interactive)
+  (let* ((word (doc-matlab-grab-current-word)))
+    (matlab-shell-describe-command word)))
+
+(use-package matlab-mode
+  ;; https://github.com/dmalyuta/matlab-mode
+  ;; An emacs matlab mode
+  :after company
+  :ensure nil
+  :quelpa ((matlab-mode :fetcher github
+			:repo "dmalyuta/matlab-mode"))
+  :bind (:map matlab-mode-map
+	      ("M-s" . matlab-shell)
+	      ("C-c h" . danylo/matlab-view-doc)
+	      ("C-c s" . matlab-jump-to-definition-of-word-at-cursor)
+	      :map matlab-shell-mode-map
+	      ("S-SPC" . matlab-shell-tab)
+	      ("C-c h" . danylo/matlab-view-doc))
+  :hook ((matlab-mode . (lambda () (setq-local company-backends
+					       '((company-files
+						  company-matlab
+						  company-dabbrev)))))))
+
+;;; ..:: LaTeX ::..
+
+(use-package tex
+  ;; https://elpa.gnu.org/packages/auctex.html
+  ;; Package for writing and formatting TeX files
+  :ensure auctex
+  :hook ((LaTeX-mode . LaTeX-math-mode)
+	 (LaTeX-mode . turn-on-reftex)
+	 (LaTeX-mode . TeX-source-correlate-mode)
+	 (LaTeX-mode . TeX-PDF-mode)
+	 (LaTeX-mode . TeX-source-correlate-mode)
+	 (LaTeX-mode . auto-fill-mode)
+	 (LaTeX-mode . (lambda () (setq fill-column 80)))
+	 ;; View program
+	 (LaTeX-mode . (lambda ()
+			 (setq TeX-view-program-list
+			       '(("Evince"
+				  "evince --page-index=%(outpage) %o")))
+			 (setq TeX-view-program-selection
+			       '((output-pdf "Evince")))))
+	 ;; Other environments
+	 (LaTeX-mode . (lambda ()
+			 (LaTeX-add-environments "equation*")
+			 (LaTeX-add-environments "tikzpicture")
+			 (LaTeX-add-environments "pgfonlayer")))
+	 ;; Line-breaking math
+	 (LaTeX-mode . (lambda ()
+			 (add-to-list 'fill-nobreak-predicate
+				      'texmathp))))
+  :init
+  (setq TeX-source-correlate-method 'synctex
+	TeX-auto-save t
+	TeX-parse-self t
+	TeX-auto-regexp-list 'TeX-auto-full-regexp-list
+	TeX-auto-parse-length 999999
+	TeX-save-query nil
+	TeX-master nil
+	reftex-plug-into-AUCTeX t
+	LaTeX-electric-left-right-brace t
+	TeX-electric-math '("$" . "$"))
+  :bind (:map LaTeX-mode-map
+	      ("M-s" . ispell-word)
+	      ("C-x C-<backspace>" . electric-pair-delete-pair))
+  :config
+  (require 'latex)
+  ;; Shell-escape compilation
+  (eval-after-load 'tex
+    '(setcdr (assoc "LaTeX" TeX-command-list)
+	     '("%`%l%(mode) -shell-escape%' %t"
+	       TeX-run-TeX nil (latex-mode doctex-mode) :help "Run LaTeX")))
+
+  ;; Nomenclature compilation
+  (eval-after-load "tex"
+    '(add-to-list 'TeX-command-list
+		  '("Nomenclature"
+		    "makeindex %s.nlo -s nomencl.ist -o %s.nls"
+		    (lambda (name command file)
+		      (TeX-run-compile name command file)
+		      (TeX-process-set-variable
+		       file 'TeX-command-next TeX-command-default))
+		    nil t :help "Create nomenclature file")))
+
+  ;; Correct environment selection and indentation
+  (add-to-list 'LaTeX-verbatim-environments "pycode")
+  (add-to-list 'LaTeX-verbatim-environments "pykzmathinline")
+  (add-to-list 'LaTeX-verbatim-environments "pykzmathblock")
+  (add-to-list 'LaTeX-verbatim-environments "@pie@shell")
+  (add-to-list 'LaTeX-indent-environment-list '("pycode" current-indentation))
+  (add-to-list 'LaTeX-indent-environment-list '("pykzmathblock" current-indentation))
+  (add-to-list 'LaTeX-indent-environment-list '("@pie@shell" current-indentation)))
+
+(use-package company-auctex
+  ;; https://github.com/alexeyr/company-auctex
+  ;; company-mode autocompletion for auctex
+  :after company
+  :hook ((LaTeX-mode . (lambda ()
+			 ;; Make completion case sensitive
+			 (setq company-dabbrev-downcase nil))))
+  :bind (:map LaTeX-mode-map
+	      ("C-c m" . company-auctex-macros)
+	      ("C-c e" . company-auctex-environments)
+	      ("C-c l" . company-auctex-labels)
+	      ("C-c s" . company-auctex-symbols))
+  :config
+  (company-auctex-init)
+  )
+
+;;; ..:: Gnuplot ::..
+
+(use-package gnuplot
+  ;; https://github.com/emacsorphanage/gnuplot
+  ;; A major mode for Emacs for interacting with Gnuplot
+  :mode (("\\.gp$" . gnuplot-mode)
+	 ("\\.gnu$" . gnuplot-mode))
+  :config
+  ;; these lines enable the use of gnuplot mode
+  (autoload 'gnuplot-mode "gnuplot" "gnuplot major mode" t)
+  (autoload 'gnuplot-make-buffer "gnuplot" "open a buffer in gnuplot mode" t))
+
+;;; ..:: YAML ::..
+
+(use-package yaml-mode
+  ;; https://github.com/yoshiki/yaml-mode
+  ;; Major mode for editing files in the YAML data serialization format.
+  :mode (("\\.yml$" . yaml-mode)
+	 ("\\.yaml$" . yaml-mode)))
+
+;;; ..:: Markdown ::..
+
+(use-package markdown-mode
+  ;; https://github.com/jrblevin/markdown-mode
+  ;; Markdown editing major mode
+  :mode (("README\\.md\\'" . gfm-mode)
+	 ("\\.md\\'" . markdown-mode)
+	 ("\\.markdown\\'" . markdown-mode))
+  :init (setq markdown-command "multimarkdown"))

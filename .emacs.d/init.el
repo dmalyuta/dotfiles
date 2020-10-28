@@ -284,7 +284,7 @@ Source: https://github.com/abo-abo/swiper/issues/1068"
    :height ivy-posframe-height
    :width ivy-posframe-height
    :min-height (or ivy-posframe-min-height ivy-height)
-   :min-width (or ivy-posframe-min-width (round (* (frame-width) 1.0)))))
+   :min-width (or ivy-posframe-min-width (round (* (window-width) 1.0)))))
 
 (with-eval-after-load "ivy-posframe"
   (setq ivy-posframe-size-function #'danylo/ivy-posframe-get-size))

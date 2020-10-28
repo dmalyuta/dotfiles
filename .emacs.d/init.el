@@ -267,9 +267,10 @@ Source: https://github.com/abo-abo/swiper/issues/1068"
   :after ivy
   :init
   (setq ivy-posframe-display-functions-alist
-	'((t . ivy-posframe-display-at-window-bottom-left))
-	ivy-posframe-hide-minibuffer nil
-	ivy-posframe--ignore-prompt t
+	'((t . ivy-posframe-display-at-window-bottom-left)
+	  (counsel-find-file . ivy-display-function-fallback))
+	ivy-posframe-hide-minibuffer t
+	ivy-posframe--ignore-prompt nil
 	ivy-posframe-parameters '((left-fringe . 8)
 				  (right-fringe . 8)
 				  (lines-truncate . t)))

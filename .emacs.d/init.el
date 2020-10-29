@@ -95,6 +95,21 @@
   (tooltip-mode 0)
   (blink-cursor-mode 0))
 
+;; Mouse behaviour
+
+;;;###autoload
+(defun danylo/mouse-set-point (event &optional promote-to-region)
+  "Only allow mouse clicks if the minibuffer is not active.
+When minibuffer is active, mouse clicks cause weird behaviour by losing focus
+of the minibuffer prompt."
+  (interactive "e\np")
+  (unless (active-minibuffer-window)
+    (mouse-set-point event promote-to-region)))
+
+(global-unset-key [drag-mouse-1])
+(global-unset-key [down-mouse-1])
+(global-set-key [mouse-1] 'danylo/mouse-set-point)
+
 ;; Frame size
 (setq default-frame-alist
       (append default-frame-alist '((height . 50) (width . 100))))
@@ -143,6 +158,19 @@
   (load custom-file))
 
 ;; Zoom in/out
+
+(defvar danylo/default-font-size nil
+  "The default font size when Emacs opens.")
+
+;;;###autoload
+(defun danylo/reset-font-size ()
+  (interactive)
+  (setq danylo/current-font-size (face-attribute 'default :height))
+  (setq danylo/text-increment (- danylo/default-font-size danylo/current-font-size))
+  (require 'default-text-scale)
+  (default-text-scale-increment danylo/text-increment)
+  )
+
 (use-package default-text-scale
   ;; https://github.com/purcell/default-text-scale
   ;; Easily adjust the font size in all Emacs frames
@@ -150,10 +178,16 @@
   ;;   C-M-= : zoom in
   ;;   C-M-- : zoom out
   :bind (("C-M--" . default-text-scale-decrease)
-	 ("C-M-+" . default-text-scale-increase)
-	 ("C-M-0" . default-text-scale-reset))
+	 ("C-M-=" . default-text-scale-increase))
+  :init
+  (add-hook 'after-init-hook
+	    (lambda ()
+	      (setq danylo/default-font-size
+		    (face-attribute 'default :height))))
   :config
-  (default-text-scale-mode))
+  (default-text-scale-mode)
+  (define-key default-text-scale-mode-map
+    (kbd "C-M-0") 'danylo/reset-font-size))
 (global-unset-key (kbd "C-x C--"))
 (global-unset-key (kbd "C-x C-="))
 
@@ -222,14 +256,31 @@ Source: https://github.com/abo-abo/swiper/issues/1068"
     "Put thing at point in swiper buffer"
     (interactive)
     (deactivate-mark)
-    (danylo/ivy-with-thing-at-point 'swiper-isearch)
-    )
+    (danylo/ivy-with-thing-at-point 'swiper))
 
 ;;;###autoload
 (defun danylo/counsel-switch-buffer-no-preview ()
   "Switch to another buffer without preview."
   (interactive)
   (ivy-switch-buffer))
+
+;;;###autoload
+(defun danylo/ivy-display-function-window (text)
+  "Show ivy candidate completion list in a temporary buffer, like Helm."
+  (when (> (length text) 0)
+    (let ((buffer (get-buffer-create "*ivy-candidate-window*")))
+      (with-current-buffer buffer
+	(setq cursor-type nil) ; Hide cursor
+	(let ((inhibit-read-only t))
+          (erase-buffer)
+	  ;; Remove the first character, which is '\n' (blank line)
+	  (setq danylo/completion-candidate (substring text 1 nil))
+          (insert (substring text 1 nil))))
+      (with-ivy-window
+	(display-buffer
+	 buffer
+	 `((display-buffer-reuse-window display-buffer-below-selected)
+           (window-height . ,(ivy--height (ivy-state-caller ivy-last)))))))))
 
 (use-package counsel)
 (use-package swiper)
@@ -248,7 +299,9 @@ Source: https://github.com/abo-abo/swiper/issues/1068"
 	 ("C-l" . ivy-backward-delete-char)
 	 ("TAB" . ivy-alt-done))
   :init
-  (setq ivy-use-virtual-buffers nil
+  (setq ivy-display-functions-alist
+	'((t . danylo/ivy-display-function-window))
+	ivy-use-virtual-buffers nil
 	enable-recursive-minibuffers t
 	;; Remove the default "^" in search string
 	;; Source: https://emacs.stackexchange.com/a/38842/13661
@@ -258,36 +311,12 @@ Source: https://github.com/abo-abo/swiper/issues/1068"
 	ivy-wrap t
 	counsel-switch-buffer-preview-virtual-buffers nil
 	ivy-truncate-lines t)
+  (add-hook 'ivy-mode-hook
+	    (lambda ()
+	      (define-key ivy-mode-map (kbd "M-n") 'ivy-next-history-element)
+	      (define-key ivy-mode-map (kbd "M-p") 'ivy-previous-history-element)))
   :config
   (ivy-mode 1))
-
-(use-package ivy-posframe
-  ;; https://github.com/tumashu/ivy-posframe
-  ;; Let ivy use posframe to show its candidate menu
-  :after ivy
-  :init
-  (setq ivy-posframe-display-functions-alist
-	'((t . ivy-posframe-display-at-window-bottom-left)
-	  (counsel-find-file . ivy-display-function-fallback))
-	ivy-posframe-hide-minibuffer t
-	ivy-posframe--ignore-prompt nil
-	ivy-posframe-parameters '((left-fringe . 8)
-				  (right-fringe . 8)
-				  (lines-truncate . t)))
-  :config
-  (ivy-posframe-mode 1))
-
-;;;###autoload
-(defun danylo/ivy-posframe-get-size ()
-  "The function which is used to deal with ivy posframe's size."
-  (list
-   :height ivy-posframe-height
-   :width ivy-posframe-height
-   :min-height (or ivy-posframe-min-height ivy-height)
-   :min-width (or ivy-posframe-min-width (round (* (window-width) 1.0)))))
-
-(with-eval-after-load "ivy-posframe"
-  (setq ivy-posframe-size-function #'danylo/ivy-posframe-get-size))
 
 (use-package counsel-projectile
   ;; https://github.com/ericdanan/counsel-projectile
@@ -430,6 +459,31 @@ START and END give the start/end of current selection."
 ;; Require file ending with a newline
 (setq require-final-newline t)
 
+;;;; Delete words without putting them into kill ring
+
+;;;###autoload
+(defun danylo/forward-delete-word (arg)
+  "Delete characters forward until encountering the end of a word.
+With argument, do this that many times.
+This command does not push text to `kill-ring'."
+  (interactive "p")
+  (delete-region
+   (point)
+   (progn
+     (forward-word arg)
+     (point))))
+
+;;;###autoload
+(defun danylo/backward-delete-word (arg)
+  "Delete characters backward until encountering the beginning of a word.
+With argument ARG, do this that many times."
+  (interactive "p")
+  (delete-region (point) (progn (backward-word arg) (point))))
+
+(general-define-key
+ "M-d" 'danylo/forward-delete-word
+ "M-<backspace>" 'danylo/backward-delete-word)
+
 ;;; ..:: Window management ::..
 
 ;;;; >> Movement across windows <<
@@ -468,6 +522,19 @@ START and END give the start/end of current selection."
 
 (general-define-key
  "C-x C-b" 'buffer-menu)
+
+;; Move cursor to minibuffer (useful if lost focus, due to mouse click)
+
+;;;###autoload
+(defun danylo/switch-to-minibuffer-window ()
+  "switch to minibuffer window (if active)"
+  (interactive)
+  (when (active-minibuffer-window)
+    (select-frame-set-input-focus (window-frame (active-minibuffer-window)))
+    (select-window (active-minibuffer-window))))
+
+(general-define-key
+ "C-x c b" 'danylo/switch-to-minibuffer-window)
 
 ;;; ..:: Terminal emulator ::..
 
@@ -516,10 +583,7 @@ START and END give the start/end of current selection."
 ;; Key bindings
 
 ;;;###autoload
-(defun danylo/switch-to-term-line-mode ()
-  (interactive)
-  (term-line-mode)
-  (if (not buffer-read-only) (toggle-read-only)))
+
 
 ;;;###autoload
 (defun danylo/switch-to-term-char-mode ()
@@ -545,7 +609,11 @@ START and END give the start/end of current selection."
   (defun danylo/term-send-tab () (interactive) (term-send-raw-string "\t"))
   (define-key term-raw-map (kbd "S-SPC") 'danylo/term-send-tab)
   ;; Switch between char and line move
-  (define-key term-raw-map (kbd "C-c t c") 'danylo/switch-to-term-char-mode)
+  (defun danylo/switch-to-term-line-mode () (interactive) (term-line-mode)
+	 (if (not buffer-read-only) (toggle-read-only)))
+  (defun danylo/switch-to-term-char-mode () (interactive) (term-char-mode)
+	 (if (buffer-read-only) (toggle-read-only)))
+  (define-key term-mode-map (kbd "C-c t c") 'danylo/switch-to-term-char-mode)
   (define-key term-raw-map (kbd "C-c t l") 'danylo/switch-to-term-line-mode)
   ;; Copy/paste native Emacs keystrokes
   (define-key term-raw-map (kbd "C-k") 'term-send-raw)
@@ -633,7 +701,7 @@ START and END give the start/end of current selection."
   :custom (fira-code-mode-disabled-ligatures
 	   '("[]" "#{" "#(" "#_" "#_(" "x" "&&"))
   :config
-  (add-hook 'prog-mode (lambda () (when (window-system) (fira-code-mode))))
+  (add-hook 'prog-mode-hook (lambda () (when (window-system) (fira-code-mode))))
   )
 
 ;; Speed up font-lock mode speed (can causes laggy scrolling)

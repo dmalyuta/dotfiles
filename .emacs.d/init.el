@@ -59,16 +59,15 @@
 (defun danylo/gc-message ()
   "Garbage collection message."
   (when garbage-collection-messages
-    (message "%s Collecting garbage"
-	     (propertize (all-the-icons-faicon "trash-o")
-			 'face `(:family
-				 ,(all-the-icons-faicon-family)
-				 :height 1.0)
-			 'display '(raise -0.05)))))
+    (let ((message-log-max nil))
+      (message "%s Collecting garbage"
+	       (propertize (all-the-icons-faicon "trash-o")
+			   'face `(:family
+				   ,(all-the-icons-faicon-family)
+				   :height 1.0)
+			   'display '(raise -0.05))))))
 
-;;;###autoload
-(defun garbage-collect (&rest args)
-  (danylo/gc-message))
+(add-hook 'post-gc-hook (lambda () (danylo/gc-message) nil))
 
 (setq garbage-collection-messages t)
 
@@ -96,19 +95,6 @@
   (blink-cursor-mode 0))
 
 ;; Mouse behaviour
-
-;;;###autoload
-(defun danylo/mouse-set-point (event &optional promote-to-region)
-  "Only allow mouse clicks if the minibuffer is not active.
-When minibuffer is active, mouse clicks cause weird behaviour by losing focus
-of the minibuffer prompt."
-  (interactive "e\np")
-  (unless (active-minibuffer-window)
-    (mouse-set-point event promote-to-region)))
-
-(global-unset-key [drag-mouse-1])
-(global-unset-key [down-mouse-1])
-(global-set-key [mouse-1] 'danylo/mouse-set-point)
 
 ;; Frame size
 (setq default-frame-alist
@@ -233,8 +219,8 @@ of the minibuffer prompt."
 (setq backup-by-copying t)
 
 ;; Backup behaviour: store everything in single location
-(defvar backup-dir "~/.emacs.d/backups/")
-(setq backup-directory-alist (list (cons "." backup-dir)))
+(defvar danylo/backup-dir "~/.emacs.d/backups/")
+(setq backup-directory-alist (list (cons "." danylo/backup-dir)))
 
 (defun danylo/byte-compile-init-dir ()
   "Byte-compile Emacs config."
@@ -243,11 +229,26 @@ of the minibuffer prompt."
 
 ;;; ..:: Searching ::..
 
+(defvar danylo/num-completion-candidates 15
+  "How many completion candidates to display, tops.")
+
 (use-package ivy-prescient
   ;; https://github.com/raxod502/prescient.el
   ;; Simple but effective sorting and filtering for Emacs.
+  ;; For Ivy.
   :config
   (ivy-prescient-mode +1)
+  ;; Save your command history on disk, so the sorting gets more
+  ;; intelligent over time
+  (prescient-persist-mode +1)
+  )
+
+(use-package selectrum-prescient
+  ;; https://github.com/raxod502/prescient.el
+  ;; Simple but effective sorting and filtering for Emacs.
+  ;; For Selectrum.
+  :config
+  (selectrum-prescient-mode +1)
   ;; Save your command history on disk, so the sorting gets more
   ;; intelligent over time
   (prescient-persist-mode +1)
@@ -269,55 +270,16 @@ Source: https://github.com/abo-abo/swiper/issues/1068"
     (deactivate-mark)
     (danylo/ivy-with-thing-at-point 'swiper))
 
-;;;###autoload
-(defun danylo/counsel-switch-buffer-no-preview ()
-  "Switch to another buffer without preview."
-  (interactive)
-  (ivy-switch-buffer))
-
-;;;###autoload
-(defun danylo/ivy-display-function-window (text)
-  "Show ivy candidate completion list in a temporary buffer, like Helm."
-  (when (> (length text) 0)
-    (let ((buffer (get-buffer-create "*ivy-candidate-window*")))
-      (with-current-buffer buffer
-	(setq cursor-type nil) ; Hide cursor
-	(let ((inhibit-read-only t))
-          (erase-buffer)
-	  ;; Remove the first character, which is '\n' (blank line)
-	  (setq danylo/completion-candidate (substring text 1 nil))
-          (insert (substring text 1 nil))))
-      (with-ivy-window
-	(display-buffer
-	 buffer
-	 `((display-buffer-reuse-window display-buffer-below-selected)
-           (window-height . ,(ivy--height (ivy-state-caller ivy-last)))))))))
-
-(use-package counsel)
-(use-package swiper)
-(use-package ivy
+(use-package swiper
   ;; https://github.com/abo-abo/swiper
-  ;; Ivy - a generic completion frontend for Emacs
-  :after (company counsel swiper ivy-prescient)
-  :bind (("M-i" . danylo/swiper-thing-at-point)
-	 ("C-x b" . danylo/counsel-switch-buffer-no-preview)
-	 ("M-x" . counsel-M-x)
-	 ("C-x C-f" . counsel-find-file)
-	 ("C-c q" . counsel-semantic-or-imenu)
-	 :map company-mode-map
-	 ("<S-SPC>" . counsel-company)
-	 :map ivy-minibuffer-map
-	 ("C-l" . ivy-backward-delete-char)
-	 ("TAB" . ivy-alt-done))
+  ;; Swiper - isearch with an overview
+  :after (ivy-prescient mini-frame)
+  :bind (("M-i" . danylo/swiper-thing-at-point))
   :init
-  (setq ivy-display-functions-alist
-	'((t . danylo/ivy-display-function-window))
-	ivy-use-virtual-buffers nil
-	enable-recursive-minibuffers t
-	;; Remove the default "^" in search string
+  (setq ;; Remove the default "^" in search string
 	;; Source: https://emacs.stackexchange.com/a/38842/13661
 	ivy-initial-inputs-alist nil
-	ivy-height 15
+	ivy-height danylo/num-completion-candidates
 	;; Wrap-around scroll C-n and C-p
 	ivy-wrap t
 	counsel-switch-buffer-preview-virtual-buffers nil
@@ -326,28 +288,42 @@ Source: https://github.com/abo-abo/swiper/issues/1068"
 	    (lambda ()
 	      (define-key ivy-mode-map (kbd "M-n") 'ivy-next-history-element)
 	      (define-key ivy-mode-map (kbd "M-p") 'ivy-previous-history-element)))
+  ;; After configuring `mini-frame-show-parameters` adjust the height
+  ;; according to number of candidates
+  (setf (alist-get 'height mini-frame-show-parameters) ivy-height)
   :config
   (ivy-mode 1))
 
-(use-package counsel-projectile
-  ;; https://github.com/ericdanan/counsel-projectile
-  ;; Ivy UI for Projectile
-  :init (setq projectile-completion-system 'ivy))
+(use-package selectrum
+  ;; https://github.com/raxod502/selectrum
+  ;; Incremental narrowing in Emacs
+  :after mini-frame
+  :init (setq selectrum-num-candidates-displayed
+	      (- danylo/num-completion-candidates 1)
+	      ;; Enable completion for projectile
+	      projectile-completion-system 'default)
+  :config
+  (selectrum-mode +1)
 
-(use-package counsel-gtags
-  ;; https://github.com/syohex/emacs-counsel-gtags
-  ;; GNU Global with ivy completion
-  :bind
-  (:map c-mode-base-map
-	("M-." . counsel-gtags-dwim)))
+  ;; Make sorting and filtering more intelligent
+  (selectrum-prescient-mode +1)
 
-(use-package ivy-xref
-  ;; https://github.com/alexmurray/ivy-xref
-  ;; Ivy interface for xref results
-  :init
-  (setq xref-show-definitions-function #'ivy-xref-show-defs))
+  ;; Save your command history on disk, so the sorting gets more
+  ;; intelligent over time
+  (prescient-persist-mode +1)
+
+  ;; After configuring `mini-frame-show-parameters` adjust the height
+  ;; according to number of candidates
+  (setf (alist-get 'height mini-frame-show-parameters)
+	(1+ selectrum-num-candidates-displayed))
+  )
 
 ;;; ..:: Code editing ::..
+
+;; Commenting keybindings
+(general-define-key
+ "C-x C-;" 'comment-dwim
+ "M-;" 'comment-line)
 
 (use-package multiple-cursors
   ;; https://github.com/magnars/multiple-cursors.el
@@ -540,6 +516,35 @@ With argument ARG, do this that many times."
 
 (general-define-key
  "C-x c b" 'danylo/switch-to-minibuffer-window)
+
+;;;; >> Minibuffer in mini-frame <<
+
+(use-package mini-frame
+  ;; https://github.com/muffinmad/emacs-mini-frame
+  ;; Show minibuffer in child frame on read-from-minibuffer
+  :init (setq mini-frame-show-parameters '((top . 10)
+					   (width . 0.7)
+					   (left . 0.5))
+	      mini-frame-create-lazy nil
+	      mini-frame-color-shift-step 0)
+
+  ;; workaround bug#44080, should be fixed in version 27.2 and above, see #169
+  (define-advice fit-frame-to-buffer
+      (:around (f &rest args) dont-skip-ws-for-mini-frame)
+    (cl-letf* ((orig (symbol-function #'window-text-pixel-size))
+               ((symbol-function #'window-text-pixel-size)
+		(lambda (win from to &rest args)
+                  (apply orig
+			 (append (list win from
+                                       (if (and (window-minibuffer-p win)
+						(frame-root-window-p win)
+						(eq t to))
+                                           nil
+					 to))
+				 args)))))
+      (apply f args)))
+  :config
+  (mini-frame-mode +1))
 
 ;;; ..:: Terminal emulator ::..
 
@@ -1165,6 +1170,13 @@ If there is to python shell open, prints a message to inform."
 					       '((company-files
 						  company-matlab
 						  company-dabbrev)))))))
+
+;;; ..:: Lisp ::..
+
+;; Turn off (by default) function signatures popping up in minibuffer
+(add-hook 'emacs-lisp-mode-hook
+	  (lambda ()
+	    (eldoc-mode 0)))
 
 ;;; ..:: LaTeX ::..
 

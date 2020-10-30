@@ -232,28 +232,6 @@
 (defvar danylo/num-completion-candidates 15
   "How many completion candidates to display, tops.")
 
-(use-package ivy-prescient
-  ;; https://github.com/raxod502/prescient.el
-  ;; Simple but effective sorting and filtering for Emacs.
-  ;; For Ivy.
-  :config
-  (ivy-prescient-mode +1)
-  ;; Save your command history on disk, so the sorting gets more
-  ;; intelligent over time
-  (prescient-persist-mode +1)
-  )
-
-(use-package selectrum-prescient
-  ;; https://github.com/raxod502/prescient.el
-  ;; Simple but effective sorting and filtering for Emacs.
-  ;; For Selectrum.
-  :config
-  (selectrum-prescient-mode +1)
-  ;; Save your command history on disk, so the sorting gets more
-  ;; intelligent over time
-  (prescient-persist-mode +1)
-  )
-
 ;;;###autoload
 (defun danylo/ivy-with-thing-at-point (cmd)
   "Auto-populate search with current thing at point.
@@ -270,53 +248,123 @@ Source: https://github.com/abo-abo/swiper/issues/1068"
     (deactivate-mark)
     (danylo/ivy-with-thing-at-point 'swiper))
 
-(use-package swiper
+;;;###autoload
+(defun danylo/counsel-switch-buffer-no-preview ()
+  "Switch to another buffer without preview."
+  (interactive)
+  (ivy-switch-buffer))
+
+;;;###autoload
+(defun danylo/ivy-display-function-window (text)
+  "Show ivy candidate completion list in a temporary buffer, like Helm."
+  (when (> (length text) 0)
+    (let ((buffer (get-buffer-create "*ivy-candidate-window*")))
+      (with-current-buffer buffer
+	(setq cursor-type nil) ; Hide cursor
+	(let ((inhibit-read-only t))
+          (erase-buffer)
+	  ;; Remove the first character, which is '\n' (blank line)
+	  (setq danylo/completion-candidate (substring text 1 nil))
+          (insert (substring text 1 nil))))
+      (with-ivy-window
+	(display-buffer
+	 buffer
+	 `((display-buffer-reuse-window display-buffer-below-selected)
+           (window-height . ,(ivy--height (ivy-state-caller ivy-last)))))))))
+
+(use-package ivy-prescient
+  ;; https://github.com/raxod502/prescient.el
+  ;; Simple but effective sorting and filtering for Emacs.
+  ;; For Ivy.
+  :config
+  (ivy-prescient-mode +1)
+  ;; Save your command history on disk, so the sorting gets more
+  ;; intelligent over time
+  (prescient-persist-mode +1))
+
+(use-package counsel)
+(use-package swiper)
+(use-package ivy
   ;; https://github.com/abo-abo/swiper
-  ;; Swiper - isearch with an overview
-  :after (ivy-prescient mini-frame)
-  :bind (("M-i" . danylo/swiper-thing-at-point))
+  ;; Ivy - a generic completion frontend for Emacs
+  :after (company counsel swiper ivy-prescient)
+  :bind (("M-i" . danylo/swiper-thing-at-point)
+	 ("C-x b" . danylo/counsel-switch-buffer-no-preview)
+	 ("M-x" . counsel-M-x)
+	 ("C-c q" . counsel-semantic-or-imenu)
+	 :map company-mode-map
+	 ("<S-SPC>" . counsel-company)
+	 :map ivy-minibuffer-map
+	 ("C-l" . ivy-backward-delete-char)
+	 ("TAB" . ivy-alt-done))
   :init
-  (setq ;; Remove the default "^" in search string
+  (setq ivy-display-functions-alist
+	'((t . danylo/ivy-display-function-window))
+	ivy-use-virtual-buffers nil
+	enable-recursive-minibuffers t
+	;; Remove the default "^" in search string
 	;; Source: https://emacs.stackexchange.com/a/38842/13661
 	ivy-initial-inputs-alist nil
 	ivy-height danylo/num-completion-candidates
 	;; Wrap-around scroll C-n and C-p
 	ivy-wrap t
 	counsel-switch-buffer-preview-virtual-buffers nil
-	ivy-truncate-lines t)
+	ivy-truncate-lines t
+	ivy-display-style 'fancy)
   (add-hook 'ivy-mode-hook
 	    (lambda ()
 	      (define-key ivy-mode-map (kbd "M-n") 'ivy-next-history-element)
 	      (define-key ivy-mode-map (kbd "M-p") 'ivy-previous-history-element)))
-  ;; After configuring `mini-frame-show-parameters` adjust the height
-  ;; according to number of candidates
-  (setf (alist-get 'height mini-frame-show-parameters) ivy-height)
+  (custom-set-faces
+   '(ivy-minibuffer-match-face-1
+     ((t (:background "orange"
+		      :foreground "black"
+		      :weight normal))))
+   '(swiper-match-face-1
+     ((t (:background "orange"
+		      :foreground "black")))))
   :config
   (ivy-mode 1))
 
-(use-package selectrum
-  ;; https://github.com/raxod502/selectrum
-  ;; Incremental narrowing in Emacs
-  :after mini-frame
-  :init (setq selectrum-num-candidates-displayed
-	      (- danylo/num-completion-candidates 1)
-	      ;; Enable completion for projectile
-	      projectile-completion-system 'default)
+(use-package helm
+  ;; https://emacs-helm.github.io/helm/
+  ;; Emacs incremental completion and selection narrowing framework
+  :bind (("C-x C-f" . helm-find-files)
+	 :map helm-map
+	 ("<tab>" . helm-execute-persistent-action))
+  :init (setq helm-display-buffer-default-height
+	      (1+ danylo/num-completion-candidates)
+	      helm-mode-line-string ""
+	      helm-buffer-max-length 30
+	      helm-buffers-truncate-lines nil
+	      helm-split-window-in-side-p nil
+	      helm-move-to-line-cycle-in-source t
+	      helm-echo-input-in-header-line nil
+	      helm-display-header-line nil
+	      helm-buffers-fuzzy-matching t
+	      helm-ff-file-name-history-use-recentf t
+	      helm-recentf-matching t
+	      history-delete-duplicates t)
   :config
-  (selectrum-mode +1)
+  (helm-mode 1))
 
-  ;; Make sorting and filtering more intelligent
-  (selectrum-prescient-mode +1)
+(use-package counsel-projectile
+  ;; https://github.com/ericdanan/counsel-projectile
+  ;; Ivy UI for Projectile
+  :init (setq projectile-completion-system 'ivy))
 
-  ;; Save your command history on disk, so the sorting gets more
-  ;; intelligent over time
-  (prescient-persist-mode +1)
+(use-package counsel-gtags
+  ;; https://github.com/syohex/emacs-counsel-gtags
+  ;; GNU Global with ivy completion
+  :bind
+  (:map c-mode-base-map
+	("M-." . counsel-gtags-dwim)))
 
-  ;; After configuring `mini-frame-show-parameters` adjust the height
-  ;; according to number of candidates
-  (setf (alist-get 'height mini-frame-show-parameters)
-	(1+ selectrum-num-candidates-displayed))
-  )
+(use-package ivy-xref
+  ;; https://github.com/alexmurray/ivy-xref
+  ;; Ivy interface for xref results
+  :init
+  (setq xref-show-definitions-function #'ivy-xref-show-defs))
 
 ;;; ..:: Code editing ::..
 
@@ -516,35 +564,6 @@ With argument ARG, do this that many times."
 
 (general-define-key
  "C-x c b" 'danylo/switch-to-minibuffer-window)
-
-;;;; >> Minibuffer in mini-frame <<
-
-(use-package mini-frame
-  ;; https://github.com/muffinmad/emacs-mini-frame
-  ;; Show minibuffer in child frame on read-from-minibuffer
-  :init (setq mini-frame-show-parameters '((top . 10)
-					   (width . 0.7)
-					   (left . 0.5))
-	      mini-frame-create-lazy nil
-	      mini-frame-color-shift-step 0)
-
-  ;; workaround bug#44080, should be fixed in version 27.2 and above, see #169
-  (define-advice fit-frame-to-buffer
-      (:around (f &rest args) dont-skip-ws-for-mini-frame)
-    (cl-letf* ((orig (symbol-function #'window-text-pixel-size))
-               ((symbol-function #'window-text-pixel-size)
-		(lambda (win from to &rest args)
-                  (apply orig
-			 (append (list win from
-                                       (if (and (window-minibuffer-p win)
-						(frame-root-window-p win)
-						(eq t to))
-                                           nil
-					 to))
-				 args)))))
-      (apply f args)))
-  :config
-  (mini-frame-mode +1))
 
 ;;; ..:: Terminal emulator ::..
 
@@ -803,7 +822,7 @@ With argument ARG, do this that many times."
 	 (LaTeX-mode . company-mode)
 	 (sh-mode . company-mode)
 	 (matlab-mode . company-mode))
-  :bind (("<S-SPC>" . company-complete))
+  :bind (("S-SPC" . company-complete))
   :init
   (setq company-dabbrev-downcase 0
 	company-async-timeout 10

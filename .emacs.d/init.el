@@ -58,13 +58,13 @@
 ;;;###autoload
 (defun danylo/gc-message ()
   "Garbage collection message."
-  (message "%s Collecting garbage"
-	   (propertize (all-the-icons-faicon "trash-o")
-		       'face `(:family
-			       ,(all-the-icons-faicon-family)
-			       :height 1.0)
-		       'display '(raise -0.05)))
-  )
+  (when garbage-collection-messages
+    (message "%s Collecting garbage"
+	     (propertize (all-the-icons-faicon "trash-o")
+			 'face `(:family
+				 ,(all-the-icons-faicon-family)
+				 :height 1.0)
+			 'display '(raise -0.05)))))
 
 ;;;###autoload
 (defun garbage-collect (&rest args)
@@ -178,16 +178,17 @@ of the minibuffer prompt."
   ;;   C-M-= : zoom in
   ;;   C-M-- : zoom out
   :bind (("C-M--" . default-text-scale-decrease)
-	 ("C-M-=" . default-text-scale-increase))
+	 ("C-M-=" . default-text-scale-increase)
+	 :map default-text-scale-mode-map
+	 ("C-M-0" . danylo/reset-font-size))
   :init
   (add-hook 'after-init-hook
 	    (lambda ()
 	      (setq danylo/default-font-size
 		    (face-attribute 'default :height))))
   :config
-  (default-text-scale-mode)
-  (define-key default-text-scale-mode-map
-    (kbd "C-M-0") 'danylo/reset-font-size))
+  (default-text-scale-mode))
+
 (global-unset-key (kbd "C-x C--"))
 (global-unset-key (kbd "C-x C-="))
 
@@ -242,6 +243,16 @@ of the minibuffer prompt."
 
 ;;; ..:: Searching ::..
 
+(use-package ivy-prescient
+  ;; https://github.com/raxod502/prescient.el
+  ;; Simple but effective sorting and filtering for Emacs.
+  :config
+  (ivy-prescient-mode +1)
+  ;; Save your command history on disk, so the sorting gets more
+  ;; intelligent over time
+  (prescient-persist-mode +1)
+  )
+
 ;;;###autoload
 (defun danylo/ivy-with-thing-at-point (cmd)
   "Auto-populate search with current thing at point.
@@ -287,7 +298,7 @@ Source: https://github.com/abo-abo/swiper/issues/1068"
 (use-package ivy
   ;; https://github.com/abo-abo/swiper
   ;; Ivy - a generic completion frontend for Emacs
-  :after (company counsel swiper)
+  :after (company counsel swiper ivy-prescient)
   :bind (("M-i" . danylo/swiper-thing-at-point)
 	 ("C-x b" . danylo/counsel-switch-buffer-no-preview)
 	 ("M-x" . counsel-M-x)
@@ -329,12 +340,6 @@ Source: https://github.com/abo-abo/swiper/issues/1068"
   :bind
   (:map c-mode-base-map
 	("M-." . counsel-gtags-dwim)))
-
-(use-package smex
-  ;; https://github.com/nonsequitur/smex
-  ;; A smart M-x enhancement for Emacs.
-  ;; Namely, show most recently used M-x commands up top.
-  )
 
 (use-package ivy-xref
   ;; https://github.com/alexmurray/ivy-xref

@@ -58,7 +58,8 @@
 ;;;###autoload
 (defun danylo/gc-message ()
   "Garbage collection message."
-  (when garbage-collection-messages
+  (when (and garbage-collection-messages
+	     (not (active-minibuffer-window)))
     (let ((message-log-max nil))
       (message "%s Collecting garbage"
 	       (propertize (all-the-icons-faicon "trash-o")
@@ -333,11 +334,12 @@ Source: https://github.com/abo-abo/swiper/issues/1068"
 	 :map helm-map
 	 ("<tab>" . helm-execute-persistent-action))
   :init (setq helm-display-buffer-default-height
-	      (1+ danylo/num-completion-candidates)
+	      danylo/num-completion-candidates
 	      helm-mode-line-string ""
+	      helm-comp-read-mode-line ""
 	      helm-buffer-max-length 30
 	      helm-buffers-truncate-lines nil
-	      helm-split-window-in-side-p nil
+	      helm-split-window-in-side-p t
 	      helm-move-to-line-cycle-in-source t
 	      helm-echo-input-in-header-line nil
 	      helm-display-header-line nil
@@ -444,8 +446,9 @@ Source: https://github.com/abo-abo/swiper/issues/1068"
 (add-hook 'before-save-hook 'delete-trailing-whitespace)
 
 ;; Activate nlinum-mode (line numbers on the left)
-(general-define-key
- "C-x n l" 'nlinum-mode)
+(with-eval-after-load "nlinum"
+  (general-define-key
+   "C-x n l" 'nlinum-mode))
 
 ;;;; Section delimiters
 
@@ -642,8 +645,10 @@ With argument ARG, do this that many times."
 	 (if (not buffer-read-only) (toggle-read-only)))
   (defun danylo/switch-to-term-char-mode () (interactive) (term-char-mode)
 	 (if (buffer-read-only) (toggle-read-only)))
-  (define-key term-mode-map (kbd "C-c t c") 'danylo/switch-to-term-char-mode)
+  (define-key term-raw-map (kbd "C-c t c") 'danylo/switch-to-term-char-mode)
   (define-key term-raw-map (kbd "C-c t l") 'danylo/switch-to-term-line-mode)
+  (define-key term-mode-map (kbd "C-c t c") 'danylo/switch-to-term-char-mode)
+  (define-key term-mode-map (kbd "C-c t l") 'danylo/switch-to-term-line-mode)
   ;; Copy/paste native Emacs keystrokes
   (define-key term-raw-map (kbd "C-k") 'term-send-raw)
   (define-key term-raw-map (kbd "C-y") 'term-paste)

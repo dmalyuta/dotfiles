@@ -56,17 +56,21 @@
 ;; Garbage collection message
 
 ;;;###autoload
+(defun danylo/fa-icon (icon)
+  "Fontawesome icon with proper formatting for minibuffer"
+  (propertize (all-the-icons-faicon icon)
+	      'face `(:family
+		      ,(all-the-icons-faicon-family)
+		      :height 1.0)
+	      'display '(raise -0.05)))
+
+;;;###autoload
 (defun danylo/gc-message ()
   "Garbage collection message."
   (when (and garbage-collection-messages
 	     (not (active-minibuffer-window)))
     (let ((message-log-max nil))
-      (message "%s Collecting garbage"
-	       (propertize (all-the-icons-faicon "trash-o")
-			   'face `(:family
-				   ,(all-the-icons-faicon-family)
-				   :height 1.0)
-			   'display '(raise -0.05))))))
+      (message "%s Collecting garbage" (danylo/fa-icon "trash-o")))))
 
 (add-hook 'post-gc-hook (lambda () (danylo/gc-message) nil))
 
@@ -785,13 +789,15 @@ With argument ARG, do this that many times."
   ;; https://github.com/domtronn/all-the-icons.el
   ;; Pretty icons
   :config
-  (unless (member "all-the-icons" (font-family-list))
+  (when (and (window-system)
+	     (not (member "all-the-icons" (font-family-list))))
     (all-the-icons-install-fonts t))
   ;; Fix MATLAB icon
-  (setq all-the-icons-icon-alist
-	(add-to-list 'all-the-icons-icon-alist
-		     '("\\.m$" all-the-icons-fileicon "matlab"
-		       :face all-the-icons-orange)))
+  (when (window-system)
+    (setq all-the-icons-icon-alist
+	  (add-to-list 'all-the-icons-icon-alist
+		       '("\\.m$" all-the-icons-fileicon "matlab"
+			 :face all-the-icons-orange))))
   )
 
 (use-package mic-paren
@@ -861,6 +867,48 @@ With argument ARG, do this that many times."
 	(append '(".DS_Store" ".gitignore")
 		projectile-globally-ignored-files))
   (projectile-global-mode))
+
+;;; ..:: Email ::..
+
+(load "~/.emacs.d/email.el")
+
+(use-package mu4e
+  :load-path "/usr/local/share/emacs/site-lisp/mu4e"
+  :init
+  (setq mu4e-sent-folder "/sent"
+	mu4e-trash-folder "/trash"
+	mu4e-drafts-folder "/drafts"
+	mu4e-completing-read-function 'completing-read ; Use 'helm' to select mailboxes
+	message-kill-buffer-on-exit t ; Close message open after sent
+	mu4e-view-prefer-html nil
+	mu4e-context-policy 'pick-first
+	mu4e-compose-context-policy 'ask-if-none
+	mu4e-confirm-quit nil
+	;; <begin: split view settings>
+	mu4e-headers-visible-lines 20
+	mu4e-headers-visible-columns 80
+	mu4e-split-view 'vertical
+	;; <end>
+	;; <begin: sending smtp settings>
+	message-send-mail-function 'smtpmail-send-it
+	starttls-use-gnutls t
+	smtpmail-stream-type 'starttls
+	;; <end>
+	))
+
+;;;###autoload
+(defun danylo/refresh-mu4e-alert-mode-line ()
+  "Show new mail in the mode line."
+  (interactive)
+  (mu4e~proc-kill)
+  (mu4e-alert-enable-mode-line-display))
+
+(use-package mu4e-alert
+  :ensure t
+  :after mu4e
+  :init
+  (mu4e-alert-enable-mode-line-display)
+  (run-with-timer 0 60 'danylo/refresh-mu4e-alert-mode-line))
 
 ;;; ..:: Git ::..
 

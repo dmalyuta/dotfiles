@@ -58,11 +58,13 @@
 ;;;###autoload
 (defun danylo/fa-icon (icon)
   "Fontawesome icon with proper formatting for minibuffer"
-  (propertize (all-the-icons-faicon icon)
-	      'face `(:family
-		      ,(all-the-icons-faicon-family)
-		      :height 1.0)
-	      'display '(raise -0.05)))
+  (if (window-system)
+      (propertize (all-the-icons-faicon icon)
+		  'face `(:family
+			  ,(all-the-icons-faicon-family)
+			  :height 1.0)
+		  'display '(raise -0.05))
+    ""))
 
 ;;;###autoload
 (defun danylo/gc-message ()
@@ -92,12 +94,11 @@
 ;;; ..:: General usability ::..
 
 ;; Remove GUI elements
-(when (window-system)
-  (menu-bar-mode 0)
-  (tool-bar-mode 0)
-  (scroll-bar-mode 0)
-  (tooltip-mode 0)
-  (blink-cursor-mode 0))
+(menu-bar-mode 0)
+(tool-bar-mode 0)
+(scroll-bar-mode 0)
+(tooltip-mode 0)
+(blink-cursor-mode 0)
 
 ;; Mouse behaviour
 
@@ -874,6 +875,10 @@ With argument ARG, do this that many times."
 
 (use-package mu4e
   :load-path "/usr/local/share/emacs/site-lisp/mu4e"
+  :bind (:map mu4e-headers-mode-map
+	      ("x" . (lambda () (interactive) (mu4e-mark-execute-all t)))
+	      :map mu4e-view-mode-map
+	      ("x" . (lambda () (interactive) (mu4e-mark-execute-all t))))
   :init
   (setq mu4e-sent-folder "/sent"
 	mu4e-trash-folder "/trash"
@@ -881,26 +886,40 @@ With argument ARG, do this that many times."
 	mu4e-completing-read-function 'completing-read ; Use 'helm' to select mailboxes
 	message-kill-buffer-on-exit t ; Close message open after sent
 	mu4e-view-prefer-html nil
+	mu4e-html2text-command "html2text -utf8 -width 80"
 	mu4e-context-policy 'pick-first
 	mu4e-compose-context-policy 'ask-if-none
 	mu4e-confirm-quit nil
+	max-specpdl-size 5000 ; See djcbsoftware.nl/code/mu/mu4e/General.html
 	;; <begin: split view settings>
-	mu4e-headers-visible-lines 20
-	mu4e-headers-visible-columns 80
-	mu4e-split-view 'vertical
+	mu4e-headers-visible-lines 15
+	mu4e-headers-visible-columns 50
+	mu4e-split-view 'horizontal
 	;; <end>
 	;; <begin: sending smtp settings>
-	message-send-mail-function 'smtpmail-send-it
-	starttls-use-gnutls t
-	smtpmail-stream-type 'starttls
+	sendmail-program "/usr/bin/msmtp"
+	send-mail-function 'smtpmail-send-it
+	message-sendmail-f-is-evil t
+	message-sendmail-extra-arguments '("--read-envelope-from")
+	message-send-mail-function 'message-send-mail-with-sendmail
 	;; <end>
-	))
+	)
+  )
+
+(general-define-key
+ "C-c m" 'mu4e)
+
+(with-eval-after-load "mu4e"
+  (set-face-attribute 'mu4e-unread-face nil
+		      :foreground "yellow")
+  (set-face-attribute 'mu4e-header-highlight-face nil
+		      :underline nil))
 
 ;;;###autoload
 (defun danylo/refresh-mu4e-alert-mode-line ()
   "Show new mail in the mode line."
   (interactive)
-  (mu4e~proc-kill)
+  (mu4e-update-mail-and-index)
   (mu4e-alert-enable-mode-line-display))
 
 (use-package mu4e-alert

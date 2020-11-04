@@ -82,6 +82,9 @@ fi
 # Use emacsclient for Git
 export GIT_EDITOR="`which emacsclient` -t -s git"
 
+# Use emacs as terminal editor
+export EDITOR="emacs -nw"
+
 # Synaptics touchpad config
 if [ -f ~/.touchpad_config.sh ]; then
     . ~/.touchpad_config.sh

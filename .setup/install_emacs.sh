@@ -100,6 +100,11 @@ apt_get_install_pkg shellcheck
 # Powerline support for telephone-line
 apt_get_install_pkg fonts-powerline
 
+# Set up proper colorization for ansi-term
+
+cp "$(find /usr/local/share/emacs/27.1 -name 'eterm-color')" \
+   ~/.terminfo/eterm-256color
+
 # helm-gtags GNU GLOBAL
 if program_not_installed "global"; then
     # GNU GLOBAL not installed --> install it

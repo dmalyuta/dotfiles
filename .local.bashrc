@@ -71,7 +71,7 @@ parse_ssh() {
 	case $(ps -o comm= -p $PPID) in
 	    sshd|*/sshd) echo "(ssh) ";;
 	esac
-    fi    
+    fi
 }
 if [ -e ~/.bin/colorizer ]; then
     . ~/.bin/colorizer/Library/colorizer.sh

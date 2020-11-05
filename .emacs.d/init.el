@@ -38,20 +38,38 @@
  :upgrade nil)
 (require 'quelpa-use-package)
 
+;;; ..:: Customization variables in init.el ::..
+
+(defgroup danylo nil
+  "My customization variables for the init.el file."
+  :group 'local)
+
+(defcustom danylo/gc-collect-print t
+  "Print message in minibuffer on garbage collection."
+  :type 'boolean
+  :group 'danylo)
+
+(defcustom danylo/python-shell-type "ipython"
+  "Which shell type to use?."
+  :type 'string
+  :group 'danylo)
+
+(defcustom danylo/python-buffer-name "*PythonProcess*"
+  "Name of the Python buffer."
+  :type 'string
+  :group 'danylo)
+
+(defcustom danylo/python-shell-position '((side . right))
+  "Position of the python shell."
+  :type 'alist
+  :group 'danylo)
+
 ;;; ..:: Garbage collection ::..
 
 ;; 16MB of garbage collection space once running
 (add-hook 'after-init-hook (lambda () (setq gc-cons-threshold
 				       (eval-when-compile
 					 (* 1024 1024 100)))))
-
-;; Garbage-collect on focus-out, Emacs should feel snappier.
-;; Source: https://github.com/angrybacon/dotemacs/blob/master/
-;;         dotemacs.org#load-customel
-(add-hook 'focus-out-hook
-	  (lambda ()
-	    (unless (equal major-mode 'dashboard-mode)
-	      (add-hook 'focus-out-hook #'garbage-collect))))
 
 ;; Garbage collection message
 
@@ -76,7 +94,23 @@
 
 (add-hook 'post-gc-hook (lambda () (danylo/gc-message) nil))
 
-(setq garbage-collection-messages t)
+(setq garbage-collection-messages danylo/gc-collect-print)
+
+;;;###autoload
+(defun danylo/gc-collect-quiet ()
+  "Perform garbage collection, without minibuffer printing."
+  (interactive)
+  (setq garbage-collection-messages nil)
+  (garbage-collect)
+  (setq garbage-collection-messages danylo/gc-collect-print))
+
+;; Garbage-collect on focus-out, Emacs should feel snappier.
+;; Source: https://github.com/angrybacon/dotemacs/blob/master/
+;;         dotemacs.org#load-customel
+(add-hook 'focus-out-hook
+	  (lambda ()
+	    (unless (equal major-mode 'dashboard-mode)
+	      (add-hook 'focus-out-hook 'danylo/gc-collect-quiet))))
 
 (use-package gcmh
   ;; https://github.com/emacsmirror/gcmh"
@@ -352,6 +386,12 @@ Source: https://github.com/abo-abo/swiper/issues/1068"
 	      helm-ff-file-name-history-use-recentf t
 	      helm-recentf-matching t
 	      history-delete-duplicates t)
+  (add-hook 'helm-find-files-after-init-hook
+	    (lambda ()
+	      (set-face-attribute 'helm-ff-directory nil
+				  :foreground "yellow"
+				  :bold t
+				  :extend nil)))
   :config
   (helm-mode 1))
 
@@ -610,6 +650,7 @@ With argument ARG, do this that many times."
     ad-do-it))
 (ad-activate 'term-sentinel)
 
+;;;###autoload
 (defun danylo/set-no-process-query-on-exit ()
   "No 'are you sure' query on exit"
   (let ((proc (get-buffer-process (current-buffer))))
@@ -618,15 +659,6 @@ With argument ARG, do this that many times."
 (add-hook 'term-exec-hook 'danylo/set-no-process-query-on-exit)
 
 ;; Key bindings
-
-;;;###autoload
-
-
-;;;###autoload
-(defun danylo/switch-to-term-char-mode ()
-  (interactive)
-  (term-char-mode)
-  (if buffer-read-only (toggle-read-only)))
 
 (with-eval-after-load "term"
   (define-key term-raw-map (kbd "C-c r") 'rename-buffer)
@@ -646,10 +678,12 @@ With argument ARG, do this that many times."
   (defun danylo/term-send-tab () (interactive) (term-send-raw-string "\t"))
   (define-key term-raw-map (kbd "S-SPC") 'danylo/term-send-tab)
   ;; Switch between char and line move
-  (defun danylo/switch-to-term-line-mode () (interactive) (term-line-mode)
-	 (if (not buffer-read-only) (toggle-read-only)))
-  (defun danylo/switch-to-term-char-mode () (interactive) (term-char-mode)
-	 (if (buffer-read-only) (toggle-read-only)))
+  (defun danylo/switch-to-term-line-mode () (interactive)
+	 (term-line-mode)
+	 (read-only-mode +1))
+  (defun danylo/switch-to-term-char-mode () (interactive)
+	 (term-char-mode)
+	 (read-only-mode 0))
   (define-key term-raw-map (kbd "C-c t c") 'danylo/switch-to-term-char-mode)
   (define-key term-raw-map (kbd "C-c t l") 'danylo/switch-to-term-line-mode)
   (define-key term-mode-map (kbd "C-c t c") 'danylo/switch-to-term-char-mode)
@@ -688,6 +722,14 @@ With argument ARG, do this that many times."
 ;; Bi-directional text support problem fix, which seems to be the cause of text
 ;; jumbling when going back commands in ansi-term. This fixes it, yay!
 (add-hook 'term-mode-hook (lambda () (setq bidi-paragraph-direction 'left-to-right)))
+
+(use-package eterm-256color
+  ;; https://github.com/dieggsy/eterm-256color
+  ;; Customizable 256 colors for emacs term and ansi-term
+  :after xterm-color
+  :config
+  (advice-add 'term-handle-ansi-escape
+	      :around #'eterm-256color-handle-ansi-escape))
 
 ;;; ..:: Theming and code aesthetics ::..
 
@@ -871,25 +913,29 @@ With argument ARG, do this that many times."
 
 ;;; ..:: Email ::..
 
-(load "~/.emacs.d/email.el")
-
 (use-package mu4e
+  ;; https://github.com/djcb/mu
+  ;; maildir indexer/searcher + emacs mail client + guile bindings
   :load-path "/usr/local/share/emacs/site-lisp/mu4e"
   :bind (:map mu4e-headers-mode-map
 	      ("x" . (lambda () (interactive) (mu4e-mark-execute-all t)))
 	      :map mu4e-view-mode-map
 	      ("x" . (lambda () (interactive) (mu4e-mark-execute-all t))))
   :init
-  (setq mu4e-sent-folder "/sent"
-	mu4e-trash-folder "/trash"
-	mu4e-drafts-folder "/drafts"
-	mu4e-completing-read-function 'completing-read ; Use 'helm' to select mailboxes
+  (setq mu4e-completing-read-function 'completing-read ; Use 'helm' to select mailboxes
 	message-kill-buffer-on-exit t ; Close message open after sent
 	mu4e-view-prefer-html nil
 	mu4e-html2text-command "html2text -utf8 -width 80"
 	mu4e-context-policy 'pick-first
 	mu4e-compose-context-policy 'ask-if-none
 	mu4e-confirm-quit nil
+	mu4e-hide-index-messages t
+	mu4e-view-show-addresses t
+	;; <begin: fix failed to find message error (github.com/djcb/mu/issues/1667)>
+	mu4e-change-filenames-when-moving nil
+	mu4e-index-cleanup t
+	mu4e-index-lazy-check nil
+	;; <end>
 	max-specpdl-size 5000 ; See djcbsoftware.nl/code/mu/mu4e/General.html
 	;; <begin: split view settings>
 	mu4e-headers-visible-lines 15
@@ -903,8 +949,7 @@ With argument ARG, do this that many times."
 	message-sendmail-extra-arguments '("--read-envelope-from")
 	message-send-mail-function 'message-send-mail-with-sendmail
 	;; <end>
-	)
-  )
+	))
 
 (general-define-key
  "C-c m" 'mu4e)
@@ -915,19 +960,32 @@ With argument ARG, do this that many times."
   (set-face-attribute 'mu4e-header-highlight-face nil
 		      :underline nil))
 
+;;;; Load Lisp file with mu4e context setp
+(load "~/.emacs.d/email.el")
+
 ;;;###autoload
 (defun danylo/refresh-mu4e-alert-mode-line ()
   "Show new mail in the mode line."
   (interactive)
-  (mu4e-update-mail-and-index)
+  (mu4e-update-mail-and-index t)
   (mu4e-alert-enable-mode-line-display))
 
+(defvar danylo/mu4e-alert-started nil
+  "Indicator if mu4e-alert indicator started")
+
 (use-package mu4e-alert
+  ;; https://github.com/iqbalansari/mu4e-alert
+  ;; Desktop notifications and modeline display for mu4e
   :ensure t
   :after mu4e
   :init
-  (mu4e-alert-enable-mode-line-display)
-  (run-with-timer 0 60 'danylo/refresh-mu4e-alert-mode-line))
+  ;; Enable mu4e-alert display after mu4e is started
+  (add-hook 'mu4e-main-mode-hook
+	    (lambda ()
+	      (unless danylo/mu4e-alert-started
+		(mu4e-alert-enable-mode-line-display)
+		(run-with-timer 0 (* 60 5) 'danylo/refresh-mu4e-alert-mode-line)
+		(setq danylo/mu4e-alert-started t)))))
 
 ;;; ..:: Git ::..
 
@@ -1113,18 +1171,6 @@ With argument ARG, do this that many times."
  "v" 'danylo/lsp-display-variable-info)
 
 ;;;; Python shell interaction
-
-(defcustom danylo/python-shell-type "ipython"
-  "Which shell type to use?."
-  :type 'string)
-
-(defcustom danylo/python-buffer-name "*PythonProcess*"
-  "Name of the Python buffer."
-  :type 'string)
-
-(defcustom danylo/python-shell-position '((side . right))
-  "Position of the python shell."
-  :type 'alist)
 
 ;;;###autoload
 (defun danylo/python-check-open-shell ()

@@ -267,6 +267,18 @@
   (interactive)
   (byte-recompile-file "~/.emacs.d/init.el" nil 0))
 
+;;; Dired (directory listing)
+
+(use-package dired+
+  ;;  Redo/undo system for Emacs
+  :bind (:map dired-mode-map
+	      ("M-i" . nil))
+  :init
+  (setq dired-listing-switches "-alh"
+	diredp-hide-details-initially-flag nil)
+  :config
+  (diredp-toggle-find-file-reuse-dir t))
+
 ;;; ..:: Searching ::..
 
 (defvar danylo/num-completion-candidates 15
@@ -929,8 +941,12 @@ With argument ARG, do this that many times."
 	mu4e-context-policy 'pick-first
 	mu4e-compose-context-policy 'ask-if-none
 	mu4e-confirm-quit nil
+	mu4e-headers-skip-duplicates t
 	mu4e-hide-index-messages t
 	mu4e-view-show-addresses t
+	mu4e-headers-include-related nil ; [W] to toggle
+	mu4e-headers-show-threads nil
+	mu4e-compose-signature-auto-include nil
 	;; <begin: fix failed to find message error (github.com/djcb/mu/issues/1667)>
 	mu4e-change-filenames-when-moving nil
 	mu4e-index-cleanup t
@@ -948,6 +964,7 @@ With argument ARG, do this that many times."
 	message-sendmail-f-is-evil t
 	message-sendmail-extra-arguments '("--read-envelope-from")
 	message-send-mail-function 'message-send-mail-with-sendmail
+	message-kill-buffer-on-exit t
 	;; <end>
 	))
 
@@ -955,13 +972,59 @@ With argument ARG, do this that many times."
  "C-c m" 'mu4e)
 
 (with-eval-after-load "mu4e"
-  (set-face-attribute 'mu4e-unread-face nil
-		      :foreground "yellow")
-  (set-face-attribute 'mu4e-header-highlight-face nil
-		      :underline nil))
+  (set-face-attribute 'mu4e-unread-face nil :foreground "yellow")
+  (set-face-attribute 'mu4e-header-highlight-face nil :underline nil))
+
+;; Do not back up email while writing it, which makes drafts
+;; accumulate
+(add-hook 'mu4e-compose-mode-hook '(lambda () (auto-save-mode -1)))
 
 ;;;; Load Lisp file with mu4e context setp
 (load "~/.emacs.d/email.el")
+
+;;;; Org-mode to compose messages
+
+(use-package org-msg
+  ;; https://github.com/jeremy-compostella/org-msg
+  ;; Mix up Org mode and Message mode
+  :after mu4e
+  :bind (:map org-msg-edit-mode-map
+	      ("C-u C-c C-s" . 'message-send)
+	      ("M-q" . 'fill-paragraph))
+  :init
+  (setq mail-user-agent 'mu4e-user-agent
+	org-msg-options "html-postamble:nil H:5 num:nil ^:{} toc:nil author:nil email:nil \\n:t"
+	org-msg-startup "hidestars indent inlineimages")
+  :config
+  (org-msg-mode))
+
+(with-eval-after-load "org-msg"
+  (define-key org-msg-edit-mode-map (kbd "M-q") 'nil)
+  (define-key org-msg-edit-mode-map [remap fill-paragraph] nil)
+  ;; Make sure window movement keys are not captured by terminal
+  (define-key org-msg-edit-mode-map (kbd "C-S-<up>") 'nil)
+  (define-key org-msg-edit-mode-map (kbd "C-S-<down>") 'nil)
+  (define-key org-msg-edit-mode-map (kbd "C-S-<left>") 'nil)
+  (define-key org-msg-edit-mode-map (kbd "C-S-<right>") 'nil))
+
+;;;; Signature before message history
+
+;;;###autoload
+(defun danylo/insert-email-text (text)
+  "Insert text into email body."
+  (save-excursion
+    (message-goto-body)
+    (insert text)))
+
+;;;###autoload
+(defun danylo/insert-mu4e-signature-top ()
+  "Insert the mu4e signature at the top, assuming it is a string."
+  (when (stringp mu4e-compose-signature)
+    (unless (member mu4e-compose-type '(edit resend))
+      (danylo/insert-email-text (concat "\n\n--\n"
+					mu4e-compose-signature
+					"\n")))))
+(add-hook 'mu4e-compose-mode-hook 'danylo/insert-mu4e-signature-top)
 
 ;;;###autoload
 (defun danylo/refresh-mu4e-alert-mode-line ()

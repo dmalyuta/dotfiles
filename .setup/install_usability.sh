@@ -83,4 +83,7 @@ gnome-shell-extension-tool -e pixel-saver@deadalnix.me
 # For code changes to become effective, you might need to reload GNOME Shell by
 # pressing Alt+F2 and entering r
 
+# Invert desktop colors
+sudo apt --assume-yes install xcalib
+
 echo_prefix="$echo_prefix_temp"

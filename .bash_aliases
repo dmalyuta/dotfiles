@@ -103,3 +103,9 @@ alias viewkernel='journalctl -k --no-pager'
 # For most battery savings during sleep, the output should be (deep sleep):
 # $ s2idle [deep]
 alias sleep_mode='cat /sys/power/mem_sleep'
+
+# Invert screen colors
+alias neg='xcalib -invert -alter'
+
+# Shortcut for screen color inverse
+python ~/.bin/set_customshortcut.py 'invert-color' 'xcalib -invert -alter' '<Shift><Ctrl><Alt>N'

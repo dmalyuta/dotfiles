@@ -32,6 +32,7 @@ xinput set-prop "Logitech Rechargeable Touchpad T650" "Synaptics Move Speed" $Sp
 xinput set-prop "Logitech Rechargeable Touchpad T650" "Synaptics Tap Action" 0 0 0 0 0 0 0 &>>$ERRF
 xinput set-prop "Logitech Rechargeable Touchpad T650" "Synaptics Click Action" 1 3 0 &>>$ERRF
 xinput set-prop "Logitech Rechargeable Touchpad T650" "Synaptics Palm Detection" 0 &>>$ERRF
+xinput set-prop "Logitech Rechargeable Touchpad T650" "Synaptics Two-Finger Scrolling" 1 1 &>>$ERRF
 # Noise cancellation = (horizontal,vertical) hysteresis
 xinput set-prop "Logitech Rechargeable Touchpad T650" "Synaptics Noise Cancellation" 0 0 &>>$ERRF
 xinput set-prop "Logitech Rechargeable Touchpad T650" "Synaptics Circular Scrolling" 0 &>>$ERRF

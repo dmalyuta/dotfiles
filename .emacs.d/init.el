@@ -934,10 +934,17 @@ With argument ARG, do this that many times."
 	      :map mu4e-view-mode-map
 	      ("x" . (lambda () (interactive) (mu4e-mark-execute-all t))))
   :init
-  (setq mu4e-completing-read-function 'completing-read ; Use 'helm' to select mailboxes
+  (setq mail-user-agent 'mu4e-user-agent
+	mu4e-completing-read-function 'completing-read ; Use 'helm' to select mailboxes
 	message-kill-buffer-on-exit t ; Close message open after sent
-	mu4e-view-prefer-html nil
-	mu4e-html2text-command "html2text -utf8 -width 80"
+	;; <begin: message HTML view>
+	mu4e-view-prefer-html t
+	mu4e-view-html-plaintext-ratio-heuristic most-positive-fixnum
+	mu4e-html2text-command 'mu4e-shr2text
+	shr-color-visible-luminance-min 60
+	shr-color-visible-distance-min 5
+	shr-use-colors nil
+	;; <end>
 	mu4e-context-policy 'pick-first
 	mu4e-compose-context-policy 'ask-if-none
 	mu4e-confirm-quit nil
@@ -966,7 +973,10 @@ With argument ARG, do this that many times."
 	message-send-mail-function 'message-send-mail-with-sendmail
 	message-kill-buffer-on-exit t
 	;; <end>
-	))
+	)
+  (advice-add #'shr-colorize-region :around
+	      (defun shr-no-colourise-region (&rest ignore)))
+  )
 
 (general-define-key
  "C-c m" 'mu4e)
@@ -992,9 +1002,10 @@ With argument ARG, do this that many times."
 	      ("C-u C-c C-s" . 'message-send)
 	      ("M-q" . 'fill-paragraph))
   :init
-  (setq mail-user-agent 'mu4e-user-agent
+  (setq org-msg-default-alternatives '(html text)
 	org-msg-options "html-postamble:nil H:5 num:nil ^:{} toc:nil author:nil email:nil \\n:t"
-	org-msg-startup "hidestars indent inlineimages")
+	org-msg-startup "hidestars indent inlineimages"
+	)
   :config
   (org-msg-mode))
 
@@ -1010,21 +1021,23 @@ With argument ARG, do this that many times."
 ;;;; Signature before message history
 
 ;;;###autoload
-(defun danylo/insert-email-text (text)
-  "Insert text into email body."
-  (save-excursion
-    (message-goto-body)
-    (insert text)))
-
-;;;###autoload
-(defun danylo/insert-mu4e-signature-top ()
-  "Insert the mu4e signature at the top, assuming it is a string."
+(defun danylo/insert-mu4e-signature ()
+  "Insert the email signature."
   (when (stringp mu4e-compose-signature)
     (unless (member mu4e-compose-type '(edit resend))
-      (danylo/insert-email-text (concat "\n\n--\n"
-					mu4e-compose-signature
-					"\n")))))
-(add-hook 'mu4e-compose-mode-hook 'danylo/insert-mu4e-signature-top)
+      (save-excursion
+	(message-goto-body)
+	;; Go to the first empty line in the message body, which must
+	;; be the one right after the Org-mode headers
+	(setq empty-line nil)
+	(while (not empty-line)
+	  (let ((num-chars (- (line-end-position)
+			      (line-beginning-position))))
+	    (if (eq num-chars 0)
+		(setq empty-line t)
+	      (forward-line))))
+	(insert (concat "\n\n--\n" mu4e-compose-signature))))))
+(add-hook 'org-msg-edit-mode-hook 'danylo/insert-mu4e-signature)
 
 ;;;###autoload
 (defun danylo/refresh-mu4e-alert-mode-line ()

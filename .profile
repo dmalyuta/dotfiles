@@ -19,3 +19,6 @@ fi
 if [ -d ~/.bin ]; then
     PATH="${HOME}/.bin:$PATH"
 fi
+
+# Mouse cursor size
+gsettings set org.gnome.desktop.interface cursor-size 22

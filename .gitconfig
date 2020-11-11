@@ -11,3 +11,6 @@
     # Choose one of these 2 lines (not both!) explained below.
     cmd = meld "$LOCAL" "$MERGED" "$REMOTE" --output "$MERGED"
     cmd = meld "$LOCAL" "$BASE" "$REMOTE" --output "$MERGED"
+[user]
+	email = danylo@malyuta.name
+	name = Danylo Malyuta

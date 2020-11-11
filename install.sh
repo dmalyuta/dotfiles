@@ -33,6 +33,7 @@ ln -sf "$DIR"/.config/terminator/config ~/.config/terminator
 
 # Git
 ln -sf "$DIR"/.gitconfig ~
+ln -sf "$DIR"/.gitk ~
 
 # Input devices
 ln -sf "$DIR"/.input_config.sh ~

@@ -9,7 +9,8 @@
 (require 'package)
 (setq package-enable-at-startup nil)
 (setq package-check-signature nil)
-(add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/"))
+(add-to-list 'package-archives '(("melpa" . "https://melpa.org/packages/")
+				 ("org" . "https://orgmode.org/elpa/")))
 
 ;; Install use-package
 (package-initialize)
@@ -62,6 +63,11 @@
 (defcustom danylo/python-shell-position '((side . right))
   "Position of the python shell."
   :type 'alist
+  :group 'danylo)
+
+(defcustom danylo/ivy-window-name "*ivy-candidate-window*"
+  "Name of ivy candidate list buffer"
+  :type 'string
   :group 'danylo)
 
 ;;; ..:: Garbage collection ::..
@@ -310,7 +316,7 @@ Source: https://github.com/abo-abo/swiper/issues/1068"
 (defun danylo/ivy-display-function-window (text)
   "Show ivy candidate completion list in a temporary buffer, like Helm."
   (when (> (length text) 0)
-    (let ((buffer (get-buffer-create "*ivy-candidate-window*")))
+    (let ((buffer (get-buffer-create danylo/ivy-window-name)))
       (with-current-buffer buffer
 	(setq cursor-type nil) ; Hide cursor
 	(let ((inhibit-read-only t))
@@ -375,6 +381,7 @@ Source: https://github.com/abo-abo/swiper/issues/1068"
    '(swiper-match-face-1
      ((t (:background "orange"
 		      :foreground "black")))))
+  (add-to-list 'ivy-ignore-buffers '"\\\\*ivy-")
   :config
   (ivy-mode 1))
 
@@ -404,6 +411,7 @@ Source: https://github.com/abo-abo/swiper/issues/1068"
 				  :foreground "yellow"
 				  :bold t
 				  :extend nil)))
+  (add-to-list 'ivy-ignore-buffers '"\\\\*helm")
   :config
   (helm-mode 1))
 
@@ -923,6 +931,69 @@ With argument ARG, do this that many times."
 		projectile-globally-ignored-files))
   (projectile-global-mode))
 
+;;; ..:: Org ::..
+
+;;;###autoload
+(defun danylo/org-mode-setup ()
+  "Configure org mode after loading it"
+  (setq org-adapt-indentation nil
+	org-hide-leading-stars t)
+  (visual-line-mode t))
+
+;;;###autoload
+(defun danylo/org-font-setup ()
+  "Org mode fonts"
+  ;; Replace list hyphen with dot
+  (font-lock-add-keywords 'org-mode
+                          '(("^ *\\([-]\\) "
+                             (0 (prog1 () (compose-region (match-beginning 1)
+							  (match-end 1) "•"))))))
+  ;; Heading sizes
+  (dolist (face '((org-level-1 . 1.2)
+                  (org-level-2 . 1.1)
+                  (org-level-3 . 1.05)
+                  (org-level-4 . 1.0)
+                  (org-level-5 . 1.1)
+                  (org-level-6 . 1.1)
+                  (org-level-7 . 1.1)
+                  (org-level-8 . 1.1)))
+    (set-face-attribute (car face) nil :font (face-attribute 'default :font)
+			:weight 'regular :height (cdr face)))
+  ;; Make all font fixed-pitch
+  (set-face-attribute 'variable-pitch nil :inherit 'default)
+  (set-face-attribute 'fixed-pitch nil :inherit 'default))
+
+(use-package org
+  ;; https://github.com/bzg/org-mode
+  ;; Your life in plain text
+  :hook ((org-mode . danylo/org-mode-setup)
+	 (org-mode . danylo/org-font-setup))
+  :init
+  (setq org-startup-folded nil
+	org-ellipsis " ▾"
+	org-src-tab-acts-natively t
+	org-startup-with-latex-preview t)
+  :config
+  (setq org-format-latex-options (plist-put org-format-latex-options
+					    :scale 1.3)
+	org-format-latex-options (plist-put org-format-latex-options
+					    :foreground "yellow")))
+
+(with-eval-after-load "org"
+  ;; Make sure window movement keys are not over-written
+  (define-key org-mode-map (kbd "C-S-<up>") 'nil)
+  (define-key org-mode-map (kbd "C-S-<down>") 'nil)
+  (define-key org-mode-map (kbd "C-S-<left>") 'nil)
+  (define-key org-mode-map (kbd "C-S-<right>") 'nil))
+
+(use-package org-bullets
+  ;; https://github.com/sabof/org-bullets
+  ;; UTF-8 bullets for org-mode
+  :after org
+  :hook (org-mode . org-bullets-mode)
+  :custom
+  (org-bullets-bullet-list '("◉" "○" "●" "○" "●" "○" "●")))
+
 ;;; ..:: Email ::..
 
 (use-package mu4e
@@ -936,7 +1007,7 @@ With argument ARG, do this that many times."
   :init
   (setq mail-user-agent 'mu4e-user-agent
 	mu4e-completing-read-function 'completing-read ; Use 'helm' to select mailboxes
-	message-kill-buffer-on-exit t ; Close message open after sent
+	message-kill-buffer-query nil
 	;; <begin: message HTML view>
 	mu4e-view-prefer-html t
 	mu4e-view-html-plaintext-ratio-heuristic most-positive-fixnum
@@ -978,8 +1049,14 @@ With argument ARG, do this that many times."
 	      (defun shr-no-colourise-region (&rest ignore)))
   )
 
+;;;###autoload
+(defun danylo/launch-mu4e (arg)
+  "Launch mu4e, or quit it if preceded by C-u"
+  (interactive "P")
+  (if arg (mu4e-quit) (mu4e)))
+
 (general-define-key
- "C-c m" 'mu4e)
+ "C-c m" 'danylo/launch-mu4e)
 
 (with-eval-after-load "mu4e"
   (set-face-attribute 'mu4e-unread-face nil :foreground "yellow")
@@ -1000,6 +1077,7 @@ With argument ARG, do this that many times."
   :after mu4e
   :bind (:map org-msg-edit-mode-map
 	      ("C-u C-c C-s" . 'message-send)
+	      ("C-u C-c C-x" . 'message-kill-buffer)
 	      ("M-q" . 'fill-paragraph))
   :init
   (setq org-msg-default-alternatives '(html text)
@@ -1012,7 +1090,7 @@ With argument ARG, do this that many times."
 (with-eval-after-load "org-msg"
   (define-key org-msg-edit-mode-map (kbd "M-q") 'nil)
   (define-key org-msg-edit-mode-map [remap fill-paragraph] nil)
-  ;; Make sure window movement keys are not captured by terminal
+  ;; Make sure window movement keys are not overwritten
   (define-key org-msg-edit-mode-map (kbd "C-S-<up>") 'nil)
   (define-key org-msg-edit-mode-map (kbd "C-S-<down>") 'nil)
   (define-key org-msg-edit-mode-map (kbd "C-S-<left>") 'nil)
@@ -1318,7 +1396,7 @@ If there is to python shell open, prints a message to inform."
   ;; See https://github.com/abo-abo/swiper/issues/644
   (let ((buf-name (replace-regexp-in-string
 		   "*+" "\\\\*" danylo/python-buffer-name t t)))
-    (setq ivy-ignore-buffers `(,buf-name))))
+    (add-to-list 'ivy-ignore-buffers `,buf-name)))
 
 (add-hook 'python-mode-hook (lambda () (danylo/python-config)))
 

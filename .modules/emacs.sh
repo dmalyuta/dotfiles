@@ -16,8 +16,7 @@ if not_installed emacs; then
     ( cd /tmp/emacs/ && \
 	  git checkout emacs-27.1 && \
 	  ./autogen.sh && \
-	  ./configure --with-cairo --with-xwidgets --with-x-toolkit=gtk3 \
-		      --with-modules --with-json && \
+	  ./configure --with-cairo --with-xwidgets --with-x-toolkit=gtk3 --with-modules --with-json && \
 	  make && sudo make install )
 fi
 

@@ -27,9 +27,11 @@ sudo apt-get -y install gitk \
      bash-completion \
      meld
 
-if function_not_defined cmake; then
-    wget -4 https://github.com/Kitware/CMake/releases/download/v3.18.4/cmake-3.18.4.tar.gz \
-	 -O /tmp/cmake.tar.gz
-    tar -xvf /tmp/cmake.tar.gz -C /tmp
-    ( cd /tmp/cmake/ && ./bootstrap && make && sudo make install )
+if not_installed cmake; then
+    # Dependencies
+    sudo apt-get -y install libssl-dev
+
+    wget -4 https://github.com/Kitware/CMake/releases/download/v3.18.4/cmake-3.18.4.tar.gz -P /tmp/
+    tar -xvf /tmp/cmake-3.18.4.tar.gz -C /tmp
+    ( cd /tmp/cmake-3.18.4/ && ./bootstrap && make && sudo make install )
 fi

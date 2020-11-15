@@ -9,8 +9,9 @@
 (require 'package)
 (setq package-enable-at-startup nil)
 (setq package-check-signature nil)
-(add-to-list 'package-archives '(("melpa" . "https://melpa.org/packages/")
-				 ("org" . "https://orgmode.org/elpa/")))
+(setq package-archives '(("melpa" . "https://melpa.org/packages/")
+                         ("org" . "https://orgmode.org/elpa/")
+                         ("elpa" . "https://elpa.gnu.org/packages/")))
 
 ;; Install use-package
 (package-initialize)

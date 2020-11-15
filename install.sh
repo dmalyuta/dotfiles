@@ -32,7 +32,7 @@ ln -sf "$DIR"/.dircolors ~
 ln -sf "$DIR"/.config/terminator/config ~/.config/terminator
 
 # Git
-ln -sf "$DIR"/.gitconfig ~
+cp -f "$DIR"/.gitconfig ~
 ln -sf "$DIR"/.gitk ~
 
 # Input devices

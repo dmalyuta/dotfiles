@@ -7,9 +7,10 @@
 # ..:: Emacs ::..
 
 if not_installed emacs; then
+    # Dependencies
     sudo apt-get -y build-dep emacs
-    sudo apt-get -y install libwebkit2gtk-4.0-dev \
-	 libjansson-dev
+    sudo apt-get -y install libwebkit2gtk-4.0-dev libjansson-dev
+
     rm -rf /tmp/emacs/
     git clone --branch emacs-27.1 --depth 1 git://git.sv.gnu.org/emacs.git /tmp/emacs
     ( cd /tmp/emacs/ && \
@@ -55,22 +56,38 @@ fi
 
 # >> Python <<
 
-sudo apt-get -y install curl
-
 if not_installed pyright; then
+    sudo apt-get -y install curl
+
     curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -
     sudo apt-get -y install nodejs npm
     sudo npm install -g pyright
+
+    pip install git+https://github.com/predictive-analytics-lab/data-science-types
 fi
 
-pip install git+https://github.com/predictive-analytics-lab/data-science-types
+# >> Julia <<
+
+# Check if Julia LSP installed
+echo 'using Pkg; Pkg.status()' | julia | grep LanguageServer > /dev/null 2>&1
+
+if [ $? -ne 0 ]; then
+    # Install Julia language server
+    cat << EOF | julia
+using Pkg
+Pkg.add(PackageSpec(url="https://github.com/julia-vscode/LanguageServer.jl"))
+Pkg.add("SymbolServer")
+EOF
+fi
 
 # ..:: Language tools ::..
 
 # >> C++ <<
 
 if not_installed global; then
+    # Dependencies
     sudo apt-get -y install libncurses5 libncurses5-dev
+
     wget -4 ftp://ftp.gnu.org/pub/gnu/global/global-6.5.5.tar.gz -P /tmp/
     tar -zxvf /tmp/global-6.5.5.tar.gz -C /tmp
     ( cd /tmp/global-6.5.5/ && ./configure && make && sudo make install )
@@ -88,6 +105,20 @@ fi
 # >> Bash <<
 
 sudo apt-get -y install shellcheck
+
+# ..:: Mail ::..
+
+# >> Mu4e <<
+# https://www.djcbsoftware.nl/code/mu/mu4e/Installation.html
+
+if not_installed mu; then
+    # Dependencies
+    sudo apt-get -y install libgmime-3.0-dev libxapian-dev
+
+    wget -4 https://github.com/djcb/mu/releases/download/1.4.13/mu-1.4.13.tar.xz -P /tmp/
+    tar -zxvf /tmp/mu-1.4.13.tar.xz -C /tmp
+    ( cd /tmp/mu-1.4.13/ && ./configure && make && sudo make install )
+fi
 
 # ..:: Other ::..
 

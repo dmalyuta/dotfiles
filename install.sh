@@ -55,6 +55,7 @@ source .modules/functions.sh
 source .modules/usability.sh
 source .modules/dev_tools.sh
 source .modules/python.sh
+source .modules/julia.sh
 source .modules/productivity.sh
 source .modules/emacs.sh
 

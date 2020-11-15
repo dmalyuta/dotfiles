@@ -45,24 +45,34 @@
   "My customization variables for the init.el file."
   :group 'local)
 
+(defcustom danylo/gc-cons-threshold `,(* 1024 1024 100)
+  "Name of ivy candidate list buffer"
+  :type 'integer
+  :group 'danylo)
+
 (defcustom danylo/gc-collect-print t
   "Print message in minibuffer on garbage collection."
   :type 'boolean
   :group 'danylo)
 
 (defcustom danylo/python-shell-type "ipython"
-  "Which shell type to use?."
+  "Which shell type to use for Python."
+  :type 'string
+  :group 'danylo)
+
+(defcustom danylo/julia-shell-type "julia"
+  "Which shell type to use for Julia."
   :type 'string
   :group 'danylo)
 
 (defcustom danylo/python-buffer-name "*PythonProcess*"
-  "Name of the Python buffer."
+  "Name of the Python shell buffer."
   :type 'string
   :group 'danylo)
 
-(defcustom danylo/python-shell-position '((side . right))
-  "Position of the python shell."
-  :type 'alist
+(defcustom danylo/julia-buffer-name "*JuliaProcess*"
+  "Name of the Julia shell buffer."
+  :type 'string
   :group 'danylo)
 
 (defcustom danylo/ivy-window-name "*ivy-candidate-window*"
@@ -70,14 +80,7 @@
   :type 'string
   :group 'danylo)
 
-;;; ..:: Garbage collection ::..
-
-;; 16MB of garbage collection space once running
-(add-hook 'after-init-hook (lambda () (setq gc-cons-threshold
-				       (eval-when-compile
-					 (* 1024 1024 100)))))
-
-;; Garbage collection message
+;;; ..:: General helper functions ::..
 
 ;;;###autoload
 (defun danylo/fa-icon (icon)
@@ -90,37 +93,35 @@
 		  'display '(raise -0.05))
     ""))
 
+;;; ..:: Garbage collection ::..
+
+;; 100MB of garbage collection space once running
+(add-hook 'after-init-hook
+	  (lambda () (setq gc-cons-threshold danylo/gc-cons-threshold)))
+
+;; Garbage collection message
+
 ;;;###autoload
 (defun danylo/gc-message ()
   "Garbage collection message."
-  (when (and garbage-collection-messages
+  (when (and danylo/gc-collect-print
 	     (not (active-minibuffer-window)))
     (let ((message-log-max nil))
-      (message "%s Collecting garbage" (danylo/fa-icon "trash-o")))))
+      ;; Print "<TRASH_ICON> GC"
+      (message "%s %s" (propertize (danylo/fa-icon "trash-o")
+				   'face `(:family ,(all-the-icons-faicon-family)
+						   :foreground "#464c5d"))
+	       (propertize "GC" 'face '(:foreground "#464c5d")))
+      )))
 
-(add-hook 'post-gc-hook (lambda () (danylo/gc-message) nil))
+(add-hook 'post-gc-hook (lambda () (danylo/gc-message)))
 
-(setq garbage-collection-messages danylo/gc-collect-print)
-
-;;;###autoload
-(defun danylo/gc-collect-quiet ()
-  "Perform garbage collection, without minibuffer printing."
-  (interactive)
-  (setq garbage-collection-messages nil)
-  (garbage-collect)
-  (setq garbage-collection-messages danylo/gc-collect-print))
-
-;; Garbage-collect on focus-out, Emacs should feel snappier.
-;; Source: https://github.com/angrybacon/dotemacs/blob/master/
-;;         dotemacs.org#load-customel
-(add-hook 'focus-out-hook
-	  (lambda ()
-	    (unless (equal major-mode 'dashboard-mode)
-	      (add-hook 'focus-out-hook 'danylo/gc-collect-quiet))))
+(setq garbage-collection-messages nil)
 
 (use-package gcmh
   ;; https://github.com/emacsmirror/gcmh"
   ;; The Garbage Collector Magic Hack
+  :init (setq gcmh-high-cons-threshold danylo/gc-cons-threshold)
   :config
   (gcmh-mode 1))
 
@@ -471,13 +472,25 @@ Source: https://github.com/abo-abo/swiper/issues/1068"
   :config
   (move-text-default-bindings))
 
-(use-package redo+
-  ;;  Redo/undo system for Emacs
-  :ensure nil
-  :quelpa ((redo+ :fetcher github
-		  :repo "emacsmirror/redo-plus"))
-  :bind (("C-/" . undo)
-	 ("C-?" . redo)))
+;;;###autoload
+(defun danylo/undo-no-gc ()
+  "Undo function. Turns off GC prior to undoing."
+  (interactive)
+  (let ((gc-cons-threshold most-positive-fixnum))
+    ;; GC "turned off" in this block by setting gc-cons-threshold very
+    ;; high
+    (undo-tree-undo)))
+
+(use-package undo-tree
+  ;; http://www.dr-qubit.org/undo-tree/undo-tree.el
+  ;; Treat undo history as a tree
+  :bind (:map undo-tree-map
+	      ("C-/" . danylo/undo-no-gc)))
+
+(add-hook 'after-init-hook
+	  (lambda ()
+	    (require 'undo-tree)
+	    (global-undo-tree-mode)))
 
 (use-package hl-todo
   ;; https://github.com/tarsius/hl-todo
@@ -1003,9 +1016,14 @@ With argument ARG, do this that many times."
   :bind (:map mu4e-headers-mode-map
 	      ("x" . (lambda () (interactive) (mu4e-mark-execute-all t)))
 	      :map mu4e-view-mode-map
-	      ("x" . (lambda () (interactive) (mu4e-mark-execute-all t))))
+	      ("x" . (lambda () (interactive) (mu4e-mark-execute-all t)))
+	      :map mu4e-compose-mode-map
+	      ("C-u C-c C-s" . 'message-send)
+	      ("C-u C-c C-x" . 'message-kill-buffer)
+	      ("C-c C-a" . 'mail-add-attachment))
   :init
-  (setq mail-user-agent 'mu4e-user-agent
+  (setq message-mail-user-agent t
+	mail-user-agent 'mu4e-user-agent
 	mu4e-completing-read-function 'completing-read ; Use 'helm' to select mailboxes
 	message-kill-buffer-query nil
 	;; <begin: message HTML view>
@@ -1034,7 +1052,7 @@ With argument ARG, do this that many times."
 	;; <begin: split view settings>
 	mu4e-headers-visible-lines 15
 	mu4e-headers-visible-columns 50
-	mu4e-split-view 'horizontal
+	mu4e-split-view nil
 	;; <end>
 	;; <begin: sending smtp settings>
 	sendmail-program "/usr/bin/msmtp"
@@ -1064,37 +1082,10 @@ With argument ARG, do this that many times."
 
 ;; Do not back up email while writing it, which makes drafts
 ;; accumulate
-(add-hook 'mu4e-compose-mode-hook '(lambda () (auto-save-mode -1)))
+(add-hook 'mu4e-compose-mode-hook #'(lambda () (auto-save-mode -1)))
 
 ;;;; Load Lisp file with mu4e context setp
 (load "~/.emacs.d/email.el")
-
-;;;; Org-mode to compose messages
-
-(use-package org-msg
-  ;; https://github.com/jeremy-compostella/org-msg
-  ;; Mix up Org mode and Message mode
-  :after mu4e
-  :bind (:map org-msg-edit-mode-map
-	      ("C-u C-c C-s" . 'message-send)
-	      ("C-u C-c C-x" . 'message-kill-buffer)
-	      ("M-q" . 'fill-paragraph))
-  :init
-  (setq org-msg-default-alternatives '(html text)
-	org-msg-options "html-postamble:nil H:5 num:nil ^:{} toc:nil author:nil email:nil \\n:t"
-	org-msg-startup "hidestars indent inlineimages"
-	)
-  :config
-  (org-msg-mode))
-
-(with-eval-after-load "org-msg"
-  (define-key org-msg-edit-mode-map (kbd "M-q") 'nil)
-  (define-key org-msg-edit-mode-map [remap fill-paragraph] nil)
-  ;; Make sure window movement keys are not overwritten
-  (define-key org-msg-edit-mode-map (kbd "C-S-<up>") 'nil)
-  (define-key org-msg-edit-mode-map (kbd "C-S-<down>") 'nil)
-  (define-key org-msg-edit-mode-map (kbd "C-S-<left>") 'nil)
-  (define-key org-msg-edit-mode-map (kbd "C-S-<right>") 'nil))
 
 ;;;; Signature before message history
 
@@ -1115,7 +1106,7 @@ With argument ARG, do this that many times."
 		(setq empty-line t)
 	      (forward-line))))
 	(insert (concat "\n\n--\n" mu4e-compose-signature))))))
-(add-hook 'org-msg-edit-mode-hook 'danylo/insert-mu4e-signature)
+(add-hook 'mu4e-compose-mode-hook 'danylo/insert-mu4e-signature)
 
 ;;;###autoload
 (defun danylo/refresh-mu4e-alert-mode-line ()
@@ -1148,6 +1139,46 @@ With argument ARG, do this that many times."
   ;; An interface to the version control system Git
   :bind (("C-x g" . magit-status))
   )
+
+;;; ..:: Shell interaction ::..
+
+;;;###autoload
+(defun danylo/shell~check-open (shell-buffer-name)
+  "Check if a shell is running."
+  (if (get-buffer shell-buffer-name) t nil))
+
+;;;###autoload
+(defun danylo/shell-open (shell-buffer-name shell-type)
+  "Open a shell.
+Placed in the current buffer."
+  (if (danylo/shell~check-open shell-buffer-name)
+      ;; The shell buffer exists
+      (if (get-buffer-window shell-buffer-name)
+	  ;; The buffer is already displayed, switch to it
+	  (pop-to-buffer shell-buffer-name)
+	;; The buffer is hidden, show it
+	(let ((this-window (selected-window))
+	      (new-window (split-window-vertically)))
+	  (select-window new-window)
+	  (switch-to-buffer shell-buffer-name)
+	  (select-window this-window)))
+    ;; The shell buffer does not exist
+    (let ((this-window (selected-window))
+	  (new-window (split-window-vertically)))
+      (select-window new-window)
+      (ansi-term shell-type)
+      (rename-buffer shell-buffer-name)
+      (select-window this-window))))
+
+;;;###autoload
+(defun danylo/shell-exec (shell-buffer-name command)
+  "Run the current file in the shell.
+If there is no shell open, prints a message to inform."
+  (if (danylo/shell~check-open shell-buffer-name)
+      ;; Send a run command for the current file
+      (with-current-buffer shell-buffer-name
+	(term-send-raw-string (format "%s\n" command)))
+    (message "No shell open.")))
 
 ;;; ..:: Language server protocol ::..
 
@@ -1327,96 +1358,95 @@ With argument ARG, do this that many times."
 ;;;; Python shell interaction
 
 ;;;###autoload
-(defun danylo/python-check-open-shell ()
-  "Check if a shell is running."
-  (if (get-buffer danylo/python-buffer-name) t nil))
+(defun danylo/python-shell-open ()
+  "Open a Python shell."
+  (interactive)
+  (danylo/shell-open danylo/python-buffer-name danylo/python-shell-type))
 
 ;;;###autoload
-(defun danylo/python-shell ()
-  "Create a Python shell.
-Placed in the current buffer."
+(defun danylo/python-shell-run-file ()
+  "Run current Python file."
   (interactive)
-  (if (danylo/python-check-open-shell)
-      (progn
-	;; The Python shell buffer exists
-	(if (get-buffer-window danylo/python-buffer-name)
-	    ;; The buffer is already displayed, switch to it
-	    (progn
-	      (pop-to-buffer danylo/python-buffer-name))
-	  ;; The buffer is hidden, show it
-	  (progn
-	    (switch-to-buffer danylo/python-buffer-name)
-	    (display-buffer-in-side-window
-	     danylo/python-buffer-name danylo/python-shell-position)
-	    (switch-to-buffer (other-buffer))
-	    ))
-	)
-    (progn
-      ;; The Python shell buffer does not exist
-      (let ((this-buffer (buffer-name)))
-	(progn
-	  ;; Create a shell buffer
-	  (ansi-term danylo/python-shell-type)
-	  (rename-buffer danylo/python-buffer-name)
-	  ;; Create a side window to hold the vterm buffer
-	  (display-buffer-in-side-window
-	   danylo/python-buffer-name danylo/python-shell-position)
-	  ;; Switch back to current buffer
-	  (switch-to-buffer this-buffer)
-	  )
-	)
-      )
-    )
-  )
-
-;;;###autoload
-(defun danylo/python-run-file ()
-  "Run the current file in the python shell.
-If there is to python shell open, prints a message to inform."
-  (interactive)
-  (if (danylo/python-check-open-shell)
-      (progn
-	;; Send a run command for the current file
-	(let ((file-name (file-name-nondirectory (buffer-file-name)))
-	      (this-buffer (buffer-name)))
-	  (progn
-	    (with-current-buffer danylo/python-buffer-name
-	      (term-send-raw-string (format "%%run -i %s\n" file-name))))
-	  )
-	)
-    (message "No Python buffer.")))
+  (let* ((file-name (file-name-nondirectory (buffer-file-name)))
+	 (command (format "%%run -i %s" file-name)))
+    (danylo/shell-exec danylo/python-buffer-name command)
+    ))
 
 ;;;###autoload
 (defun danylo/python-config ()
   ;; Key bindings
-  (define-key python-mode-map (kbd "C-c C-p") 'danylo/python-shell)
-  (define-key python-mode-map (kbd "C-c C-l") 'danylo/python-run-file)
-  ;; Hide shell buffers from buffer list, so they may only be accessed
-  ;; through the above key bindings
-  ;; See https://github.com/abo-abo/swiper/issues/644
+  (define-key python-mode-map (kbd "C-c C-s") 'danylo/python-shell-open)
+  (define-key python-mode-map (kbd "C-c C-f") 'danylo/python-shell-run-file)
+  (define-key python-mode-map (kbd "C-c C-p") nil)
+  ;; Hide shell buffers from buffer list
   (let ((buf-name (replace-regexp-in-string
 		   "*+" "\\\\*" danylo/python-buffer-name t t)))
     (add-to-list 'ivy-ignore-buffers `,buf-name)))
-
 (add-hook 'python-mode-hook (lambda () (danylo/python-config)))
 
 ;;; ..:: Julia ::..
 
-(use-package ess
-  ;; https://github.com/emacs-ess/ESS
-  ;; Emacs Speaks Statistics
-  :hook (ess-julia-mode . (lambda () (setq set-mark-command-repeat-pop t)))
-  :init (setq ess-use-company t
-	      ess-tab-complete-in-script t))
+(use-package julia-mode
+  ;; https://github.com/JuliaEditorSupport/julia-emacs
+  ;; Major mode for the julia programming language
+  :hook ((julia-mode . yas-minor-mode))
+  )
 
-(with-eval-after-load "ess-julia"
-  (define-key ess-julia-mode-map (kbd "C-u C-j") 'run-ess-julia)
-  (define-key ess-julia-mode-map (kbd "S-SPC") 'complete-symbol)
-  (define-key ess-julia-mode-map (kbd "C-u C-x C-;") 'uncomment-region)
-  (define-key ess-julia-mode-map (kbd "C-u C-c C-l") 'julia-latexsub-or-indent)
-  (define-key ess-julia-mode-map (kbd "C-u C-SPC") (lambda () (set-mark-command -1)))
-  (define-key inferior-ess-julia-mode-map
-    (kbd "C-u C-c C-l") 'julia-latexsub-or-indent))
+(use-package lsp-julia
+  ;; https://github.com/non-Jedi/lsp-julia
+  ;; Julia support for lsp-mode using LanguageServer.jl
+  :after lsp-mode
+  :ensure nil
+  :quelpa ((lsp-julia :fetcher github
+                      :repo "non-Jedi/lsp-julia"
+                      :files (:defaults "languageserver")))
+  :hook ((julia-mode . (lambda () (require 'lsp-julia) (lsp))))
+  :init (setq lsp-julia-package-dir nil
+	      lsp-julia-default-environment "~/.julia/environments/v1.5"))
+
+;;;; Julia shell interaction
+
+;;;###autoload
+(defun danylo/julia-shell-open ()
+  "Open a Julia shell."
+  (interactive)
+  (danylo/shell-open danylo/julia-buffer-name danylo/julia-shell-type))
+
+;;;###autoload
+(defun danylo/julia-shell-run-file ()
+  "Run current Julia file."
+  (interactive)
+  (let* ((file-name (file-name-nondirectory (buffer-file-name)))
+	 (command (format "include(\"%s\")" file-name)))
+    (danylo/shell-exec danylo/julia-buffer-name command)
+    ))
+
+;;;###autoload
+(defun danylo/julia-config ()
+  ;; Key bindings
+  (define-key julia-mode-map (kbd "C-c C-s") 'danylo/julia-shell-open)
+  (define-key julia-mode-map (kbd "C-c C-f") 'danylo/julia-shell-run-file)
+  ;; Hide shell buffers from buffer list
+  (let ((buf-name (replace-regexp-in-string
+		   "*+" "\\\\*" danylo/julia-buffer-name t t)))
+    (add-to-list 'ivy-ignore-buffers `,buf-name)))
+(add-hook 'julia-mode-hook (lambda () (danylo/julia-config)))
+
+;; (use-package ess
+;;   ;; https://github.com/emacs-ess/ESS
+;;   ;; Emacs Speaks Statistics
+;;   :hook (ess-julia-mode . (lambda () (setq set-mark-command-repeat-pop t)))
+;;   :init (setq ess-use-company t
+;; 	      ess-tab-complete-in-script t))
+
+;; (with-eval-after-load "ess-julia"
+;;   (define-key ess-julia-mode-map (kbd "C-u C-j") 'run-ess-julia)
+;;   (define-key ess-julia-mode-map (kbd "S-SPC") 'complete-symbol)
+;;   (define-key ess-julia-mode-map (kbd "C-u C-x C-;") 'uncomment-region)
+;;   (define-key ess-julia-mode-map (kbd "C-u C-c C-l") 'julia-latexsub-or-indent)
+;;   (define-key ess-julia-mode-map (kbd "C-u C-SPC") (lambda () (set-mark-command -1)))
+;;   (define-key inferior-ess-julia-mode-map
+;;     (kbd "C-u C-c C-l") 'julia-latexsub-or-indent))
 
 ;;; ..:: MATLAB ::..
 
@@ -1500,6 +1530,7 @@ If there is to python shell open, prints a message to inform."
 				      'texmathp))))
   :init
   (setq TeX-source-correlate-method 'synctex
+	TeX-source-correlate-start-server t
 	TeX-auto-save t
 	TeX-parse-self t
 	TeX-auto-regexp-list 'TeX-auto-full-regexp-list

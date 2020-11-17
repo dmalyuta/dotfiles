@@ -17,6 +17,9 @@ fi
 # Fix bug that Ctrl-Alt-T creates a new icon sidebar
 gsettings set org.gnome.desktop.default-applications.terminal exec "terminator"
 
+# Show battery percentage
+gsettings set org.gnome.desktop.interface show-battery-percentage true
+
 # ..:: Mouse cursor ::..
 
 mkdir -p ~/.icons
@@ -42,4 +45,10 @@ sudo apt-get -y install recoll \
 # ..:: Other ::..
 
 sudo apt-get -y install xcalib \
-     compizconfig-settings-manager
+     compizconfig-settings-manager \
+     gnome-tweak-tool
+
+# Increase inotify to make sure Evince updates on PDF update
+# Source: https://superuser.com/a/1387905/512940
+echo fs.inotify.max_user_watches=100000 | sudo tee -a /etc/sysctl.conf
+sudo sysctl -p

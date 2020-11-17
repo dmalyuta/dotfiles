@@ -293,20 +293,11 @@
   "How many completion candidates to display, tops.")
 
 ;;;###autoload
-(defun danylo/ivy-with-thing-at-point (cmd)
-  "Auto-populate search with current thing at point.
-Source: https://github.com/abo-abo/swiper/issues/1068"
-  (let ((ivy-initial-inputs-alist
-         (list
-          (cons cmd (thing-at-point 'symbol)))))
-    (funcall cmd)))
-
-;;;###autoload
 (defun danylo/swiper-thing-at-point ()
     "Put thing at point in swiper buffer"
     (interactive)
     (deactivate-mark)
-    (danylo/ivy-with-thing-at-point 'swiper))
+    (swiper (thing-at-point 'symbol)))
 
 ;;;###autoload
 (defun danylo/counsel-switch-buffer-no-preview ()
@@ -989,7 +980,7 @@ With argument ARG, do this that many times."
 	org-startup-with-latex-preview t)
   :config
   (setq org-format-latex-options (plist-put org-format-latex-options
-					    :scale 1.3)
+					    :scale 1.7)
 	org-format-latex-options (plist-put org-format-latex-options
 					    :foreground "yellow")))
 
@@ -1007,6 +998,11 @@ With argument ARG, do this that many times."
   :hook (org-mode . org-bullets-mode)
   :custom
   (org-bullets-bullet-list '("◉" "○" "●" "○" "●" "○" "●")))
+
+(use-package org-sidebar
+  ;; https://github.com/alphapapa/org-sidebar
+  ;; A helpful sidebar for Org mode
+  )
 
 ;;; ..:: Email ::..
 
@@ -1149,27 +1145,37 @@ With argument ARG, do this that many times."
   (if (get-buffer shell-buffer-name) t nil))
 
 ;;;###autoload
-(defun danylo/shell-open (shell-buffer-name shell-type)
+(defun danylo/shell-open (shell-buffer-name shell-type &optional in-place)
   "Open a shell.
 Placed in the current buffer."
   (if (danylo/shell~check-open shell-buffer-name)
       ;; The shell buffer exists
-      (if (get-buffer-window shell-buffer-name)
-	  ;; The buffer is already displayed, switch to it
-	  (pop-to-buffer shell-buffer-name)
-	;; The buffer is hidden, show it
-	(let ((this-window (selected-window))
-	      (new-window (split-window-vertically)))
-	  (select-window new-window)
+      (if in-place
+	  ;; Show shell in current window
 	  (switch-to-buffer shell-buffer-name)
-	  (select-window this-window)))
+	;; Show shell in another window
+	(if (get-buffer-window shell-buffer-name)
+	    ;; The buffer is already displayed, switch to it
+	    (pop-to-buffer shell-buffer-name)
+	  ;; The buffer is hidden, show it
+	  (let ((this-window (selected-window))
+		(new-window (split-window-vertically)))
+	    (select-window new-window)
+	    (switch-to-buffer shell-buffer-name)
+	    (select-window this-window))))
     ;; The shell buffer does not exist
-    (let ((this-window (selected-window))
-	  (new-window (split-window-vertically)))
-      (select-window new-window)
-      (ansi-term shell-type)
-      (rename-buffer shell-buffer-name)
-      (select-window this-window))))
+    (if in-place
+	;; Create shell in current window
+	(progn
+	  (ansi-term shell-type)
+	  (rename-buffer shell-buffer-name))
+      ;; Create shell in new window
+      (let ((this-window (selected-window))
+	    (new-window (split-window-vertically)))
+	(select-window new-window)
+	(ansi-term shell-type)
+	(rename-buffer shell-buffer-name)
+	(select-window this-window)))))
 
 ;;;###autoload
 (defun danylo/shell-exec (shell-buffer-name command)
@@ -1359,10 +1365,16 @@ If there is no shell open, prints a message to inform."
 ;;;; Python shell interaction
 
 ;;;###autoload
-(defun danylo/python-shell-open ()
+(defun danylo/python-shell-open (arg)
   "Open a Python shell."
-  (interactive)
-  (danylo/shell-open danylo/python-buffer-name danylo/python-shell-type))
+  (interactive "P")
+  (if arg
+      ;; Open in current window
+      (danylo/shell-open danylo/python-buffer-name
+			 danylo/python-shell-type t)
+    ;; Open in new window
+    (danylo/shell-open danylo/python-buffer-name
+		       danylo/python-shell-type)))
 
 ;;;###autoload
 (defun danylo/python-shell-run-file ()
@@ -1408,10 +1420,16 @@ If there is no shell open, prints a message to inform."
 ;;;; Julia shell interaction
 
 ;;;###autoload
-(defun danylo/julia-shell-open ()
+(defun danylo/julia-shell-open (arg)
   "Open a Julia shell."
-  (interactive)
-  (danylo/shell-open danylo/julia-buffer-name danylo/julia-shell-type))
+  (interactive "P")
+  (if arg
+      ;; Open in current window
+      (danylo/shell-open danylo/julia-buffer-name
+			 danylo/julia-shell-type t)
+    ;; Open in new window
+    (danylo/shell-open danylo/julia-buffer-name
+		       danylo/julia-shell-type)))
 
 ;;;###autoload
 (defun danylo/julia-shell-run-file ()
@@ -1427,27 +1445,12 @@ If there is no shell open, prints a message to inform."
   ;; Key bindings
   (define-key julia-mode-map (kbd "C-c C-s") 'danylo/julia-shell-open)
   (define-key julia-mode-map (kbd "C-c C-f") 'danylo/julia-shell-run-file)
+  (define-key julia-mode-map (kbd "C-c C-l") 'julia-latexsub-or-indent)
   ;; Hide shell buffers from buffer list
   (let ((buf-name (replace-regexp-in-string
 		   "*+" "\\\\*" danylo/julia-buffer-name t t)))
     (add-to-list 'ivy-ignore-buffers `,buf-name)))
 (add-hook 'julia-mode-hook (lambda () (danylo/julia-config)))
-
-;; (use-package ess
-;;   ;; https://github.com/emacs-ess/ESS
-;;   ;; Emacs Speaks Statistics
-;;   :hook (ess-julia-mode . (lambda () (setq set-mark-command-repeat-pop t)))
-;;   :init (setq ess-use-company t
-;; 	      ess-tab-complete-in-script t))
-
-;; (with-eval-after-load "ess-julia"
-;;   (define-key ess-julia-mode-map (kbd "C-u C-j") 'run-ess-julia)
-;;   (define-key ess-julia-mode-map (kbd "S-SPC") 'complete-symbol)
-;;   (define-key ess-julia-mode-map (kbd "C-u C-x C-;") 'uncomment-region)
-;;   (define-key ess-julia-mode-map (kbd "C-u C-c C-l") 'julia-latexsub-or-indent)
-;;   (define-key ess-julia-mode-map (kbd "C-u C-SPC") (lambda () (set-mark-command -1)))
-;;   (define-key inferior-ess-julia-mode-map
-;;     (kbd "C-u C-c C-l") 'julia-latexsub-or-indent))
 
 ;;; ..:: MATLAB ::..
 

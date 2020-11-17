@@ -36,3 +36,7 @@ if ! (conda info --envs | grep $PYENV_NAME > /dev/null 2>&1); then
     pip install pytest
     pip install black
 fi
+
+# ..:: Jupyter notebooks ::..
+
+sudo apt-get -y install jupyter-notebook

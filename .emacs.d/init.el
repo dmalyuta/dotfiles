@@ -158,6 +158,10 @@
 (global-unset-key (kbd "C-<up>"))
 (global-unset-key (kbd "C-<down>"))
 
+;; Move by paragraph
+(global-set-key (kbd "M-n") 'forward-paragraph)
+(global-set-key (kbd "M-p") 'backward-paragraph)
+
 ;; Lisp deprecation
 ;; https://github.com/kiwanami/emacs-epc/issues/35
 (setq byte-compile-warnings '(cl-functions))
@@ -362,10 +366,6 @@
 	counsel-switch-buffer-preview-virtual-buffers nil
 	ivy-truncate-lines t
 	ivy-display-style 'fancy)
-  (add-hook 'ivy-mode-hook
-	    (lambda ()
-	      (define-key ivy-mode-map (kbd "M-n") 'ivy-next-history-element)
-	      (define-key ivy-mode-map (kbd "M-p") 'ivy-previous-history-element)))
   (custom-set-faces
    '(ivy-minibuffer-match-face-1
      ((t (:background "orange"

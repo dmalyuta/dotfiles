@@ -309,6 +309,44 @@
   (interactive)
   (ivy-switch-buffer))
 
+;;;###autoload
+(defun danylo/ivy-display-function-window (text)
+  "Show ivy candidate completion list in a temporary buffer, like Helm."
+  (when (> (length text) 0)
+    (let ((buffer (get-buffer-create danylo/ivy-window-name)))
+      (with-current-buffer buffer
+	(setq cursor-type nil) ;; Hide cursor
+	(let ((inhibit-read-only t))
+	  (erase-buffer)
+	  (setq danylo/completion-candidate-list
+		;; Remove the first character, which is '\n' (blank line)
+		(substring text 1 nil))
+	  (insert danylo/completion-candidate-list)
+	  )
+	)
+      (with-ivy-window
+	(let ((window (selected-window)))
+	  (if (window-parameter window 'window-side)
+	      ;; In side window
+	      ;; Cannot use display-buffer-below-selected because a
+	      ;; side window cannot be split (most likely)
+	      (display-buffer
+	       buffer
+	       `((display-buffer-reuse-window display-buffer-pop-up-window)
+		 (window-height . ,(ivy--height (ivy-state-caller ivy-last)))))
+	    ;; In regular window
+	    (display-buffer
+	     buffer
+	     `((display-buffer-reuse-window display-buffer-below-selected)
+	       (window-height . ,(ivy--height (ivy-state-caller ivy-last))))))))
+      )
+    )
+  )
+
+(defun danylo/side-window-tmp ()
+  (interactive)
+  (display-buffer-in-side-window (get-buffer "*Messages*") '((side . right))))
+
 (use-package ivy-prescient
   ;; https://github.com/raxod502/prescient.el
   ;; Simple but effective sorting and filtering for Emacs.
@@ -335,7 +373,9 @@
 	 ("C-l" . ivy-backward-delete-char)
 	 ("TAB" . ivy-alt-done))
   :init
-  (setq ivy-use-virtual-buffers nil
+  (setq ivy-display-functions-alist
+	'((t . danylo/ivy-display-function-window))
+	ivy-use-virtual-buffers nil
 	enable-recursive-minibuffers t
 	;; Remove the default "^" in search string
 	;; Source: https://emacs.stackexchange.com/a/38842/13661
@@ -357,34 +397,6 @@
   (add-to-list 'ivy-ignore-buffers '"\\\\*ivy-")
   :config
   (ivy-mode 1))
-
-(use-package ivy-posframe
-  ;; https://github.com/tumashu/ivy-posframe
-  ;; Let ivy use posframe to show its candidate menu
-  :after ivy
-  :init
-  (setq ivy-posframe-display-functions-alist
-	'((t . ivy-posframe-display-at-window-bottom-left)
-	  (counsel-find-file . ivy-display-function-fallback))
-	ivy-posframe-hide-minibuffer nil
-	ivy-posframe--ignore-prompt t
-	ivy-posframe-parameters '((left-fringe . 8)
-				  (right-fringe . 8)
-				  (lines-truncate . t)))
-  :config
-  (ivy-posframe-mode 1))
-
-;;;###autoload
-(defun danylo/ivy-posframe-get-size ()
-  "The function which is used to deal with ivy posframe's size."
-  (list
-   :height ivy-posframe-height
-   :width ivy-posframe-height
-   :min-height (or ivy-posframe-min-height ivy-height)
-   :min-width (or ivy-posframe-min-width (round (* (window-width) 1.0)))))
-
-(with-eval-after-load "ivy-posframe"
-  (setq ivy-posframe-size-function #'danylo/ivy-posframe-get-size))
 
 (use-package helm
   ;; https://emacs-helm.github.io/helm/

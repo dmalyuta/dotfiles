@@ -309,24 +309,6 @@
   (interactive)
   (ivy-switch-buffer))
 
-;;;###autoload
-(defun danylo/ivy-display-function-window (text)
-  "Show ivy candidate completion list in a temporary buffer, like Helm."
-  (when (> (length text) 0)
-    (let ((buffer (get-buffer-create danylo/ivy-window-name)))
-      (with-current-buffer buffer
-	(setq cursor-type nil) ; Hide cursor
-	(let ((inhibit-read-only t))
-          (erase-buffer)
-	  ;; Remove the first character, which is '\n' (blank line)
-	  (setq danylo/completion-candidate (substring text 1 nil))
-          (insert (substring text 1 nil))))
-      (with-ivy-window
-	(display-buffer
-	 buffer
-	 `((display-buffer-reuse-window display-buffer-below-selected)
-           (window-height . ,(ivy--height (ivy-state-caller ivy-last)))))))))
-
 (use-package ivy-prescient
   ;; https://github.com/raxod502/prescient.el
   ;; Simple but effective sorting and filtering for Emacs.
@@ -353,9 +335,7 @@
 	 ("C-l" . ivy-backward-delete-char)
 	 ("TAB" . ivy-alt-done))
   :init
-  (setq ivy-display-functions-alist
-	'((t . danylo/ivy-display-function-window))
-	ivy-use-virtual-buffers nil
+  (setq ivy-use-virtual-buffers nil
 	enable-recursive-minibuffers t
 	;; Remove the default "^" in search string
 	;; Source: https://emacs.stackexchange.com/a/38842/13661
@@ -377,6 +357,34 @@
   (add-to-list 'ivy-ignore-buffers '"\\\\*ivy-")
   :config
   (ivy-mode 1))
+
+(use-package ivy-posframe
+  ;; https://github.com/tumashu/ivy-posframe
+  ;; Let ivy use posframe to show its candidate menu
+  :after ivy
+  :init
+  (setq ivy-posframe-display-functions-alist
+	'((t . ivy-posframe-display-at-window-bottom-left)
+	  (counsel-find-file . ivy-display-function-fallback))
+	ivy-posframe-hide-minibuffer nil
+	ivy-posframe--ignore-prompt t
+	ivy-posframe-parameters '((left-fringe . 8)
+				  (right-fringe . 8)
+				  (lines-truncate . t)))
+  :config
+  (ivy-posframe-mode 1))
+
+;;;###autoload
+(defun danylo/ivy-posframe-get-size ()
+  "The function which is used to deal with ivy posframe's size."
+  (list
+   :height ivy-posframe-height
+   :width ivy-posframe-height
+   :min-height (or ivy-posframe-min-height ivy-height)
+   :min-width (or ivy-posframe-min-width (round (* (window-width) 1.0)))))
+
+(with-eval-after-load "ivy-posframe"
+  (setq ivy-posframe-size-function #'danylo/ivy-posframe-get-size))
 
 (use-package helm
   ;; https://emacs-helm.github.io/helm/
@@ -533,7 +541,7 @@ START and END give the start/end of current selection."
       (let ((regionp (buffer-substring start end)))
 	(delete-region start end)
 	(insert (format "%s %s %s" left regionp right)))
-    (insert (insert (format "%s %s %s" left msg right))))
+    (insert (format "%s %s %s" left msg right)))
   )
 
 ;;;###autoload
@@ -943,16 +951,12 @@ With argument ARG, do this that many times."
   "Configure org mode after loading it"
   (setq org-adapt-indentation nil
 	org-hide-leading-stars t)
-  (visual-line-mode t))
+  (visual-line-mode t)
+  (set-mark-command nil))
 
 ;;;###autoload
 (defun danylo/org-font-setup ()
   "Org mode fonts"
-  ;; Replace list hyphen with dot
-  (font-lock-add-keywords 'org-mode
-                          '(("^ *\\([-]\\) "
-                             (0 (prog1 () (compose-region (match-beginning 1)
-							  (match-end 1) "•"))))))
   ;; Heading sizes
   (dolist (face '((org-level-1 . 1.2)
                   (org-level-2 . 1.1)
@@ -984,12 +988,56 @@ With argument ARG, do this that many times."
 	org-format-latex-options (plist-put org-format-latex-options
 					    :foreground "yellow")))
 
+;;;###autoload
+(defun danylo/org-emphasize (char)
+  "Emphasize text in org-mode. CHAR is the character to wrap the
+  text with."
+  (interactive)
+  (org-emphasize (string-to-char char)))
+
+(defface danylo/org-equation-face
+  '((t (:foreground "orange" :weight bold :inherit default)))
+  "Face for org-mode equations."
+  :group 'org-faces)
+
+;;;###autoload
+(defun danylo/org-add-extra-markup ()
+  "Add additional emphasis to org-mode.
+Source: https://emacs.stackexchange.com/a/35632/13661"
+  (add-to-list 'org-font-lock-extra-keywords
+	       '("\\(\\$\\)\\([^\n\r\t\$]+\\)\\(\\$\\)"
+		 (1 '(face danylo/org-equation-face invisible nil))
+		 (2 '(face danylo/org-equation-face invisible nil))
+		 (3 '(face danylo/org-equation-face invisible nil)))))
+(add-hook 'org-font-lock-set-keywords-hook 'danylo/org-add-extra-markup)
+
+;;;###autoload
+(defun danylo/org-emphasize-equation (start end)
+  "Wrap an equation in $ symbols in org-mode."
+  (interactive "r")
+  (if (use-region-p)
+      (let ((regionp (buffer-substring start end)))
+	(delete-region start end)
+	(if current-prefix-arg
+	    (insert (format "$$%s$$" regionp))
+	  (insert (format "$%s$" regionp))))
+    (if current-prefix-arg
+	(progn (insert "$$$$") (backward-char 2))
+      (progn (insert "$$") (backward-char 1)))))
+
 (with-eval-after-load "org"
   ;; Make sure window movement keys are not over-written
   (define-key org-mode-map (kbd "C-S-<up>") 'nil)
   (define-key org-mode-map (kbd "C-S-<down>") 'nil)
   (define-key org-mode-map (kbd "C-S-<left>") 'nil)
-  (define-key org-mode-map (kbd "C-S-<right>") 'nil))
+  (define-key org-mode-map (kbd "C-S-<right>") 'nil)
+  ;; Text emphasis
+  (add-to-list 'org-emphasis-alist '("$" danylo/org-equation-face))
+  (define-key org-mode-map (kbd "C-x C-f C-b")
+    (lambda () (interactive) (danylo/org-emphasize "*")))
+  (define-key org-mode-map (kbd "C-x C-f C-u")
+    (lambda () (interactive) (danylo/org-emphasize "_")))
+  (define-key org-mode-map (kbd "C-x C-f C-e") 'danylo/org-emphasize-equation))
 
 (use-package org-bullets
   ;; https://github.com/sabof/org-bullets
@@ -998,11 +1046,6 @@ With argument ARG, do this that many times."
   :hook (org-mode . org-bullets-mode)
   :custom
   (org-bullets-bullet-list '("◉" "○" "●" "○" "●" "○" "●")))
-
-(use-package org-sidebar
-  ;; https://github.com/alphapapa/org-sidebar
-  ;; A helpful sidebar for Org mode
-  )
 
 ;;; ..:: Email ::..
 
@@ -1102,7 +1145,7 @@ With argument ARG, do this that many times."
 	    (if (eq num-chars 0)
 		(setq empty-line t)
 	      (forward-line))))
-	(insert (concat "\n\n--\n" mu4e-compose-signature))))))
+	(insert (concat "\n\n" mu4e-compose-signature))))))
 (add-hook 'mu4e-compose-mode-hook 'danylo/insert-mu4e-signature)
 
 ;;;###autoload

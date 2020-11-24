@@ -9,7 +9,11 @@
 if not_installed emacs; then
     # Dependencies
     sudo apt-get -y build-dep emacs
-    sudo apt-get -y install libwebkit2gtk-4.0-dev libjansson-dev
+    sudo apt-get -y install libwebkit2gtk-4.0-dev \
+	 libjansson-dev \
+	 autoconf \
+	 texinfo \
+	 libncurses-dev
 
     rm -rf /tmp/emacs/
     git clone --branch emacs-27.1 --depth 1 git://git.sv.gnu.org/emacs.git /tmp/emacs

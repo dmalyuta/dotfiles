@@ -84,13 +84,15 @@
 ;;; ..:: General helper functions ::..
 
 ;;;###autoload
-(defun danylo/fa-icon (icon)
+(defun danylo/fa-icon (icon &optional fg bg)
   "Fontawesome icon with proper formatting for minibuffer"
   (if (window-system)
       (propertize (all-the-icons-faicon icon)
 		  'face `(:family
 			  ,(all-the-icons-faicon-family)
-			  :height 1.0)
+			  :height 1.0
+			  :foreground fg
+			  :background bg)
 		  'display '(raise -0.05))
     ""))
 
@@ -109,9 +111,7 @@
 	     (not (active-minibuffer-window)))
     (let ((message-log-max nil))
       ;; Print "<TRASH_ICON> GC"
-      (message "%s %s" (propertize (danylo/fa-icon "trash-o")
-				   'face `(:family ,(all-the-icons-faicon-family)
-						   :foreground "#464c5d"))
+      (message "%s %s" (danylo/fa-icon "trash-o" "#464c5d")
 	       (propertize "GC" 'face '(:foreground "#464c5d")))
       )))
 
@@ -283,6 +283,9 @@
 
 (use-package dired+
   ;;  Redo/undo system for Emacs
+  :ensure nil
+  :quelpa ((dired+ :fetcher url
+		   :url "https://raw.githubusercontent.com/emacsmirror/dired-plus/master/dired+.el"))
   :bind (:map dired-mode-map
 	      ("M-i" . nil))
   :init
@@ -368,7 +371,7 @@
 	 ("M-x" . counsel-M-x)
 	 ("C-c q" . counsel-semantic-or-imenu)
 	 :map company-mode-map
-	 ("<S-SPC>" . counsel-company)
+	 ("S-SPC" . counsel-company)
 	 :map ivy-minibuffer-map
 	 ("C-l" . ivy-backward-delete-char)
 	 ("TAB" . ivy-alt-done))
@@ -403,7 +406,7 @@
   ;; Emacs incremental completion and selection narrowing framework
   :bind (("C-x C-f" . helm-find-files)
 	 :map helm-map
-	 ("<tab>" . helm-execute-persistent-action))
+	 ("TAB" . helm-execute-persistent-action))
   :init (setq helm-display-buffer-default-height
 	      danylo/num-completion-candidates
 	      helm-mode-line-string ""
@@ -1384,14 +1387,8 @@ If there is no shell open, prints a message to inform."
 (defun danylo/lsp-variable-info-message (string)
   "Display variable info"
   (message "%s %s"
-	   (propertize (all-the-icons-faicon "info")
-		       'face `(:family ,(all-the-icons-faicon-family)
-				       :height 1.0
-				       :background nil
-				       :foreground "yellow")
-		       'display '(raise -0.05))
-	   (propertize string 'face '(:background nil
-						  :foreground "yellow"))))
+	   (danylo/fa-icon "info" "yellow")
+	   (propertize string 'face '(:background nil :foreground "yellow"))))
 
 ;;;###autoload
 (defun danylo/lsp-display-variable-info ()

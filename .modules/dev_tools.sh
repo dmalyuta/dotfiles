@@ -21,6 +21,7 @@ sudo apt-get -y install gitk \
      xclip \
      silversearcher-ag \
      screen \
+     tmux \
      htop \
      sshpass \
      tree \

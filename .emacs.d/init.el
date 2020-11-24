@@ -1048,11 +1048,11 @@ Source: https://emacs.stackexchange.com/a/35632/13661"
   (define-key org-mode-map (kbd "C-S-<right>") 'nil)
   ;; Text emphasis
   (add-to-list 'org-emphasis-alist '("$" danylo/org-equation-face))
-  (define-key org-mode-map (kbd "C-x C-f C-b")
+  (define-key org-mode-map (kbd "C-c f b")
     (lambda () (interactive) (danylo/org-emphasize "*")))
-  (define-key org-mode-map (kbd "C-x C-f C-u")
+  (define-key org-mode-map (kbd "C-c f u")
     (lambda () (interactive) (danylo/org-emphasize "_")))
-  (define-key org-mode-map (kbd "C-x C-f C-e") 'danylo/org-emphasize-equation))
+  (define-key org-mode-map (kbd "C-c f e") 'danylo/org-emphasize-equation))
 
 (use-package org-bullets
   ;; https://github.com/sabof/org-bullets

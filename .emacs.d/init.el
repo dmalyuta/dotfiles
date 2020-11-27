@@ -84,15 +84,15 @@
 ;;; ..:: General helper functions ::..
 
 ;;;###autoload
-(defun danylo/fa-icon (icon &optional fg bg)
+(defun danylo/fa-icon (icon &optional fg)
   "Fontawesome icon with proper formatting for minibuffer"
+  (unless fg
+    (setq fg `,(face-attribute 'default :foreground)))
   (if (window-system)
       (propertize (all-the-icons-faicon icon)
-		  'face `(:family
-			  ,(all-the-icons-faicon-family)
-			  :height 1.0
-			  :foreground fg
-			  :background bg)
+		  'face `(:family ,(all-the-icons-faicon-family)
+				  :height 1.0
+				  :foreground ,fg)
 		  'display '(raise -0.05))
     ""))
 
@@ -992,6 +992,8 @@ With argument ARG, do this that many times."
   ;; Your life in plain text
   :hook ((org-mode . danylo/org-mode-setup)
 	 (org-mode . danylo/org-font-setup))
+  :bind (:map org-mode-map
+	      ("M-q" . 'fill-paragraph))
   :init
   (setq org-startup-folded nil
 	org-ellipsis " ▾"
@@ -1002,6 +1004,10 @@ With argument ARG, do this that many times."
 					    :scale 1.7)
 	org-format-latex-options (plist-put org-format-latex-options
 					    :foreground "yellow")))
+
+(with-eval-after-load "org"
+  (define-key org-mode-map (kbd "M-q") 'nil)
+  (define-key org-mode-map [remap fill-paragraph] nil))
 
 ;;;###autoload
 (defun danylo/org-emphasize (char)
@@ -1073,22 +1079,13 @@ Source: https://emacs.stackexchange.com/a/35632/13661"
 	      :map mu4e-view-mode-map
 	      ("x" . (lambda () (interactive) (mu4e-mark-execute-all t)))
 	      :map mu4e-compose-mode-map
-	      ("C-u C-c C-s" . 'message-send)
-	      ("C-u C-c C-x" . 'message-kill-buffer)
+	      ("C-c C-s C-s" . 'message-send)
 	      ("C-c C-a" . 'mail-add-attachment))
   :init
   (setq message-mail-user-agent t
 	mail-user-agent 'mu4e-user-agent
 	mu4e-completing-read-function 'completing-read ; Use 'helm' to select mailboxes
 	message-kill-buffer-query nil
-	;; <begin: message HTML view>
-	mu4e-view-prefer-html t
-	mu4e-view-html-plaintext-ratio-heuristic most-positive-fixnum
-	mu4e-html2text-command 'mu4e-shr2text
-	shr-color-visible-luminance-min 60
-	shr-color-visible-distance-min 5
-	shr-use-colors nil
-	;; <end>
 	mu4e-context-policy 'pick-first
 	mu4e-compose-context-policy 'ask-if-none
 	mu4e-confirm-quit nil
@@ -1098,29 +1095,86 @@ Source: https://emacs.stackexchange.com/a/35632/13661"
 	mu4e-headers-include-related nil ; [W] to toggle
 	mu4e-headers-show-threads nil
 	mu4e-compose-signature-auto-include nil
-	;; <begin: fix failed to find message error (github.com/djcb/mu/issues/1667)>
+	max-specpdl-size 5000 ; See djcbsoftware.nl/code/mu/mu4e/General.html
+	mu4e-remove-func 'danylo/mu4e~headers-remove-handler
+
+	;; <message HTML view>
+	mu4e-view-prefer-html t
+	mu4e-view-html-plaintext-ratio-heuristic most-positive-fixnum
+	mu4e-html2text-command 'mu4e-shr2text
+	shr-color-visible-luminance-min 60
+	shr-color-visible-distance-min 5
+	shr-use-colors nil
+
+	;; <fix failed to find message error (github.com/djcb/mu/issues/1667)>
 	mu4e-change-filenames-when-moving nil
 	mu4e-index-cleanup t
 	mu4e-index-lazy-check nil
-	;; <end>
-	max-specpdl-size 5000 ; See djcbsoftware.nl/code/mu/mu4e/General.html
-	;; <begin: split view settings>
+
+
+	;; <split view settings>
 	mu4e-headers-visible-lines 15
 	mu4e-headers-visible-columns 50
 	mu4e-split-view nil
-	;; <end>
-	;; <begin: sending smtp settings>
+
+	;; <sending smtp settings>
 	sendmail-program "/usr/bin/msmtp"
 	send-mail-function 'smtpmail-send-it
 	message-sendmail-f-is-evil t
 	message-sendmail-extra-arguments '("--read-envelope-from")
 	message-send-mail-function 'message-send-mail-with-sendmail
 	message-kill-buffer-on-exit t
-	;; <end>
 	)
   (advice-add #'shr-colorize-region :around
 	      (defun shr-no-colourise-region (&rest ignore)))
   )
+
+(with-eval-after-load "mu4e"
+  ;; Disable message sending with C-c C-s (make it more complicated to
+  ;; not send messages by accident)
+  (define-key mu4e-headers-mode-map (kbd "C-c C-s") 'nil))
+
+;;;###autoload
+(defun danylo/mu4e~headers-remove-handler (docid &optional skip-hook)
+  "This is a patched version of mu4e~headers-remove-handler in
+mu4e-headers.el. The original function throws an error after
+sending a message that was previously a draft, because it tries
+to delete the window that held the message editing bufer. This
+function does not delete the window, which has the additional
+benefit of preserving window layout."
+  (when (buffer-live-p (mu4e-get-headers-buffer))
+    (mu4e~headers-remove-header docid t))
+  ;; if we were viewing this message, close it now.
+  (when (and (mu4e~headers-view-this-message-p docid)
+             (buffer-live-p (mu4e-get-view-buffer)))
+    (kill-buffer (mu4e-get-view-buffer)))
+  (unless skip-hook
+    (run-hooks 'mu4e-message-changed-hook)))
+
+;;;###autoload
+(defun message-kill-buffer ()
+  "Patched message-kill-buffer from gnus/message.el.gz.
+This version deletes backup files without asking."
+  (interactive)
+  (when (or (not (buffer-modified-p))
+	    (not message-kill-buffer-query)
+	    (yes-or-no-p "Message modified; kill anyway? "))
+    (let ((actions message-kill-actions)
+	  (draft-article message-draft-article)
+	  (auto-save-file-name buffer-auto-save-file-name)
+	  (file-name buffer-file-name)
+	  (modified (buffer-modified-p)))
+      (setq buffer-file-name nil)
+      (kill-buffer (current-buffer))
+      (when (and (or (and auto-save-file-name
+			  (file-exists-p auto-save-file-name))
+		     (and file-name
+			  (file-exists-p file-name))))
+	(ignore-errors
+	  (delete-file auto-save-file-name))
+	(let ((message-draft-article draft-article))
+	  (message-disassociate-draft)))
+      (message-do-actions actions))))
 
 ;;;###autoload
 (defun danylo/launch-mu4e (arg)
@@ -1137,7 +1191,11 @@ Source: https://emacs.stackexchange.com/a/35632/13661"
 
 ;; Do not back up email while writing it, which makes drafts
 ;; accumulate
-(add-hook 'mu4e-compose-mode-hook #'(lambda () (auto-save-mode -1)))
+(add-hook 'mu4e-compose-mode-hook
+	  #'(lambda ()
+	      (auto-save-mode -1)
+	      (make-local-variable 'make-backup-files)
+	      (setq make-backup-files nil)))
 
 ;;;; Load Lisp file with mu4e context setp
 (load "~/.emacs.d/email.el")

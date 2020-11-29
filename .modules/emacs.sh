@@ -36,6 +36,12 @@ if ! ls /usr/share/fonts | grep -q FiraCode; then
 	  sudo -H cp * /usr/share/fonts )
 fi
 
+if ! ls /usr/share/fonts | grep -q FiraMono; then
+    git clone --branch zwaldowski/mod-new --depth 1 https://github.com/zwaldowski/Fira /tmp/fira
+    ( cd /tmp/fira/otf/ && \
+	  sudo -H cp Fira*.otf /usr/share/fonts )
+fi
+
 # ..:: Language Server Protocols ::..
 
 # >> C++ <<

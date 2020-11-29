@@ -279,7 +279,7 @@
   (interactive)
   (byte-recompile-file "~/.emacs.d/init.el" nil 0))
 
-;;; Dired (directory listing)
+;;;; Dired (directory listing)
 
 (use-package dired+
   ;;  Redo/undo system for Emacs
@@ -293,6 +293,14 @@
 	diredp-hide-details-initially-flag nil)
   :config
   (diredp-toggle-find-file-reuse-dir t))
+
+;;;; Search Google
+
+(use-package google-this
+  ;; https://github.com/Malabarba/emacs-google-this
+  ;; A set of emacs functions and bindings to google under point.
+  :config
+  (google-this-mode 1))
 
 ;;; ..:: Searching ::..
 
@@ -998,16 +1006,24 @@ With argument ARG, do this that many times."
   (setq org-startup-folded nil
 	org-ellipsis " ▾"
 	org-src-tab-acts-natively t
-	org-startup-with-latex-preview t)
-  :config
+	org-startup-with-latex-preview t))
+
+(with-eval-after-load "org"
+  (define-key org-mode-map (kbd "M-q") 'nil)
+  (define-key org-mode-map [remap fill-paragraph] nil)
+  ;; LaTeX equations preview style
   (setq org-format-latex-options (plist-put org-format-latex-options
 					    :scale 1.7)
 	org-format-latex-options (plist-put org-format-latex-options
 					    :foreground "yellow")))
 
-(with-eval-after-load "org"
-  (define-key org-mode-map (kbd "M-q") 'nil)
-  (define-key org-mode-map [remap fill-paragraph] nil))
+;;;###autoload
+(defun danylo/org-mode-font ()
+  "Set the org-mode general text font.
+See: https://stackoverflow.com/a/12286420/4605946."
+  (overlay-put (make-overlay (point-min) (point-max) nil nil t)
+               'face '(:family "Fira Mono")))
+(add-hook 'org-mode-hook 'danylo/org-mode-font)
 
 ;;;###autoload
 (defun danylo/org-emphasize (char)
@@ -1056,6 +1072,8 @@ Source: https://emacs.stackexchange.com/a/35632/13661"
   (add-to-list 'org-emphasis-alist '("$" danylo/org-equation-face))
   (define-key org-mode-map (kbd "C-c f b")
     (lambda () (interactive) (danylo/org-emphasize "*")))
+  (define-key org-mode-map (kbd "C-c f i")
+    (lambda () (interactive) (danylo/org-emphasize "/")))
   (define-key org-mode-map (kbd "C-c f u")
     (lambda () (interactive) (danylo/org-emphasize "_")))
   (define-key org-mode-map (kbd "C-c f e") 'danylo/org-emphasize-equation))

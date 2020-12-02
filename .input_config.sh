@@ -11,9 +11,17 @@ ERRF=/tmp/input_config_errors
 ########## KEYBOARD
 #####################################
 
-# Key stickiness and move speed
-gsettings set org.gnome.desktop.peripherals.keyboard delay 200 &>>$ERRF
-gsettings set org.gnome.desktop.peripherals.keyboard repeat-interval 15 &>>$ERRF
+# ..:: Key stickiness and move speed ::..
+
+Delay=200 # [ms] Delay before repeating pressed key
+RepeatRate=$(bc -l <<< 'scale=0; 1/(15*0.001)') # [Hz] Rate at which to repeat pressed key
+
+# This works reliably (see https://raspberrypi.stackexchange.com/a/99940)
+# Note: `$ xset q` shows the current keyboard delay and repeat rate settings
+xset r rate $Delay $RepeatRate &>>$ERRF
+# The lines below *should* do the same thing, but don't work reliably:
+# gsettings set org.gnome.desktop.peripherals.keyboard delay 200 &>>$ERRF
+# gsettings set org.gnome.desktop.peripherals.keyboard repeat-interval 15 &>>$ERRF
 
 #####################################
 ########## TOUCHPAD
@@ -58,32 +66,3 @@ xinput set-prop "Logitech Rechargeable Touchpad T650" "Device Accel Velocity Sca
 xsetwacom --set "Wacom Intuos BT S Pen stylus" "Button" 2 "pan" &>>$ERRF
 xsetwacom --set "Wacom Intuos BT S Pen stylus" "PanScrollThreshold" 100 &>>$ERRF
 
-# ..:: Seenda external touchpad (DEPRECATED) ::..
-
-# FingerLow=3 # Release when pressure below this value
-# FingerHigh=5 # Touch when pressure above this value
-# MaxTapTime=150
-# SingleTapTimeout=150
-# MaxDoubleTapTime=150 #$((MaxTapTime+SingleTapTimeout))
-# MaxTapMove=180
-# Speed=3.0
-
-# xinput set-prop "HTX USB HID Device HTX HID Device Touchpad" "Synaptics Finger" $FingerLow $FingerHigh 0 &>>$ERRF
-# xinput set-prop "HTX USB HID Device HTX HID Device Touchpad" "Synaptics Tap Time" $MaxTapTime &>>$ERRF
-# xinput set-prop "HTX USB HID Device HTX HID Device Touchpad" "Synaptics Tap Move" $MaxTapMove &>>$ERRF
-# # SingleTapTimeout, MaxDoubleTapTime, ClickTime
-# xinput set-prop "HTX USB HID Device HTX HID Device Touchpad" "Synaptics Tap Durations" $SingleTapTimeout $MaxDoubleTapTime 60 &>>$ERRF
-# xinput set-prop "HTX USB HID Device HTX HID Device Touchpad" "Synaptics Move Speed" $Speed $Speed 0 0 &>>$ERRF
-# xinput set-prop "HTX USB HID Device HTX HID Device Touchpad" "Synaptics Tap Action" 0 0 0 0 1 3 2 &>>$ERRF
-# xinput set-prop "HTX USB HID Device HTX HID Device Touchpad" "Synaptics Click Action" 0 0 0 &>>$ERRF
-# xinput set-prop "HTX USB HID Device HTX HID Device Touchpad" "Synaptics Palm Detection" 0 &>>$ERRF
-# # Noise cancellation = (horizontal,vertical) hysteresis
-# xinput set-prop "HTX USB HID Device HTX HID Device Touchpad" "Synaptics Noise Cancellation" 0 0 &>>$ERRF
-# xinput set-prop "HTX USB HID Device HTX HID Device Touchpad" "Synaptics Circular Scrolling" 0 &>>$ERRF
-# xinput set-prop "HTX USB HID Device HTX HID Device Touchpad" "Synaptics Coasting Speed" 0 0 &>>$ERRF
-# xinput set-prop "HTX USB HID Device HTX HID Device Touchpad" "Synaptics Circular Pad" 0 &>>$ERRF
-# # Quadratic acceleration profile -- feels better
-# xinput set-prop "HTX USB HID Device HTX HID Device Touchpad" "Device Accel Profile" 2 &>>$ERRF
-# xinput set-prop "HTX USB HID Device HTX HID Device Touchpad" "Device Accel Constant Deceleration" 2.4 &>>$ERRF
-# xinput set-prop "HTX USB HID Device HTX HID Device Touchpad" "Device Accel Adaptive Deceleration" 1.0 &>>$ERRF
-# xinput set-prop "HTX USB HID Device HTX HID Device Touchpad" "Device Accel Velocity Scaling" 9.0 &>>$ERRF

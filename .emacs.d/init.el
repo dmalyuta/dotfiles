@@ -1041,6 +1041,7 @@ See: https://stackoverflow.com/a/12286420/4605946."
 (defun danylo/org-add-extra-markup ()
   "Add additional emphasis to org-mode.
 Source: https://emacs.stackexchange.com/a/35632/13661"
+  ;; Face for LaTeX equations
   (add-to-list 'org-font-lock-extra-keywords
 	       '("\\(\\$\\)\\([^\n\r\t\$]+\\)\\(\\$\\)"
 		 (1 '(face danylo/org-equation-face invisible nil))

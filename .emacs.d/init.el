@@ -1660,7 +1660,13 @@ If there is no shell open, prints a message to inform."
 	 ;; Line-breaking math
 	 (LaTeX-mode . (lambda ()
 			 (add-to-list 'fill-nobreak-predicate
-				      'texmathp))))
+				      'texmathp)))
+	 ;; Helm for candidate completion
+	 (LaTeX-mode . (lambda ()
+			 (require 'helm-mode)
+			 (add-to-list 'helm-completing-read-handlers-alist
+				      '(LaTeX-environment
+					. helm-completing-read-default-handler)))))
   :init
   (setq TeX-source-correlate-method 'synctex
 	TeX-source-correlate-start-server t

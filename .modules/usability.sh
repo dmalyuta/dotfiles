@@ -46,7 +46,8 @@ sudo apt-get -y install recoll \
 
 sudo apt-get -y install xcalib \
      compizconfig-settings-manager \
-     gnome-tweak-tool
+     gnome-tweak-tool \
+     pdftk
 
 # Increase inotify to make sure Evince updates on PDF update
 # Source: https://superuser.com/a/1387905/512940

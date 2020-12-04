@@ -14,8 +14,14 @@ alias copy='xargs echo -n | xclip -selection clipboard'
 # Display processes matching grep
 alias listproc='~/.bin/listproc.sh'
 
-# Display processes matching grep
-alias pdfjoinnorotate='pdfjoin --paper a4paper --rotateoversize false'
+# Join PDF files into one
+# Call: $ pdfjoin <in1.pdf> [in2.pdf ...] <out.pdf>
+pdfjoin() {
+    local length=$(($#-1))
+    local input_pdf=("${@: 1:$length}")
+    local output_pdf=("${@: -1}")
+    pdftk "${input_pdf[@]}" cat output "${output_pdf[@]}"
+}
 
 # Kill processes matching grep
 alias killgrep='~/.bin/killgrep.sh'

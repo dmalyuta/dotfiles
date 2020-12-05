@@ -77,8 +77,13 @@
   :group 'danylo)
 
 (defcustom danylo/ivy-window-name "*ivy-candidate-window*"
-  "Name of ivy candidate list buffer"
+  "Name of ivy candidate list buffer."
   :type 'string
+  :group 'danylo)
+
+(defcustom danylo/latex-preview-scale 1.3
+  "Size of the latex preview in Org mode."
+  :type 'float
   :group 'danylo)
 
 ;;; ..:: General helper functions ::..
@@ -301,6 +306,13 @@
   ;; A set of emacs functions and bindings to google under point.
   :config
   (google-this-mode 1))
+
+;;;; Asynchronous behaviour
+
+(use-package async
+  ;; https://github.com/jwiegley/emacs-async
+  ;; Simple library for asynchronous processing in Emacs
+  )
 
 ;;; ..:: Searching ::..
 
@@ -1006,14 +1018,14 @@ With argument ARG, do this that many times."
   (setq org-startup-folded nil
 	org-ellipsis " ▾"
 	org-src-tab-acts-natively t
-	org-startup-with-latex-preview t))
+	org-startup-with-latex-preview nil))
 
 (with-eval-after-load "org"
   (define-key org-mode-map (kbd "M-q") 'nil)
   (define-key org-mode-map [remap fill-paragraph] nil)
   ;; LaTeX equations preview style
   (setq org-format-latex-options (plist-put org-format-latex-options
-					    :scale 1.7)
+					    :scale `,danylo/latex-preview-scale)
 	org-format-latex-options (plist-put org-format-latex-options
 					    :foreground "yellow")))
 
@@ -1043,10 +1055,8 @@ See: https://stackoverflow.com/a/12286420/4605946."
 Source: https://emacs.stackexchange.com/a/35632/13661"
   ;; Face for LaTeX equations
   (add-to-list 'org-font-lock-extra-keywords
-	       '("\\(\\$\\)\\([^\n\r\t\$]+\\)\\(\\$\\)"
-		 (1 '(face danylo/org-equation-face invisible nil))
-		 (2 '(face danylo/org-equation-face invisible nil))
-		 (3 '(face danylo/org-equation-face invisible nil)))))
+	       '("\\(\\$[^\n\r\t\$]+\\$\\)"
+		 (1 '(face danylo/org-equation-face invisible nil)))))
 (add-hook 'org-font-lock-set-keywords-hook 'danylo/org-add-extra-markup)
 
 ;;;###autoload

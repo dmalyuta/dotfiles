@@ -86,6 +86,33 @@
   :type 'float
   :group 'danylo)
 
+(defcustom danylo/latex-equation-envs
+  `,(concat "equation\\|align\\|alignat"
+	    "\\|multline\\|subequations"
+	    "\\|optimization\\|gather")
+  "All types of LaTeX equation environments to be used for font locking"
+  :group 'danylo)
+
+(defface danylo/latex-equation-face-main
+  '((t (:foreground "orange"
+		    :weight bold
+		    :inherit default)))
+  "Face for org-mode equations."
+  :group 'org-faces)
+
+(defface danylo/latex-equation-face-faded
+  '((t (:foreground "#7d5c1f"
+		    :weight bold
+		    :inherit default)))
+  "Face for org-mode equation delimiters."
+  :group 'org-faces)
+
+(defface danylo/telephone-yellow
+  '((t (:foreground "black"
+		    :background "yellow")))
+  "Face for mode line."
+  :group 'danylo)
+
 ;;; ..:: General helper functions ::..
 
 ;;;###autoload
@@ -869,11 +896,8 @@ With argument ARG, do this that many times."
 	telephone-line-primary-right-separator 'telephone-line-cubed-right
 	telephone-line-secondary-right-separator 'telephone-line-cubed-hollow-right)
 
-  (defface my-telephone-yellow
-    '((t (:foreground "black" :background "yellow"))) "")
-
   (add-to-list 'telephone-line-faces
-	       '(yellow . (my-telephone-yellow . telephone-line-accent-inactive)))
+	       '(yellow . (danylo/telephone-yellow . telephone-line-accent-inactive)))
 
   (setq telephone-line-lhs
 	'((yellow . (telephone-line-vc-segment))
@@ -916,6 +940,43 @@ With argument ARG, do this that many times."
   ;; Advanced highlighting of matching parentheses
   :config
   (paren-activate))
+
+;;;; Custom minor mode to highlight LaTeX equations
+
+;;;###autoload
+(defun danylo/font-lock-extend-region ()
+  "Extend the search region to include an entire block of text."
+  (save-excursion
+    (goto-char font-lock-beg)
+    (let ((found (or (re-search-backward "\n\n" nil t) (point-min))))
+      (goto-char font-lock-end)
+      (when (re-search-forward "\n\n" nil t)
+	(beginning-of-line)
+	(setq font-lock-end (point)))
+      (setq font-lock-beg found))))
+
+;;;###autoload
+(define-minor-mode danylo/latex-font-lock-mode
+  "LaTeX equation font locking.
+Inspired from: http://makble.com/emacs-font-lock-how-to-highlight-multiline-text"
+  :lighter " latex-highlight"
+  (make-variable-buffer-local 'font-lock-extra-managed-props)
+  (add-to-list 'font-lock-extra-managed-props 'invisible)
+  (mapcar
+   (lambda (arg)
+     (font-lock-add-keywords
+      nil `((,(format "\\(%s\\)\\(.\\|\n\\)*?\\(%s\\)"
+		      (car arg) (cdr arg))
+	     (0 '(face danylo/latex-equation-face-main invisible nil) t)
+	     (1 '(face danylo/latex-equation-face-faded invisible nil) t)
+	     (3 '(face danylo/latex-equation-face-faded invisible nil) t)))))
+   `(("\\$" . "\\$")
+     ("\\$\\$" . "\\$\\$")
+     (,(format "\\\\begin{\\(?:%s\\)[\\*]?}" danylo/latex-equation-envs) .
+      ,(format "\\\\end{\\(?:%s\\)[\\*]?}" danylo/latex-equation-envs))))
+  (set (make-local-variable 'font-lock-multiline) t)
+  (add-hook 'font-lock-extend-region-functions
+            'danylo/font-lock-extend-region))
 
 ;;; ..:: Syntax checking ::..
 
@@ -1011,7 +1072,8 @@ With argument ARG, do this that many times."
   ;; https://github.com/bzg/org-mode
   ;; Your life in plain text
   :hook ((org-mode . danylo/org-mode-setup)
-	 (org-mode . danylo/org-font-setup))
+	 (org-mode . danylo/org-font-setup)
+	 (org-mode . danylo/latex-font-lock-mode))
   :bind (:map org-mode-map
 	      ("M-q" . 'fill-paragraph))
   :init
@@ -1043,21 +1105,6 @@ See: https://stackoverflow.com/a/12286420/4605946."
   text with."
   (interactive)
   (org-emphasize (string-to-char char)))
-
-(defface danylo/org-equation-face
-  '((t (:foreground "orange" :weight bold :inherit default)))
-  "Face for org-mode equations."
-  :group 'org-faces)
-
-;;;###autoload
-(defun danylo/org-add-extra-markup ()
-  "Add additional emphasis to org-mode.
-Source: https://emacs.stackexchange.com/a/35632/13661"
-  ;; Face for LaTeX equations
-  (add-to-list 'org-font-lock-extra-keywords
-	       '("\\(\\$[^\n\r\t\$]+\\$\\)"
-		 (1 '(face danylo/org-equation-face invisible nil)))))
-(add-hook 'org-font-lock-set-keywords-hook 'danylo/org-add-extra-markup)
 
 ;;;###autoload
 (defun danylo/org-emphasize-equation (start end)
@@ -1654,6 +1701,7 @@ If there is no shell open, prints a message to inform."
 	 (LaTeX-mode . TeX-PDF-mode)
 	 (LaTeX-mode . TeX-source-correlate-mode)
 	 (LaTeX-mode . auto-fill-mode)
+	 (LaTeX-mode . danylo/latex-font-lock-mode)
 	 (LaTeX-mode . (lambda () (setq fill-column 80)))
 	 ;; View program
 	 (LaTeX-mode . (lambda ()

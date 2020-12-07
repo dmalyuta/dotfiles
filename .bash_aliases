@@ -115,3 +115,10 @@ alias neg='xcalib -invert -alter'
 
 # Shortcut for screen color inverse
 python ~/.bin/set_customshortcut.py 'invert-color' 'xcalib -invert -alter' '<Shift><Ctrl><Alt>N'
+
+# Start Emacs server for Git
+emacsgit() {
+    if ! (ps aux | grep -E "[e]macs.*git.*--daemon" > /dev/null 2>&1); then
+	~/.bin/emacs_git.sh
+    fi
+}

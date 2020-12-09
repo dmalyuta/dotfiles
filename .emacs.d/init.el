@@ -86,13 +86,6 @@
   :type 'float
   :group 'danylo)
 
-(defcustom danylo/latex-equation-envs
-  `,(concat "equation\\|align\\|alignat"
-	    "\\|multline\\|subequations"
-	    "\\|optimization\\|gather")
-  "All types of LaTeX equation environments to be used for font locking"
-  :group 'danylo)
-
 (defface danylo/latex-equation-face-main
   '((t (:foreground "orange"
 		    :weight bold
@@ -972,8 +965,14 @@ Inspired from: http://makble.com/emacs-font-lock-how-to-highlight-multiline-text
 	     (3 '(face danylo/latex-equation-face-faded invisible nil) t)))))
    `(("\\$" . "\\$")
      ("\\$\\$" . "\\$\\$")
-     (,(format "\\\\begin{\\(?:%s\\)[\\*]?}" danylo/latex-equation-envs) .
-      ,(format "\\\\end{\\(?:%s\\)[\\*]?}" danylo/latex-equation-envs))))
+     ("\\\\begin{equation[\\*]?}" . "\\\\end{equation[\\*]?}")
+     ("\\\\begin{align[\\*]?}" . "\\\\end{align[\\*]?}")
+     ("\\\\begin{alignat[\\*]?}" . "\\\\end{alignat[\\*]?}")
+     ("\\\\begin{gather[\\*]?}" . "\\\\end{gather[\\*]?}")
+     ("\\\\begin{multline[\\*]?}" . "\\\\end{multline[\\*]?}")
+     ("\\\\begin{subequations[\\*]?}" . "\\\\end{subequations[\\*]?}")
+     ("\\\\begin{optimization[\\*]?}" . "\\\\end{optimization[\\*]?}")
+     ))
   (set (make-local-variable 'font-lock-multiline) t)
   (add-hook 'font-lock-extend-region-functions
             'danylo/font-lock-extend-region))

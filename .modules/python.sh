@@ -21,7 +21,7 @@ fi
 PYENV_NAME=py385
 CONDA_PATH=$(conda info --base)/etc/profile.d/conda.sh
 
-if ! (conda info --envs | grep $PYENV_NAME > /dev/null 2>&1); then
+if ! (conda info --envs | grep -q $PYENV_NAME); then
     source "$CONDA_PATH"
     conda create -y -n $PYENV_NAME python=3.8.5
     conda activate $PYENV_NAME

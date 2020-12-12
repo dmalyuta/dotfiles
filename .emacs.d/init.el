@@ -1615,7 +1615,10 @@ lines according to the first line."
   (let ((command (danylo/smart-select-region start end)))
     (when command
       (setq command (format "%s\n" command))
-      (danylo/shell-exec danylo/python-buffer-name command))))
+      (danylo/shell-exec danylo/python-buffer-name "%autoindent\n")
+      (danylo/shell-exec danylo/python-buffer-name command)
+      (danylo/shell-exec danylo/python-buffer-name "%autoindent\n")
+      )))
 
 ;;;###autoload
 (defun danylo/python-config ()

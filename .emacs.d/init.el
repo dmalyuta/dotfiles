@@ -649,6 +649,23 @@ With argument ARG, do this that many times."
  "M-d" 'danylo/forward-delete-word
  "M-<backspace>" 'danylo/backward-delete-word)
 
+;;;; Fill column (line width)
+
+(setq-default fill-column 79)
+
+;; Indicate lines that are too wide
+(use-package whitespace
+  :ensure nil
+  :init (setq whitespace-line-column fill-column
+	      whitespace-style '(face lines-tail))
+  ;; Face style for overflowing characters
+  (custom-set-faces
+   '(whitespace-line ((t (:foreground "yellow"
+				      :background nil
+				      :weight bold)))))
+  :config
+  (global-whitespace-mode +1))
+
 ;;; ..:: Window management ::..
 
 ;;;; >> Movement across windows <<
@@ -1370,7 +1387,7 @@ Placed in the current buffer."
 
 ;;;###autoload
 (defun danylo/shell-exec (shell-buffer-name command)
-  "Run the current file in the shell.
+  "Run command in the shell.
 If there is no shell open, prints a message to inform."
   (if (danylo/shell~check-open shell-buffer-name)
       ;; Send a run command for the current file
@@ -1571,10 +1588,41 @@ If there is no shell open, prints a message to inform."
     ))
 
 ;;;###autoload
+(defun danylo/smart-select-region (start end)
+  "Select region in file, removing possible indent of all
+lines according to the first line."
+  (interactive "r")
+  (if (use-region-p)
+      (let* ((selection (buffer-substring start end))
+	     (starting-spaces (progn (string-match "^\s+" selection)
+				     (match-end 0)))
+	     (starting-space-replace-regexp
+	      `,(format "^\s\\{%d\\}" starting-spaces))
+	     ;; Remove the initial spaces
+	     (trimmed-selection (replace-regexp-in-string
+				 starting-space-replace-regexp "" selection))
+	     ;; Remove any trailing newlines
+	     (trimmed-selection (replace-regexp-in-string "\n$" "" trimmed-selection)))
+	trimmed-selection)
+    ;; No region active
+    (message "No region selected.")
+    nil))
+
+;;;###autoload
+(defun danylo/python-shell-run-region (start end)
+  "Run highlighted selection in file."
+  (interactive "r")
+  (let ((command (danylo/smart-select-region start end)))
+    (when command
+      (setq command (format "%s\n" command))
+      (danylo/shell-exec danylo/python-buffer-name command))))
+
+;;;###autoload
 (defun danylo/python-config ()
   ;; Key bindings
   (define-key python-mode-map (kbd "C-c C-s") 'danylo/python-shell-open)
   (define-key python-mode-map (kbd "C-c C-f") 'danylo/python-shell-run-file)
+  (define-key python-mode-map (kbd "C-c C-r") 'danylo/python-shell-run-region)
   (define-key python-mode-map (kbd "C-c C-p") nil)
   ;; Hide shell buffers from buffer list
   (let ((buf-name (replace-regexp-in-string
@@ -1626,10 +1674,20 @@ If there is no shell open, prints a message to inform."
     ))
 
 ;;;###autoload
+(defun danylo/julia-shell-run-region (start end)
+  "Run highlighted selection in file."
+  (interactive "r")
+  (let ((command (danylo/smart-select-region start end)))
+    (when command
+      (setq command (format "%s\n" command))
+      (danylo/shell-exec danylo/julia-buffer-name command))))
+
+;;;###autoload
 (defun danylo/julia-config ()
   ;; Key bindings
   (define-key julia-mode-map (kbd "C-c C-s") 'danylo/julia-shell-open)
   (define-key julia-mode-map (kbd "C-c C-f") 'danylo/julia-shell-run-file)
+  (define-key julia-mode-map (kbd "C-c C-r") 'danylo/julia-shell-run-region)
   (define-key julia-mode-map (kbd "C-c C-l") 'julia-latexsub-or-indent)
   ;; Hide shell buffers from buffer list
   (let ((buf-name (replace-regexp-in-string
@@ -1701,7 +1759,6 @@ If there is no shell open, prints a message to inform."
 	 (LaTeX-mode . TeX-source-correlate-mode)
 	 (LaTeX-mode . auto-fill-mode)
 	 (LaTeX-mode . danylo/latex-font-lock-mode)
-	 (LaTeX-mode . (lambda () (setq fill-column 80)))
 	 ;; View program
 	 (LaTeX-mode . (lambda ()
 			 (setq TeX-view-program-list

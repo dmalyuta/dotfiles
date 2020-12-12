@@ -122,3 +122,14 @@ emacsgit() {
 	~/.bin/emacs_git.sh
     fi
 }
+
+# Find files and folders
+findfile() {
+    find . -type f -name $@
+}
+findfolder() {
+    find . -type d -name $@
+}
+
+# Get line of output
+alias getline="head -n"

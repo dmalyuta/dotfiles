@@ -86,13 +86,6 @@
   :type 'float
   :group 'danylo)
 
-(defface danylo/latex-equation-face-main
-  '((t (:foreground "orange"
-		    :weight normal
-		    :inherit default)))
-  "Face for org-mode equation delimiters."
-  :group 'danylo)
-
 (defface danylo/latex-equation-face-faded
   '((t (:foreground "#464c5d"
 		    :weight bold
@@ -982,29 +975,21 @@ With argument ARG, do this that many times."
 ;;;###autoload
 (define-minor-mode danylo/latex-font-lock-mode
   "LaTeX equation font locking."
-  :lighter " latex-highlight"
-  ;; Highlight $...$ and $$...$$
-  (font-lock-add-keywords
-   nil `((,(concat "\\(?:\\$\\$?\\)"
-		   "\\(\\(?:[^$]*\n\\)*?[^$]*\\)"
-		   "\\(?:\\$?\\$\\)")
-	  (0 'danylo/latex-equation-face-main t))
-	 (,(format "\\(\\$\\)" arg)
-	  (0 'danylo/latex-equation-face-faded t))))
-  ;; Highlight \begin{...}...\end{...}
+  :lighter " danylo-latex-highlight"
   (mapcar
    (lambda (arg)
      (font-lock-add-keywords
-      nil `((,(concat "\\(?:\\\\begin{" arg "[\\*]?}\\)"
-		      "\\(\\(?:.*\n\\)*?.*\\)"
-		      "\\(?:\\\\end{" arg "[\\*]?}\\)")
-	     (0 'danylo/latex-equation-face-main t))
-	    (,(format "\\(\\\\begin{%s[\\*]?}\\)" arg)
-	     (0 'danylo/latex-equation-face-faded t))
-	    (,(format "\\(\\\\end{%s[\\*]?}\\)" arg)
+      nil `((,(format "\\(?:%s\\)" arg)
 	     (0 'danylo/latex-equation-face-faded t)))))
-   '("equation" "align" "alignat" "gather"
-     "subequations" "multline" "optimization"))
+   '("\\$"
+     "\\\\\\(?:begin\\|end\\){equation[\\*]?}"
+     "\\\\\\(?:begin\\|end\\){align[\\*]?}"
+     "\\\\\\(?:begin\\|end\\){alignat[\\*]?}"
+     "\\\\\\(?:begin\\|end\\){gather[\\*]?}"
+     "\\\\\\(?:begin\\|end\\){subequations[\\*]?}"
+     "\\\\\\(?:begin\\|end\\){multline[\\*]?}"
+     "\\\\\\(?:begin\\|end\\){optimization[\\*]?}"
+     ))
   ;; Enable multiline fontification
   (set (make-local-variable 'font-lock-multiline) t))
 
@@ -1077,8 +1062,7 @@ With argument ARG, do this that many times."
   "Configure org mode after loading it"
   (setq org-adapt-indentation nil
 	org-hide-leading-stars t)
-  (visual-line-mode t)
-  (set-mark-command nil))
+  (visual-line-mode t))
 
 ;;;###autoload
 (defun danylo/org-font-setup ()

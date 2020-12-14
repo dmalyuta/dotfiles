@@ -132,4 +132,6 @@ findfolder() {
 }
 
 # Get line of output
-alias getline="head -n"
+getline() {
+    sed -n "$@"p
+}

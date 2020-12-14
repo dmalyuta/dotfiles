@@ -86,19 +86,12 @@
   :type 'float
   :group 'danylo)
 
-(defface danylo/latex-equation-face-main
-  '((t (:foreground "orange"
-		    :weight bold
-		    :inherit default)))
-  "Face for org-mode equations."
-  :group 'org-faces)
-
 (defface danylo/latex-equation-face-faded
-  '((t (:foreground "#7d5c1f"
+  '((t (:foreground "#464c5d"
 		    :weight bold
 		    :inherit default)))
   "Face for org-mode equation delimiters."
-  :group 'org-faces)
+  :group 'danylo)
 
 (defface danylo/telephone-yellow
   '((t (:foreground "black"
@@ -152,6 +145,8 @@
   (gcmh-mode 1))
 
 ;;; ..:: Keybinding management ::..
+
+(require 'bind-key)
 
 (use-package general
   ;; https://github.com/noctuid/general.el
@@ -617,9 +612,33 @@ START and END give the start/end of current selection."
   (interactive "r")
   (danylo/section-msg "@" "SUBSUBSECTION" "@" start end))
 
-;; Duplicate line
-(global-set-key (kbd "C-c d")
-		(kbd "C-a C-SPC C-e M-w RET SPC C-SPC C-a <backspace> C-y"))
+;;;; Duplicate line
+
+;;;###autoload
+(defun danylo/duplicate-line-or-region (&optional n)
+  "Duplicate current line, or region if active.
+With argument N, make N copies.
+With negative N, comment out original line and use the absolute value.
+Source: https://stackoverflow.com/a/4717026/4605946"
+  (interactive "*p")
+  (let ((use-region (use-region-p)))
+    (save-excursion
+      (let ((text (if use-region ;Get region if active, otherwise line
+                      (buffer-substring (region-beginning) (region-end))
+                    (prog1 (thing-at-point 'line)
+                      (end-of-line)
+                      (if (< 0 (forward-line 1)) ;Go to beginning of next line, or make a new one
+                          (newline))))))
+        (dotimes (i (abs (or n 1))) ;Insert N times, or once if not specified
+          (insert text))))
+    (if use-region nil ;Only if we're working with a line (not a region)
+      (let ((pos (- (point) (line-beginning-position)))) ;Save column
+        (if (> 0 n) ;Comment out original with negative arg
+            (comment-region (line-beginning-position) (line-end-position)))
+        (forward-line 1)
+        (forward-char pos)))))
+
+(global-set-key (kbd "C-c d") 'danylo/duplicate-line-or-region)
 
 ;; Require file ending with a newline
 (setq require-final-newline t)
@@ -891,12 +910,11 @@ With argument ARG, do this that many times."
   )
 
 ;; Speed up font-lock mode speed (can causes laggy scrolling)
-(setq font-lock-support-mode 'jit-lock-mode
-      jit-lock-stealth-time 16
-      jit-lock-defer-contextually t
-      jit-lock-contextually nil
-      jit-lock-stealth-nice 0.5
-      font-lock-maximum-decoration 1)
+(setq-default font-lock-support-mode 'jit-lock-mode
+	      jit-lock-stealth-time 16
+	      jit-lock-contextually t
+	      jit-lock-stealth-nice 0.5
+	      font-lock-maximum-decoration t)
 
 ;;;###autoload
 (defun danylo/modeline-setup ()
@@ -954,45 +972,20 @@ With argument ARG, do this that many times."
 ;;;; Custom minor mode to highlight LaTeX equations
 
 ;;;###autoload
-(defun danylo/font-lock-extend-region ()
-  "Extend the search region to include an entire block of text."
-  (save-excursion
-    (goto-char font-lock-beg)
-    (let ((found (or (re-search-backward "\n\n" nil t) (point-min))))
-      (goto-char font-lock-end)
-      (when (re-search-forward "\n\n" nil t)
-	(beginning-of-line)
-	(setq font-lock-end (point)))
-      (setq font-lock-beg found))))
-
-;;;###autoload
 (define-minor-mode danylo/latex-font-lock-mode
-  "LaTeX equation font locking.
-Inspired from: http://makble.com/emacs-font-lock-how-to-highlight-multiline-text"
+  "LaTeX equation font locking."
   :lighter " latex-highlight"
-  (make-variable-buffer-local 'font-lock-extra-managed-props)
-  (add-to-list 'font-lock-extra-managed-props 'invisible)
+  ;; Highlight delimiters (one-liners)
+  ;; Search-based fontification
   (mapcar
    (lambda (arg)
      (font-lock-add-keywords
-      nil `((,(format "\\(%s\\)\\(.\\|\n\\)*?\\(%s\\)"
-		      (car arg) (cdr arg))
-	     (0 '(face danylo/latex-equation-face-main invisible nil) t)
-	     (1 '(face danylo/latex-equation-face-faded invisible nil) t)
-	     (3 '(face danylo/latex-equation-face-faded invisible nil) t)))))
-   `(("\\$" . "\\$")
-     ("\\$\\$" . "\\$\\$")
-     ("\\\\begin{equation[\\*]?}" . "\\\\end{equation[\\*]?}")
-     ("\\\\begin{align[\\*]?}" . "\\\\end{align[\\*]?}")
-     ("\\\\begin{alignat[\\*]?}" . "\\\\end{alignat[\\*]?}")
-     ("\\\\begin{gather[\\*]?}" . "\\\\end{gather[\\*]?}")
-     ("\\\\begin{multline[\\*]?}" . "\\\\end{multline[\\*]?}")
-     ("\\\\begin{subequations[\\*]?}" . "\\\\end{subequations[\\*]?}")
-     ("\\\\begin{optimization[\\*]?}" . "\\\\end{optimization[\\*]?}")
-     ))
-  (set (make-local-variable 'font-lock-multiline) t)
-  (add-hook 'font-lock-extend-region-functions
-            'danylo/font-lock-extend-region))
+      nil `((,(format "\\(%s\\)" arg)
+	     (0 'danylo/latex-equation-face-faded t)))))
+   `("\\$"
+     ,(concat "\\\\\\(?:begin\\|end\\){\\(?:"
+	      "equation\\|align\\|alignat\\|gather"
+	      "\\|multline\\|subequaitons\\|optimization\\)[\\*]?}"))))
 
 ;;; ..:: Syntax checking ::..
 
@@ -1784,18 +1777,17 @@ lines according to the first line."
 			 (add-to-list 'helm-completing-read-handlers-alist
 				      '(LaTeX-environment
 					. helm-completing-read-default-handler)))))
-  :init
-  (setq TeX-source-correlate-method 'synctex
-	TeX-source-correlate-start-server t
-	TeX-auto-save t
-	TeX-parse-self t
-	TeX-auto-regexp-list 'TeX-auto-full-regexp-list
-	TeX-auto-parse-length 999999
-	TeX-save-query nil
-	TeX-master nil
-	reftex-plug-into-AUCTeX t
-	LaTeX-electric-left-right-brace t
-	TeX-electric-math '("$" . "$"))
+  :init (setq TeX-source-correlate-method 'synctex
+	      TeX-source-correlate-start-server t
+	      TeX-auto-save t
+	      TeX-parse-self t
+	      TeX-auto-regexp-list 'TeX-auto-full-regexp-list
+	      TeX-auto-parse-length 999999
+	      TeX-save-query nil
+	      reftex-plug-into-AUCTeX t
+	      LaTeX-electric-left-right-brace t
+	      TeX-electric-math '("$" . "$"))
+  (setq-default TeX-master nil)
   :bind (:map LaTeX-mode-map
 	      ("M-s" . ispell-word)
 	      ("C-x C-<backspace>" . electric-pair-delete-pair))
@@ -1827,6 +1819,13 @@ lines according to the first line."
   (add-to-list 'LaTeX-indent-environment-list '("pykzmathblock" current-indentation))
   (add-to-list 'LaTeX-indent-environment-list '("@pie@shell" current-indentation)))
 
+(require 'latex)
+;;;###autoload
+(defun TeX-dwim-master ()
+  "Find a likely `TeX-master'.
+Patched so that any new file by default is guessed as being its own master."
+  nil)
+
 (use-package company-auctex
   ;; https://github.com/alexeyr/company-auctex
   ;; company-mode autocompletion for auctex
@@ -1835,7 +1834,7 @@ lines according to the first line."
 			 ;; Make completion case sensitive
 			 (setq company-dabbrev-downcase nil))))
   :bind (:map LaTeX-mode-map
-	      ("C-c m" . company-auctex-macros)
+	      ("C-c c" . company-auctex-macros)
 	      ("C-c e" . company-auctex-environments)
 	      ("C-c l" . company-auctex-labels)
 	      ("C-c s" . company-auctex-symbols))

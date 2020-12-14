@@ -88,7 +88,7 @@
 
 (defface danylo/latex-equation-face-main
   '((t (:foreground "orange"
-		    :weight bold
+		    :weight normal
 		    :inherit default)))
   "Face for org-mode equation delimiters."
   :group 'danylo)
@@ -300,6 +300,7 @@
 ;; Backup behaviour: store everything in single location
 (defvar danylo/backup-dir "~/.emacs.d/backups/")
 (setq backup-directory-alist (list (cons "." danylo/backup-dir)))
+(setq auto-save-file-name-transforms `((".*" ,danylo/backup-dir t)))
 
 (defun danylo/byte-compile-init-dir ()
   "Byte-compile Emacs config."
@@ -982,17 +983,30 @@ With argument ARG, do this that many times."
 (define-minor-mode danylo/latex-font-lock-mode
   "LaTeX equation font locking."
   :lighter " latex-highlight"
-  ;; Highlight delimiters (one-liners)
-  ;; Search-based fontification
+  ;; Highlight $...$ and $$...$$
+  (font-lock-add-keywords
+   nil `((,(concat "\\(?:\\$\\$?\\)"
+		   "\\(\\(?:[^$]*\n\\)*?[^$]*\\)"
+		   "\\(?:\\$?\\$\\)")
+	  (0 'danylo/latex-equation-face-main t))
+	 (,(format "\\(\\$\\)" arg)
+	  (0 'danylo/latex-equation-face-faded t))))
+  ;; Highlight \begin{...}...\end{...}
   (mapcar
    (lambda (arg)
      (font-lock-add-keywords
-      nil `((,(format "\\(%s\\)" arg)
+      nil `((,(concat "\\(?:\\\\begin{" arg "[\\*]?}\\)"
+		      "\\(\\(?:.*\n\\)*?.*\\)"
+		      "\\(?:\\\\end{" arg "[\\*]?}\\)")
+	     (0 'danylo/latex-equation-face-main t))
+	    (,(format "\\(\\\\begin{%s[\\*]?}\\)" arg)
+	     (0 'danylo/latex-equation-face-faded t))
+	    (,(format "\\(\\\\end{%s[\\*]?}\\)" arg)
 	     (0 'danylo/latex-equation-face-faded t)))))
-   `("\\$"
-     ,(concat "\\\\\\(?:begin\\|end\\){\\(?:"
-	      "equation\\|align\\|alignat\\|gather"
-	      "\\|multline\\|subequations\\|optimization\\)[\\*]?}"))))
+   '("equation" "align" "alignat" "gather"
+     "subequations" "multline" "optimization"))
+  ;; Enable multiline fontification
+  (set (make-local-variable 'font-lock-multiline) t))
 
 ;;; ..:: Syntax checking ::..
 
@@ -1783,12 +1797,7 @@ lines according to the first line."
 			 (require 'helm-mode)
 			 (add-to-list 'helm-completing-read-handlers-alist
 				      '(LaTeX-environment
-					. helm-completing-read-default-handler))))
-	 ;; Face remaps
-	 (LaTeX-mode . (lambda ()
-			 (setq-local face-remapping-alist
-				     '((font-latex-math-face
-					. danylo/latex-equation-face-main))))))
+					. helm-completing-read-default-handler)))))
   :init (setq TeX-source-correlate-method 'synctex
 	      TeX-source-correlate-start-server t
 	      TeX-auto-save t

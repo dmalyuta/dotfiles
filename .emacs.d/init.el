@@ -989,9 +989,7 @@ With argument ARG, do this that many times."
      "\\\\\\(?:begin\\|end\\){subequations[\\*]?}"
      "\\\\\\(?:begin\\|end\\){multline[\\*]?}"
      "\\\\\\(?:begin\\|end\\){optimization[\\*]?}"
-     ))
-  ;; Enable multiline fontification
-  (set (make-local-variable 'font-lock-multiline) t))
+     )))
 
 ;;; ..:: Syntax checking ::..
 

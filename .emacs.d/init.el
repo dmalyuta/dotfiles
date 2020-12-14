@@ -86,6 +86,13 @@
   :type 'float
   :group 'danylo)
 
+(defface danylo/latex-equation-face-main
+  '((t (:foreground "orange"
+		    :weight bold
+		    :inherit default)))
+  "Face for org-mode equation delimiters."
+  :group 'danylo)
+
 (defface danylo/latex-equation-face-faded
   '((t (:foreground "#464c5d"
 		    :weight bold
@@ -985,7 +992,7 @@ With argument ARG, do this that many times."
    `("\\$"
      ,(concat "\\\\\\(?:begin\\|end\\){\\(?:"
 	      "equation\\|align\\|alignat\\|gather"
-	      "\\|multline\\|subequaitons\\|optimization\\)[\\*]?}"))))
+	      "\\|multline\\|subequations\\|optimization\\)[\\*]?}"))))
 
 ;;; ..:: Syntax checking ::..
 
@@ -1776,7 +1783,12 @@ lines according to the first line."
 			 (require 'helm-mode)
 			 (add-to-list 'helm-completing-read-handlers-alist
 				      '(LaTeX-environment
-					. helm-completing-read-default-handler)))))
+					. helm-completing-read-default-handler))))
+	 ;; Face remaps
+	 (LaTeX-mode . (lambda ()
+			 (setq-local face-remapping-alist
+				     '((font-latex-math-face
+					. danylo/latex-equation-face-main))))))
   :init (setq TeX-source-correlate-method 'synctex
 	      TeX-source-correlate-start-server t
 	      TeX-auto-save t

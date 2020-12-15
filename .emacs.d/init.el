@@ -922,7 +922,16 @@ With argument ARG, do this that many times."
 	      jit-lock-stealth-time 16
 	      jit-lock-contextually t
 	      jit-lock-stealth-nice 0.5
-	      font-lock-maximum-decoration 1)
+	      jit-lock-stealth-load nil
+	      jit-lock-stealth-time 0.5
+	      jit-lock-chunk-size 200
+	      ;; Below: jit-lock-defer-time "pauses" fontification while the
+	      ;; user is typing, as long as the time between successive
+	      ;; keystrokes is <jit-lock-defer-time. This is what makes typing
+	      ;; smooth even with some heavy font locking (because the font
+	      ;; locking will occur during "idle" times)!
+	      jit-lock-defer-time 0.25
+	      font-lock-maximum-decoration t)
 
 ;;;###autoload
 (defun danylo/modeline-setup ()
@@ -980,23 +989,48 @@ With argument ARG, do this that many times."
 ;;;; Custom minor mode to highlight LaTeX equations
 
 ;;;###autoload
+(defun danylo/font-lock-extend-region ()
+  "Extend the search region to include an entire block of text."
+  (let ((changed nil))
+    (save-excursion
+      (goto-char font-lock-beg)
+      (let ((found (or (re-search-backward "\n\n" nil t) (point-min))))
+	(unless (eq font-lock-beg found)
+	  (setq font-lock-beg found changed t)))
+      (goto-char font-lock-end)
+      (let ((found (or (re-search-forward "\n\n" nil t) (point-max))))
+	(unless (eq font-lock-end found)
+	  (setq font-lock-end found changed t))))
+    changed))
+
+;;;###autoload
 (define-minor-mode danylo/latex-font-lock-mode
-  "LaTeX equation font locking."
+  "LaTeX equation font locking.
+Inspired from: http://makble.com/emacs-font-lock-how-to-highlight-multiline-text"
   :lighter " danylo-latex-highlight"
+  (make-variable-buffer-local 'font-lock-extra-managed-props)
+  (add-to-list 'font-lock-extra-managed-props 'invisible)
   (mapcar
    (lambda (arg)
      (font-lock-add-keywords
-      nil `((,(format "\\(?:%s\\)" arg)
-	     (0 'danylo/latex-equation-face-faded t)))))
-   '("\\$"
-     "\\\\\\(?:begin\\|end\\){equation[\\*]?}"
-     "\\\\\\(?:begin\\|end\\){align[\\*]?}"
-     "\\\\\\(?:begin\\|end\\){alignat[\\*]?}"
-     "\\\\\\(?:begin\\|end\\){gather[\\*]?}"
-     "\\\\\\(?:begin\\|end\\){subequations[\\*]?}"
-     "\\\\\\(?:begin\\|end\\){multline[\\*]?}"
-     "\\\\\\(?:begin\\|end\\){optimization[\\*]?}"
-     )))
+      nil `((,(format "\\(%s\\)\\(?:.\\|\n\\)*?\\(%s\\)"
+		      (car arg) (cdr arg))
+	     (0 '(face danylo/latex-equation-face-main invisible nil) t)
+	     (1 '(face danylo/latex-equation-face-faded invisible nil) t)
+	     (2 '(face danylo/latex-equation-face-faded invisible nil) t)))))
+   `(("\\$" . "\\$")
+     ("\\$\\$" . "\\$\\$")
+     ("\\\\begin{equation[\\*]?}" . "\\\\end{equation[\\*]?}")
+     ("\\\\begin{align[\\*]?}" . "\\\\end{align[\\*]?}")
+     ("\\\\begin{alignat[\\*]?}" . "\\\\end{alignat[\\*]?}")
+     ("\\\\begin{gather[\\*]?}" . "\\\\end{gather[\\*]?}")
+     ("\\\\begin{multline[\\*]?}" . "\\\\end{multline[\\*]?}")
+     ("\\\\begin{subequations[\\*]?}" . "\\\\end{subequations[\\*]?}")
+     ("\\\\begin{optimization[\\*]?}" . "\\\\end{optimization[\\*]?}")
+     ))
+  (set (make-local-variable 'font-lock-multiline) t)
+  (add-hook 'font-lock-extend-region-functions
+            'danylo/font-lock-extend-region))
 
 ;;; ..:: Syntax checking ::..
 
@@ -1783,10 +1817,6 @@ lines according to the first line."
 			 (add-to-list 'helm-completing-read-handlers-alist
 				      '(LaTeX-environment
 					. helm-completing-read-default-handler))
-			 ;; Face remaps
-			 (setq-local face-remapping-alist
-				     '((font-latex-math-face
-					. danylo/latex-equation-face-main)))
 			 )))
   :init (setq TeX-source-correlate-method 'synctex
 	      TeX-source-correlate-start-server t

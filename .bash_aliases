@@ -124,12 +124,8 @@ emacsgit() {
 }
 
 # Find files and folders
-findfile() {
-    find . -type f -name $@
-}
-findfolder() {
-    find . -type d -name $@
-}
+alias findfile='find . -type f -name'
+alias finddir='find . -type d -name'
 
 # Get line of output
 getline() {

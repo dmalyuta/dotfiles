@@ -86,6 +86,13 @@
   :type 'float
   :group 'danylo)
 
+(defface danylo/latex-equation-face-main
+  '((t (:foreground "#ECBE7B"
+		    :weight normal
+		    :inherit default)))
+  "Face for org-mode equation delimiters."
+  :group 'danylo)
+
 (defface danylo/latex-equation-face-faded
   '((t (:foreground "#464c5d"
 		    :weight bold
@@ -915,7 +922,7 @@ With argument ARG, do this that many times."
 	      jit-lock-stealth-time 16
 	      jit-lock-contextually t
 	      jit-lock-stealth-nice 0.5
-	      font-lock-maximum-decoration t)
+	      font-lock-maximum-decoration 1)
 
 ;;;###autoload
 (defun danylo/modeline-setup ()
@@ -1758,28 +1765,29 @@ lines according to the first line."
 	 (LaTeX-mode . TeX-source-correlate-mode)
 	 (LaTeX-mode . auto-fill-mode)
 	 (LaTeX-mode . danylo/latex-font-lock-mode)
-	 ;; View program
 	 (LaTeX-mode . (lambda ()
+			 ;; View program
 			 (setq TeX-view-program-list
 			       '(("Evince"
 				  "evince --page-index=%(outpage) %o")))
 			 (setq TeX-view-program-selection
-			       '((output-pdf "Evince")))))
-	 ;; Other environments
-	 (LaTeX-mode . (lambda ()
+			       '((output-pdf "Evince")))
+			 ;; Other environments
 			 (LaTeX-add-environments "equation*")
 			 (LaTeX-add-environments "tikzpicture")
-			 (LaTeX-add-environments "pgfonlayer")))
-	 ;; Line-breaking math
-	 (LaTeX-mode . (lambda ()
-			 (add-to-list 'fill-nobreak-predicate
-				      'texmathp)))
-	 ;; Helm for candidate completion
-	 (LaTeX-mode . (lambda ()
+			 (LaTeX-add-environments "pgfonlayer")
+			 ;; Line-breaking math
+			 (add-to-list 'fill-nobreak-predicate 'texmathp)
+			 ;; Helm for candidate completion
 			 (require 'helm-mode)
 			 (add-to-list 'helm-completing-read-handlers-alist
 				      '(LaTeX-environment
-					. helm-completing-read-default-handler)))))
+					. helm-completing-read-default-handler))
+			 ;; Face remaps
+			 (setq-local face-remapping-alist
+				     '((font-latex-math-face
+					. danylo/latex-equation-face-main)))
+			 )))
   :init (setq TeX-source-correlate-method 'synctex
 	      TeX-source-correlate-start-server t
 	      TeX-auto-save t

@@ -46,6 +46,8 @@
   "My customization variables for the init.el file."
   :group 'local)
 
+;;;; Variables
+
 (defcustom danylo/gc-cons-threshold `,(* 1024 1024 100)
   "Name of ivy candidate list buffer"
   :type 'integer
@@ -86,23 +88,59 @@
   :type 'float
   :group 'danylo)
 
-(defface danylo/latex-equation-face-main
-  '((t (:foreground "#ECBE7B"
+(defcustom danylo/ref-prefix-height 0.8
+  "Height of the font to use for LaTeX \...ref{...} fontification."
+  :type 'float
+  :group 'danylo)
+
+;;;; Faces
+
+;; Colors taken from doom-one theme
+(defconst danylo/black      "black")
+(defconst danylo/yellow     "#ECBE7B")
+(defconst danylo/faded      "#464c5d")
+(defconst danylo/red        "#ff6c6b")
+(defconst danylo/orange     "#da8548")
+(defconst danylo/blue       "#51afef")
+(defconst danylo/faded-blue "#31495d")
+
+(defface danylo/latex-face-equation-main
+  `((t (:foreground ,danylo/yellow
 		    :weight normal
 		    :inherit default)))
   "Face for org-mode equation delimiters."
   :group 'danylo)
 
-(defface danylo/latex-equation-face-faded
-  '((t (:foreground "#464c5d"
+(defface danylo/latex-face-equation-delim
+  `((t (:foreground ,danylo/faded
 		    :weight bold
 		    :inherit default)))
   "Face for org-mode equation delimiters."
   :group 'danylo)
 
+(defface danylo/latex-face-item
+  `((t (:foreground ,danylo/red
+		    :inherit default)))
+  "Face for org-mode equation delimiters."
+  :group 'danylo)
+
+(defface danylo/latex-face-ref
+  `((t (:foreground ,danylo/blue
+		    :inherit default)))
+  "Face for org-mode equation delimiters."
+  :group 'danylo)
+
+(defface danylo/latex-face-ref-prefix
+  `((t (:foreground ,danylo/faded-blue
+		     :height ,danylo/ref-prefix-height
+		    :inherit default)))
+  "Face for org-mode equation delimiters."
+  :group 'danylo)
+
 (defface danylo/telephone-yellow
-  '((t (:foreground "black"
-		    :background "yellow")))
+  `((t (:foreground ,danylo/black
+		    :background ,danylo/yellow
+		    :inherit default)))
   "Face for mode line."
   :group 'danylo)
 
@@ -136,8 +174,8 @@
 	     (not (active-minibuffer-window)))
     (let ((message-log-max nil))
       ;; Print "<TRASH_ICON> GC"
-      (message "%s %s" (danylo/fa-icon "trash-o" "#464c5d")
-	       (propertize "GC" 'face '(:foreground "#464c5d")))
+      (message "%s %s" (danylo/fa-icon "trash-o" `,danylo/faded)
+	       (propertize "GC" 'face `(:foreground ,danylo/faded)))
       )))
 
 (add-hook 'post-gc-hook (lambda () (danylo/gc-message)))
@@ -432,21 +470,25 @@
 	counsel-switch-buffer-preview-virtual-buffers nil
 	ivy-truncate-lines t
 	ivy-display-style 'fancy)
-  (custom-set-faces
-   '(ivy-minibuffer-match-face-1
-     ((t (:background "orange"
-		      :foreground "black"
-		      :weight normal))))
-   '(swiper-match-face-1
-     ((t (:background "orange"
-		      :foreground "black")))))
-  (add-to-list 'ivy-ignore-buffers '"\\\\*ivy-")
+  (add-hook 'ivy-mode-hook
+	    (lambda ()
+	      (set-face-attribute 'ivy-minibuffer-match-face-1 nil
+				  :background `,danylo/orange
+				  :foreground `,danylo/black
+				  :weight 'normal)
+	      (set-face-attribute 'swiper-match-face-1 nil
+				  :background `,danylo/orange
+				  :foreground `,danylo/black
+				  :weight 'normal)))
+  (add-to-list 'ivy-ignore-buffers '"\\*ivy-")
+  (add-to-list 'ivy-ignore-buffers '"\\*xref\\*")
   :config
   (ivy-mode 1))
 
 (use-package helm
   ;; https://emacs-helm.github.io/helm/
   ;; Emacs incremental completion and selection narrowing framework
+  :ensure t
   :bind (("C-x C-f" . helm-find-files)
 	 :map helm-map
 	 ("TAB" . helm-execute-persistent-action))
@@ -467,10 +509,10 @@
   (add-hook 'helm-find-files-after-init-hook
 	    (lambda ()
 	      (set-face-attribute 'helm-ff-directory nil
-				  :foreground "yellow"
-				  :bold t
+				  :foreground `,danylo/yellow
+				  :weight 'bold
 				  :extend nil)))
-  (add-to-list 'ivy-ignore-buffers '"\\\\*helm")
+  (add-to-list 'ivy-ignore-buffers '"\\*helm")
   :config
   (helm-mode 1))
 
@@ -686,10 +728,12 @@ With argument ARG, do this that many times."
   :init (setq whitespace-line-column fill-column
 	      whitespace-style '(face lines-tail))
   ;; Face style for overflowing characters
-  (custom-set-faces
-   '(whitespace-line ((t (:foreground "yellow"
-				      :background nil
-				      :weight bold)))))
+  (add-hook 'whitespace-mode-hook
+	    (lambda ()
+	      (set-face-attribute 'whitespace-line nil
+				  :foreground `,danylo/yellow
+				  :background nil
+				  :bold t)))
   :config
   (global-whitespace-mode +1))
 
@@ -919,30 +963,30 @@ With argument ARG, do this that many times."
 
 ;; Speed up font-lock mode speed (can causes laggy scrolling)
 (setq-default font-lock-support-mode 'jit-lock-mode
-	      jit-lock-stealth-time 16
 	      jit-lock-contextually t
-	      jit-lock-stealth-nice 0.5
 	      jit-lock-stealth-load nil
-	      jit-lock-stealth-time 0.5
-	      jit-lock-chunk-size 200
+	      jit-lock-stealth-time nil ;; Don't do stealth fontification
+	      jit-lock-stealth-nice 0.5
 	      ;; Below: jit-lock-defer-time "pauses" fontification while the
 	      ;; user is typing, as long as the time between successive
 	      ;; keystrokes is <jit-lock-defer-time. This is what makes typing
 	      ;; smooth even with some heavy font locking (because the font
 	      ;; locking will occur during "idle" times)!
 	      jit-lock-defer-time 0.25
-	      font-lock-maximum-decoration t)
+	      font-lock-maximum-decoration 1)
 
 ;;;###autoload
 (defun danylo/modeline-setup ()
   "Configure the modeline."
-  (setq telephone-line-primary-left-separator 'telephone-line-cubed-left
-	telephone-line-secondary-left-separator 'telephone-line-cubed-hollow-left
-	telephone-line-primary-right-separator 'telephone-line-cubed-right
-	telephone-line-secondary-right-separator 'telephone-line-cubed-hollow-right)
+  (setq
+   telephone-line-primary-left-separator 'telephone-line-cubed-left
+   telephone-line-secondary-left-separator 'telephone-line-cubed-hollow-left
+   telephone-line-primary-right-separator 'telephone-line-cubed-right
+   telephone-line-secondary-right-separator 'telephone-line-cubed-hollow-right)
 
   (add-to-list 'telephone-line-faces
-	       '(yellow . (danylo/telephone-yellow . telephone-line-accent-inactive)))
+	       '(yellow . (danylo/telephone-yellow
+			   . telephone-line-accent-inactive)))
 
   (setq telephone-line-lhs
 	'((yellow . (telephone-line-vc-segment))
@@ -1005,19 +1049,25 @@ With argument ARG, do this that many times."
 
 ;;;###autoload
 (define-minor-mode danylo/latex-font-lock-mode
-  "LaTeX equation font locking.
+  "LaTeX font locking.
 Inspired from: http://makble.com/emacs-font-lock-how-to-highlight-multiline-text"
   :lighter " danylo-latex-highlight"
   (make-variable-buffer-local 'font-lock-extra-managed-props)
   (add-to-list 'font-lock-extra-managed-props 'invisible)
+  (add-to-list 'font-lock-extra-managed-props 'display)
+  ;; ..:: Enable multiline highlight ::..
+  (set (make-local-variable 'font-lock-multiline) t)
+  (add-hook 'font-lock-extend-region-functions
+            'danylo/font-lock-extend-region)
+  ;; ..:: Math ::..
   (mapcar
    (lambda (arg)
      (font-lock-add-keywords
       nil `((,(format "\\(%s\\)\\(?:.\\|\n\\)*?\\(%s\\)"
 		      (car arg) (cdr arg))
-	     (0 '(face danylo/latex-equation-face-main invisible nil) t)
-	     (1 '(face danylo/latex-equation-face-faded invisible nil) t)
-	     (2 '(face danylo/latex-equation-face-faded invisible nil) t)))))
+	     (0 '(face danylo/latex-face-equation-main invisible nil) t)
+	     (1 '(face danylo/latex-face-equation-delim invisible nil) t)
+	     (2 '(face danylo/latex-face-equation-delim invisible nil) t)))))
    `(("\\$" . "\\$")
      ("\\$\\$" . "\\$\\$")
      ("\\\\begin{equation[\\*]?}" . "\\\\end{equation[\\*]?}")
@@ -1028,9 +1078,40 @@ Inspired from: http://makble.com/emacs-font-lock-how-to-highlight-multiline-text
      ("\\\\begin{subequations[\\*]?}" . "\\\\end{subequations[\\*]?}")
      ("\\\\begin{optimization[\\*]?}" . "\\\\end{optimization[\\*]?}")
      ))
-  (set (make-local-variable 'font-lock-multiline) t)
-  (add-hook 'font-lock-extend-region-functions
-            'danylo/font-lock-extend-region))
+  ;; ..:: Lists ::..
+  (mapcar
+   (lambda (arg)
+     (font-lock-add-keywords
+      nil `((,(format "\\(%s\\)" arg)
+	     (0 '(face danylo/latex-face-item invisible nil) t)))))
+   `("\\\\begin{itemize}"
+     "\\\\end{itemize}"
+     "\\\\begin{enumerate}"
+     "\\\\end{enumerate}"))
+  (font-lock-add-keywords
+   nil '(("\\(\\\\item\\) " 1 '(face danylo/latex-face-item
+				     display "●"))))
+  ;; ..:: References ::..
+  (setq danylo/ref-prefix-raise (- 1 0.8))
+  ;; >> Citations <<
+  (font-lock-add-keywords
+   nil `(("\\(\\\\\\)\\(cite.?\\)\\({\\)\\(?:.\\|\n\\)*?\\(}\\)"
+	  (0 '(face danylo/latex-face-ref invisible nil) t)
+	  (1 '(face danylo/latex-face-ref invisible t) t)
+	  (2 '(face danylo/latex-face-ref-prefix display
+		    '(raise ,danylo/ref-prefix-raise)) t)
+	  (3 '(face danylo/latex-face-ref display "[") t)
+	  (4 '(face danylo/latex-face-ref display "]") t))))
+  ;; >> \[...]ref{[...]} <<
+  (font-lock-add-keywords
+   nil `(("\\(\\\\\\)\\([^{}\t\r\n\s]*?\\)\\(ref{\\)\\(?:.\\|\n\\)*?\\(}\\)"
+	  (0 '(face danylo/latex-face-ref invisible nil) t)
+	  (1 '(face danylo/latex-face-ref-prefix invisible t) t)
+	  (2 '(face danylo/latex-face-ref-prefix display
+		    '(raise ,danylo/ref-prefix-raise)) t)
+	  (3 '(face danylo/latex-face-ref display "(") t)
+	  (4 '(face danylo/latex-face-ref display ")") t))))
+  )
 
 ;;; ..:: Syntax checking ::..
 
@@ -1142,7 +1223,7 @@ Inspired from: http://makble.com/emacs-font-lock-how-to-highlight-multiline-text
   (setq org-format-latex-options (plist-put org-format-latex-options
 					    :scale `,danylo/latex-preview-scale)
 	org-format-latex-options (plist-put org-format-latex-options
-					    :foreground "yellow")))
+					    :foreground `,danylo/yellow)))
 
 ;;;###autoload
 (defun danylo/org-mode-font ()
@@ -1315,7 +1396,7 @@ This version deletes backup files without asking."
  "C-c m" 'danylo/launch-mu4e)
 
 (with-eval-after-load "mu4e"
-  (set-face-attribute 'mu4e-unread-face nil :foreground "yellow")
+  (set-face-attribute 'mu4e-unread-face nil :foreground `,danylo/yellow)
   (set-face-attribute 'mu4e-header-highlight-face nil :underline nil))
 
 ;; Do not back up email while writing it, which makes drafts
@@ -1574,8 +1655,9 @@ If there is no shell open, prints a message to inform."
 (defun danylo/lsp-variable-info-message (string)
   "Display variable info"
   (message "%s %s"
-	   (danylo/fa-icon "info" "yellow")
-	   (propertize string 'face '(:background nil :foreground "yellow"))))
+	   (danylo/fa-icon "info" `,danylo/yellow)
+	   (propertize string 'face
+		       '(:background nil :foreground `,danylo/yellow))))
 
 ;;;###autoload
 (defun danylo/lsp-display-variable-info ()
@@ -1829,6 +1911,7 @@ lines according to the first line."
 	      LaTeX-electric-left-right-brace t
 	      TeX-electric-math '("$" . "$"))
   (setq-default TeX-master nil)
+  (add-to-list 'ivy-ignore-buffers '"\\*.*output\\*")
   :bind (:map LaTeX-mode-map
 	      ("M-s" . ispell-word)
 	      ("C-x C-<backspace>" . electric-pair-delete-pair))

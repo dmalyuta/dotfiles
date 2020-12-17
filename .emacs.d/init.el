@@ -93,6 +93,21 @@
   :type 'float
   :group 'danylo)
 
+(defcustom danylo/section-height 1.4
+  "Height of LaTeX \section{...} text."
+  :type 'float
+  :group 'danylo)
+
+(defcustom danylo/subsection-height 1.2
+  "Height of LaTeX \subsection{...} text."
+  :type 'float
+  :group 'danylo)
+
+(defcustom danylo/subsubsection-height 1.1
+  "Height of LaTeX \subsubsection{...} text."
+  :type 'float
+  :group 'danylo)
+
 ;;;; Faces
 
 ;; Colors taken from doom-one theme
@@ -103,6 +118,14 @@
 (defconst danylo/orange     "#da8548")
 (defconst danylo/blue       "#51afef")
 (defconst danylo/faded-blue "#31495d")
+(defconst danylo/green      "#98be65")
+
+(defface danylo/telephone-yellow
+  `((t (:foreground ,danylo/black
+		    :background ,danylo/yellow
+		    :inherit default)))
+  "Face for mode line."
+  :group 'danylo)
 
 (defface danylo/latex-face-equation-main
   `((t (:foreground ,danylo/yellow
@@ -137,11 +160,35 @@
   "Face for org-mode equation delimiters."
   :group 'danylo)
 
-(defface danylo/telephone-yellow
-  `((t (:foreground ,danylo/black
-		    :background ,danylo/yellow
-		    :inherit default)))
-  "Face for mode line."
+(defface danylo/face-section
+  `((t (:foreground "white"
+		     :background ,danylo/red
+		     :height ,danylo/section-height
+		     :inherit default)))
+  "Face for org-mode equation delimiters."
+  :group 'danylo)
+
+(defface danylo/face-subsection
+  `((t (:foreground "white"
+		     :background ,danylo/orange
+		     :height ,danylo/subsection-height
+		     :inherit default)))
+  "Face for org-mode equation delimiters."
+  :group 'danylo)
+
+(defface danylo/face-subsubsection
+  `((t (:foreground "white"
+		     :background ,danylo/blue
+		     :height ,danylo/subsubsection-height
+		     :inherit default)))
+  "Face for org-mode equation delimiters."
+  :group 'danylo)
+
+(defface danylo/face-deepsection
+  `((t (:foreground "white"
+		     :background ,danylo/faded-blue
+		     :inherit default)))
+  "Face for org-mode equation delimiters."
   :group 'danylo)
 
 ;;; ..:: General helper functions ::..
@@ -380,12 +427,35 @@
 (defvar danylo/num-completion-candidates 15
   "How many completion candidates to display, tops.")
 
+(defun danylo/smart-select-region (start end)
+  "Select region in file, removing possible indent of all
+lines according to the first line."
+  (interactive "r")
+  (if (use-region-p)
+      (let* ((selection (buffer-substring start end))
+	     (starting-spaces (progn (string-match "^\s+" selection)
+				     (match-end 0)))
+	     (starting-space-replace-regexp
+	      `,(format "^\s\\{%d\\}" starting-spaces))
+	     ;; Remove the initial spaces
+	     (trimmed-selection (replace-regexp-in-string
+				 starting-space-replace-regexp "" selection))
+	     ;; Remove any trailing newlines
+	     (trimmed-selection (replace-regexp-in-string "\n$" "" trimmed-selection)))
+	trimmed-selection)
+    ;; No region active
+    (message "No region selected.")
+    nil))
+
 ;;;###autoload
-(defun danylo/swiper-thing-at-point ()
-    "Put thing at point in swiper buffer"
-    (interactive)
-    (deactivate-mark)
-    (swiper (thing-at-point 'symbol)))
+(defun danylo/swiper-thing-at-point (&optional start end)
+  "Put thing at point in swiper buffer."
+  (interactive (if (use-region-p) (list (region-beginning) (region-end))))
+  (if start
+      (let ((selection (buffer-substring start end)))
+	(deactivate-mark)
+	(swiper selection))
+    (swiper (thing-at-point 'symbol))))
 
 ;;;###autoload
 (defun danylo/counsel-switch-buffer-no-preview ()
@@ -1048,27 +1118,34 @@ With argument ARG, do this that many times."
     changed))
 
 ;;;###autoload
-(define-minor-mode danylo/latex-font-lock-mode
-  "LaTeX font locking.
-Inspired from: http://makble.com/emacs-font-lock-how-to-highlight-multiline-text"
-  :lighter " danylo-latex-highlight"
-  (make-variable-buffer-local 'font-lock-extra-managed-props)
-  (add-to-list 'font-lock-extra-managed-props 'invisible)
-  (add-to-list 'font-lock-extra-managed-props 'display)
-  ;; ..:: Enable multiline highlight ::..
-  (set (make-local-variable 'font-lock-multiline) t)
-  (add-hook 'font-lock-extend-region-functions
-            'danylo/font-lock-extend-region)
+(defun danylo/make-highlight-keywords ()
+  "Make the font-lock keywords for latex-font-lock-mode fontification."
+  (setq danylo/ref-prefix-raise (- 1 0.8))
   ;; ..:: Math ::..
+  ;; >> Delimiters <<
+  (setq
+   danylo/highlight-keywords
+   (mapcar
+    (lambda (arg)
+      `(,(format "\\(?:%s\\)" arg)
+	(0 '(face danylo/latex-face-equation-delim invisible nil) t)))
+    '("\\$"
+      "\\$\\$"
+      "\\\\\\(?:begin\\|end\\){equation[\\*]?}"
+      "\\\\\\(?:begin\\|end\\){align[\\*]?}"
+      "\\\\\\(?:begin\\|end\\){alignat[\\*]?}"
+      "\\\\\\(?:begin\\|end\\){gather[\\*]?}"
+      "\\\\\\(?:begin\\|end\\){multline[\\*]?}"
+      "\\\\\\(?:begin\\|end\\){subequations[\\*]?}"
+      "\\\\\\(?:begin\\|end\\){optimization[\\*]?}")))
+  ;; >> Body <<
   (mapcar
    (lambda (arg)
-     (font-lock-add-keywords
-      nil `((,(format "\\(%s\\)\\(?:.\\|\n\\)*?\\(%s\\)"
-		      (car arg) (cdr arg))
-	     (0 '(face danylo/latex-face-equation-main invisible nil) t)
-	     (1 '(face danylo/latex-face-equation-delim invisible nil) t)
-	     (2 '(face danylo/latex-face-equation-delim invisible nil) t)))))
-   `(("\\$" . "\\$")
+     (add-to-list
+      'danylo/highlight-keywords
+      `(,(format "\\(?:%s\\)\\(?:.\\|\n\\)*?\\(?:%s\\)" (car arg) (cdr arg))
+	(0 '(face danylo/latex-face-equation-main invisible nil) t))))
+   '(("\\$" . "\\$")
      ("\\$\\$" . "\\$\\$")
      ("\\\\begin{equation[\\*]?}" . "\\\\end{equation[\\*]?}")
      ("\\\\begin{align[\\*]?}" . "\\\\end{align[\\*]?}")
@@ -1076,42 +1153,127 @@ Inspired from: http://makble.com/emacs-font-lock-how-to-highlight-multiline-text
      ("\\\\begin{gather[\\*]?}" . "\\\\end{gather[\\*]?}")
      ("\\\\begin{multline[\\*]?}" . "\\\\end{multline[\\*]?}")
      ("\\\\begin{subequations[\\*]?}" . "\\\\end{subequations[\\*]?}")
-     ("\\\\begin{optimization[\\*]?}" . "\\\\end{optimization[\\*]?}")
-     ))
+     ("\\\\begin{optimization[\\*]?}" . "\\\\end{optimization[\\*]?}")))
   ;; ..:: Lists ::..
-  (mapcar
-   (lambda (arg)
-     (font-lock-add-keywords
-      nil `((,(format "\\(%s\\)" arg)
-	     (0 '(face danylo/latex-face-item invisible nil) t)))))
-   `("\\\\begin{itemize}"
-     "\\\\end{itemize}"
-     "\\\\begin{enumerate}"
-     "\\\\end{enumerate}"))
-  (font-lock-add-keywords
-   nil '(("\\(\\\\item\\) " 1 '(face danylo/latex-face-item
-				     display "●"))))
+  (when (eq major-mode 'latex-mode)
+    (mapcar
+     (lambda (arg)
+       (add-to-list
+	'danylo/highlight-keywords
+	`(,(format "\\(%s\\)" arg)
+	  (0 '(face danylo/latex-face-item invisible nil) t)))
+       )
+     '("\\\\begin{itemize}"
+       "\\\\end{itemize}"
+       "\\\\begin{enumerate}"
+       "\\\\end{enumerate}"))
+    (add-to-list
+     'danylo/highlight-keywords
+     '("\\(\\\\item\\) " 1 '(face danylo/latex-face-item display "●"))))
   ;; ..:: References ::..
-  (setq danylo/ref-prefix-raise (- 1 0.8))
-  ;; >> Citations <<
-  (font-lock-add-keywords
-   nil `(("\\(\\\\\\)\\(cite.?\\)\\({\\)\\(?:.\\|\n\\)*?\\(}\\)"
-	  (0 '(face danylo/latex-face-ref invisible nil) t)
-	  (1 '(face danylo/latex-face-ref invisible t) t)
-	  (2 '(face danylo/latex-face-ref-prefix display
-		    '(raise ,danylo/ref-prefix-raise)) t)
-	  (3 '(face danylo/latex-face-ref display "[") t)
-	  (4 '(face danylo/latex-face-ref display "]") t))))
-  ;; >> \[...]ref{[...]} <<
-  (font-lock-add-keywords
-   nil `(("\\(\\\\\\)\\([^{}\t\r\n\s]*?\\)\\(ref{\\)\\(?:.\\|\n\\)*?\\(}\\)"
-	  (0 '(face danylo/latex-face-ref invisible nil) t)
-	  (1 '(face danylo/latex-face-ref-prefix invisible t) t)
-	  (2 '(face danylo/latex-face-ref-prefix display
-		    '(raise ,danylo/ref-prefix-raise)) t)
-	  (3 '(face danylo/latex-face-ref display "(") t)
-	  (4 '(face danylo/latex-face-ref display ")") t))))
-  )
+  (when (eq major-mode 'latex-mode)
+    ;; >> Citations <<
+    (add-to-list
+     'danylo/highlight-keywords
+     `("\\(\\\\\\)\\(cite.?\\)\\({\\)\\(?:.\\|\n\\)*?\\(}\\)"
+       (0 '(face danylo/latex-face-ref invisible nil) t)
+       (1 '(face danylo/latex-face-ref invisible t) t)
+       (2 '(face danylo/latex-face-ref-prefix display
+		 '(raise ,danylo/ref-prefix-raise)) t)
+       (3 '(face danylo/latex-face-ref display "[") t)
+       (4 '(face danylo/latex-face-ref display "]") t)))
+    ;; >> Labels <<
+    (add-to-list
+     'danylo/highlight-keywords
+     `("\\(\\\\label{\\)\\(?:.*\\)\\(}\\)"
+       (0 '(face danylo/latex-face-ref invisible nil) t)
+       (1 '(face danylo/latex-face-ref display "<") t)
+       (2 '(face danylo/latex-face-ref display ">") t)))
+    ;; >> \[...]ref{[...]} <<
+    (add-to-list
+     'danylo/highlight-keywords
+     `("\\(\\\\\\)\\([^{}\t\r\n\s]*?\\)\\(ref{\\)\\(?:.\\|\n\\)*?\\(}\\)"
+       (0 '(face danylo/latex-face-ref invisible nil) t)
+       (1 '(face danylo/latex-face-ref-prefix invisible t) t)
+       (2 '(face danylo/latex-face-ref-prefix display
+		 '(raise ,danylo/ref-prefix-raise)) t)
+       (3 '(face danylo/latex-face-ref display "(") t)
+       (4 '(face danylo/latex-face-ref display ")") t))))
+  ;; ..:: Sections ::..
+  (cond ((eq major-mode 'latex-mode)
+	 (progn
+	   (add-to-list
+	    'danylo/highlight-keywords
+	    '("\\(\\\\section[\\*]?{\\)\\(?:.\\|\n\\)*?\\(}\\)"
+	      (0 '(face danylo/latex-face-section) t)
+	      (1 '(face danylo/latex-face-section display " §: ") t)
+	      (2 '(face danylo/latex-face-section display " ") t)))
+	   (add-to-list
+	    'danylo/highlight-keywords
+	    '("\\(\\\\subsection[\\*]?{\\)\\(?:.\\|\n\\)*?\\(}\\)"
+	      (0 '(face danylo/latex-face-subsection) t)
+	      (1 '(face danylo/latex-face-subsection display " §.§: ") t)
+	      (2 '(face danylo/latex-face-subsection display " ") t)))
+	   (add-to-list
+	    'danylo/highlight-keywords
+	    '("\\(\\\\subsubsection[\\*]?{\\)\\(?:.\\|\n\\)*?\\(}\\)"
+	      (0 '(face danylo/latex-face-subsubsection) t)
+	      (1 '(face danylo/latex-face-subsubsection display " §.§.§: ") t)
+	      (2 '(face danylo/latex-face-subsubsection display " ") t)))))
+	((eq major-mode 'org-mode)
+	 (progn
+	   (add-to-list
+	    'danylo/highlight-keywords
+	    '("^\\(\\*\\{1\\}\s\\)\\(?:.*\\)$"
+	      (0 '(face danylo/face-section) t)))
+	   (add-to-list
+	    'danylo/highlight-keywords
+	    '("^\\(\\*\\{2\\}\s\\)\\(?:.*\\)$"
+	      (0 '(face danylo/face-subsection) t)))
+	   (add-to-list
+	    'danylo/highlight-keywords
+	    '("^\\(\\*\\{3\\}\s\\)\\(?:.*\\)$"
+	      (0 '(face danylo/face-subsubsection) t)))
+	   (mapcar
+	    (lambda (arg)
+	      (add-to-list
+	       'danylo/highlight-keywords
+	       `(,(format "^\\(\\*\\{%d\\}\s\\)\\(?:.*\\)$" arg)
+		 (0 '(face danylo/face-deepsection) t))))
+	    '(4 5 6 7 8))
+	   )))
+  danylo/highlight-keywords)
+
+;;;###autoload
+(defun danylo/latex-font-lock-mode-on ()
+  "Activate minor mode."
+  (make-variable-buffer-local 'font-lock-extra-managed-props)
+  (add-to-list 'font-lock-extra-managed-props 'invisible)
+  (add-to-list 'font-lock-extra-managed-props 'display)
+  ;; ..:: Enable multiline highlight ::..
+  (set (make-local-variable 'font-lock-multiline) t)
+  (add-hook 'font-lock-extend-region-functions
+            'danylo/font-lock-extend-region)
+  ;; Add keywords
+  (font-lock-add-keywords nil (danylo/make-highlight-keywords))
+  (font-lock-flush)
+  (message "Custom LaTeX highlighting on"))
+
+;;;###autoload
+(defun danylo/latex-font-lock-mode-off ()
+  "Shutdown minor mode."
+  ;; Remove keywords
+  (font-lock-remove-keywords nil (danylo/make-highlight-keywords))
+  (font-lock-flush)
+  (message "Custom LaTeX highlighting off"))
+
+;;;###autoload
+(define-minor-mode danylo/latex-font-lock-mode
+  "LaTeX font locking."
+  :lighter " danylo-latex-highlight"
+  (if danylo/latex-font-lock-mode
+      (danylo/latex-font-lock-mode-on)
+    (danylo/latex-font-lock-mode-off)))
 
 ;;; ..:: Syntax checking ::..
 
@@ -1181,32 +1343,13 @@ Inspired from: http://makble.com/emacs-font-lock-how-to-highlight-multiline-text
 (defun danylo/org-mode-setup ()
   "Configure org mode after loading it"
   (setq org-adapt-indentation nil
-	org-hide-leading-stars t)
+	org-hide-leading-stars nil)
   (visual-line-mode t))
-
-;;;###autoload
-(defun danylo/org-font-setup ()
-  "Org mode fonts"
-  ;; Heading sizes
-  (dolist (face '((org-level-1 . 1.2)
-                  (org-level-2 . 1.1)
-                  (org-level-3 . 1.05)
-                  (org-level-4 . 1.0)
-                  (org-level-5 . 1.1)
-                  (org-level-6 . 1.1)
-                  (org-level-7 . 1.1)
-                  (org-level-8 . 1.1)))
-    (set-face-attribute (car face) nil :font (face-attribute 'default :font)
-			:weight 'regular :height (cdr face)))
-  ;; Make all font fixed-pitch
-  (set-face-attribute 'variable-pitch nil :inherit 'default)
-  (set-face-attribute 'fixed-pitch nil :inherit 'default))
 
 (use-package org
   ;; https://github.com/bzg/org-mode
   ;; Your life in plain text
   :hook ((org-mode . danylo/org-mode-setup)
-	 (org-mode . danylo/org-font-setup)
 	 (org-mode . danylo/latex-font-lock-mode))
   :bind (:map org-mode-map
 	      ("M-q" . 'fill-paragraph))
@@ -1241,10 +1384,10 @@ See: https://stackoverflow.com/a/12286420/4605946."
   (org-emphasize (string-to-char char)))
 
 ;;;###autoload
-(defun danylo/org-emphasize-equation (start end)
+(defun danylo/org-emphasize-equation (&optional start end)
   "Wrap an equation in $ symbols in org-mode."
-  (interactive "r")
-  (if (use-region-p)
+  (interactive (if (use-region-p) (list (region-beginning) (region-end))))
+  (if start
       (let ((regionp (buffer-substring start end)))
 	(delete-region start end)
 	(if current-prefix-arg
@@ -1269,14 +1412,6 @@ See: https://stackoverflow.com/a/12286420/4605946."
   (define-key org-mode-map (kbd "C-c f u")
     (lambda () (interactive) (danylo/org-emphasize "_")))
   (define-key org-mode-map (kbd "C-c f e") 'danylo/org-emphasize-equation))
-
-(use-package org-bullets
-  ;; https://github.com/sabof/org-bullets
-  ;; UTF-8 bullets for org-mode
-  :after org
-  :hook (org-mode . org-bullets-mode)
-  :custom
-  (org-bullets-bullet-list '("◉" "○" "●" "○" "●" "○" "●")))
 
 ;;; ..:: Email ::..
 

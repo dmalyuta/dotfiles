@@ -131,33 +131,33 @@
   `((t (:foreground ,danylo/yellow
 		    :weight normal
 		    :inherit default)))
-  "Face for org-mode equation delimiters."
+  "Face for LaTeX math content."
   :group 'danylo)
 
 (defface danylo/latex-face-equation-delim
   `((t (:foreground ,danylo/faded
 		    :weight bold
 		    :inherit default)))
-  "Face for org-mode equation delimiters."
+  "Face for LaTeX math delimiters."
   :group 'danylo)
 
 (defface danylo/latex-face-item
   `((t (:foreground ,danylo/red
 		    :inherit default)))
-  "Face for org-mode equation delimiters."
+  "Face for LaTeX list item."
   :group 'danylo)
 
 (defface danylo/latex-face-ref
   `((t (:foreground ,danylo/blue
 		    :inherit default)))
-  "Face for org-mode equation delimiters."
+  "Face for LaTeX references."
   :group 'danylo)
 
 (defface danylo/latex-face-ref-prefix
   `((t (:foreground ,danylo/faded-blue
 		     :height ,danylo/ref-prefix-height
 		    :inherit default)))
-  "Face for org-mode equation delimiters."
+  "Face for LaTeX reference's kind."
   :group 'danylo)
 
 (defface danylo/face-section
@@ -165,7 +165,7 @@
 		     :background ,danylo/red
 		     :height ,danylo/section-height
 		     :inherit default)))
-  "Face for org-mode equation delimiters."
+  "Face for text section."
   :group 'danylo)
 
 (defface danylo/face-subsection
@@ -173,7 +173,7 @@
 		     :background ,danylo/orange
 		     :height ,danylo/subsection-height
 		     :inherit default)))
-  "Face for org-mode equation delimiters."
+  "Face for text subsection."
   :group 'danylo)
 
 (defface danylo/face-subsubsection
@@ -181,14 +181,21 @@
 		     :background ,danylo/blue
 		     :height ,danylo/subsubsection-height
 		     :inherit default)))
-  "Face for org-mode equation delimiters."
+  "Face for text subsubsection."
   :group 'danylo)
 
 (defface danylo/face-deepsection
   `((t (:foreground "white"
 		     :background ,danylo/faded-blue
 		     :inherit default)))
-  "Face for org-mode equation delimiters."
+  "Face for text sections at lower levels than subsubsection."
+  :group 'danylo)
+
+(defface danylo/latex-boolean
+  `((t (:foreground "white"
+		    :background ,danylo/red
+		    :inherit default)))
+  "Face for boolean variables like \iffalse and \fi."
   :group 'danylo)
 
 ;;; ..:: General helper functions ::..
@@ -591,6 +598,7 @@ lines according to the first line."
   ;; Ivy UI for Projectile
   :init (setq projectile-completion-system 'ivy))
 
+(require 'cc-mode)
 (use-package counsel-gtags
   ;; https://github.com/syohex/emacs-counsel-gtags
   ;; GNU Global with ivy completion
@@ -1033,10 +1041,10 @@ With argument ARG, do this that many times."
 
 ;; Speed up font-lock mode speed (can causes laggy scrolling)
 (setq-default font-lock-support-mode 'jit-lock-mode
-	      jit-lock-contextually t
+	      jit-lock-contextually nil
 	      jit-lock-stealth-load nil
-	      jit-lock-stealth-time nil ;; Don't do stealth fontification
-	      jit-lock-stealth-nice 0.5
+	      jit-lock-stealth-time 10
+	      jit-lock-stealth-nice 0.1
 	      ;; Below: jit-lock-defer-time "pauses" fontification while the
 	      ;; user is typing, as long as the time between successive
 	      ;; keystrokes is <jit-lock-defer-time. This is what makes typing
@@ -1054,6 +1062,19 @@ With argument ARG, do this that many times."
    telephone-line-primary-right-separator 'telephone-line-cubed-right
    telephone-line-secondary-right-separator 'telephone-line-cubed-hollow-right)
 
+  (telephone-line-defsegment* danylo/telephone-line-position-segment ()
+    "Cursor position info in mode line."
+    (let* ((line-cols (number-to-string 5))
+           (col-cols (number-to-string 3))
+	   (zero-based (bound-and-true-p column-number-indicator-zero-based))
+	   (col-pad " "))
+      (if (eq major-mode 'paradox-menu-mode)
+          (telephone-line-raw mode-line-front-space t)
+	`((-3 "%p")
+	  ,(concat "%" line-cols "l"
+                   ":%" col-cols (if zero-based "c" "C")
+		   col-pad)))))
+
   (add-to-list 'telephone-line-faces
 	       '(yellow . (danylo/telephone-yellow
 			   . telephone-line-accent-inactive)))
@@ -1065,19 +1086,17 @@ With argument ARG, do this that many times."
   (setq telephone-line-rhs
 	'((nil    . (telephone-line-misc-info-segment))
 	  (accent . (telephone-line-major-mode-segment))
-	  (evil   . (telephone-line-airline-position-segment))))
+	  (evil   . (danylo/telephone-line-position-segment))))
 
   ;; Activate
-  (telephone-line-mode 1)
-  )
+  (telephone-line-mode 1))
 
 (use-package telephone-line
   ;; https://github.com/dbordak/telephone-line
   ;; Telephone Line is a new implementation of Powerline for emacs
   :after (doom-themes)
   :config
-  (add-hook 'after-init-hook (danylo/modeline-setup))
-  )
+  (add-hook 'after-init-hook (danylo/modeline-setup)))
 
 (use-package all-the-icons
   ;; https://github.com/domtronn/all-the-icons.el
@@ -1192,7 +1211,7 @@ With argument ARG, do this that many times."
     ;; >> \[...]ref{[...]} <<
     (add-to-list
      'danylo/highlight-keywords
-     `("\\(\\\\\\)\\([^{}\t\r\n\s]*?\\)\\(ref{\\)\\(?:.\\|\n\\)*?\\(}\\)"
+     `("\\(\\\\\\)\\([^{}\\\t\r\n\s]*?\\)\\(ref{\\)\\(?:.\\|\n\\)*?\\(}\\)"
        (0 '(face danylo/latex-face-ref invisible nil) t)
        (1 '(face danylo/latex-face-ref-prefix invisible t) t)
        (2 '(face danylo/latex-face-ref-prefix display
@@ -1205,21 +1224,21 @@ With argument ARG, do this that many times."
 	   (add-to-list
 	    'danylo/highlight-keywords
 	    '("\\(\\\\section[\\*]?{\\)\\(?:.\\|\n\\)*?\\(}\\)"
-	      (0 '(face danylo/latex-face-section) t)
-	      (1 '(face danylo/latex-face-section display " §: ") t)
-	      (2 '(face danylo/latex-face-section display " ") t)))
+	      (0 '(face danylo/face-section) t)
+	      (1 '(face danylo/face-section display " §: ") t)
+	      (2 '(face danylo/face-section display " ") t)))
 	   (add-to-list
 	    'danylo/highlight-keywords
 	    '("\\(\\\\subsection[\\*]?{\\)\\(?:.\\|\n\\)*?\\(}\\)"
-	      (0 '(face danylo/latex-face-subsection) t)
-	      (1 '(face danylo/latex-face-subsection display " §.§: ") t)
-	      (2 '(face danylo/latex-face-subsection display " ") t)))
+	      (0 '(face danylo/face-subsection) t)
+	      (1 '(face danylo/face-subsection display " §.§: ") t)
+	      (2 '(face danylo/face-subsection display " ") t)))
 	   (add-to-list
 	    'danylo/highlight-keywords
 	    '("\\(\\\\subsubsection[\\*]?{\\)\\(?:.\\|\n\\)*?\\(}\\)"
-	      (0 '(face danylo/latex-face-subsubsection) t)
-	      (1 '(face danylo/latex-face-subsubsection display " §.§.§: ") t)
-	      (2 '(face danylo/latex-face-subsubsection display " ") t)))))
+	      (0 '(face danylo/face-subsubsection) t)
+	      (1 '(face danylo/face-subsubsection display " §.§.§: ") t)
+	      (2 '(face danylo/face-subsubsection display " ") t)))))
 	((eq major-mode 'org-mode)
 	 (progn
 	   (add-to-list
@@ -1242,6 +1261,12 @@ With argument ARG, do this that many times."
 		 (0 '(face danylo/face-deepsection) t))))
 	    '(4 5 6 7 8))
 	   )))
+  ;; ..:: Miscellaneous ::..
+  (when (eq major-mode 'latex-mode)
+    (add-to-list
+     'danylo/highlight-keywords
+     `("\\\\iffalse\\|\\\\fi"
+       (0 '(face danylo/latex-boolean) t))))
   danylo/highlight-keywords)
 
 ;;;###autoload
@@ -1792,7 +1817,7 @@ If there is no shell open, prints a message to inform."
   (message "%s %s"
 	   (danylo/fa-icon "info" `,danylo/yellow)
 	   (propertize string 'face
-		       '(:background nil :foreground `,danylo/yellow))))
+		       `(:foreground ,danylo/yellow))))
 
 ;;;###autoload
 (defun danylo/lsp-display-variable-info ()

@@ -1223,19 +1223,19 @@ With argument ARG, do this that many times."
 	 (progn
 	   (add-to-list
 	    'danylo/highlight-keywords
-	    '("\\(\\\\section[\\*]?{\\)\\(?:.\\|\n\\)*?\\(}\\)"
+	    '("\\(\\\\section[\\*]?{\\)\\(?:.\\|\n\\)*?\\(}\\)$"
 	      (0 '(face danylo/face-section) t)
 	      (1 '(face danylo/face-section display " §: ") t)
 	      (2 '(face danylo/face-section display " ") t)))
 	   (add-to-list
 	    'danylo/highlight-keywords
-	    '("\\(\\\\subsection[\\*]?{\\)\\(?:.\\|\n\\)*?\\(}\\)"
+	    '("\\(\\\\subsection[\\*]?{\\)\\(?:.\\|\n\\)*?\\(}\\)$"
 	      (0 '(face danylo/face-subsection) t)
 	      (1 '(face danylo/face-subsection display " §.§: ") t)
 	      (2 '(face danylo/face-subsection display " ") t)))
 	   (add-to-list
 	    'danylo/highlight-keywords
-	    '("\\(\\\\subsubsection[\\*]?{\\)\\(?:.\\|\n\\)*?\\(}\\)"
+	    '("\\(\\\\subsubsection[\\*]?{\\)\\(?:.\\|\n\\)*?\\(}\\)$"
 	      (0 '(face danylo/face-subsubsection) t)
 	      (1 '(face danylo/face-subsubsection display " §.§.§: ") t)
 	      (2 '(face danylo/face-subsubsection display " ") t)))))
@@ -1265,7 +1265,7 @@ With argument ARG, do this that many times."
   (when (eq major-mode 'latex-mode)
     (add-to-list
      'danylo/highlight-keywords
-     `("\\\\iffalse\\|\\\\fi"
+     `("\\(?:\\\\iffalse\\|\\\\fi\\)$"
        (0 '(face danylo/latex-boolean) t))))
   danylo/highlight-keywords)
 

@@ -49,7 +49,7 @@
 ;;;; Variables
 
 (defcustom danylo/gc-cons-threshold `,(* 1024 1024 100)
-  "Name of ivy candidate list buffer"
+  "Limit before garbage collection can happen automatically."
   :type 'integer
   :group 'danylo)
 
@@ -111,6 +111,7 @@
 ;;;; Faces
 
 ;; Colors taken from doom-one theme
+(defconst danylo/white      "white")
 (defconst danylo/black      "black")
 (defconst danylo/yellow     "#ECBE7B")
 (defconst danylo/faded      "#464c5d")
@@ -123,6 +124,13 @@
 (defface danylo/telephone-yellow
   `((t (:foreground ,danylo/black
 		    :background ,danylo/yellow
+		    :inherit default)))
+  "Face for mode line."
+  :group 'danylo)
+
+(defface danylo/telephone-red
+  `((t (:foreground ,danylo/white
+		    :background ,danylo/red
 		    :inherit default)))
   "Face for mode line."
   :group 'danylo)
@@ -161,38 +169,38 @@
   :group 'danylo)
 
 (defface danylo/face-section
-  `((t (:foreground "white"
-		     :background ,danylo/red
-		     :height ,danylo/section-height
-		     :inherit default)))
+  `((t (:foreground ,danylo/white
+		    :background ,danylo/red
+		    :height ,danylo/section-height
+		    :inherit default)))
   "Face for text section."
   :group 'danylo)
 
 (defface danylo/face-subsection
-  `((t (:foreground "white"
-		     :background ,danylo/orange
-		     :height ,danylo/subsection-height
-		     :inherit default)))
+  `((t (:foreground ,danylo/white
+		    :background ,danylo/orange
+		    :height ,danylo/subsection-height
+		    :inherit default)))
   "Face for text subsection."
   :group 'danylo)
 
 (defface danylo/face-subsubsection
-  `((t (:foreground "white"
-		     :background ,danylo/blue
-		     :height ,danylo/subsubsection-height
-		     :inherit default)))
+  `((t (:foreground ,danylo/white
+		    :background ,danylo/blue
+		    :height ,danylo/subsubsection-height
+		    :inherit default)))
   "Face for text subsubsection."
   :group 'danylo)
 
 (defface danylo/face-deepsection
-  `((t (:foreground "white"
-		     :background ,danylo/faded-blue
-		     :inherit default)))
+  `((t (:foreground ,danylo/white
+		    :background ,danylo/faded-blue
+		    :inherit default)))
   "Face for text sections at lower levels than subsubsection."
   :group 'danylo)
 
 (defface danylo/latex-boolean
-  `((t (:foreground "white"
+  `((t (:foreground ,danylo/white
 		    :background ,danylo/red
 		    :inherit default)))
   "Face for boolean variables like \iffalse and \fi."
@@ -1056,11 +1064,11 @@ With argument ARG, do this that many times."
 ;;;###autoload
 (defun danylo/modeline-setup ()
   "Configure the modeline."
-  (setq
-   telephone-line-primary-left-separator 'telephone-line-cubed-left
-   telephone-line-secondary-left-separator 'telephone-line-cubed-hollow-left
-   telephone-line-primary-right-separator 'telephone-line-cubed-right
-   telephone-line-secondary-right-separator 'telephone-line-cubed-hollow-right)
+  (setq  telephone-line-primary-left-separator 'telephone-line-flat
+	 telephone-line-primary-right-separator 'telephone-line-flat)
+  (when (window-system)
+    (setq telephone-line-secondary-left-separator 'telephone-line-flat
+	  telephone-line-secondary-right-separator 'telephone-line-flat))
 
   (telephone-line-defsegment* danylo/telephone-line-position-segment ()
     "Cursor position info in mode line."
@@ -1075,9 +1083,27 @@ With argument ARG, do this that many times."
                    ":%" col-cols (if zero-based "c" "C")
 		   col-pad)))))
 
+  (telephone-line-defsegment* danylo/telephone-lsp-segment ()
+    "Show active LSP connections."
+    (let* ((workspaces (lsp-workspaces)))
+      (when workspaces
+	(format "LSP[%s]" (string-join
+			   (mapcar (lambda (w) (lsp--workspace-print w))
+				   workspaces) ",")))))
+
+  (telephone-line-defsegment* danylo/telephone-mc-segment ()
+    "Show number of multiple cursors."
+    (when (bound-and-true-p multiple-cursors-mode)
+	(let* ((num-cursors (mc/num-cursors)))
+	  (when (> num-cursors 1)
+	      (format "mc:%d" num-cursors)))))
+
   (add-to-list 'telephone-line-faces
 	       '(yellow . (danylo/telephone-yellow
 			   . telephone-line-accent-inactive)))
+  (add-to-list 'telephone-line-faces
+	       '(red . (danylo/telephone-red
+			 . telephone-line-accent-inactive)))
 
   (setq telephone-line-lhs
 	'((yellow . (telephone-line-vc-segment))
@@ -1085,6 +1111,8 @@ With argument ARG, do this that many times."
 
   (setq telephone-line-rhs
 	'((nil    . (telephone-line-misc-info-segment))
+	  (red . (danylo/telephone-mc-segment))
+	  (yellow . (danylo/telephone-lsp-segment))
 	  (accent . (telephone-line-major-mode-segment))
 	  (evil   . (danylo/telephone-line-position-segment))))
 
@@ -1095,6 +1123,7 @@ With argument ARG, do this that many times."
   ;; https://github.com/dbordak/telephone-line
   ;; Telephone Line is a new implementation of Powerline for emacs
   :after (doom-themes)
+  ;; :init (setq telephone-line-height 20)
   :config
   (add-hook 'after-init-hook (danylo/modeline-setup)))
 

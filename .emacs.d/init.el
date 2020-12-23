@@ -108,6 +108,12 @@
   :type 'float
   :group 'danylo)
 
+(defcustom danylo/fontify-delay 0.25
+  "Delay before fontifying text. Helps to improve performance since
+fontification is a slow-ish process."
+  :type 'float
+  :group 'danylo)
+
 ;;;; Faces
 
 ;; Colors taken from doom-one theme
@@ -118,6 +124,7 @@
 (defconst danylo/red        "#ff6c6b")
 (defconst danylo/orange     "#da8548")
 (defconst danylo/blue       "#51afef")
+(defconst danylo/dark-blue  "#375c79")
 (defconst danylo/faded-blue "#31495d")
 (defconst danylo/green      "#98be65")
 
@@ -567,6 +574,7 @@ lines according to the first line."
 				  :weight 'normal)))
   (add-to-list 'ivy-ignore-buffers '"\\*ivy-")
   (add-to-list 'ivy-ignore-buffers '"\\*xref\\*")
+  (add-to-list 'ivy-ignore-buffers '"\\*toc\\*")
   :config
   (ivy-mode 1))
 
@@ -596,7 +604,10 @@ lines according to the first line."
 	      (set-face-attribute 'helm-ff-directory nil
 				  :foreground `,danylo/yellow
 				  :weight 'bold
-				  :extend nil)))
+				  :extend nil)
+	      (set-face-attribute 'helm-candidate-number nil
+				  :foreground `,danylo/black
+				  :background `,danylo/yellow)))
   (add-to-list 'ivy-ignore-buffers '"\\*helm")
   :config
   (helm-mode 1))
@@ -1004,6 +1015,28 @@ With argument ARG, do this that many times."
   ;; according to their depth.
   :hook ((prog-mode . rainbow-delimiters-mode)))
 
+;;;;  Highlight matching parentheses
+;; Some code from https://emacs.stackexchange.com/a/40833/13661
+(require 'delsel)
+
+(setq show-paren-delay `,danylo/fontify-delay)
+
+;;;###autoload
+(defun danylo/show-paren-clear-highlight ()
+  "Turn off any previous paren highlighting."
+  (delete-overlay show-paren--overlay)
+  (delete-overlay show-paren--overlay-1))
+
+;;;###autoload
+(defun danylo/show-paren-update-on-insert ()
+  ;; A command with `delete-selection' property probably inserts text.
+  (if (get this-command 'delete-selection)
+      (show-paren-function)
+    (danylo/show-paren-clear-highlight)))
+(add-hook 'post-command-hook #'danylo/show-paren-update-on-insert)
+
+(show-paren-mode 1)
+
 (use-package solaire-mode
   ;; https://github.com/hlissner/emacs-solaire-mode
   ;; Distinguish file-visiting buffers with slightly different background
@@ -1024,8 +1057,10 @@ With argument ARG, do this that many times."
   ;; An opinionated pack of modern color-themes
   :config
   (load-theme 'doom-one t)
-  (unless (window-system)
-    (set-face-attribute 'region nil :background "#666"))
+  (set-face-attribute 'region nil
+		      :extend nil
+		      :foreground `,danylo/yellow
+		      :background `,danylo/dark-blue)
   )
 
 (add-hook 'after-init-hook
@@ -1058,7 +1093,7 @@ With argument ARG, do this that many times."
 	      ;; keystrokes is <jit-lock-defer-time. This is what makes typing
 	      ;; smooth even with some heavy font locking (because the font
 	      ;; locking will occur during "idle" times)!
-	      jit-lock-defer-time 0.25
+	      jit-lock-defer-time `,danylo/fontify-delay
 	      font-lock-maximum-decoration 1)
 
 ;;;###autoload
@@ -1141,12 +1176,6 @@ With argument ARG, do this that many times."
 		       '("\\.m$" all-the-icons-fileicon "matlab"
 			 :face all-the-icons-orange))))
   )
-
-(use-package mic-paren
-  ;; https://github.com/emacsattic/mic-paren
-  ;; Advanced highlighting of matching parentheses
-  :config
-  (paren-activate))
 
 ;;;; Custom minor mode to highlight LaTeX equations
 
@@ -2088,7 +2117,12 @@ lines according to the first line."
 			 (add-to-list 'helm-completing-read-handlers-alist
 				      '(LaTeX-environment
 					. helm-completing-read-default-handler))
-			 )))
+			 ))
+	 (reftex-mode . (lambda ()
+			  ;; Unset C-c /, which conflicts with google-this
+			  (define-key reftex-mode-map (kbd "C-c /") 'nil)
+			  (define-key reftex-mode-map (kbd "M-.")
+			    'reftex-view-crossref))))
   :init (setq TeX-source-correlate-method 'synctex
 	      TeX-source-correlate-start-server t
 	      TeX-auto-save t

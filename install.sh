@@ -3,6 +3,9 @@
 # Installation script for the dotfiles, and to configure the Linux
 # environment.
 #
+# Run using:
+# $ source install.sh
+#
 # Author: Danylo Malyuta, 2020.
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
@@ -47,7 +50,11 @@ cp -r "$DIR"/.jupyter ~
 
 # Emacs
 mkdir -p ~/.emacs.d
+mkdir -p ~/.emacs.d/lisp
 ln -sf "$DIR"/.emacs.d/init.el ~/.emacs.d
+ln -sf "$DIR"/.emacs.d/lisp/danylo-custom-variables.el ~/.emacs.d/lisp
+ln -sf "$DIR"/.emacs.d/lisp/danylo-prog-font-lock.el ~/.emacs.d/lisp
+ln -sf "$DIR"/.emacs.d/lisp/danylo-text-font-lock.el ~/.emacs.d/lisp
 
 # ..:: Install modules ::..
 

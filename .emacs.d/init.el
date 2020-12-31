@@ -40,178 +40,12 @@
  :upgrade nil)
 (require 'quelpa-use-package)
 
-;;; ..:: Customization variables in init.el ::..
+;;; ..:: Customization variables ::..
 
-(defgroup danylo nil
-  "My customization variables for the init.el file."
-  :group 'local)
-
-;;;; Variables
-
-(defcustom danylo/gc-cons-threshold `,(* 1024 1024 100)
-  "Limit before garbage collection can happen automatically."
-  :type 'integer
-  :group 'danylo)
-
-(defcustom danylo/gc-collect-print t
-  "Print message in minibuffer on garbage collection."
-  :type 'boolean
-  :group 'danylo)
-
-(defcustom danylo/python-shell-type "ipython"
-  "Which shell type to use for Python."
-  :type 'string
-  :group 'danylo)
-
-(defcustom danylo/julia-shell-type "julia"
-  "Which shell type to use for Julia."
-  :type 'string
-  :group 'danylo)
-
-(defcustom danylo/python-buffer-name "*PythonProcess*"
-  "Name of the Python shell buffer."
-  :type 'string
-  :group 'danylo)
-
-(defcustom danylo/julia-buffer-name "*JuliaProcess*"
-  "Name of the Julia shell buffer."
-  :type 'string
-  :group 'danylo)
-
-(defcustom danylo/ivy-window-name "*ivy-candidate-window*"
-  "Name of ivy candidate list buffer."
-  :type 'string
-  :group 'danylo)
-
-(defcustom danylo/latex-preview-scale 1.3
-  "Size of the latex preview in Org mode."
-  :type 'float
-  :group 'danylo)
-
-(defcustom danylo/ref-prefix-height 0.8
-  "Height of the font to use for LaTeX \...ref{...} fontification."
-  :type 'float
-  :group 'danylo)
-
-(defcustom danylo/section-height 1.4
-  "Height of LaTeX \section{...} text."
-  :type 'float
-  :group 'danylo)
-
-(defcustom danylo/subsection-height 1.2
-  "Height of LaTeX \subsection{...} text."
-  :type 'float
-  :group 'danylo)
-
-(defcustom danylo/subsubsection-height 1.1
-  "Height of LaTeX \subsubsection{...} text."
-  :type 'float
-  :group 'danylo)
-
-(defcustom danylo/fontify-delay 0.25
-  "Delay before fontifying text. Helps to improve performance since
-fontification is a slow-ish process."
-  :type 'float
-  :group 'danylo)
-
-;;;; Faces
-
-;; Colors taken from doom-one theme
-(defconst danylo/white      "white")
-(defconst danylo/black      "black")
-(defconst danylo/yellow     "#ECBE7B")
-(defconst danylo/faded      "#464c5d")
-(defconst danylo/red        "#ff6c6b")
-(defconst danylo/orange     "#da8548")
-(defconst danylo/blue       "#51afef")
-(defconst danylo/dark-blue  "#375c79")
-(defconst danylo/faded-blue "#31495d")
-(defconst danylo/green      "#98be65")
-
-(defface danylo/telephone-yellow
-  `((t (:foreground ,danylo/black
-		    :background ,danylo/yellow
-		    :inherit default)))
-  "Face for mode line."
-  :group 'danylo)
-
-(defface danylo/telephone-red
-  `((t (:foreground ,danylo/white
-		    :background ,danylo/red
-		    :inherit default)))
-  "Face for mode line."
-  :group 'danylo)
-
-(defface danylo/latex-face-equation-main
-  `((t (:foreground ,danylo/yellow
-		    :weight normal
-		    :inherit default)))
-  "Face for LaTeX math content."
-  :group 'danylo)
-
-(defface danylo/latex-face-equation-delim
-  `((t (:foreground ,danylo/faded
-		    :weight bold
-		    :inherit default)))
-  "Face for LaTeX math delimiters."
-  :group 'danylo)
-
-(defface danylo/latex-face-item
-  `((t (:foreground ,danylo/red
-		    :inherit default)))
-  "Face for LaTeX list item."
-  :group 'danylo)
-
-(defface danylo/latex-face-ref
-  `((t (:foreground ,danylo/blue
-		    :inherit default)))
-  "Face for LaTeX references."
-  :group 'danylo)
-
-(defface danylo/latex-face-ref-prefix
-  `((t (:foreground ,danylo/faded-blue
-		     :height ,danylo/ref-prefix-height
-		    :inherit default)))
-  "Face for LaTeX reference's kind."
-  :group 'danylo)
-
-(defface danylo/face-section
-  `((t (:foreground ,danylo/white
-		    :background ,danylo/red
-		    :height ,danylo/section-height
-		    :inherit default)))
-  "Face for text section."
-  :group 'danylo)
-
-(defface danylo/face-subsection
-  `((t (:foreground ,danylo/white
-		    :background ,danylo/orange
-		    :height ,danylo/subsection-height
-		    :inherit default)))
-  "Face for text subsection."
-  :group 'danylo)
-
-(defface danylo/face-subsubsection
-  `((t (:foreground ,danylo/white
-		    :background ,danylo/blue
-		    :height ,danylo/subsubsection-height
-		    :inherit default)))
-  "Face for text subsubsection."
-  :group 'danylo)
-
-(defface danylo/face-deepsection
-  `((t (:foreground ,danylo/white
-		    :background ,danylo/faded-blue
-		    :inherit default)))
-  "Face for text sections at lower levels than subsubsection."
-  :group 'danylo)
-
-(defface danylo/latex-boolean
-  `((t (:foreground ,danylo/white
-		    :background ,danylo/red
-		    :inherit default)))
-  "Face for boolean variables like \iffalse and \fi."
-  :group 'danylo)
+(use-package danylo-custom-variables
+  ;; Customization variables for init file.
+  :ensure nil
+  :load-path "lisp/")
 
 ;;; ..:: General helper functions ::..
 
@@ -412,7 +246,8 @@ fontification is a slow-ish process."
 (defun danylo/byte-compile-init-dir ()
   "Byte-compile Emacs config."
   (interactive)
-  (byte-recompile-file "~/.emacs.d/init.el" nil 0))
+  (byte-recompile-file "~/.emacs.d/init.el" nil 0)
+  (byte-recompile-directory "~/.emacs.d/lisp" 0))
 
 ;;;; Dired (directory listing)
 
@@ -631,6 +466,197 @@ lines according to the first line."
   :init
   (setq xref-show-definitions-function #'ivy-xref-show-defs))
 
+;;; ..:: Theming and code aesthetics ::..
+
+;; Auto-create matching closing parentheses
+(electric-pair-mode 1)
+
+(use-package rainbow-delimiters
+  ;; https://github.com/Fanael/rainbow-delimiters
+  ;; Highlights delimiters such as parentheses, brackets or braces
+  ;; according to their depth.
+  :hook ((prog-mode . rainbow-delimiters-mode)))
+
+;;;;  Highlight matching parentheses
+;; Some code from https://emacs.stackexchange.com/a/40833/13661
+(require 'delsel)
+
+(setq show-paren-delay `,danylo/fontify-delay)
+
+;;;###autoload
+(defun danylo/show-paren-clear-highlight ()
+  "Turn off any previous paren highlighting."
+  (delete-overlay show-paren--overlay)
+  (delete-overlay show-paren--overlay-1))
+
+;;;###autoload
+(defun danylo/show-paren-update-on-insert ()
+  ;; A command with `delete-selection' property probably inserts text.
+  (if (get this-command 'delete-selection)
+      (show-paren-function)
+    (danylo/show-paren-clear-highlight)))
+(add-hook 'post-command-hook #'danylo/show-paren-update-on-insert)
+
+(show-paren-mode 1)
+
+(use-package solaire-mode
+  ;; https://github.com/hlissner/emacs-solaire-mode
+  ;; Distinguish file-visiting buffers with slightly different background
+  :hook ((change-major-mode . turn-on-solaire-mode))
+  :config
+  (solaire-global-mode +1))
+
+(use-package nlinum
+  ;; https://elpa.gnu.org/packages/nlinum.html
+  ;; Show line numbers in the margin
+  :config
+  (setq nlinum-highlight-current-line nil))
+
+;; Activate nlinum-mode (line numbers on the left)
+(with-eval-after-load "nlinum"
+  (general-define-key
+   "C-x n l" 'nlinum-mode))
+
+(use-package doom-themes
+  ;; https://github.com/hlissner/emacs-doom-themes
+  ;; An opinionated pack of modern color-themes
+  :config
+  (load-theme 'doom-one t)
+  (set-face-attribute 'region nil
+		      :extend nil
+		      :foreground `,danylo/yellow
+		      :background `,danylo/dark-blue)
+  (set-face-attribute 'font-lock-string-face nil
+		      :foreground `,danylo/green)
+  )
+
+(add-hook 'after-init-hook
+	  (lambda ()
+	    (when (window-system)
+	      (set-face-attribute 'default nil
+				  :family "Fira Code"
+				  :height 110
+				  :weight 'normal
+				  :width 'normal))))
+
+(use-package fira-code-mode
+  ;; https://github.com/jming422/fira-code-mode
+  ;; Fira Code ligatures using prettify-symbols
+  :ensure t
+  :custom (fira-code-mode-disabled-ligatures
+	   '("[]" "#{" "#(" "#_" "#_(" "x" "&&"))
+  :config
+  (add-hook 'prog-mode-hook (lambda () (when (window-system) (fira-code-mode))))
+  )
+
+;; Speed up font-lock mode speed (can causes laggy scrolling)
+(setq-default font-lock-support-mode 'jit-lock-mode
+	      jit-lock-contextually nil
+	      jit-lock-stealth-load nil
+	      jit-lock-stealth-time 10
+	      jit-lock-stealth-nice 0.1
+	      ;; Below: jit-lock-defer-time "pauses" fontification while the
+	      ;; user is typing, as long as the time between successive
+	      ;; keystrokes is <jit-lock-defer-time. This is what makes typing
+	      ;; smooth even with some heavy font locking (because the font
+	      ;; locking will occur during "idle" times)!
+	      jit-lock-defer-time `,danylo/fontify-delay
+	      font-lock-maximum-decoration 1)
+
+;;;###autoload
+(defun danylo/modeline-setup ()
+  "Configure the modeline."
+  (setq  telephone-line-primary-left-separator 'telephone-line-flat
+	 telephone-line-primary-right-separator 'telephone-line-flat)
+  (when (window-system)
+    (setq telephone-line-secondary-left-separator 'telephone-line-flat
+	  telephone-line-secondary-right-separator 'telephone-line-flat))
+
+  (telephone-line-defsegment* danylo/telephone-line-position-segment ()
+    "Cursor position info in mode line."
+    (let* ((line-cols (number-to-string 5))
+           (col-cols (number-to-string 3))
+	   (zero-based (bound-and-true-p column-number-indicator-zero-based))
+	   (col-pad " "))
+      (if (eq major-mode 'paradox-menu-mode)
+          (telephone-line-raw mode-line-front-space t)
+	`((-3 "%p")
+	  ,(concat "%" line-cols "l"
+                   ":%" col-cols (if zero-based "c" "C")
+		   col-pad)))))
+
+  (telephone-line-defsegment* danylo/telephone-lsp-segment ()
+    "Show active LSP connections."
+    (let* ((workspaces (lsp-workspaces)))
+      (when workspaces
+	(format "LSP[%s]" (string-join
+			   (mapcar (lambda (w) (lsp--workspace-print w))
+				   workspaces) ",")))))
+
+  (telephone-line-defsegment* danylo/telephone-mc-segment ()
+    "Show number of multiple cursors."
+    (when (bound-and-true-p multiple-cursors-mode)
+	(let* ((num-cursors (mc/num-cursors)))
+	  (when (> num-cursors 1)
+	      (format "mc:%d" num-cursors)))))
+
+  (add-to-list 'telephone-line-faces
+	       '(yellow . (danylo/telephone-yellow
+			   . telephone-line-accent-inactive)))
+  (add-to-list 'telephone-line-faces
+	       '(red . (danylo/telephone-red
+			 . telephone-line-accent-inactive)))
+
+  (setq telephone-line-lhs
+	'((yellow . (telephone-line-vc-segment))
+	  (nil    . (telephone-line-buffer-segment))))
+
+  (setq telephone-line-rhs
+	'((nil    . (telephone-line-misc-info-segment))
+	  (red . (danylo/telephone-mc-segment))
+	  (yellow . (danylo/telephone-lsp-segment))
+	  (accent . (telephone-line-major-mode-segment))
+	  (evil   . (danylo/telephone-line-position-segment))))
+
+  ;; Activate
+  (telephone-line-mode 1))
+
+(use-package telephone-line
+  ;; https://github.com/dbordak/telephone-line
+  ;; Telephone Line is a new implementation of Powerline for emacs
+  :after (doom-themes)
+  ;; :init (setq telephone-line-height 20)
+  :config
+  (add-hook 'after-init-hook (danylo/modeline-setup)))
+
+(use-package all-the-icons
+  ;; https://github.com/domtronn/all-the-icons.el
+  ;; Pretty icons
+  :config
+  (when (and (window-system)
+	     (not (member "all-the-icons" (font-family-list))))
+    (all-the-icons-install-fonts t))
+  ;; Fix MATLAB icon
+  (when (window-system)
+    (setq all-the-icons-icon-alist
+	  (add-to-list 'all-the-icons-icon-alist
+		       '("\\.m$" all-the-icons-fileicon "matlab"
+			 :face all-the-icons-orange))))
+  )
+
+(use-package danylo-text-font-lock
+  ;; Personal minor mode for text document highlighting
+  :ensure nil
+  :load-path "lisp/"
+  :hook ((LaTeX-mode . danylo-text-font-lock-mode)
+	 (org-mode . danylo-text-font-lock-mode)))
+
+(use-package danylo-prog-font-lock
+  ;; Personal minor mode for code highlighting
+  :ensure nil
+  :load-path "lisp/"
+  :hook ((python-mode . danylo-prog-font-lock-mode)))
+
 ;;; ..:: Code editing ::..
 
 ;; Commenting keybindings
@@ -706,7 +732,15 @@ lines according to the first line."
 (use-package filladapt
   ;; https://elpa.gnu.org/packages/filladapt.html
   ;; Enhance the behavior of Emacs' Auto Fill mode
-  :init (setq-default filladapt-mode t))
+  :hook ((c-mode-common . (lambda ()
+			    (when (featurep 'filladapt)
+			      (c-setup-filladapt))))
+	 (python-mode . filladapt-mode))
+  :bind (("M-q" . 'fill-paragraph)
+	 ("M-r" . 'fill-region))
+  :config
+  (require 'filladapt)
+  (setq-default filladapt-mode t))
 
 (use-package so-long
   ;; https://www.emacswiki.org/emacs/SoLong
@@ -719,11 +753,6 @@ lines according to the first line."
 
 ;; Delete trailing whitespace
 (add-hook 'before-save-hook 'delete-trailing-whitespace)
-
-;; Activate nlinum-mode (line numbers on the left)
-(with-eval-after-load "nlinum"
-  (general-define-key
-   "C-x n l" 'nlinum-mode))
 
 ;;;; Section delimiters
 
@@ -822,17 +851,15 @@ With argument ARG, do this that many times."
 ;; Indicate lines that are too wide
 (use-package whitespace
   :ensure nil
-  :init (setq whitespace-line-column fill-column
+  :init (setq whitespace-line-column nil
 	      whitespace-style '(face lines-tail))
-  ;; Face style for overflowing characters
-  (add-hook 'whitespace-mode-hook
-	    (lambda ()
-	      (set-face-attribute 'whitespace-line nil
-				  :foreground `,danylo/yellow
-				  :background nil
-				  :bold t)))
   :config
-  (global-whitespace-mode +1))
+  (global-whitespace-mode t)
+  ;; Face style for overflowing characters
+  (set-face-attribute 'whitespace-line nil
+		      :foreground `,danylo/yellow
+		      :background nil
+		      :bold t))
 
 ;;; ..:: Window management ::..
 
@@ -1004,360 +1031,6 @@ With argument ARG, do this that many times."
   (advice-add 'term-handle-ansi-escape
 	      :around #'eterm-256color-handle-ansi-escape))
 
-;;; ..:: Theming and code aesthetics ::..
-
-;; Auto-create matching closing parentheses
-(electric-pair-mode 1)
-
-(use-package rainbow-delimiters
-  ;; https://github.com/Fanael/rainbow-delimiters
-  ;; Highlights delimiters such as parentheses, brackets or braces
-  ;; according to their depth.
-  :hook ((prog-mode . rainbow-delimiters-mode)))
-
-;;;;  Highlight matching parentheses
-;; Some code from https://emacs.stackexchange.com/a/40833/13661
-(require 'delsel)
-
-(setq show-paren-delay `,danylo/fontify-delay)
-
-;;;###autoload
-(defun danylo/show-paren-clear-highlight ()
-  "Turn off any previous paren highlighting."
-  (delete-overlay show-paren--overlay)
-  (delete-overlay show-paren--overlay-1))
-
-;;;###autoload
-(defun danylo/show-paren-update-on-insert ()
-  ;; A command with `delete-selection' property probably inserts text.
-  (if (get this-command 'delete-selection)
-      (show-paren-function)
-    (danylo/show-paren-clear-highlight)))
-(add-hook 'post-command-hook #'danylo/show-paren-update-on-insert)
-
-(show-paren-mode 1)
-
-(use-package solaire-mode
-  ;; https://github.com/hlissner/emacs-solaire-mode
-  ;; Distinguish file-visiting buffers with slightly different background
-  :hook ((change-major-mode . turn-on-solaire-mode))
-  :config
-  (solaire-global-mode +1))
-
-(use-package nlinum
-  ;; https://elpa.gnu.org/packages/nlinum.html
-  ;; Show line numbers in the margin
-  :config
-  (setq nlinum-highlight-current-line nil))
-(general-define-key
- "C-x n l" nlinum-mode)
-
-(use-package doom-themes
-  ;; https://github.com/hlissner/emacs-doom-themes
-  ;; An opinionated pack of modern color-themes
-  :config
-  (load-theme 'doom-one t)
-  (set-face-attribute 'region nil
-		      :extend nil
-		      :foreground `,danylo/yellow
-		      :background `,danylo/dark-blue)
-  )
-
-(add-hook 'after-init-hook
-	  (lambda ()
-	    (when (window-system)
-	      (set-face-attribute 'default nil
-				  :family "Fira Code"
-				  :height 110
-				  :weight 'normal
-				  :width 'normal))))
-
-(use-package fira-code-mode
-  ;; https://github.com/jming422/fira-code-mode
-  ;; Fira Code ligatures using prettify-symbols
-  :ensure t
-  :custom (fira-code-mode-disabled-ligatures
-	   '("[]" "#{" "#(" "#_" "#_(" "x" "&&"))
-  :config
-  (add-hook 'prog-mode-hook (lambda () (when (window-system) (fira-code-mode))))
-  )
-
-;; Speed up font-lock mode speed (can causes laggy scrolling)
-(setq-default font-lock-support-mode 'jit-lock-mode
-	      jit-lock-contextually nil
-	      jit-lock-stealth-load nil
-	      jit-lock-stealth-time 10
-	      jit-lock-stealth-nice 0.1
-	      ;; Below: jit-lock-defer-time "pauses" fontification while the
-	      ;; user is typing, as long as the time between successive
-	      ;; keystrokes is <jit-lock-defer-time. This is what makes typing
-	      ;; smooth even with some heavy font locking (because the font
-	      ;; locking will occur during "idle" times)!
-	      jit-lock-defer-time `,danylo/fontify-delay
-	      font-lock-maximum-decoration 1)
-
-;;;###autoload
-(defun danylo/modeline-setup ()
-  "Configure the modeline."
-  (setq  telephone-line-primary-left-separator 'telephone-line-flat
-	 telephone-line-primary-right-separator 'telephone-line-flat)
-  (when (window-system)
-    (setq telephone-line-secondary-left-separator 'telephone-line-flat
-	  telephone-line-secondary-right-separator 'telephone-line-flat))
-
-  (telephone-line-defsegment* danylo/telephone-line-position-segment ()
-    "Cursor position info in mode line."
-    (let* ((line-cols (number-to-string 5))
-           (col-cols (number-to-string 3))
-	   (zero-based (bound-and-true-p column-number-indicator-zero-based))
-	   (col-pad " "))
-      (if (eq major-mode 'paradox-menu-mode)
-          (telephone-line-raw mode-line-front-space t)
-	`((-3 "%p")
-	  ,(concat "%" line-cols "l"
-                   ":%" col-cols (if zero-based "c" "C")
-		   col-pad)))))
-
-  (telephone-line-defsegment* danylo/telephone-lsp-segment ()
-    "Show active LSP connections."
-    (let* ((workspaces (lsp-workspaces)))
-      (when workspaces
-	(format "LSP[%s]" (string-join
-			   (mapcar (lambda (w) (lsp--workspace-print w))
-				   workspaces) ",")))))
-
-  (telephone-line-defsegment* danylo/telephone-mc-segment ()
-    "Show number of multiple cursors."
-    (when (bound-and-true-p multiple-cursors-mode)
-	(let* ((num-cursors (mc/num-cursors)))
-	  (when (> num-cursors 1)
-	      (format "mc:%d" num-cursors)))))
-
-  (add-to-list 'telephone-line-faces
-	       '(yellow . (danylo/telephone-yellow
-			   . telephone-line-accent-inactive)))
-  (add-to-list 'telephone-line-faces
-	       '(red . (danylo/telephone-red
-			 . telephone-line-accent-inactive)))
-
-  (setq telephone-line-lhs
-	'((yellow . (telephone-line-vc-segment))
-	  (nil    . (telephone-line-buffer-segment))))
-
-  (setq telephone-line-rhs
-	'((nil    . (telephone-line-misc-info-segment))
-	  (red . (danylo/telephone-mc-segment))
-	  (yellow . (danylo/telephone-lsp-segment))
-	  (accent . (telephone-line-major-mode-segment))
-	  (evil   . (danylo/telephone-line-position-segment))))
-
-  ;; Activate
-  (telephone-line-mode 1))
-
-(use-package telephone-line
-  ;; https://github.com/dbordak/telephone-line
-  ;; Telephone Line is a new implementation of Powerline for emacs
-  :after (doom-themes)
-  ;; :init (setq telephone-line-height 20)
-  :config
-  (add-hook 'after-init-hook (danylo/modeline-setup)))
-
-(use-package all-the-icons
-  ;; https://github.com/domtronn/all-the-icons.el
-  ;; Pretty icons
-  :config
-  (when (and (window-system)
-	     (not (member "all-the-icons" (font-family-list))))
-    (all-the-icons-install-fonts t))
-  ;; Fix MATLAB icon
-  (when (window-system)
-    (setq all-the-icons-icon-alist
-	  (add-to-list 'all-the-icons-icon-alist
-		       '("\\.m$" all-the-icons-fileicon "matlab"
-			 :face all-the-icons-orange))))
-  )
-
-;;;; Custom minor mode to highlight LaTeX equations
-
-;;;###autoload
-(defun danylo/font-lock-extend-region ()
-  "Extend the search region to include an entire block of text."
-  (let ((changed nil))
-    (save-excursion
-      (goto-char font-lock-beg)
-      (let ((found (or (re-search-backward "\n\n" nil t) (point-min))))
-	(unless (eq font-lock-beg found)
-	  (setq font-lock-beg found changed t)))
-      (goto-char font-lock-end)
-      (let ((found (or (re-search-forward "\n\n" nil t) (point-max))))
-	(unless (eq font-lock-end found)
-	  (setq font-lock-end found changed t))))
-    changed))
-
-;;;###autoload
-(defun danylo/make-highlight-keywords ()
-  "Make the font-lock keywords for latex-font-lock-mode fontification."
-  (setq danylo/ref-prefix-raise (- 1 0.8))
-  ;; ..:: Math ::..
-  ;; >> Delimiters <<
-  (setq
-   danylo/highlight-keywords
-   (mapcar
-    (lambda (arg)
-      `(,(format "\\(?:%s\\)" arg)
-	(0 '(face danylo/latex-face-equation-delim invisible nil) t)))
-    '("\\$"
-      "\\$\\$"
-      "\\\\\\(?:begin\\|end\\){equation[\\*]?}"
-      "\\\\\\(?:begin\\|end\\){align[\\*]?}"
-      "\\\\\\(?:begin\\|end\\){alignat[\\*]?}"
-      "\\\\\\(?:begin\\|end\\){gather[\\*]?}"
-      "\\\\\\(?:begin\\|end\\){multline[\\*]?}"
-      "\\\\\\(?:begin\\|end\\){subequations[\\*]?}"
-      "\\\\\\(?:begin\\|end\\){optimization[\\*]?}")))
-  ;; >> Body <<
-  (mapcar
-   (lambda (arg)
-     (add-to-list
-      'danylo/highlight-keywords
-      `(,(format "\\(?:%s\\)\\(?:.\\|\n\\)*?\\(?:%s\\)" (car arg) (cdr arg))
-	(0 '(face danylo/latex-face-equation-main invisible nil) t))))
-   '(("\\$" . "\\$")
-     ("\\$\\$" . "\\$\\$")
-     ("\\\\begin{equation[\\*]?}" . "\\\\end{equation[\\*]?}")
-     ("\\\\begin{align[\\*]?}" . "\\\\end{align[\\*]?}")
-     ("\\\\begin{alignat[\\*]?}" . "\\\\end{alignat[\\*]?}")
-     ("\\\\begin{gather[\\*]?}" . "\\\\end{gather[\\*]?}")
-     ("\\\\begin{multline[\\*]?}" . "\\\\end{multline[\\*]?}")
-     ("\\\\begin{subequations[\\*]?}" . "\\\\end{subequations[\\*]?}")
-     ("\\\\begin{optimization[\\*]?}" . "\\\\end{optimization[\\*]?}")))
-  ;; ..:: Lists ::..
-  (when (eq major-mode 'latex-mode)
-    (mapcar
-     (lambda (arg)
-       (add-to-list
-	'danylo/highlight-keywords
-	`(,(format "\\(%s\\)" arg)
-	  (0 '(face danylo/latex-face-item invisible nil) t)))
-       )
-     '("\\\\begin{itemize}"
-       "\\\\end{itemize}"
-       "\\\\begin{enumerate}"
-       "\\\\end{enumerate}"))
-    (add-to-list
-     'danylo/highlight-keywords
-     '("\\(\\\\item\\) " 1 '(face danylo/latex-face-item display "●"))))
-  ;; ..:: References ::..
-  (when (eq major-mode 'latex-mode)
-    ;; >> Citations <<
-    (add-to-list
-     'danylo/highlight-keywords
-     `("\\(\\\\\\)\\(cite.?\\)\\({\\)\\(?:.\\|\n\\)*?\\(}\\)"
-       (0 '(face danylo/latex-face-ref invisible nil) t)
-       (1 '(face danylo/latex-face-ref invisible t) t)
-       (2 '(face danylo/latex-face-ref-prefix display
-		 '(raise ,danylo/ref-prefix-raise)) t)
-       (3 '(face danylo/latex-face-ref display "[") t)
-       (4 '(face danylo/latex-face-ref display "]") t)))
-    ;; >> Labels <<
-    (add-to-list
-     'danylo/highlight-keywords
-     `("\\(\\\\label{\\)\\(?:.*\\)\\(}\\)"
-       (0 '(face danylo/latex-face-ref invisible nil) t)
-       (1 '(face danylo/latex-face-ref display "<") t)
-       (2 '(face danylo/latex-face-ref display ">") t)))
-    ;; >> \[...]ref{[...]} <<
-    (add-to-list
-     'danylo/highlight-keywords
-     `("\\(\\\\\\)\\([^{}\\\t\r\n\s]*?\\)\\(ref{\\)\\(?:.\\|\n\\)*?\\(}\\)"
-       (0 '(face danylo/latex-face-ref invisible nil) t)
-       (1 '(face danylo/latex-face-ref-prefix invisible t) t)
-       (2 '(face danylo/latex-face-ref-prefix display
-		 '(raise ,danylo/ref-prefix-raise)) t)
-       (3 '(face danylo/latex-face-ref display "(") t)
-       (4 '(face danylo/latex-face-ref display ")") t))))
-  ;; ..:: Sections ::..
-  (cond ((eq major-mode 'latex-mode)
-	 (progn
-	   (add-to-list
-	    'danylo/highlight-keywords
-	    '("\\(\\\\section[\\*]?{\\)\\(?:.\\|\n\\)*?\\(}\\)$"
-	      (0 '(face danylo/face-section) t)
-	      (1 '(face danylo/face-section display " §: ") t)
-	      (2 '(face danylo/face-section display " ") t)))
-	   (add-to-list
-	    'danylo/highlight-keywords
-	    '("\\(\\\\subsection[\\*]?{\\)\\(?:.\\|\n\\)*?\\(}\\)$"
-	      (0 '(face danylo/face-subsection) t)
-	      (1 '(face danylo/face-subsection display " §.§: ") t)
-	      (2 '(face danylo/face-subsection display " ") t)))
-	   (add-to-list
-	    'danylo/highlight-keywords
-	    '("\\(\\\\subsubsection[\\*]?{\\)\\(?:.\\|\n\\)*?\\(}\\)$"
-	      (0 '(face danylo/face-subsubsection) t)
-	      (1 '(face danylo/face-subsubsection display " §.§.§: ") t)
-	      (2 '(face danylo/face-subsubsection display " ") t)))))
-	((eq major-mode 'org-mode)
-	 (progn
-	   (add-to-list
-	    'danylo/highlight-keywords
-	    '("^\\(\\*\\{1\\}\s\\)\\(?:.*\\)$"
-	      (0 '(face danylo/face-section) t)))
-	   (add-to-list
-	    'danylo/highlight-keywords
-	    '("^\\(\\*\\{2\\}\s\\)\\(?:.*\\)$"
-	      (0 '(face danylo/face-subsection) t)))
-	   (add-to-list
-	    'danylo/highlight-keywords
-	    '("^\\(\\*\\{3\\}\s\\)\\(?:.*\\)$"
-	      (0 '(face danylo/face-subsubsection) t)))
-	   (mapcar
-	    (lambda (arg)
-	      (add-to-list
-	       'danylo/highlight-keywords
-	       `(,(format "^\\(\\*\\{%d\\}\s\\)\\(?:.*\\)$" arg)
-		 (0 '(face danylo/face-deepsection) t))))
-	    '(4 5 6 7 8))
-	   )))
-  ;; ..:: Miscellaneous ::..
-  (when (eq major-mode 'latex-mode)
-    (add-to-list
-     'danylo/highlight-keywords
-     `("\\(?:\\\\iffalse\\|\\\\fi\\)$"
-       (0 '(face danylo/latex-boolean) t))))
-  danylo/highlight-keywords)
-
-;;;###autoload
-(defun danylo/latex-font-lock-mode-on ()
-  "Activate minor mode."
-  (make-variable-buffer-local 'font-lock-extra-managed-props)
-  (add-to-list 'font-lock-extra-managed-props 'invisible)
-  (add-to-list 'font-lock-extra-managed-props 'display)
-  ;; ..:: Enable multiline highlight ::..
-  (set (make-local-variable 'font-lock-multiline) t)
-  (add-hook 'font-lock-extend-region-functions
-            'danylo/font-lock-extend-region)
-  ;; Add keywords
-  (font-lock-add-keywords nil (danylo/make-highlight-keywords))
-  (font-lock-flush)
-  (message "Custom LaTeX highlighting on"))
-
-;;;###autoload
-(defun danylo/latex-font-lock-mode-off ()
-  "Shutdown minor mode."
-  ;; Remove keywords
-  (font-lock-remove-keywords nil (danylo/make-highlight-keywords))
-  (font-lock-flush)
-  (message "Custom LaTeX highlighting off"))
-
-;;;###autoload
-(define-minor-mode danylo/latex-font-lock-mode
-  "LaTeX font locking."
-  :lighter " danylo-latex-highlight"
-  (if danylo/latex-font-lock-mode
-      (danylo/latex-font-lock-mode-on)
-    (danylo/latex-font-lock-mode-off)))
-
 ;;; ..:: Syntax checking ::..
 
 (use-package flycheck
@@ -1432,10 +1105,10 @@ With argument ARG, do this that many times."
 (use-package org
   ;; https://github.com/bzg/org-mode
   ;; Your life in plain text
-  :hook ((org-mode . danylo/org-mode-setup)
-	 (org-mode . danylo/latex-font-lock-mode))
+  :hook ((org-mode . danylo/org-mode-setup))
   :bind (:map org-mode-map
-	      ("M-q" . 'fill-paragraph))
+	      ("C-c C-6" . 'org-move-item-up)
+	      ("C-c C-5" . 'org-move-item-down))
   :init
   (setq org-startup-folded nil
 	org-ellipsis " ▾"
@@ -1443,7 +1116,6 @@ With argument ARG, do this that many times."
 	org-startup-with-latex-preview nil))
 
 (with-eval-after-load "org"
-  (define-key org-mode-map (kbd "M-q") 'nil)
   (define-key org-mode-map [remap fill-paragraph] nil)
   ;; LaTeX equations preview style
   (setq org-format-latex-options (plist-put org-format-latex-options
@@ -1625,8 +1297,10 @@ This version deletes backup files without asking."
 	      (make-local-variable 'make-backup-files)
 	      (setq make-backup-files nil)))
 
-;;;; Load Lisp file with mu4e context setp
-(load "~/.emacs.d/email.el")
+(use-package danylo-email
+  ;; Personal mu4e context setup.
+  :ensure nil
+  :load-path "lisp/")
 
 ;;;; Signature before message history
 
@@ -1810,30 +1484,18 @@ If there is no shell open, prints a message to inform."
 
 ;;;; Code editing
 
-(setq python-indent-guess-indent-offset t
-      python-indent-guess-indent-offset-verbose nil)
-
-;;;;; Imenu setup
-
-;;;###autoload
-(defun danylo/python-imenu ()
-  (interactive)
-  (let ((python-imenu (imenu--generic-function
-		       imenu-generic-expression)))
-    (append python-imenu)))
-
-;;;###autoload
-(defun danylo/python-imenu-hooks ()
-  (interactive)
-  (setq imenu-generic-expression
-	'(("Function" "^[[:blank:]]*def \\(.*\\).*(.*$" 1)
-	  ("Class" "^class \\(.*\\).*:$" 1)))
-  (setq imenu-create-index-function 'danylo/python-imenu)
-  ;; Rescan the buffer as contents are added
-  (setq imenu-auto-rescan t)
-  )
-
-(add-hook 'python-mode-hook 'danylo/python-imenu-hooks)
+(use-package python
+  ;; Emacs built-in
+  ;; Python editing major mode
+  :ensure nil
+  :bind (:map python-mode-map
+	      ;; Make indentation automatic, especially ensures correct
+	      ;; indentation in docstrings (see
+	      ;; https://emacs.stackexchange.com/a/28445/13661)
+	      ("RET" . 'newline-and-indent))
+  :init (setq python-indent-guess-indent-offset t
+	      python-indent-guess-indent-offset-verbose nil
+	      python-fill-docstring-style 'pep-257-nn))
 
 ;;;; LSP
 
@@ -1900,6 +1562,29 @@ If there is no shell open, prints a message to inform."
  :keymaps 'lsp-mode-map
  "i" 'danylo/lsp-eldoc-toggle-hover
  "v" 'danylo/lsp-display-variable-info)
+
+;;;; Imenu setup
+
+;;;###autoload
+(defun danylo/python-imenu ()
+  (interactive)
+  (let ((python-imenu (imenu--generic-function
+		       imenu-generic-expression)))
+    (append python-imenu)))
+
+;;;###autoload
+(defun danylo/python-imenu-hooks ()
+  (interactive)
+  (setq imenu-generic-expression
+	'(("Function" "^[[:blank:]]*def \\(.*\\).*(.*$" 1)
+	  ("Class" "^class \\(.*\\).*:$" 1)))
+  (setq imenu-create-index-function 'danylo/python-imenu)
+  ;; Rescan the buffer as contents are added
+  (setq imenu-auto-rescan t)
+  )
+
+(add-hook 'python-mode-hook 'danylo/python-imenu-hooks)
+(add-hook 'lsp-mode-hook 'danylo/python-imenu-hooks)
 
 ;;;; Python shell interaction
 
@@ -2098,7 +1783,6 @@ lines according to the first line."
 	 (LaTeX-mode . TeX-PDF-mode)
 	 (LaTeX-mode . TeX-source-correlate-mode)
 	 (LaTeX-mode . auto-fill-mode)
-	 (LaTeX-mode . danylo/latex-font-lock-mode)
 	 (LaTeX-mode . (lambda ()
 			 ;; View program
 			 (setq TeX-view-program-list

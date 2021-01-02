@@ -101,6 +101,9 @@ gitpushoverleaf() {
 # Shortcut Ctrl+Alt+F for Firefox
 python ~/.bin/set_customshortcut.py 'launch-firefox' 'firefox' '<Ctrl><Alt>F'
 
+# Shortcut Ctrl+Alt+E for Emacs
+python ~/.bin/set_customshortcut.py 'launch-emacs' 'emacs' '<Ctrl><Alt>E'
+
 # Show kernel log
 # See for more info: https://www.digitalocean.com/community/tutorials/how-to-use-journalctl-to-view-and-manipulate-systemd-logs
 alias viewkernel='journalctl -k --no-pager'

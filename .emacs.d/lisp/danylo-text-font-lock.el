@@ -186,6 +186,17 @@
 		 '(raise ,danylo/ref-prefix-raise)) t)
        (3 '(face danylo/latex-face-ref display "[") t)
        (4 '(face danylo/latex-face-ref display "]") t)))
+    (add-to-list
+     'danylo/highlight-keywords
+     `("\\(\\\\\\)\\(cite.?\\)\\(\\[\\)\\(?:.\\|\n\\)*?\\(\\]\\)\\({\\)\\(?:.\\|\n\\)*?\\(}\\)"
+       (0 '(face danylo/latex-face-ref invisible nil) t)
+       (1 '(face danylo/latex-face-ref invisible t) t)
+       (2 '(face danylo/latex-face-ref-prefix display
+		 '(raise ,danylo/ref-prefix-raise)) t)
+       (3 '(face danylo/latex-face-ref display "(") t)
+       (4 '(face danylo/latex-face-ref display ")") t)
+       (5 '(face danylo/latex-face-ref display "[") t)
+       (6 '(face danylo/latex-face-ref display "]") t)))
     ;; >> Labels <<
     (add-to-list
      'danylo/highlight-keywords
@@ -207,22 +218,22 @@
   (cond ((eq major-mode 'latex-mode)
 	 (add-to-list
 	  'danylo/highlight-keywords
-	  '("\\(\\\\section[\\*]?{\\)\\(?:.\\|\n\\)*?\\(}\\)$"
+	  '("^\\(\\\\section[\\*]?{\\)\\(?:.\\|\n\\)*?\\(}\\)"
 	    (0 '(face danylo/face-section) t)
-	    (1 '(face danylo/face-section display " §: ") t)
-	    (2 '(face danylo/face-section display " ") t)))
+	    (1 '(face danylo/face-section display "§ ") t)
+	    (2 '(face danylo/face-section invisible t) t)))
 	 (add-to-list
 	  'danylo/highlight-keywords
-	  '("\\(\\\\subsection[\\*]?{\\)\\(?:.\\|\n\\)*?\\(}\\)$"
+	  '("^\\(\\\\subsection[\\*]?{\\)\\(?:.\\|\n\\)*?\\(}\\)"
 	    (0 '(face danylo/face-subsection) t)
-	    (1 '(face danylo/face-subsection display " §.§: ") t)
-	    (2 '(face danylo/face-subsection display " ") t)))
+	    (1 '(face danylo/face-subsection display "§§ ") t)
+	    (2 '(face danylo/face-subsection invisible t) t)))
 	 (add-to-list
 	  'danylo/highlight-keywords
-	  '("\\(\\\\subsubsection[\\*]?{\\)\\(?:.\\|\n\\)*?\\(}\\)$"
+	  '("^\\(\\\\subsubsection[\\*]?{\\)\\(?:.\\|\n\\)*?\\(}\\)"
 	    (0 '(face danylo/face-subsubsection) t)
-	    (1 '(face danylo/face-subsubsection display " §.§.§: ") t)
-	    (2 '(face danylo/face-subsubsection display " ") t))))
+	    (1 '(face danylo/face-subsubsection display "§§§ ") t)
+	    (2 '(face danylo/face-subsubsection invisible t) t))))
 	((eq major-mode 'org-mode)
 	 (add-to-list
 	  'danylo/highlight-keywords
@@ -247,8 +258,12 @@
   (when (eq major-mode 'latex-mode)
     (add-to-list
      'danylo/highlight-keywords
-     `("\\(?:\\\\iffalse\\|\\\\fi\\)$"
-       (0 '(face danylo/latex-boolean) t))))
+     `("\\(\\\\if[a-zA-Z]*\\)\\(?:[\s\r\n]?\\)"
+       (1 '(face danylo/latex-boolean) t)))
+    (add-to-list
+     'danylo/highlight-keywords
+     `("\\(\\\\fi\\)\\(?:[\s\r\n]\\{1\\}\\)"
+       (1 '(face danylo/latex-boolean) t))))
   danylo/highlight-keywords)
 
 ;;;###autoload

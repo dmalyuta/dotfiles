@@ -200,7 +200,7 @@
     ;; >> Labels <<
     (add-to-list
      'danylo/highlight-keywords
-     `("\\(\\\\label{\\)\\(?:.*\\)\\(}\\)"
+     `("\\(\\\\label{\\)\\(?:[^}]*\\)\\(}\\)"
        (0 '(face danylo/latex-face-ref invisible nil) t)
        (1 '(face danylo/latex-face-ref display "<") t)
        (2 '(face danylo/latex-face-ref display ">") t)))
@@ -262,7 +262,7 @@
        (1 '(face danylo/latex-boolean) t)))
     (add-to-list
      'danylo/highlight-keywords
-     `("\\(\\\\fi\\)\\(?:[\s\r\n]\\{1\\}\\)"
+     `("\\(\\\\fi\\|\\\\else\\)\\(?:[\s\r\n]\\{1\\}\\)"
        (1 '(face danylo/latex-boolean) t))))
   danylo/highlight-keywords)
 

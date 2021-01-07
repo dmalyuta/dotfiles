@@ -402,7 +402,11 @@ lines according to the first line."
 	      (set-face-attribute 'ivy-minibuffer-match-face-1 nil
 				  :background `,danylo/orange
 				  :foreground `,danylo/black
-				  :weight 'normal)
+				  :weight 'normal
+				  :inherit 'default)
+	      (set-face-attribute 'ivy-current-match nil
+				  :extend nil
+				  :height 1.0)
 	      (set-face-attribute 'swiper-match-face-1 nil
 				  :background `,danylo/orange
 				  :foreground `,danylo/black

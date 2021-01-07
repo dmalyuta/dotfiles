@@ -125,55 +125,7 @@
 (defun danylo/make-highlight-keywords ()
   "Make the font-lock keywords for text-font-lock-mode fontification."
   (setq danylo/ref-prefix-raise (- 1 0.8))
-  ;; ..:: Math ::..
-  ;; >> Delimiters <<
-  (setq
-   danylo/highlight-keywords
-   (mapcar
-    (lambda (arg)
-      `(,(format "\\(?:%s\\)" arg)
-	(0 '(face danylo/latex-face-equation-delim invisible nil) t)))
-    '("\\$"
-      "\\$\\$"
-      "\\\\\\(?:begin\\|end\\){equation[\\*]?}"
-      "\\\\\\(?:begin\\|end\\){align[\\*]?}"
-      "\\\\\\(?:begin\\|end\\){alignat[\\*]?}"
-      "\\\\\\(?:begin\\|end\\){gather[\\*]?}"
-      "\\\\\\(?:begin\\|end\\){multline[\\*]?}"
-      "\\\\\\(?:begin\\|end\\){subequations[\\*]?}"
-      "\\\\\\(?:begin\\|end\\){optimization[\\*]?}")))
-  ;; >> Body <<
-  (mapcar
-   (lambda (arg)
-     (add-to-list
-      'danylo/highlight-keywords
-      `(,(format "\\(?:%s\\)\\(?:.\\|\n\\)*?\\(?:%s\\)" (car arg) (cdr arg))
-	(0 '(face danylo/latex-face-equation-main invisible nil) t))))
-   '(("\\$" . "\\$")
-     ("\\$\\$" . "\\$\\$")
-     ("\\\\begin{equation[\\*]?}" . "\\\\end{equation[\\*]?}")
-     ("\\\\begin{align[\\*]?}" . "\\\\end{align[\\*]?}")
-     ("\\\\begin{alignat[\\*]?}" . "\\\\end{alignat[\\*]?}")
-     ("\\\\begin{gather[\\*]?}" . "\\\\end{gather[\\*]?}")
-     ("\\\\begin{multline[\\*]?}" . "\\\\end{multline[\\*]?}")
-     ("\\\\begin{subequations[\\*]?}" . "\\\\end{subequations[\\*]?}")
-     ("\\\\begin{optimization[\\*]?}" . "\\\\end{optimization[\\*]?}")))
-  ;; ..:: Lists ::..
-  (when (eq major-mode 'latex-mode)
-    (mapcar
-     (lambda (arg)
-       (add-to-list
-	'danylo/highlight-keywords
-	`(,(format "\\(%s\\)" arg)
-	  (0 '(face danylo/latex-face-item invisible nil) t)))
-       )
-     '("\\\\begin{itemize}"
-       "\\\\end{itemize}"
-       "\\\\begin{enumerate}"
-       "\\\\end{enumerate}"))
-    (add-to-list
-     'danylo/highlight-keywords
-     '("\\(\\\\item\\) " 1 '(face danylo/latex-face-item display "●"))))
+  (setq danylo/highlight-keywords nil)
   ;; ..:: References ::..
   (when (eq major-mode 'latex-mode)
     ;; >> Citations <<
@@ -207,13 +159,64 @@
     ;; >> \[...]ref{[...]} <<
     (add-to-list
      'danylo/highlight-keywords
-     `("\\(\\\\\\)\\([^{}\\\t\r\n\s]*?\\)\\(ref{\\)\\(?:.\\|\n\\)*?\\(}\\)"
+     `("\\(\\\\\\)\\([^{}\\\t\r\n\s]*?\\)\\(ref\\)\\({\\)\\(?:.\\|\n\\)*?\\(}\\)"
        (0 '(face danylo/latex-face-ref invisible nil) t)
        (1 '(face danylo/latex-face-ref-prefix invisible t) t)
        (2 '(face danylo/latex-face-ref-prefix display
 		 '(raise ,danylo/ref-prefix-raise)) t)
-       (3 '(face danylo/latex-face-ref display "(") t)
-       (4 '(face danylo/latex-face-ref display ")") t))))
+       (3 '(face danylo/latex-face-ref-prefix invisible t) t)
+       (4 '(face danylo/latex-face-ref display "(") t)
+       (5 '(face danylo/latex-face-ref display ")") t))))
+  ;; ..:: Math ::..
+  ;; >> Delimiters <<
+  (mapcar
+   (lambda (arg)
+     (add-to-list
+      'danylo/highlight-keywords
+      `(,(format "\\(?:%s\\)" arg)
+	(0 '(face danylo/latex-face-equation-delim invisible nil) t))))
+   '("\\$"
+     "\\$\\$"
+     "\\\\\\(?:begin\\|end\\){equation[\\*]?}"
+     "\\\\\\(?:begin\\|end\\){align[\\*]?}"
+     "\\\\\\(?:begin\\|end\\){alignat[\\*]?}"
+     "\\\\\\(?:begin\\|end\\){gather[\\*]?}"
+     "\\\\\\(?:begin\\|end\\){multline[\\*]?}"
+     "\\\\\\(?:begin\\|end\\){subequations[\\*]?}"
+     "\\\\\\(?:begin\\|end\\){optimization[\\*]?}"))
+  ;; >> Body <<
+  (mapcar
+   (lambda (arg)
+     (add-to-list
+      'danylo/highlight-keywords
+      `(,(format "\\(?:%s\\)\\(\\(?:.\\|\n\\)*?\\)\\(?:%s\\)"
+		 (car arg) (cdr arg))
+	(1 '(face danylo/latex-face-equation-main invisible nil) t))))
+   '(("\\$" . "\\$")
+     ("\\$\\$" . "\\$\\$")
+     ("\\\\begin{equation[\\*]?}" . "\\\\end{equation[\\*]?}")
+     ("\\\\begin{align[\\*]?}" . "\\\\end{align[\\*]?}")
+     ("\\\\begin{alignat[\\*]?}" . "\\\\end{alignat[\\*]?}")
+     ("\\\\begin{gather[\\*]?}" . "\\\\end{gather[\\*]?}")
+     ("\\\\begin{multline[\\*]?}" . "\\\\end{multline[\\*]?}")
+     ("\\\\begin{subequations[\\*]?}" . "\\\\end{subequations[\\*]?}")
+     ("\\\\begin{optimization[\\*]?}" . "\\\\end{optimization[\\*]?}")))
+  ;; ..:: Lists ::..
+  (when (eq major-mode 'latex-mode)
+    (mapcar
+     (lambda (arg)
+       (add-to-list
+	'danylo/highlight-keywords
+	`(,(format "\\(%s\\)" arg)
+	  (0 '(face danylo/latex-face-item invisible nil) t)))
+       )
+     '("\\\\begin{itemize}"
+       "\\\\end{itemize}"
+       "\\\\begin{enumerate}"
+       "\\\\end{enumerate}"))
+    (add-to-list
+     'danylo/highlight-keywords
+     '("\\(\\\\item\\) " 1 '(face danylo/latex-face-item display "●"))))
   ;; ..:: Sections ::..
   (cond ((eq major-mode 'latex-mode)
 	 (add-to-list

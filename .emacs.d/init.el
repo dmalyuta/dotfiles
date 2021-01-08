@@ -279,6 +279,29 @@
   ;; Simple library for asynchronous processing in Emacs
   )
 
+;;;; Handle killing Emacs
+
+;;;###autoload
+(defun danylo/close-frame-or-kill-emacs (arg)
+  "Delete frame or kill Emacs if there are only one frame.
+When called with C-u prefix, force kill Emacs (all frames).
+Source: https://emacs.stackexchange.com/a/50834/13661"
+  (interactive "P")
+  (if arg
+      ;; Force kill Emacs (all frames), traditional C-x C-c style
+      (save-buffers-kill-terminal)
+    ;; Kill only the current frame, if there is more than one
+    (if (> (length (frame-list)) 1)
+	;; Just delete the current frame
+	(delete-frame)
+      ;; Traditional C-x C-c (kill Emacs)
+      (save-buffers-kill-terminal))))
+
+(general-define-key
+ "C-x C-c" 'danylo/close-frame-or-kill-emacs
+ "C-x n f" 'make-frame-command ; Make a new frame
+ )
+
 ;;; ..:: Searching ::..
 
 (defvar danylo/num-completion-candidates 15

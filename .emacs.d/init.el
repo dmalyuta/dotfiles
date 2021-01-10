@@ -437,6 +437,10 @@ lines according to the first line."
   (add-to-list 'ivy-ignore-buffers '"\\*ivy-")
   (add-to-list 'ivy-ignore-buffers '"\\*xref\\*")
   (add-to-list 'ivy-ignore-buffers '"\\*toc\\*")
+  (add-to-list 'ivy-ignore-buffers '"\\*Compile-Log\\*")
+  (add-to-list 'ivy-ignore-buffers '"\\*CPU-Profiler-Report.*\\*")
+  (add-to-list 'ivy-ignore-buffers '"\\*TeX Help\\*")
+  (add-to-list 'ivy-ignore-buffers '"magit.*:")
   :config
   (ivy-mode 1))
 

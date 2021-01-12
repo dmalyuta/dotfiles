@@ -594,72 +594,6 @@ lines according to the first line."
 	      jit-lock-defer-time `,danylo/fontify-delay
 	      font-lock-maximum-decoration 1)
 
-;;;###autoload
-(defun danylo/modeline-setup ()
-  "Configure the modeline."
-  (setq  telephone-line-primary-left-separator 'telephone-line-flat
-	 telephone-line-primary-right-separator 'telephone-line-flat)
-  (when (window-system)
-    (setq telephone-line-secondary-left-separator 'telephone-line-flat
-	  telephone-line-secondary-right-separator 'telephone-line-flat))
-
-  (telephone-line-defsegment* danylo/telephone-line-position-segment ()
-    "Cursor position info in mode line."
-    (let* ((line-cols (number-to-string 5))
-           (col-cols (number-to-string 3))
-	   (zero-based (bound-and-true-p column-number-indicator-zero-based))
-	   (col-pad " "))
-      (if (eq major-mode 'paradox-menu-mode)
-          (telephone-line-raw mode-line-front-space t)
-	`((-3 "%p")
-	  ,(concat "%" line-cols "l"
-                   ":%" col-cols (if zero-based "c" "C")
-		   col-pad)))))
-
-  (telephone-line-defsegment* danylo/telephone-lsp-segment ()
-    "Show active LSP connections."
-    (let* ((workspaces (lsp-workspaces)))
-      (when workspaces
-	(format "LSP[%s]" (string-join
-			   (mapcar (lambda (w) (lsp--workspace-print w))
-				   workspaces) ",")))))
-
-  (telephone-line-defsegment* danylo/telephone-mc-segment ()
-    "Show number of multiple cursors."
-    (when (bound-and-true-p multiple-cursors-mode)
-	(let* ((num-cursors (mc/num-cursors)))
-	  (when (> num-cursors 1)
-	      (format "mc:%d" num-cursors)))))
-
-  (add-to-list 'telephone-line-faces
-	       '(yellow . (danylo/telephone-yellow
-			   . telephone-line-accent-inactive)))
-  (add-to-list 'telephone-line-faces
-	       '(red . (danylo/telephone-red
-			 . telephone-line-accent-inactive)))
-
-  (setq telephone-line-lhs
-	'((yellow . (telephone-line-vc-segment))
-	  (nil    . (telephone-line-buffer-segment))))
-
-  (setq telephone-line-rhs
-	'((nil    . (telephone-line-misc-info-segment))
-	  (red . (danylo/telephone-mc-segment))
-	  (yellow . (danylo/telephone-lsp-segment))
-	  (accent . (telephone-line-major-mode-segment))
-	  (evil   . (danylo/telephone-line-position-segment))))
-
-  ;; Activate
-  (telephone-line-mode 1))
-
-(use-package telephone-line
-  ;; https://github.com/dbordak/telephone-line
-  ;; Telephone Line is a new implementation of Powerline for emacs
-  :after (doom-themes)
-  ;; :init (setq telephone-line-height 20)
-  :config
-  (add-hook 'after-init-hook (danylo/modeline-setup)))
-
 (use-package all-the-icons
   ;; https://github.com/domtronn/all-the-icons.el
   ;; Pretty icons
@@ -674,6 +608,40 @@ lines according to the first line."
 		       '("\\.m$" all-the-icons-fileicon "matlab"
 			 :face all-the-icons-orange))))
   )
+
+(use-package doom-modeline
+  ;; https://github.com/seagle0128/doom-modeline
+  ;; A fancy and fast mode-line inspired by minimalism design.
+  :after (all-the-icons mu4e-alert)
+  :ensure t
+  :init (setq doom-modeline-height 10
+	      doom-modeline-bar-width 3
+	      doom-modeline-major-mode-icon nil
+	      doom-modeline-icon nil
+	      doom-modeline-buffer-state-icon nil
+	      doom-modeline-buffer-file-name-style 'file-name
+	      doom-modeline-buffer-encoding nil
+	      doom-modeline-mu4e t
+	      inhibit-compacting-font-caches t
+	      find-file-visit-truename t
+	      doom-modeline-project-detection 'project)
+  :config
+  ;; Default mode line
+  (doom-modeline-def-modeline 'my-simple-line
+    '(matches buffer-info remote-host buffer-position parrot selection-info)
+    '(input-method major-mode vcs process))
+  (add-hook 'doom-modeline-mode-hook
+	    (lambda () (doom-modeline-set-modeline 'my-simple-line 'default)))
+  ;; Helm mode line
+  (doom-modeline-def-modeline 'helm
+    '(helm-buffer-id helm-number helm-follow helm-prefix-argument)
+    '())
+  ;; Dashboard mode line
+  (doom-modeline-def-modeline 'dashboard
+    '(window-number buffer-default-directory-simple)
+    '(battery mu4e))
+  ;; Activate the Doom modeline mode
+  (doom-modeline-mode 1))
 
 (use-package danylo-text-font-lock
   ;; Personal minor mode for text document highlighting

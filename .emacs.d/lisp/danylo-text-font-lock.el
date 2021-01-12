@@ -78,7 +78,7 @@
 
 (defface danylo/face-subsection
   `((t (:foreground ,danylo/white
-		    :background ,danylo/orange
+		    :background ,danylo/green
 		    :height ,danylo/subsection-height
 		    :inherit default)))
   "Face for text subsection."

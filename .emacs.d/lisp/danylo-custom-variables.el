@@ -79,19 +79,5 @@ fontification is a slow-ish process."
 (defconst danylo/faded-blue "#31495d")
 (defconst danylo/green      "#98be65")
 
-(defface danylo/telephone-yellow
-  `((t (:foreground ,danylo/black
-		    :background ,danylo/yellow
-		    :inherit default)))
-  "Face for mode line."
-  :group 'danylo)
-
-(defface danylo/telephone-red
-  `((t (:foreground ,danylo/white
-		    :background ,danylo/red
-		    :inherit default)))
-  "Face for mode line."
-  :group 'danylo)
-
 (provide 'danylo-custom-variables)
 ;;; danylo-custom-variables.el ends here

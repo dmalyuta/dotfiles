@@ -88,7 +88,8 @@
 (use-package gcmh
   ;; https://github.com/emacsmirror/gcmh"
   ;; The Garbage Collector Magic Hack
-  :init (setq gcmh-high-cons-threshold danylo/gc-cons-threshold)
+  :init (setq gcmh-low-cons-threshold danylo/gc-cons-threshold
+	      gcmh-high-cons-threshold most-positive-fixnum)
   :config
   (gcmh-mode 1))
 
@@ -242,6 +243,7 @@
 (defvar danylo/backup-dir "~/.emacs.d/backups/")
 (setq backup-directory-alist (list (cons "." danylo/backup-dir)))
 (setq auto-save-file-name-transforms `((".*" ,danylo/backup-dir t)))
+(setq auto-save-default nil) ;; Disable auto-save (I save myself)
 
 (defun danylo/byte-compile-init-dir ()
   "Byte-compile Emacs config."
@@ -355,9 +357,9 @@ lines according to the first line."
 	  (setq danylo/completion-candidate-list
 		;; Remove the first character, which is '\n' (blank line)
 		(substring text 1 nil))
-	  (insert danylo/completion-candidate-list)
-	  )
-	)
+	  (insert (propertize danylo/completion-candidate-list
+			      'display '(height 1.0))))
+	(setq-local truncate-lines t))
       (with-ivy-window
 	(let ((window (selected-window)))
 	  (if (window-parameter window 'window-side)
@@ -367,12 +369,12 @@ lines according to the first line."
 	      (display-buffer
 	       buffer
 	       `((display-buffer-reuse-window display-buffer-pop-up-window)
-		 (window-height . ,(ivy--height (ivy-state-caller ivy-last)))))
+		 (window-height . ,danylo/num-completion-candidates)))
 	    ;; In regular window
 	    (display-buffer
 	     buffer
 	     `((display-buffer-reuse-window display-buffer-below-selected)
-	       (window-height . ,(ivy--height (ivy-state-caller ivy-last))))))))
+	       (window-height . ,danylo/num-completion-candidates))))))
       )
     )
   )
@@ -1820,7 +1822,8 @@ lines according to the first line."
   (add-to-list 'ivy-ignore-buffers '"\\*.*output\\*")
   :bind (:map LaTeX-mode-map
 	      ("M-s" . ispell-word)
-	      ("C-x C-<backspace>" . electric-pair-delete-pair))
+	      ("C-x C-<backspace>" . electric-pair-delete-pair)
+	      ("C-c f e" . danylo/org-emphasize-equation))
   :config
   (require 'latex)
   ;; Shell-escape compilation

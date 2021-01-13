@@ -134,3 +134,6 @@ alias finddir='find . -type d -name'
 getline() {
     sed -n "$@"p
 }
+
+# ls with directories first when `ls -1`
+alias ls='ls --color -h --group-directories-first'

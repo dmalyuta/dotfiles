@@ -748,10 +748,7 @@ lines according to the first line."
 			      (c-setup-filladapt))))
 	 (python-mode . filladapt-mode))
   :bind (("M-q" . 'fill-paragraph)
-	 ("M-r" . 'fill-region))
-  :config
-  (require 'filladapt)
-  (setq-default filladapt-mode t))
+	 ("M-r" . 'fill-region)))
 
 (use-package so-long
   ;; https://www.emacswiki.org/emacs/SoLong

@@ -13,7 +13,7 @@ ERRF=/tmp/input_config_errors
 
 # ..:: Key stickiness and move speed ::..
 
-Delay=200 # [ms] Delay before repeating pressed key
+Delay=175 # [ms] Delay before repeating pressed key
 RepeatRate=$(bc -l <<< 'scale=0; 1/(15*0.001)') # [Hz] Rate at which to repeat pressed key
 
 # This works reliably (see https://raspberrypi.stackexchange.com/a/99940)
@@ -65,4 +65,3 @@ xinput set-prop "Logitech Rechargeable Touchpad T650" "Device Accel Velocity Sca
 
 xsetwacom --set "Wacom Intuos BT S Pen stylus" "Button" 2 "pan" &>>$ERRF
 xsetwacom --set "Wacom Intuos BT S Pen stylus" "PanScrollThreshold" 100 &>>$ERRF
-

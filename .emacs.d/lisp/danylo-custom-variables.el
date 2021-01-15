@@ -49,7 +49,7 @@
   :type 'string
   :group 'danylo)
 
-(defcustom danylo/ivy-window-name "*ivy-candidate-window*"
+(defcustom danylo/ivy-window-name "*ivy-candidate-list*"
   "Name of ivy candidate list buffer."
   :type 'string
   :group 'danylo)
@@ -59,9 +59,10 @@
   :type 'float
   :group 'danylo)
 
-(defcustom danylo/fontify-delay 0.25
-  "Delay before fontifying text. Helps to improve performance since
-fontification is a slow-ish process."
+(defconst danylo/fontify-delay~hz 3.0)
+(defcustom danylo/fontify-delay `,(/ 1.0 danylo/fontify-delay~hz)
+  "Delay before fontifying text. Helps to improve performance
+since fontification is a slow-ish process."
   :type 'float
   :group 'danylo)
 

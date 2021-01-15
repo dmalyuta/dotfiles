@@ -125,7 +125,7 @@
 	    ("^\s*\\(?:from\\).*\\(import\\)" (1 '(face danylo/import-face) t))
 	    ("\\(?:import\\).*\\(as\\)" (1 '(face danylo/import-face) t))
 	    ("\\(?:True\\|False\\)" (0 '(face danylo/bool-face) t))
-	    ("^\s*\\(?:if\\|for\\|while\\|elif\\|else\\)"
+	    ("^\s*\\(?:if\\|for\\|while\\|elif\\|else\\)\s+"
 	     (0 '(face danylo/control-face) t))
 	    ))
     )

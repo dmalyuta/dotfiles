@@ -304,6 +304,11 @@ Source: https://emacs.stackexchange.com/a/50834/13661"
  "C-x n f" 'make-frame-command ; Make a new frame
  )
 
+;;;; Scrolling performance
+
+(setq fast-but-imprecise-scrolling t
+      scroll-conservatively 0)
+
 ;;; ..:: Searching ::..
 
 (defvar danylo/num-completion-candidates 15
@@ -442,6 +447,7 @@ lines according to the first line."
   (add-to-list 'ivy-ignore-buffers '"\\*Compile-Log\\*")
   (add-to-list 'ivy-ignore-buffers '"\\*CPU-Profiler-Report.*\\*")
   (add-to-list 'ivy-ignore-buffers '"\\*TeX Help\\*")
+  (add-to-list 'ivy-ignore-buffers '"\\*Buffer List\\*")
   (add-to-list 'ivy-ignore-buffers '"magit.*:")
   :config
   (ivy-mode 1))
@@ -475,7 +481,9 @@ lines according to the first line."
 				  :extend nil)
 	      (set-face-attribute 'helm-candidate-number nil
 				  :foreground `,danylo/black
-				  :background `,danylo/yellow)))
+				  :background `,danylo/yellow)
+	      (set-face-attribute 'helm-selection nil
+				  :extend nil)))
   (add-to-list 'ivy-ignore-buffers '"\\*helm")
   :config
   (helm-mode 1))
@@ -539,16 +547,16 @@ lines according to the first line."
   :config
   (solaire-global-mode +1))
 
-(use-package nlinum
-  ;; https://elpa.gnu.org/packages/nlinum.html
-  ;; Show line numbers in the margin
-  :config
-  (setq nlinum-highlight-current-line nil))
+;; Show line numbers on the left
+(general-define-key
+ "C-x n l" 'display-line-numbers-mode)
 
-;; Activate nlinum-mode (line numbers on the left)
-(with-eval-after-load "nlinum"
-  (general-define-key
-   "C-x n l" 'nlinum-mode))
+;; Current line number face
+(add-hook 'display-line-numbers-mode-hook
+	  (lambda ()
+	    (set-face-attribute 'line-number-current-line nil
+				:foreground `,danylo/yellow
+				:inherit 'default)))
 
 (use-package doom-themes
   ;; https://github.com/hlissner/emacs-doom-themes
@@ -584,10 +592,12 @@ lines according to the first line."
 
 ;; Speed up font-lock mode speed (can causes laggy scrolling)
 (setq-default font-lock-support-mode 'jit-lock-mode
-	      jit-lock-contextually nil
-	      jit-lock-stealth-load nil
+	      jit-lock-contextually 'syntax-driven
 	      jit-lock-stealth-time 10
-	      jit-lock-stealth-nice 0.1
+	      jit-lock-stealth-nice 0.5
+	      jit-lock-chunk-size 1000
+	      jit-lock-stealth-load 200
+	      jit-lock-antiblink-grace most-positive-fixnum
 	      ;; Below: jit-lock-defer-time "pauses" fontification while the
 	      ;; user is typing, as long as the time between successive
 	      ;; keystrokes is <jit-lock-defer-time. This is what makes typing
@@ -631,7 +641,7 @@ lines according to the first line."
   ;; Default mode line
   (doom-modeline-def-modeline 'my-simple-line
     '(matches buffer-info remote-host buffer-position parrot selection-info)
-    '(input-method major-mode vcs process))
+    '(input-method debug lsp major-mode vcs process))
   (add-hook 'doom-modeline-mode-hook
 	    (lambda () (doom-modeline-set-modeline 'my-simple-line 'default)))
   ;; Helm mode line

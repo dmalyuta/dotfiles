@@ -604,7 +604,7 @@ lines according to the first line."
 	      ;; smooth even with some heavy font locking (because the font
 	      ;; locking will occur during "idle" times)!
 	      jit-lock-defer-time `,danylo/fontify-delay
-	      font-lock-maximum-decoration 1)
+	      font-lock-maximum-decoration nil)
 
 (use-package all-the-icons
   ;; https://github.com/domtronn/all-the-icons.el

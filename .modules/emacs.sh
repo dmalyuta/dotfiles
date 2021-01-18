@@ -16,12 +16,21 @@ if not_installed emacs; then
 	 libncurses-dev
 
     rm -rf /tmp/emacs/
-    git clone --branch emacs-27.1 --depth 1 git://git.sv.gnu.org/emacs.git /tmp/emacs
+    git clone --branch emacs-27.1.90 --depth 1 git://git.sv.gnu.org/emacs.git \
+	/tmp/emacs
     ( cd /tmp/emacs/ && \
-	  git checkout emacs-27.1 && \
+	  git checkout emacs-27.1.90 && \
 	  ./autogen.sh && \
-	  ./configure --with-cairo --with-xwidgets --with-x-toolkit=gtk3 --with-modules --with-json && \
-	  make && sudo make install )
+	  # run `./configure --help > /tmp/emacs_configure_help.txt` to print
+	  # out a file of configuration options
+	  ./configure --with-cairo --with-xwidgets \
+		      --with-x-toolkit=gtk3 --with-modules --with-json \
+		      CFLAGS='-O3 -march=native -pipe' \
+		      ' -falign-functions=64 -fomit-frame-pointer -ftracer' \
+		      ' -funit-at-a-time -fweb -fforce-addr -fpeel-loops' \
+		      ' -funswitch-loops -frename-registers -mfpmath=sse' \
+		      ' -ffast-math -fno-finite-math-only -fstack-check' && \
+	      make && sudo make install )
 fi
 
 # ..:: Font for Emacs ::..

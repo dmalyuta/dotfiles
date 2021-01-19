@@ -774,7 +774,7 @@ lines according to the first line."
   (global-so-long-mode 1))
 
 ;; Remove a significant contributor to line scan slowness
-(setq bidi-display-reordering nil)
+(setq-default bidi-display-reordering nil)
 
 ;; Delete trailing whitespace
 (add-hook 'before-save-hook 'delete-trailing-whitespace)

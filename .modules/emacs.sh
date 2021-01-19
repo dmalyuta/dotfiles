@@ -23,8 +23,7 @@ if not_installed emacs; then
 	  ./autogen.sh && \
 	  # run `./configure --help > /tmp/emacs_configure_help.txt` to print
 	  # out a file of configuration options
-	  ./configure --with-cairo --with-xwidgets \
-		      --with-x-toolkit=gtk3 --with-modules --with-json \
+	  ./configure --with-x-toolkit=lucid --with-json \
 		      CFLAGS='-O3 -march=native -pipe' \
 		      ' -falign-functions=64 -fomit-frame-pointer -ftracer' \
 		      ' -funit-at-a-time -fweb -fforce-addr -fpeel-loops' \

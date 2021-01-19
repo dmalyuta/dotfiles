@@ -106,19 +106,33 @@
   "Face for boolean variables like \iffalse and \fi."
   :group 'danylo)
 
+(defconst danylo/extend-region-begin-regexp "begin\\|\\$"
+  "Regular expression to match beginning of extend region for font-lock.")
+
+(defconst danylo/extend-region-end-regexp "end\\|\\$"
+  "Regular expression to match end of extend region for font-lock.")
+
 ;;;###autoload
 (defun danylo/font-lock-extend-region ()
   "Extend the search region to include an entire block of text."
   (let ((changed nil))
     (save-excursion
       (goto-char font-lock-beg)
-      (let ((found (or (re-search-backward "\n\n" nil t) (point-min))))
+      (let ((found (or (re-search-backward
+			`,danylo/extend-region-begin-regexp nil t)
+		       (point-min))))
 	(unless (eq font-lock-beg found)
-	  (setq font-lock-beg found changed t)))
+	  (goto-char found)
+	  (setq font-lock-beg (if (bolp) found (line-beginning-position))
+		changed t)))
       (goto-char font-lock-end)
-      (let ((found (or (re-search-forward "\n\n" nil t) (point-max))))
+      (let ((found (or (re-search-forward
+			`,danylo/extend-region-end-regexp nil t)
+		       (point-max))))
 	(unless (eq font-lock-end found)
-	  (setq font-lock-end found changed t))))
+	  (goto-char found)
+	  (setq font-lock-end (if (bolp) found (line-beginning-position 2))
+		changed t))))
     changed))
 
 ;;;###autoload
@@ -175,15 +189,9 @@
       'danylo/highlight-keywords
       `(,(format "\\(?:%s\\)" arg)
 	(0 '(face danylo/latex-face-equation-delim invisible nil) t))))
-   '("\\$"
-     "\\$\\$"
-     "\\\\\\(?:begin\\|end\\){equation[\\*]?}"
-     "\\\\\\(?:begin\\|end\\){align[\\*]?}"
-     "\\\\\\(?:begin\\|end\\){alignat[\\*]?}"
-     "\\\\\\(?:begin\\|end\\){gather[\\*]?}"
-     "\\\\\\(?:begin\\|end\\){multline[\\*]?}"
-     "\\\\\\(?:begin\\|end\\){subequations[\\*]?}"
-     "\\\\\\(?:begin\\|end\\){optimization[\\*]?}"))
+   `("\\$\\(?:\\$\\)?"
+     ,(concat "\\\\\\(?:begin\\|end\\){\\(?:equation\\|align\\|alignat"
+	      "\\|gather\\|multline\\|subequations\\|optimization\\)[\\*]?}")))
   ;; >> Body <<
   (mapcar
    (lambda (arg)
@@ -203,17 +211,10 @@
      ("\\\\begin{optimization[\\*]?}" . "\\\\end{optimization[\\*]?}")))
   ;; ..:: Lists ::..
   (when (eq major-mode 'latex-mode)
-    (mapcar
-     (lambda (arg)
-       (add-to-list
-	'danylo/highlight-keywords
-	`(,(format "\\(%s\\)" arg)
-	  (0 '(face danylo/latex-face-item invisible nil) t)))
-       )
-     '("\\\\begin{itemize}"
-       "\\\\end{itemize}"
-       "\\\\begin{enumerate}"
-       "\\\\end{enumerate}"))
+    (add-to-list
+     'danylo/highlight-keywords
+     `("\\\\\\(?:begin\\|end\\){\\(?:itemize\\|enumerate\\)}"
+       (0 '(face danylo/latex-face-item invisible nil) t)))
     (add-to-list
      'danylo/highlight-keywords
      '("\\(\\\\item\\) " 1 '(face danylo/latex-face-item display "●"))))
@@ -277,8 +278,7 @@
   (add-to-list 'font-lock-extra-managed-props 'display)
   ;; ..:: Enable multiline highlight ::..
   (set (make-local-variable 'font-lock-multiline) t)
-  (add-hook 'font-lock-extend-region-functions
-            'danylo/font-lock-extend-region)
+  (add-hook 'font-lock-extend-region-functions 'danylo/font-lock-extend-region)
   ;; Add keywords
   (font-lock-add-keywords nil (danylo/make-highlight-keywords))
   (font-lock-flush)

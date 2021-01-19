@@ -611,6 +611,18 @@ lines according to the first line."
 	      jit-lock-defer-time `,danylo/fontify-delay
 	      font-lock-maximum-decoration nil)
 
+;;;; Font lock debug tools
+
+(use-package highlight-refontification
+  ;; https://github.com/Lindydancer/highlight-refontification
+  ;; Visualize how font-lock refontifies a buffer
+  )
+
+(use-package font-lock-profiler
+  ;; https://github.com/Lindydancer/font-lock-profiler
+  ;; Coverage and timing tool for font-lock keywords
+  )
+
 (use-package all-the-icons
   ;; https://github.com/domtronn/all-the-icons.el
   ;; Pretty icons

@@ -426,21 +426,26 @@ lines according to the first line."
 	ivy-wrap t
 	counsel-switch-buffer-preview-virtual-buffers nil
 	ivy-truncate-lines t
-	ivy-display-style 'fancy)
+	ivy-display-style 'fancy
+	;; Speed up Swiper when in visual-line-mode
+	;; Source: https://github.com/abo-abo/swiper/issues/1952
+	;;         https://github.com/abo-abo/swiper/issues/2471
+	;;         https://github.com/abo-abo/swiper/issues/2588
+	swiper-use-visual-line-p #'ignore)
   (add-hook 'ivy-mode-hook
 	    (lambda ()
-	      (set-face-attribute 'ivy-minibuffer-match-face-1 nil
+	      (set-face-attribute 'ivy-minibuffer-match-face-2 nil
 				  :background `,danylo/orange
 				  :foreground `,danylo/black
 				  :weight 'normal
 				  :inherit 'default)
-	      (set-face-attribute 'ivy-current-match nil
-				  :extend nil
-				  :height 1.0)
 	      (set-face-attribute 'swiper-match-face-1 nil
 				  :background `,danylo/orange
 				  :foreground `,danylo/black
-				  :weight 'normal)))
+				  :weight 'normal)
+	      (set-face-attribute 'ivy-current-match nil
+				  :extend nil
+				  :height 1.0)))
   (add-to-list 'ivy-ignore-buffers '"\\*ivy-")
   (add-to-list 'ivy-ignore-buffers '"\\*xref\\*")
   (add-to-list 'ivy-ignore-buffers '"\\*toc\\*")

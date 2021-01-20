@@ -1138,7 +1138,8 @@ With argument ARG, do this that many times."
   (setq org-startup-folded nil
 	org-ellipsis " ▾"
 	org-src-tab-acts-natively t
-	org-startup-with-latex-preview nil))
+	org-startup-with-latex-preview nil
+	org-fontify-quote-and-verse-blocks t))
 
 (with-eval-after-load "org"
   (define-key org-mode-map [remap fill-paragraph] nil)

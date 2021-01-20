@@ -552,16 +552,33 @@ lines according to the first line."
   :config
   (solaire-global-mode +1))
 
+;;;; Line numbering
+
+(use-package nlinum
+  ;; https://elpa.gnu.org/packages/nlinum.html
+  ;; Show line numbers in the margin, less laggy by using jit-lock
+  :init (setq nlinum-highlight-current-line t)
+  (add-hook 'nlinum-mode-hook
+	    (lambda ()
+	      (set-face-attribute 'nlinum-current-line nil
+				  :foreground `,danylo/yellow
+				  :weight 'normal
+				  :inherit 'default))))
+
+(use-package nlinum-hl
+  ;; https://github.com/hlissner/emacs-nlinum-hl
+  ;; Fix disappearing line numbers in nlinum
+  :after nlinum
+  :config
+  (add-hook 'after-setting-font-hook #'nlinum-hl-flush-all-windows)
+  (run-with-idle-timer `,danylo/fontify-delay t
+		       #'nlinum-hl-flush-region (window-start) (window-end))
+  (run-with-idle-timer `,danylo/delay-long t
+		       #'nlinum-hl-flush-all-windows))
+
 ;; Show line numbers on the left
 (general-define-key
- "C-x n l" 'display-line-numbers-mode)
-
-;; Current line number face
-(add-hook 'display-line-numbers-mode-hook
-	  (lambda ()
-	    (set-face-attribute 'line-number-current-line nil
-				:foreground `,danylo/yellow
-				:inherit 'default)))
+ "C-x n l" 'nlinum-mode) ;;'display-line-numbers-mode)
 
 (use-package doom-themes
   ;; https://github.com/hlissner/emacs-doom-themes
@@ -573,8 +590,7 @@ lines according to the first line."
 		      :foreground `,danylo/yellow
 		      :background `,danylo/dark-blue)
   (set-face-attribute 'font-lock-string-face nil
-		      :foreground `,danylo/green)
-  )
+		      :foreground `,danylo/green))
 
 (add-hook 'after-init-hook
 	  (lambda ()
@@ -763,7 +779,8 @@ lines according to the first line."
   :hook ((c-mode-common . (lambda ()
 			    (when (featurep 'filladapt)
 			      (c-setup-filladapt))))
-	 (python-mode . filladapt-mode))
+	 (python-mode . filladapt-mode)
+	 (org-mode . filladapt-mode))
   :bind (("M-q" . 'fill-paragraph)
 	 ("M-r" . 'fill-region)))
 

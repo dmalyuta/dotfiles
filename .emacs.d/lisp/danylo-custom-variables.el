@@ -66,6 +66,14 @@ since fontification is a slow-ish process."
   :type 'float
   :group 'danylo)
 
+(defcustom danylo/delay-long 30.0
+  "A standard 'long' delay for Emacs to do something every once
+in a while."
+  :type 'float
+  :group 'danylo)
+
+
+
 ;;;; Faces
 
 ;; Colors taken from doom-one theme

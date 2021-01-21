@@ -1950,3 +1950,13 @@ Patched so that any new file by default is guessed as being its own master."
 	 ("\\.md\\'" . markdown-mode)
 	 ("\\.markdown\\'" . markdown-mode))
   :init (setq markdown-command "multimarkdown"))
+
+;;; ..:: Bash ::..
+
+(mapcar
+ (lambda (arg)
+   (add-to-list 'auto-mode-alist `(,arg . sh-mode)))
+ '("\\.bash_aliases\\'"
+   "\\.local.bashrc\\'"
+   "\\.local.bashrc.private\\'"
+   "\\.profile\\'"))

@@ -138,5 +138,9 @@ getline() {
     sed -n "$@"p
 }
 
+# Show line numbers in standard output
+# E.g. $ findfile 'foobar' | showlinenumbers
+alias showlinenumbers='cat --number'
+
 # ls with directories first when `ls -1`
 alias ls='ls --color -h --group-directories-first'

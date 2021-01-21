@@ -565,16 +565,19 @@ lines according to the first line."
 				  :weight 'normal
 				  :inherit 'default))))
 
+;;;###autoload
+(defun danylo/nlinum-flush ()
+  "Flush the nlinum line numbers in the currently visible buffer"
+  (nlinum-hl-flush-region (window-start) (window-end)))
+
 (use-package nlinum-hl
   ;; https://github.com/hlissner/emacs-nlinum-hl
   ;; Fix disappearing line numbers in nlinum
   :after nlinum
   :config
   (add-hook 'after-setting-font-hook #'nlinum-hl-flush-all-windows)
-  (run-with-idle-timer `,danylo/fontify-delay t
-		       #'nlinum-hl-flush-region (window-start) (window-end))
-  (run-with-idle-timer `,danylo/delay-long t
-		       #'nlinum-hl-flush-all-windows))
+  (run-with-idle-timer `,danylo/fontify-delay t #'danylo/nlinum-flush)
+  (run-with-idle-timer `,danylo/delay-long t #'nlinum-hl-flush-all-windows))
 
 ;; Show line numbers on the left
 (general-define-key
@@ -669,7 +672,8 @@ lines according to the first line."
 	      doom-modeline-mu4e t
 	      inhibit-compacting-font-caches t
 	      find-file-visit-truename t
-	      doom-modeline-project-detection 'project)
+	      doom-modeline-project-detection 'project
+	      doom-modeline-enable-word-count nil)
   :config
   ;; Default mode line
   (doom-modeline-def-modeline 'my-simple-line
@@ -1153,7 +1157,7 @@ With argument ARG, do this that many times."
 	      ("C-c C-5" . 'org-move-item-down))
   :init
   (setq org-startup-folded nil
-	org-ellipsis " ▾"
+	;;org-ellipsis "..." ;; " ▾"
 	org-src-tab-acts-natively t
 	org-startup-with-latex-preview nil
 	org-fontify-quote-and-verse-blocks t))

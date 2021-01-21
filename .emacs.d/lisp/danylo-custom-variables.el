@@ -72,8 +72,6 @@ in a while."
   :type 'float
   :group 'danylo)
 
-
-
 ;;;; Faces
 
 ;; Colors taken from doom-one theme

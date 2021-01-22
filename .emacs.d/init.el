@@ -569,16 +569,35 @@ lines according to the first line."
 
 ;;;; Line numbering
 
+;;;###autoload
+(defun danylo/nlinum-update-line ()
+  "Update nlinum current line. Jit-lock style, which improves
+performance dramatically the same way that jit-lock improves
+performance for font-lock."
+  (when (bound-and-true-p nlinum-mode)
+    (nlinum--current-line-update)
+    ;; Set again for next time
+    (run-with-idle-timer `,danylo/fontify-delay nil
+			 #'danylo/nlinum-update-line)))
+
 (use-package nlinum
   ;; https://elpa.gnu.org/packages/nlinum.html
   ;; Show line numbers in the margin, less laggy by using jit-lock
   :init (setq nlinum-highlight-current-line t)
   (add-hook 'nlinum-mode-hook
 	    (lambda ()
+	      ;; Line highlight face
 	      (set-face-attribute 'nlinum-current-line nil
 				  :foreground `,danylo/yellow
 				  :weight 'normal
-				  :inherit 'default))))
+				  :inherit 'default)
+	      ;; Line highlighting function patch
+	      ;; Update current line in an idle timer, i.e. jit-lock style
+	      (when nlinum-highlight-current-line
+		(remove-hook 'post-command-hook #'nlinum--current-line-update :local)
+		(run-with-idle-timer `,danylo/fontify-delay nil #'danylo/nlinum-update-line))
+	      (nlinum-hl-flush-window)
+	      )))
 
 ;;;###autoload
 (defun danylo/nlinum-flush ()

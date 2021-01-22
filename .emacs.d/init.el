@@ -111,8 +111,6 @@
 (tooltip-mode 0)
 (blink-cursor-mode 0)
 
-;; Mouse behaviour
-
 ;; Frame size
 (setq default-frame-alist
       (append default-frame-alist '((height . 50) (width . 100))))
@@ -134,6 +132,23 @@
 ;; Lisp deprecation
 ;; https://github.com/kiwanami/emacs-epc/issues/35
 (setq byte-compile-warnings '(cl-functions))
+
+;; Do not resize minibuffer for long path on file save
+
+;;;###autoload
+(defadvice save-buffer (around danylo/minibuffer-preserve-size-on-save)
+  "Don't increase the size of the echo area if the path of the
+file being saved is too long to show on one line."
+  (let ((message-truncate-lines t)
+	(this-file-name (file-name-nondirectory (buffer-file-name))))
+    ad-do-it
+    (with-selected-window (minibuffer-window)
+      ;; Print a custom save message
+      (message "%s %s" (danylo/fa-icon "archive" `,danylo/faded)
+	       (propertize `,(concat "Saved " this-file-name) 'face
+			   `(:foreground ,danylo/faded)))
+      )))
+(ad-activate 'save-buffer)
 
 ;; Better start screen
 (use-package dashboard

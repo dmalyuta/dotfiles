@@ -589,7 +589,11 @@ performance for font-lock."
 	      ;; Line highlight face
 	      (set-face-attribute 'nlinum-current-line nil
 				  :foreground `,danylo/yellow
+				  :height `,danylo/linum-height
 				  :weight 'normal
+				  :inherit 'default)
+	      (set-face-attribute 'linum nil
+				  :height `,danylo/linum-height
 				  :inherit 'default)
 	      ;; Line highlighting function patch
 	      ;; Update current line in an idle timer, i.e. jit-lock style
@@ -634,7 +638,7 @@ performance for font-lock."
 	    (when (window-system)
 	      (set-face-attribute 'default nil
 				  :family "Fira Code"
-				  :height 110
+				  :height `,danylo/font-default-height
 				  :weight 'normal
 				  :width 'normal))))
 

@@ -29,6 +29,11 @@
   :type 'boolean
   :group 'danylo)
 
+(defcustom danylo/font-default-height 100
+  "Default font height."
+  :type 'float
+  :group 'danylo)
+
 (defcustom danylo/python-shell-type "ipython"
   "Which shell type to use for Python."
   :type 'string
@@ -69,6 +74,11 @@ since fontification is a slow-ish process."
 (defcustom danylo/delay-long 30.0
   "A standard 'long' delay for Emacs to do something every once
 in a while."
+  :type 'float
+  :group 'danylo)
+
+(defcustom danylo/linum-height 0.7
+  "Height of line number font in the margin."
   :type 'float
   :group 'danylo)
 

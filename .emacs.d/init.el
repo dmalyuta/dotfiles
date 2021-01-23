@@ -1184,7 +1184,6 @@ With argument ARG, do this that many times."
 
 (with-eval-after-load "org"
   (define-key org-mode-map [remap fill-paragraph] nil)
-  (define-key org-mode-map [remap self-insert-command] nil)
   ;; LaTeX equations preview style
   (setq org-format-latex-options (plist-put org-format-latex-options
 					    :scale `,danylo/latex-preview-scale)

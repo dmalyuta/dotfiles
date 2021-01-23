@@ -148,7 +148,8 @@ file being saved is too long to show on one line."
 	       (propertize `,(concat "Saved " this-file-name) 'face
 			   `(:foreground ,danylo/faded)))
       )))
-(ad-activate 'save-buffer)
+
+(add-hook 'after-init-hook (lambda () (ad-activate 'save-buffer)))
 
 ;; Better start screen
 (use-package dashboard
@@ -569,57 +570,22 @@ lines according to the first line."
 
 ;;;; Line numbering
 
-;;;###autoload
-(defun danylo/nlinum-update-line ()
-  "Update nlinum current line. Jit-lock style, which improves
-performance dramatically the same way that jit-lock improves
-performance for font-lock."
-  (when (bound-and-true-p nlinum-mode)
-    (nlinum--current-line-update)
-    ;; Set again for next time
-    (run-with-idle-timer `,danylo/fontify-delay nil
-			 #'danylo/nlinum-update-line)))
+;; Show line numbers on the left
+(general-define-key
+ "C-x n l" 'display-line-numbers-mode)
 
-(use-package nlinum
-  ;; https://elpa.gnu.org/packages/nlinum.html
-  ;; Show line numbers in the margin, less laggy by using jit-lock
-  :init (setq nlinum-highlight-current-line t)
-  (add-hook 'nlinum-mode-hook
-	    (lambda ()
-	      ;; Line highlight face
-	      (set-face-attribute 'nlinum-current-line nil
-				  :foreground `,danylo/yellow
+(add-hook 'display-line-numbers-mode-hook
+	  (lambda ()
+	    ;; Line highlight face
+	    (set-face-attribute 'line-number-current-line nil
+				  :background `,danylo/yellow
+				  :foreground `,danylo/black
 				  :height `,danylo/linum-height
 				  :weight 'normal
 				  :inherit 'default)
-	      (set-face-attribute 'linum nil
-				  :height `,danylo/linum-height
-				  :inherit 'default)
-	      ;; Line highlighting function patch
-	      ;; Update current line in an idle timer, i.e. jit-lock style
-	      (when nlinum-highlight-current-line
-		(remove-hook 'post-command-hook #'nlinum--current-line-update :local)
-		(run-with-idle-timer `,danylo/fontify-delay nil #'danylo/nlinum-update-line))
-	      (nlinum-hl-flush-window)
-	      )))
-
-;;;###autoload
-(defun danylo/nlinum-flush ()
-  "Flush the nlinum line numbers in the currently visible buffer"
-  (nlinum-hl-flush-region (window-start) (window-end)))
-
-(use-package nlinum-hl
-  ;; https://github.com/hlissner/emacs-nlinum-hl
-  ;; Fix disappearing line numbers in nlinum
-  :after nlinum
-  :config
-  (add-hook 'after-setting-font-hook #'nlinum-hl-flush-all-windows)
-  (run-with-idle-timer `,danylo/fontify-delay t #'danylo/nlinum-flush)
-  (run-with-idle-timer `,danylo/delay-long t #'nlinum-hl-flush-all-windows))
-
-;; Show line numbers on the left
-(general-define-key
- "C-x n l" 'nlinum-mode) ;;'display-line-numbers-mode)
+	    (set-face-attribute 'line-number nil
+				:height `,danylo/linum-height
+				:inherit 'default)))
 
 (use-package doom-themes
   ;; https://github.com/hlissner/emacs-doom-themes
@@ -1131,6 +1097,22 @@ With argument ARG, do this that many times."
 	flycheck-check-syntax-automatically '(mode-enabled save)
 	flycheck-display-errors-delay 0.1))
 
+;;;###autoload
+(defun danylo/toggle-spellcheck ()
+  "Turn on spell checking."
+  (interactive)
+  (if (bound-and-true-p flyspell-mode)
+      ;; Turn off spellcheck
+      (progn (flycheck-mode -1)
+	     (flyspell-mode -1))
+    ;; Turn on spellcheck
+    (progn (flycheck-mode +1)
+	   (flyspell-mode +1)
+	   (flyspell-buffer))))
+
+(general-define-key
+ "C-x c s" 'danylo/toggle-spellcheck)
+
 ;;; ..:: Completion ::..
 
 (use-package company
@@ -1202,6 +1184,7 @@ With argument ARG, do this that many times."
 
 (with-eval-after-load "org"
   (define-key org-mode-map [remap fill-paragraph] nil)
+  (define-key org-mode-map [remap self-insert-command] nil)
   ;; LaTeX equations preview style
   (setq org-format-latex-options (plist-put org-format-latex-options
 					    :scale `,danylo/latex-preview-scale)

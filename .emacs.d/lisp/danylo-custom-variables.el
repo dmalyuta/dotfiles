@@ -64,7 +64,7 @@
   :type 'float
   :group 'danylo)
 
-(defconst danylo/fontify-delay~hz 3.0)
+(defconst danylo/fontify-delay~hz 30.0)
 (defcustom danylo/fontify-delay `,(/ 1.0 danylo/fontify-delay~hz)
   "Delay before fontifying text. Helps to improve performance
 since fontification is a slow-ish process."

@@ -1898,7 +1898,7 @@ lines according to the first line."
   (setq-default TeX-master nil)
   (add-to-list 'ivy-ignore-buffers '"\\*.*output\\*")
   :bind (:map LaTeX-mode-map
-	      ("M-s" . ispell-word)
+	      ("C-c i w" . ispell-word)
 	      ("C-x C-<backspace>" . electric-pair-delete-pair)
 	      ("C-c f e" . danylo/org-emphasize-equation))
   :config

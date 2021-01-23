@@ -528,6 +528,14 @@ lines according to the first line."
   :init
   (setq xref-show-definitions-function #'ivy-xref-show-defs))
 
+(use-package avy
+  ;; https://github.com/abo-abo/avy
+  ;; Jump to things in Emacs tree-style
+  :ensure t
+  :bind (("M-s" . avy-goto-word-1)
+	 ("M-g f" . avy-goto-line)
+	 ("C-'" . avy-isearch)))
+
 ;;; ..:: Theming and code aesthetics ::..
 
 ;; Auto-create matching closing parentheses

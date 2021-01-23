@@ -106,29 +106,19 @@
   "Face for boolean variables like \iffalse and \fi."
   :group 'danylo)
 
-(defconst danylo/extend-region-begin-regexp "begin\\|\\$"
-  "Regular expression to match beginning of extend region for font-lock.")
-
-(defconst danylo/extend-region-end-regexp "end\\|\\$"
-  "Regular expression to match end of extend region for font-lock.")
-
 ;;;###autoload
 (defun danylo/font-lock-extend-region ()
   "Extend the search region to include an entire block of text."
   (let ((changed nil))
     (save-excursion
       (goto-char font-lock-beg)
-      (let ((found (or (re-search-backward
-			`,danylo/extend-region-begin-regexp nil t)
-		       (point-min))))
+      (let ((found (or (re-search-backward "\n\n" nil t) (point-min))))
 	(unless (eq font-lock-beg found)
 	  (goto-char found)
 	  (setq font-lock-beg (if (bolp) found (line-beginning-position))
 		changed t)))
       (goto-char font-lock-end)
-      (let ((found (or (re-search-forward
-			`,danylo/extend-region-end-regexp nil t)
-		       (point-max))))
+      (let ((found (or (re-search-forward "\n\n" nil t) (point-max))))
 	(unless (eq font-lock-end found)
 	  (goto-char found)
 	  (setq font-lock-end (if (bolp) found (line-beginning-position 2))

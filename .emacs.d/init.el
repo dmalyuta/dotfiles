@@ -133,6 +133,9 @@
 ;; https://github.com/kiwanami/emacs-epc/issues/35
 (setq byte-compile-warnings '(cl-functions))
 
+;; Show column number
+(setq-default column-number-mode t)
+
 ;; Do not resize minibuffer for long path on file save
 
 ;;;###autoload

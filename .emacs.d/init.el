@@ -403,6 +403,7 @@ lines according to the first line."
     )
   )
 
+;;;###autoload
 (defun danylo/side-window-tmp ()
   (interactive)
   (display-buffer-in-side-window (get-buffer "*Messages*") '((side . right))))
@@ -703,9 +704,10 @@ lines according to the first line."
   ;; Dashboard mode line
   (doom-modeline-def-modeline 'dashboard
     '(window-number buffer-default-directory-simple)
-    '(battery mu4e))
-  ;; Activate the Doom modeline mode
-  (doom-modeline-mode 1))
+    '(battery mu4e)))
+
+;; Activate the Doom modeline mode
+(add-hook 'after-init-hook (lambda () (doom-modeline-mode 1)))
 
 (use-package danylo-text-font-lock
   ;; Personal minor mode for text document highlighting
@@ -986,10 +988,12 @@ With argument ARG, do this that many times."
  "C-c t e" 'ansi-term
  "C-c t r" 'danylo/run-terminator-here)
 
-;; Always use bash
+;;;###autoload
 (defadvice ansi-term (before force-bash)
+  "Always use bash"
   (interactive (list "/bin/bash")))
-(ad-activate 'ansi-term)
+
+(add-hook 'after-init-hook (lambda  () (ad-activate 'ansi-term)))
 
 ;;;###autoload
 (defun danylo/ansi-term-use-utf8 ()
@@ -1000,16 +1004,18 @@ With argument ARG, do this that many times."
 ;; Clickable URLs
 (add-hook 'term-mode-hook (lambda () (goto-address-mode)))
 
-;; Make that typing exit in ansi-term (which exits the shell) also closes
-;; the buffer
+;;;###autoload
 (defadvice term-sentinel (around my-advice-term-sentinel (proc msg))
+  "Make that typing exit in ansi-term (which exits the shell)
+also closes the buffer"
   (if (memq (process-status proc)
 	    '(signal exit))
       (let ((buffer (process-buffer proc)))
 	ad-do-it
 	(kill-buffer buffer))
     ad-do-it))
-(ad-activate 'term-sentinel)
+
+(add-hook 'after-init-hook (lambda  () (ad-activate 'term-sentinel)))
 
 ;;;###autoload
 (defun danylo/set-no-process-query-on-exit ()
@@ -1017,6 +1023,7 @@ With argument ARG, do this that many times."
   (let ((proc (get-buffer-process (current-buffer))))
     (when (processp proc)
       (set-process-query-on-exit-flag proc nil))))
+
 (add-hook 'term-exec-hook 'danylo/set-no-process-query-on-exit)
 
 ;; Key bindings
@@ -1401,29 +1408,10 @@ This version deletes backup files without asking."
 	(insert (concat "\n\n" mu4e-compose-signature))))))
 (add-hook 'mu4e-compose-mode-hook 'danylo/insert-mu4e-signature)
 
-;;;###autoload
-(defun danylo/refresh-mu4e-alert-mode-line ()
-  "Show new mail in the mode line."
-  (interactive)
-  (mu4e-update-mail-and-index t)
-  (mu4e-alert-enable-mode-line-display))
-
-(defvar danylo/mu4e-alert-started nil
-  "Indicator if mu4e-alert indicator started")
-
 (use-package mu4e-alert
   ;; https://github.com/iqbalansari/mu4e-alert
   ;; Desktop notifications and modeline display for mu4e
-  :ensure t
-  :after mu4e
-  :init
-  ;; Enable mu4e-alert display after mu4e is started
-  (add-hook 'mu4e-main-mode-hook
-	    (lambda ()
-	      (unless danylo/mu4e-alert-started
-		(mu4e-alert-enable-mode-line-display)
-		(run-with-timer 0 (* 60 5) 'danylo/refresh-mu4e-alert-mode-line)
-		(setq danylo/mu4e-alert-started t)))))
+  :after mu4e)
 
 ;;; ..:: Git ::..
 

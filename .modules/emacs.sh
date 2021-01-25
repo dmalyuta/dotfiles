@@ -32,24 +32,6 @@ if not_installed emacs; then
 	      make && sudo make install )
 fi
 
-# ..:: Font for Emacs ::..
-
-sudo apt-get -y install fonts-firacode
-
-if ! ls /usr/share/fonts | grep -q FiraCode; then
-    ( cd /tmp && \
-	  wget -4 https://github.com/tonsky/FiraCode/files/412440/FiraCode-Regular-Symbol.zip && \
-	  unzip FiraCode-Regular-Symbol.zip -d firacode && \
-	  cd firacode/ && \
-	  sudo -H cp * /usr/share/fonts )
-fi
-
-if ! ls /usr/share/fonts | grep -q FiraMono; then
-    git clone --branch zwaldowski/mod-new --depth 1 https://github.com/zwaldowski/Fira /tmp/fira
-    ( cd /tmp/fira/otf/ && \
-	  sudo -H cp Fira*.otf /usr/share/fonts )
-fi
-
 # ..:: Language Server Protocols ::..
 
 # >> C++ <<

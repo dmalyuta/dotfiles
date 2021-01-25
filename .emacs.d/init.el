@@ -614,21 +614,9 @@ lines according to the first line."
 (add-hook 'after-init-hook
 	  (lambda ()
 	    (when (window-system)
+	      ;; Default Emacs font
 	      (set-face-attribute 'default nil
-				  :family "Fira Code"
-				  :height `,danylo/font-default-height
-				  :weight 'normal
-				  :width 'normal))))
-
-(use-package fira-code-mode
-  ;; https://github.com/jming422/fira-code-mode
-  ;; Fira Code ligatures using prettify-symbols
-  :ensure t
-  :custom (fira-code-mode-disabled-ligatures
-	   '("[]" "#{" "#(" "#_" "#_(" "x" "&&"))
-  :config
-  (add-hook 'prog-mode-hook (lambda () (when (window-system) (fira-code-mode))))
-  )
+				  :height `,danylo/font-default-height))))
 
 ;; Speed up font-lock mode speed (can causes laggy scrolling)
 (setq-default font-lock-support-mode 'jit-lock-mode
@@ -1216,14 +1204,6 @@ also closes the buffer"
 					    :scale `,danylo/latex-preview-scale)
 	org-format-latex-options (plist-put org-format-latex-options
 					    :foreground `,danylo/yellow)))
-
-;;;###autoload
-(defun danylo/org-mode-font ()
-  "Set the org-mode general text font.
-See: https://stackoverflow.com/a/12286420/4605946."
-  (overlay-put (make-overlay (point-min) (point-max) nil nil t)
-               'face '(:family "Fira Mono")))
-(add-hook 'org-mode-hook 'danylo/org-mode-font)
 
 ;;;###autoload
 (defun danylo/org-emphasize (char)

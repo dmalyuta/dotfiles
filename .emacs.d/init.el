@@ -1113,7 +1113,13 @@ also closes the buffer"
   :init
   (setq flycheck-enabled-checkers '(c/c++-gcc)
 	flycheck-check-syntax-automatically '(mode-enabled save)
-	flycheck-display-errors-delay 0.1))
+	flycheck-display-errors-delay 0.1)
+  (add-hook 'flycheck-mode-hook
+	    (lambda ()
+	      (set-face-attribute 'flycheck-error nil
+				  :underline `,danylo/red)
+	      (set-face-attribute 'flycheck-warning nil
+				  :underline `,danylo/yellow))))
 
 ;;;###autoload
 (defun danylo/toggle-spellcheck ()
@@ -1128,8 +1134,12 @@ also closes the buffer"
 	   (flyspell-mode +1)
 	   (flyspell-buffer))))
 
-(general-define-key
- "C-x c s" 'danylo/toggle-spellcheck)
+(add-hook 'flyspell-mode-hook
+	  (lambda ()
+	    (set-face-attribute 'flyspell-incorrect nil
+				:underline `,danylo/red)
+	    (set-face-attribute 'flyspell-duplicate nil
+				:underline `,danylo/yellow)))
 
 ;;; ..:: Completion ::..
 
@@ -1191,8 +1201,7 @@ also closes the buffer"
   ;; Your life in plain text
   :hook ((org-mode . danylo/org-mode-setup))
   :bind (:map org-mode-map
-	      ("C-c C-6" . 'org-move-item-up)
-	      ("C-c C-5" . 'org-move-item-down))
+	      ("C-x c s" . danylo/toggle-spellcheck))
   :init
   (setq org-startup-folded nil
 	;;org-ellipsis "..." ;; " ▾"
@@ -1888,7 +1897,8 @@ lines according to the first line."
   :bind (:map LaTeX-mode-map
 	      ("C-c i w" . ispell-word)
 	      ("C-x C-<backspace>" . electric-pair-delete-pair)
-	      ("C-c f e" . danylo/org-emphasize-equation))
+	      ("C-c f e" . danylo/org-emphasize-equation)
+	      ("C-x c s" . danylo/toggle-spellcheck))
   :config
   (require 'latex)
   ;; Shell-escape compilation

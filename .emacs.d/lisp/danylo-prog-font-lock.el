@@ -36,6 +36,12 @@
   "Face for class keyword."
   :group 'danylo)
 
+(defface danylo/class-other-face
+  `((t (:height ,danylo/class-height
+		:inherit font-lock-keyword-face)))
+  "Face for class name."
+  :group 'danylo)
+
 (defface danylo/class-name-face
   `((t (:foreground ,danylo/yellow
 		:height ,danylo/class-height
@@ -133,10 +139,11 @@
 	       '(("^\\(using\\)" (1 '(face danylo/import-face) t))
 		 ("^\s*\\(Args\\|Returns\\|Raises\\):$"
 		  (0 '(face danylo/python-docstring-heading-face) t))
-		 ("^.*?\\(struct\\)\s+[^:]*?$"
-		  (0 '(face danylo/class-name-face) t)
+		 ("^.*?\\(struct\\)\s+?\\(.*\\)"
+		  (0 '(face danylo/class-other-face) t)
 		  (1 '(face danylo/class-keyword-face) t)
-		  (2 '(face danylo/class-name-colon) t))
+		  (2 '(face danylo/class-name-face) t)
+		  )
 		 ("^\s*\\(return\\|break\\|raise\\)" (1 '(face danylo/return-face) t))
 		 ("^\s*\\(continue\\|pass\\)" (1 '(face danylo/continue-face) t))
 		 ("^\s*\\(function\\)\s+" (1 '(face danylo/function-face) t))

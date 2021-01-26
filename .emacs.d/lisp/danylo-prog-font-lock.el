@@ -137,8 +137,8 @@
 	((eq major-mode 'julia-mode)
 	 (setq danylo/highlight-keywords
 	       '(("^\\(using\\)" (1 '(face danylo/import-face) t))
-		 ("^\s*\\(Args\\|Returns\\|Raises\\):$"
-		  (0 '(face danylo/python-docstring-heading-face) t))
+		 ("^\s*#\s*\\(Args\\|Returns\\|Raises\\):$"
+		  (1 '(face danylo/python-docstring-heading-face) t))
 		 ("^.*?\\(struct\\)\s+?\\(.*\\)"
 		  (0 '(face danylo/class-other-face) t)
 		  (1 '(face danylo/class-keyword-face) t)

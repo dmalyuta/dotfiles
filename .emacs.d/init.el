@@ -771,9 +771,17 @@ lines according to the first line."
 (use-package hl-todo
   ;; https://github.com/tarsius/hl-todo
   ;; Highlight TODO keywords
+  :init
+  (add-hook 'hl-todo-mode-hook
+	    (lambda ()
+	      (set-face-attribute 'hl-todo nil
+				  :background `,danylo/yellow
+				  :weight 'bold
+				  :inherit 'default)))
   :config
   (global-hl-todo-mode)
-  )
+  (add-to-list 'hl-todo-keyword-faces `("TODO" . ,danylo/black))
+  (add-to-list 'hl-todo-keyword-faces `("FIXME" . ,danylo/black)))
 
 (use-package rainbow-mode
   ;; https://github.com/emacsmirror/rainbow-mode

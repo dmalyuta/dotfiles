@@ -590,8 +590,7 @@ lines according to the first line."
 	  (lambda ()
 	    ;; Line highlight face
 	    (set-face-attribute 'line-number-current-line nil
-				  :background `,danylo/yellow
-				  :foreground `,danylo/black
+				  :foreground `,danylo/yellow
 				  :height `,danylo/linum-height
 				  :weight 'normal
 				  :inherit 'default)
@@ -708,7 +707,8 @@ lines according to the first line."
   ;; Personal minor mode for code highlighting
   :ensure nil
   :load-path "lisp/"
-  :hook ((python-mode . danylo-prog-font-lock-mode)))
+  :hook ((python-mode . danylo-prog-font-lock-mode)
+	 (julia-mode . danylo-prog-font-lock-mode)))
 
 ;;; ..:: Code editing ::..
 
@@ -1500,6 +1500,7 @@ If there is no shell open, prints a message to inform."
 	eldoc-idle-delay 0 ;; Delay before showing variable info on hover
 	lsp-enable-semantic-highlighting t
 	lsp-enable-snippet nil ;; Enable arguments completion
+	lsp-headerline-breadcrumb-enable nil ;; Disable headerline breadcrumbs
 	)
   :hook
   ((lsp-mode . (lambda ()
@@ -1864,6 +1865,7 @@ lines according to the first line."
 			    'reftex-view-crossref))))
   :init (setq TeX-source-correlate-method 'synctex
 	      TeX-source-correlate-start-server t
+	      TeX-install-font-lock 'font-latex-setup
 	      TeX-auto-save t
 	      TeX-parse-self t
 	      TeX-auto-regexp-list 'TeX-auto-full-regexp-list
@@ -1871,7 +1873,8 @@ lines according to the first line."
 	      TeX-save-query nil
 	      reftex-plug-into-AUCTeX t
 	      LaTeX-electric-left-right-brace t
-	      TeX-electric-math '("$" . "$"))
+	      TeX-electric-math '("$" . "$")
+	      texmathp-tex-commands '(("optimization" env-on)))
   (setq-default TeX-master nil)
   (add-to-list 'ivy-ignore-buffers '"\\*.*output\\*")
   :bind (:map LaTeX-mode-map

@@ -108,27 +108,43 @@
 (defun danylo/make-highlight-keywords ()
   "Make the font-lock keywords for prog-font-lock-mode fontification."
   ;; ..:: Python ::..
-  (when (eq major-mode 'python-mode)
-    (setq danylo/highlight-keywords
-	  '(("^\s*\\(Args\\|Returns\\|Raises\\):$"
-	     (0 '(face danylo/python-docstring-heading-face) t))
-	    ("^\\(class\\)\s+[^:]*\\(:\\)$"
-	     (0 '(face danylo/class-name-face) t)
-	     (1 '(face danylo/class-keyword-face) t)
-	     (2 '(face danylo/class-name-colon) t))
-	    ("self" (0 '(face danylo/self-face) t))
-	    ("^\s*\\(return\\|break\\|raise\\)" (1 '(face danylo/return-face) t))
-	    ("^\s*\\(continue\\|pass\\)" (1 '(face danylo/continue-face) t))
-	    ("^\s*\\(def\\)\s+" (1 '(face danylo/function-face) t))
-	    ("^\s*\\(@property\\)" (1 '(face danylo/property-face) t))
-	    ("^\s*\\(import\\|from\\)" (1 '(face danylo/import-face) t))
-	    ("^\s*\\(?:from\\).*\\(import\\)" (1 '(face danylo/import-face) t))
-	    ("\\(?:import\\).*\\(as\\)" (1 '(face danylo/import-face) t))
-	    ("\\(?:True\\|False\\)" (0 '(face danylo/bool-face) t))
-	    ("^\s*\\(?:if\\|for\\|while\\|elif\\|else\\)\s+"
-	     (0 '(face danylo/control-face) t))
-	    ))
-    )
+  (cond ((eq major-mode 'python-mode)
+	 (setq danylo/highlight-keywords
+	       '(("^\s*\\(Args\\|Returns\\|Raises\\):$"
+		  (0 '(face danylo/python-docstring-heading-face) t))
+		 ("^\\(class\\)\s+[^:]*\\(:\\)$"
+		  (0 '(face danylo/class-name-face) t)
+		  (1 '(face danylo/class-keyword-face) t)
+		  (2 '(face danylo/class-name-colon) t))
+		 ("self" (0 '(face danylo/self-face) t))
+		 ("^\s*\\(return\\|break\\|raise\\)" (1 '(face danylo/return-face) t))
+		 ("^\s*\\(continue\\|pass\\)" (1 '(face danylo/continue-face) t))
+		 ("^\s*\\(def\\)\s+" (1 '(face danylo/function-face) t))
+		 ("^\s*\\(@property\\)" (1 '(face danylo/property-face) t))
+		 ("^\s*\\(import\\|from\\)" (1 '(face danylo/import-face) t))
+		 ("^\s*\\(?:from\\).*\\(import\\)" (1 '(face danylo/import-face) t))
+		 ("\\(?:import\\).*\\(as\\)" (1 '(face danylo/import-face) t))
+		 ("\\(?:True\\|False\\)" (0 '(face danylo/bool-face) t))
+		 ("^\s*\\(?:if\\|for\\|while\\|elif\\|else\\)\s+"
+		  (0 '(face danylo/control-face) t))
+		 )))
+	((eq major-mode 'julia-mode)
+	 (setq danylo/highlight-keywords
+	       '(("^\\(using\\)" (1 '(face danylo/import-face) t))
+		 ("^\s*\\(Args\\|Returns\\|Raises\\):$"
+		  (0 '(face danylo/python-docstring-heading-face) t))
+		 ("^.*?\\(struct\\)\s+[^:]*?$"
+		  (0 '(face danylo/class-name-face) t)
+		  (1 '(face danylo/class-keyword-face) t)
+		  (2 '(face danylo/class-name-colon) t))
+		 ("^\s*\\(return\\|break\\|raise\\)" (1 '(face danylo/return-face) t))
+		 ("^\s*\\(continue\\|pass\\)" (1 '(face danylo/continue-face) t))
+		 ("^\s*\\(function\\)\s+" (1 '(face danylo/function-face) t))
+		 ("\\(?:true\\|false\\)" (0 '(face danylo/bool-face) t))
+		 ("^\s*\\(?:if\\|for\\|while\\|elseif\\|else\\)\s+"
+		  (0 '(face danylo/control-face) t))
+		 )))
+	)
   danylo/highlight-keywords)
 
 ;;;###autoload

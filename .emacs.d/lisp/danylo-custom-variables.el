@@ -29,7 +29,7 @@
   :type 'boolean
   :group 'danylo)
 
-(defcustom danylo/font-default-height 100
+(defcustom danylo/font-default-height 105
   "Default font height."
   :type 'float
   :group 'danylo)

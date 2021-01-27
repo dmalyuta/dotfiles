@@ -1049,15 +1049,20 @@ also closes the buffer"
   (defun danylo/switch-to-term-char-mode () (interactive)
 	 (term-char-mode)
 	 (read-only-mode 0))
+  (defun danylo/toggle-term-line-char-mode ()
+    (interactive)
+    (if (term-in-char-mode)
+	(danylo/switch-to-term-line-mode)
+      (danylo/switch-to-term-char-mode)))
   (define-key term-raw-map (kbd "C-c t c") 'danylo/switch-to-term-char-mode)
   (define-key term-raw-map (kbd "C-c t l") 'danylo/switch-to-term-line-mode)
+  (define-key term-raw-map (kbd "C-c t t") 'danylo/toggle-term-line-char-mode)
   (define-key term-mode-map (kbd "C-c t c") 'danylo/switch-to-term-char-mode)
   (define-key term-mode-map (kbd "C-c t l") 'danylo/switch-to-term-line-mode)
+  (define-key term-mode-map (kbd "C-c t t") 'danylo/toggle-term-line-char-mode)
   ;; Copy/paste native Emacs keystrokes
   (define-key term-raw-map (kbd "C-k") 'term-send-raw)
   (define-key term-raw-map (kbd "C-y") 'term-paste)
-  ;; Ensure that scrolling doesn't break on output
-  (setq term-scroll-to-bottom-on-output t)
   ;; Max history
   (setq term-buffer-maximum-size 50000)
   ;; Make sure window movement keys are not captured by terminal

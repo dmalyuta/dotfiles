@@ -1263,6 +1263,7 @@ also closes the buffer"
 (use-package mu4e
   ;; https://github.com/djcb/mu
   ;; maildir indexer/searcher + emacs mail client + guile bindings
+  :ensure nil
   :load-path "/usr/local/share/emacs/site-lisp/mu4e"
   :bind (:map mu4e-headers-mode-map
 	      ("x" . (lambda () (interactive) (mu4e-mark-execute-all t)))
@@ -1302,7 +1303,6 @@ also closes the buffer"
 	mu4e-index-cleanup t
 	mu4e-index-lazy-check nil
 
-
 	;; <split view settings>
 	mu4e-headers-visible-lines 15
 	mu4e-headers-visible-columns 50
@@ -1314,11 +1314,11 @@ also closes the buffer"
 	message-sendmail-f-is-evil t
 	message-sendmail-extra-arguments '("--read-envelope-from")
 	message-send-mail-function 'message-send-mail-with-sendmail
-	message-kill-buffer-on-exit t
-	)
+	message-kill-buffer-on-exit t)
   (advice-add #'shr-colorize-region :around
 	      (defun shr-no-colourise-region (&rest ignore)))
-  )
+  :config
+  (require 'mu4e))
 
 (with-eval-after-load "mu4e"
   ;; Disable message sending with C-c C-s (make it more complicated to
@@ -1417,7 +1417,7 @@ This version deletes backup files without asking."
 (use-package mu4e-alert
   ;; https://github.com/iqbalansari/mu4e-alert
   ;; Desktop notifications and modeline display for mu4e
-  :after mu4e)
+  )
 
 ;;; ..:: Git ::..
 

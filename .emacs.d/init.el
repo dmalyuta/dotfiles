@@ -57,7 +57,7 @@
   (if (window-system)
       (propertize (all-the-icons-faicon icon)
 		  'face `(:family ,(all-the-icons-faicon-family)
-				  :height 1.0
+				  :height 0.95
 				  :foreground ,fg)
 		  'display '(raise -0.05))
     ""))
@@ -663,8 +663,6 @@ lines according to the first line."
 (use-package doom-modeline
   ;; https://github.com/seagle0128/doom-modeline
   ;; A fancy and fast mode-line inspired by minimalism design.
-  :after (all-the-icons mu4e-alert)
-  :ensure t
   :init (setq doom-modeline-height 10
 	      doom-modeline-bar-width 3
 	      doom-modeline-major-mode-icon nil
@@ -850,28 +848,25 @@ START and END give the start/end of current selection."
 ;;;; Duplicate line
 
 ;;;###autoload
-(defun danylo/duplicate-line-or-region (&optional n)
-  "Duplicate current line, or region if active.
-With argument N, make N copies.
-With negative N, comment out original line and use the absolute value.
-Source: https://stackoverflow.com/a/4717026/4605946"
-  (interactive "*p")
-  (let ((use-region (use-region-p)))
-    (save-excursion
-      (let ((text (if use-region ;Get region if active, otherwise line
-                      (buffer-substring (region-beginning) (region-end))
-                    (prog1 (thing-at-point 'line)
-                      (end-of-line)
-                      (if (< 0 (forward-line 1)) ;Go to beginning of next line, or make a new one
-                          (newline))))))
-        (dotimes (i (abs (or n 1))) ;Insert N times, or once if not specified
-          (insert text))))
-    (if use-region nil ;Only if we're working with a line (not a region)
-      (let ((pos (- (point) (line-beginning-position)))) ;Save column
-        (if (> 0 n) ;Comment out original with negative arg
-            (comment-region (line-beginning-position) (line-end-position)))
-        (forward-line 1)
-        (forward-char pos)))))
+(defun danylo/duplicate-line-or-region (arg)
+  "Duplicates the current line or region ARG times.
+If there's no region, the current line will be duplicated. However, if
+there's a region, all lines that region covers will be duplicated."
+  (interactive "p")
+  (let (beg end (origin (point)))
+    (if (and mark-active (> (point) (mark)))
+        (exchange-point-and-mark))
+    (setq beg (line-beginning-position))
+    (if mark-active
+        (exchange-point-and-mark))
+    (setq end (line-end-position))
+    (let ((region (buffer-substring-no-properties beg end)))
+      (dotimes (i arg)
+        (goto-char end)
+        (newline)
+        (insert region)
+        (setq end (point)))
+      (goto-char (+ origin (* (length region) arg) arg)))))
 
 (global-set-key (kbd "C-c d") 'danylo/duplicate-line-or-region)
 
@@ -929,6 +924,12 @@ With argument ARG, do this that many times."
  "C-<right>" 'windmove-right
  "C-<up>" 'windmove-up
  "C-<down>" 'windmove-down)
+
+;;;; >> Splitting windows <<
+
+(general-define-key
+ "C-x -" 'split-window-below
+ "C-x |" 'split-window-right)
 
 ;;;; >> Resizing windows <<
 
@@ -1197,7 +1198,9 @@ also closes the buffer"
   ;; Your life in plain text
   :hook ((org-mode . danylo/org-mode-setup))
   :bind (:map org-mode-map
-	      ("C-x c s" . danylo/toggle-spellcheck))
+	      ("C-x c s" . danylo/toggle-spellcheck)
+	      ("M-." . org-open-at-point)
+	      ("M-," . org-mark-ring-goto))
   :init
   (setq org-startup-folded nil
 	;;org-ellipsis "..." ;; " ▾"
@@ -1262,7 +1265,8 @@ also closes the buffer"
 	      ("x" . (lambda () (interactive) (mu4e-mark-execute-all t)))
 	      :map mu4e-compose-mode-map
 	      ("C-c C-s C-s" . 'message-send)
-	      ("C-c C-a" . 'mail-add-attachment))
+	      ("C-c C-a" . 'mail-add-attachment)
+	      ("C-x c s" . danylo/toggle-spellcheck))
   :init
   (setq message-mail-user-agent t
 	mail-user-agent 'mu4e-user-agent
@@ -1516,6 +1520,37 @@ If there is no shell open, prints a message to inform."
 		 (push 'company-capf company-backends))))
   )
 
+;;;; Open files manually, rather than through xref
+
+;;;###autoload
+(defun danylo/ffap (&optional filename)
+  "A variant of find-file-at-point without prompting.
+Source: https://www.reddit.com/r/emacs/comments/676r5b/how_to_stop_
+        findfileatprompting_when_there_is_a/dgsr20f?utm_source=share&utm_
+        medium=web2x&context=3"
+  (interactive)
+  (let* ((name (or filename (ffap-string-at-point 'file)))
+         (fname (expand-file-name name)))
+    (if (and name fname (file-exists-p fname))
+        (find-file fname)
+      (find-file-at-point filename))))
+
+;;;###autoload
+(defun danylo/xref-find-definitions (orig-fun &rest args)
+  "Wraps xref-find-definitions so that we open files manually.
+This avoids some errors, such as Julia LSP server failing with
+relative file paths."
+  (if (nth 3 (syntax-ppss))
+      ;; Open file by ourselves
+      (progn
+	(xref-push-marker-stack) ;; Add current marker to stack, so M-, works
+	(danylo/ffap))
+    ;; Call xref as originally intended
+    (apply orig-fun args)))
+
+(advice-add 'xref-find-definitions :around #'danylo/xref-find-definitions)
+;; (advice-remove 'xref-find-definitions #'danylo/xref-find-definitions)
+
 ;;; ..:: C/C++ ::..
 
 ;;;; Code editing
@@ -1724,8 +1759,7 @@ lines according to the first line."
 (use-package julia-mode
   ;; https://github.com/JuliaEditorSupport/julia-emacs
   ;; Major mode for the julia programming language
-  :hook ((julia-mode . yas-minor-mode))
-  )
+  :hook ((julia-mode . yas-minor-mode)))
 
 (use-package lsp-julia
   ;; https://github.com/non-Jedi/lsp-julia
@@ -1736,8 +1770,10 @@ lines according to the first line."
                       :repo "non-Jedi/lsp-julia"
                       :files (:defaults "languageserver")))
   :hook ((julia-mode . (lambda () (require 'lsp-julia) (lsp))))
-  :init (setq lsp-julia-package-dir nil
-	      lsp-julia-default-environment "~/.julia/environments/v1.5"))
+  :config
+  (setq lsp-julia-package-dir nil
+	lsp-julia-default-environment "~/.julia/environments/v1.5")
+  (require 'lsp-julia))
 
 ;;;; Julia shell interaction
 
@@ -1758,7 +1794,7 @@ lines according to the first line."
   "Run current Julia file."
   (interactive)
   (let* ((file-name (file-name-nondirectory (buffer-file-name)))
-	 (command (format "include(\"%s\")" file-name)))
+	 (command (format "include(\"%s\");" file-name)))
     (danylo/shell-exec danylo/julia-buffer-name command)
     ))
 

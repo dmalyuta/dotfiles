@@ -77,7 +77,7 @@ in a while."
   :type 'float
   :group 'danylo)
 
-(defcustom danylo/linum-height 0.7
+(defcustom danylo/linum-height 0.85
   "Height of line number font in the margin."
   :type 'float
   :group 'danylo)

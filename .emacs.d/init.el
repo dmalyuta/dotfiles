@@ -1316,9 +1316,7 @@ also closes the buffer"
 	message-send-mail-function 'message-send-mail-with-sendmail
 	message-kill-buffer-on-exit t)
   (advice-add #'shr-colorize-region :around
-	      (defun shr-no-colourise-region (&rest ignore)))
-  :config
-  (require 'mu4e))
+	      (defun shr-no-colourise-region (&rest ignore))))
 
 (with-eval-after-load "mu4e"
   ;; Disable message sending with C-c C-s (make it more complicated to

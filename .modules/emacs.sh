@@ -75,7 +75,8 @@ if [ $? -ne 0 ]; then
     cat << EOF | julia
 using Pkg
 Pkg.add(PackageSpec(url="https://github.com/julia-vscode/LanguageServer.jl"))
-Pkg.add("SymbolServer")
+Pkg.add(["SymbolServer"])
+Pkg.add(["StaticLint","Artifacts","ZipFile","BinaryProvider","Requires"])
 EOF
 fi
 

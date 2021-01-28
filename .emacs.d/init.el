@@ -451,7 +451,10 @@ lines according to the first line."
 	;; Source: https://github.com/abo-abo/swiper/issues/1952
 	;;         https://github.com/abo-abo/swiper/issues/2471
 	;;         https://github.com/abo-abo/swiper/issues/2588
-	swiper-use-visual-line-p #'ignore)
+	swiper-use-visual-line-p #'ignore
+	;; Set minimum length for searching in project
+	ivy-more-chars-alist '((t . 1))
+	)
   (add-hook 'ivy-mode-hook
 	    (lambda ()
 	      (set-face-attribute 'ivy-minibuffer-match-face-2 nil
@@ -516,7 +519,8 @@ lines according to the first line."
 (use-package counsel-projectile
   ;; https://github.com/ericdanan/counsel-projectile
   ;; Ivy UI for Projectile
-  :init (setq projectile-completion-system 'ivy))
+  :init (setq projectile-completion-system 'ivy
+	      counsel-projectile-ag-initial-input '(ivy-thing-at-point)))
 
 (require 'cc-mode)
 (use-package counsel-gtags
@@ -1108,7 +1112,8 @@ also closes the buffer"
   ;; A modern on-the-fly syntax checking extension
   :hook ((c-mode-common . flycheck-mode)
 	 (python-mode . flycheck-mode)
-	 (sh-mode . flycheck-mode))
+	 (sh-mode . flycheck-mode)
+	 (julia-mode . flycheck-mode))
   :bind (("C-c f l" . flycheck-list-errors)
 	 ("C-c f e" . flycheck-display-error-at-point)
 	 ("C-c f v" . flycheck-verify-setup))
@@ -1174,12 +1179,21 @@ also closes the buffer"
 
 ;;; ..:: File management ::..
 
+;;;###autoload
+(defun danylo/maintain-xref-history (orig-fun &rest args)
+  "Push marker to stack to that M-, works to jump back."
+  (xref-push-marker-stack)
+  (apply orig-fun args))
+
+(advice-add 'counsel-projectile-ag :around #'danylo/maintain-xref-history)
+
 (use-package projectile
   ;; https://github.com/bbatsov/projectile
   ;; Project interaction library offering tools to operate on a project level
   :init (setq projectile-enable-caching nil)
   :bind (:map projectile-mode-map
-	      ("C-c p" . projectile-command-map))
+	      ("C-c p" . projectile-command-map)
+	      ("C-c p s g" . counsel-projectile-ag))
   :config
   (setq projectile-globally-ignored-directories
 	(append '(".svn" ".git")
@@ -1203,7 +1217,7 @@ also closes the buffer"
   ;; Your life in plain text
   :hook ((org-mode . danylo/org-mode-setup))
   :bind (:map org-mode-map
-	      ("C-x c s" . danylo/toggle-spellcheck)
+	      ("C-c x s" . danylo/toggle-spellcheck)
 	      ("M-." . org-open-at-point)
 	      ("M-," . org-mark-ring-goto))
   :init
@@ -1256,6 +1270,8 @@ also closes the buffer"
     (lambda () (interactive) (danylo/org-emphasize "/")))
   (define-key org-mode-map (kbd "C-c f u")
     (lambda () (interactive) (danylo/org-emphasize "_")))
+  (define-key org-mode-map (kbd "C-c f c")
+    (lambda () (interactive) (danylo/org-emphasize "~")))
   (define-key org-mode-map (kbd "C-c f e") 'danylo/org-emphasize-equation))
 
 ;;; ..:: Email ::..
@@ -1272,7 +1288,7 @@ also closes the buffer"
 	      :map mu4e-compose-mode-map
 	      ("C-c C-s C-s" . 'message-send)
 	      ("C-c C-a" . 'mail-add-attachment)
-	      ("C-x c s" . danylo/toggle-spellcheck))
+	      ("C-c x s" . danylo/toggle-spellcheck))
   :init
   (setq message-mail-user-agent t
 	mail-user-agent 'mu4e-user-agent
@@ -1531,7 +1547,6 @@ If there is no shell open, prints a message to inform."
 Source: https://www.reddit.com/r/emacs/comments/676r5b/how_to_stop_
         findfileatprompting_when_there_is_a/dgsr20f?utm_source=share&utm_
         medium=web2x&context=3"
-  (interactive)
   (let* ((name (or filename (ffap-string-at-point 'file)))
          (fname (expand-file-name name)))
     (if (and name fname (file-exists-p fname))
@@ -1551,8 +1566,22 @@ relative file paths."
     ;; Call xref as originally intended
     (apply orig-fun args)))
 
+(require 'ffap)
 (advice-add 'xref-find-definitions :around #'danylo/xref-find-definitions)
 ;; (advice-remove 'xref-find-definitions #'danylo/xref-find-definitions)
+
+;;;; If cannot find definition, search project with AG
+
+;;;###autoload
+(defun danylo/xref-find-defintion-with-ag-fallback (orig-fun &rest args)
+  "Use AG as a fallback in case xref standard command fails to
+find a definion."
+  (condition-case nil
+      (apply orig-fun args)
+      (user-error (counsel-projectile-ag))))
+
+(advice-add 'xref-find-definitions :around
+	    #'danylo/xref-find-defintion-with-ag-fallback)
 
 ;;; ..:: C/C++ ::..
 
@@ -1778,6 +1807,16 @@ lines according to the first line."
 	lsp-julia-default-environment "~/.julia/environments/v1.5")
   (require 'lsp-julia))
 
+(use-package julia-staticlint
+  ;; https://github.com/dmalyuta/julia-staticlint
+  ;; Emacs Flycheck support for StaticLint.jl
+  :ensure nil
+  :quelpa ((julia-staticlint :fetcher github
+			     :repo "dmalyuta/julia-staticlint"
+			     :files (:defaults "julia_staticlint.jl")))
+  :config
+  (julia-staticlint-setup))
+
 ;;;; Julia shell interaction
 
 ;;;###autoload
@@ -1928,7 +1967,7 @@ lines according to the first line."
 	      ("C-c i w" . ispell-word)
 	      ("C-x C-<backspace>" . electric-pair-delete-pair)
 	      ("C-c f e" . danylo/org-emphasize-equation)
-	      ("C-x c s" . danylo/toggle-spellcheck))
+	      ("C-c x s" . danylo/toggle-spellcheck))
   :config
   (require 'latex)
   ;; Shell-escape compilation

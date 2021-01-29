@@ -62,6 +62,30 @@
 		  'display '(raise -0.05))
     ""))
 
+;;;###autoload
+(cl-defun danylo/quelpa-use-package-upgrade (&key (reloadp t))
+  "Eval the current `use-package' form with `quelpa-upgrade-p' true.
+Delete the package first to remove obsolete versions.  When
+RELOADP is non-nil, reload the package's features after upgrade
+using `unpackaged/reload-package'; otherwise (interactively, with
+prefix), leave old features loaded.
+Source: https://github.com/alphapapa/unpackaged.el#upgrade-a-quelpa-use-package-forms-package"
+  (interactive (list :reloadp (not current-prefix-arg)))
+  (save-excursion
+    (if (or (looking-at (rx "(use-package "))
+            (let ((limit (save-excursion
+                           (or (re-search-backward (rx bol "("))
+                               (point-min)))))
+              ;; Don't go past previous top-level form
+              (re-search-backward (rx "(use-package ") limit t)))
+        (progn
+          (pcase-let* ((`(use-package ,package-name . ,rest) (read (current-buffer))))
+            (cl-assert package-name nil "Can't determine package name")
+            (cl-assert (memq :quelpa rest) nil "`:quelpa' form not found")
+            (let ((quelpa-upgrade-p t))
+              (call-interactively #'eval-defun))))
+      (user-error "Not in a `use-package' form"))))
+
 ;;; ..:: Garbage collection ::..
 
 ;; 100MB of garbage collection space once running
@@ -818,18 +842,22 @@ lines according to the first line."
 ;;;; Section delimiters
 
 ;;;###autoload
-(defun danylo/section-msg (left msg right start end)
+(defun danylo/section-msg (left msg right start end &optional nospace)
   "Section delimiters for comment.
 LEFT and RIGHT are the section delimineters.
 MSG is the section name.
-START and END give the start/end of current selection."
+START and END give the start/end of current selection.
+NOSPACE, if t, means that there is no spacing added between delimiters."
   (interactive "r")
   (if (use-region-p)
       (let ((regionp (buffer-substring start end)))
 	(delete-region start end)
-	(insert (format "%s %s %s" left regionp right)))
-    (insert (format "%s %s %s" left msg right)))
-  )
+	(if nospace
+	    (insert (format "%s%s%s" left regionp right))
+	  (insert (format "%s %s %s" left regionp right))))
+    (if nospace
+	(insert (format "%s%s%s" left msg right))
+      (insert (format "%s %s %s" left msg right)))))
 
 ;;;###autoload
 (defun danylo/code-section (start end)
@@ -1120,7 +1148,7 @@ also closes the buffer"
   :init
   (setq flycheck-enabled-checkers '(c/c++-gcc)
 	flycheck-check-syntax-automatically '(mode-enabled save)
-	flycheck-display-errors-delay 0.1)
+	flycheck-display-errors-delay 0.5)
   (add-hook 'flycheck-mode-hook
 	    (lambda ()
 	      (set-face-attribute 'flycheck-error nil
@@ -1813,9 +1841,11 @@ lines according to the first line."
   :ensure nil
   :quelpa ((julia-staticlint :fetcher github
 			     :repo "dmalyuta/julia-staticlint"
-			     :files (:defaults "julia_staticlint.jl")))
+			     :files (:defaults "julia_staticlint_server.jl"
+					       "julia_staticlint_client.jl")))
+  :hook ((julia-mode . julia-staticlint-activate))
   :config
-  (julia-staticlint-setup))
+  (julia-staticlint-init))
 
 ;;;; Julia shell interaction
 
@@ -1861,6 +1891,14 @@ lines according to the first line."
 		   "*+" "\\\\*" danylo/julia-buffer-name t t)))
     (add-to-list 'ivy-ignore-buffers `,buf-name)))
 (add-hook 'julia-mode-hook (lambda () (danylo/julia-config)))
+
+;;;; Block comment
+
+;;;###autoload
+(defun danylo/julia-block-comment (start end)
+  "Julia block comment."
+  (interactive "r")
+  (danylo/section-msg "\"\"\"\n" "" "\n\"\"\"" start end t))
 
 ;;; ..:: MATLAB ::..
 

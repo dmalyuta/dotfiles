@@ -1257,6 +1257,11 @@ also closes the buffer"
 
 (with-eval-after-load "org"
   (define-key org-mode-map [remap fill-paragraph] nil)
+  ;; Make sure buffer motion across windows keys are unaffected
+  (define-key org-mode-map (kbd "S-M-<up>") nil)
+  (define-key org-mode-map (kbd "S-M-<down>") nil)
+  (define-key org-mode-map (kbd "S-M-<left>") nil)
+  (define-key org-mode-map (kbd "S-M-<right>") nil)
   ;; LaTeX equations preview style
   (setq org-format-latex-options (plist-put org-format-latex-options
 					    :scale `,danylo/latex-preview-scale)

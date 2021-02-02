@@ -354,9 +354,6 @@ Source: https://emacs.stackexchange.com/a/50834/13661"
 
 ;;; ..:: Searching ::..
 
-(defvar danylo/num-completion-candidates 15
-  "How many completion candidates to display, tops.")
-
 (defun danylo/smart-select-region (start end)
   "Select region in file, removing possible indent of all
 lines according to the first line."
@@ -823,7 +820,8 @@ lines according to the first line."
 			    (when (featurep 'filladapt)
 			      (c-setup-filladapt))))
 	 (python-mode . filladapt-mode)
-	 (org-mode . filladapt-mode))
+	 (org-mode . filladapt-mode)
+	 (text-mode . filladapt-mode))
   :bind (("M-q" . 'fill-paragraph)
 	 ("M-r" . 'fill-region)))
 
@@ -1135,6 +1133,9 @@ also closes the buffer"
 
 ;;; ..:: Syntax checking ::..
 
+;; Size of flycheck error list
+(defconst flycheck-error-list-height 10)
+
 (use-package flycheck
   ;; https://github.com/flycheck/flycheck
   ;; A modern on-the-fly syntax checking extension
@@ -1142,9 +1143,9 @@ also closes the buffer"
 	 (python-mode . flycheck-mode)
 	 (sh-mode . flycheck-mode)
 	 (julia-mode . flycheck-mode))
-  :bind (("C-c f l" . flycheck-list-errors)
-	 ("C-c f e" . flycheck-display-error-at-point)
-	 ("C-c f v" . flycheck-verify-setup))
+  :bind (("C-c f e" . flycheck-display-error-at-point)
+	 ("C-c f v" . flycheck-verify-setup)
+	 ("C-c f l" . danylo/flycheck-list-errors))
   :init
   (setq flycheck-enabled-checkers '(c/c++-gcc)
 	flycheck-check-syntax-automatically '(mode-enabled save)
@@ -1155,6 +1156,49 @@ also closes the buffer"
 				  :underline `,danylo/red)
 	      (set-face-attribute 'flycheck-warning nil
 				  :underline `,danylo/yellow))))
+
+;;;###autoload
+(defun danylo/flycheck-list-errors ()
+  "Open the list of errors in the current buffer."
+  (interactive)
+  (unless flycheck-mode
+    (user-error "Flycheck mode not enabled"))
+  ;; Create and initialize the error list
+  (unless (get-buffer flycheck-error-list-buffer)
+    (with-current-buffer (get-buffer-create flycheck-error-list-buffer)
+      (flycheck-error-list-mode)))
+  ;; Reset the error filter
+  (flycheck-error-list-reset-filter)
+  ;; Open the error buffer
+  (if (get-buffer-window flycheck-error-list-buffer)
+      (pop-to-buffer flycheck-error-list-buffer)
+    (let ((this-window (selected-window))
+	  (new-window (split-window-vertically
+		       (* -1 (max 4 (min danylo/flycheck-error-list-size
+					 (/ (window-total-height) 2)))))))
+      (select-window new-window)
+      (switch-to-buffer flycheck-error-list-buffer)
+      (select-window this-window))))
+
+;;;###autoload
+(defun danylo/quit-and-kill-window (orig-fun &rest args)
+  "Optionally also kill the window after quitting it."
+  (setq delete-this-window nil)
+  ;; Check if window should be deleted
+  (mapc
+   (lambda (val)
+     (setq delete-this-window
+	   (or delete-this-window (string= (buffer-name) val)))
+     )
+   `(,flycheck-error-list-buffer))
+  ;; Quit or delete window as appropriate
+  (if delete-this-window
+      (progn
+	(apply orig-fun args)
+	(delete-window))
+    (apply orig-fun args)))
+
+(advice-add 'quit-window :around #'danylo/quit-and-kill-window)
 
 ;;;###autoload
 (defun danylo/toggle-spellcheck ()
@@ -1175,6 +1219,9 @@ also closes the buffer"
 				:underline `,danylo/red)
 	    (set-face-attribute 'flyspell-duplicate nil
 				:underline `,danylo/yellow)))
+
+(general-define-key
+ "C-c x s" 'danylo/toggle-spellcheck)
 
 ;;; ..:: Completion ::..
 
@@ -1266,7 +1313,12 @@ also closes the buffer"
   (setq org-format-latex-options (plist-put org-format-latex-options
 					    :scale `,danylo/latex-preview-scale)
 	org-format-latex-options (plist-put org-format-latex-options
-					    :foreground `,danylo/yellow)))
+					    :foreground `,danylo/yellow))
+  ;; Open PDF with Evince
+  ;; see: https://stackoverflow.com/a/9116029/4605946
+  (setcdr (assoc "\\.pdf\\'" org-file-apps) "evince %s")
+  (add-to-list 'org-file-apps
+	       '("\\.pdf::\\([0-9]+\\)\\'" . "evince -p %1 %s") t))
 
 ;;;###autoload
 (defun danylo/org-emphasize (char)
@@ -1483,8 +1535,7 @@ This version deletes backup files without asking."
 
 ;;;###autoload
 (defun danylo/shell-open (shell-buffer-name shell-type &optional in-place)
-  "Open a shell.
-Placed in the current buffer."
+  "Open a shell."
   (if (danylo/shell~check-open shell-buffer-name)
       ;; The shell buffer exists
       (if in-place

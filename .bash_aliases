@@ -23,6 +23,25 @@ pdfjoin() {
     pdftk "${input_pdf[@]}" cat output "${output_pdf[@]}"
 }
 
+# Extract PDF pages
+# Call: $ pdfgetpages <in.pdf> <page_start>[-page_end] <out.pdf>
+pdfgetpages() {
+    local length=$(($#-2))
+    local input_pdf=("$1")
+    local pages=("${@: 2:$length}")
+    local output_pdf=("${@: -1}")
+    if [ "$input_pdf" = "$output_pdf" ]; then
+	local random_string=$(tr -dc A-Za-z0-9 </dev/urandom | \
+				  head -c 13 ; echo '')
+	local output_pdf_tmp="${random_string}${output_pdf}"
+	pdftk "$input_pdf" cat "${pages[@]}" output "$output_pdf_tmp"
+	mv "$output_pdf_tmp" "$input_pdf"
+	rm -rf "$output_pdf_tmp"
+    else
+	pdftk "$input_pdf" cat "${pages[@]}" output "$output_pdf"
+    fi
+}
+
 # Kill processes matching grep
 alias killgrep='~/.bin/killgrep.sh'
 

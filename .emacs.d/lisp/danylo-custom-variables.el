@@ -82,6 +82,17 @@ in a while."
   :type 'float
   :group 'danylo)
 
+(defcustom danylo/num-completion-candidates 15
+  "How many completion candidates to display, tops."
+  :type 'integer
+  :group 'danylo)
+
+(defcustom danylo/flycheck-error-list-size
+  danylo/num-completion-candidates
+  "How many Flycheck errors to display, tops."
+  :type 'integer
+  :group 'danylo)
+
 ;;;; Faces
 
 ;; Colors taken from doom-one theme

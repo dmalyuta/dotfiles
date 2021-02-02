@@ -1003,6 +1003,28 @@ With argument ARG, do this that many times."
 (general-define-key
  "C-x c b" 'danylo/switch-to-minibuffer-window)
 
+;;;; Improve quit-window behavior (automatically delete-window sometimes)
+
+;;;###autoload
+(defun danylo/quit-and-kill-window (orig-fun &rest args)
+  "Optionally also kill the window after quitting it."
+  (setq delete-this-window nil)
+  ;; Check if window should be deleted
+  (require 'flycheck)
+  (mapc
+   (lambda (val)
+     (setq delete-this-window
+	   (or delete-this-window (string= (buffer-name) val))))
+   `(,flycheck-error-list-buffer))
+  ;; Quit or delete window as appropriate
+  (if delete-this-window
+      (progn
+	(apply orig-fun args)
+	(delete-window))
+    (apply orig-fun args)))
+
+(advice-add 'quit-window :around #'danylo/quit-and-kill-window)
+
 ;;; ..:: Terminal emulator ::..
 
 ;;;###autoload
@@ -1179,26 +1201,6 @@ also closes the buffer"
       (select-window new-window)
       (switch-to-buffer flycheck-error-list-buffer)
       (select-window this-window))))
-
-;;;###autoload
-(defun danylo/quit-and-kill-window (orig-fun &rest args)
-  "Optionally also kill the window after quitting it."
-  (setq delete-this-window nil)
-  ;; Check if window should be deleted
-  (mapc
-   (lambda (val)
-     (setq delete-this-window
-	   (or delete-this-window (string= (buffer-name) val)))
-     )
-   `(,flycheck-error-list-buffer))
-  ;; Quit or delete window as appropriate
-  (if delete-this-window
-      (progn
-	(apply orig-fun args)
-	(delete-window))
-    (apply orig-fun args)))
-
-(advice-add 'quit-window :around #'danylo/quit-and-kill-window)
 
 ;;;###autoload
 (defun danylo/toggle-spellcheck ()

@@ -39,6 +39,11 @@
   :type 'integer
   :group 'danylo)
 
+(defcustom danylo/side-window-width 30
+  "Column width for side windows (Neotree, Imenu-list, etc.)."
+  :type 'integer
+  :group 'danylo)
+
 (defcustom danylo/python-shell-type "ipython"
   "Which shell type to use for Python."
   :type 'string

@@ -360,33 +360,46 @@ Source: https://emacs.stackexchange.com/a/50834/13661"
 
 ;;; ..:: Searching ::..
 
+;;;###autoload
+(defun danylo/side-window-jump (fun buf-name)
+  "Smart go to a side window. If side window visible, jump
+there. If not visible, open it but don't focus."
+  (if (string= (format "%s" (current-buffer)) buf-name)
+      (danylo/switch-to-last-window)
+    (let ((current-window (selected-window))
+	  (side-window-exists (get-buffer-window buf-name t)))
+      (funcall fun)
+      (unless side-window-exists
+	;; Go back to current window if showing Imenu list when it was not
+	;; shown already shown
+	(select-window current-window)))))
+
+;;;###autoload
+(defun danylo/neotree-jump ()
+  "Smart open neotree side window."
+  (interactive)
+  (danylo/side-window-jump 'neotree-show neo-buffer-name))
+
 (use-package neotree
   ;; https://github.com/jaypei/emacs-neotree
   ;; A emacs tree plugin like NerdTree for Vim.
   :after (all-the-icons)
-  :bind (("C-c t n" . neotree-toggle))
-  :init (setq neo-theme (if (display-graphic-p) 'icons 'arrow)))
+  :bind (("C-c t n" . danylo/neotree-jump))
+  :init (setq neo-theme (if (display-graphic-p) 'icons 'arrow)
+	      neo-window-width danylo/side-window-width))
 
 ;;;###autoload
 (defun danylo/imenu-list-jump ()
-  "Activate and go to Imenu list."
+  "Smart open imenu-list side window."
   (interactive)
-  (if (string= (format "%s" (current-buffer)) imenu-list-buffer-name)
-      (danylo/switch-to-last-window)
-    (let ((current-window (selected-window))
-	  (imenu-list-exists (get-buffer-window
-			      imenu-list-buffer-name t)))
-      (imenu-list)
-      (unless imenu-list-exists
-	;; Go back to current window if showing Imenu list when it was not
-	;; shown already shown
-	(select-window current-window)))))
+  (danylo/side-window-jump 'imenu-list imenu-list-buffer-name))
 
 (use-package imenu-list
   ;; https://github.com/bmag/imenu-list
   ;; Emacs plugin to show the current buffer's imenu entries
   :bind (("C-c t i" . danylo/imenu-list-jump))
-  :init (setq imenu-list-size 30))
+  :init (setq imenu-list-size danylo/side-window-width
+	      imenu-list-position 'left))
 
 (defun danylo/smart-select-region (start end)
   "Select region in file, removing possible indent of all

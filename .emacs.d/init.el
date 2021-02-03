@@ -342,10 +342,16 @@ Source: https://emacs.stackexchange.com/a/50834/13661"
       ;; Traditional C-x C-c (kill Emacs)
       (save-buffers-kill-terminal))))
 
+;;;###autoload
+(defun danylo/make-new-frame ()
+  "Make a new frame, and make sure it behaves like I want."
+  (interactive)
+  (make-frame-command)
+  (danylo/set-whitespace-mode-colors))
+
 (general-define-key
  "C-x C-c" 'danylo/close-frame-or-kill-emacs
- "C-x n f" 'make-frame-command ; Make a new frame
- )
+ "C-x n f" 'danylo/make-new-frame)
 
 ;;;; Scrolling performance
 
@@ -353,6 +359,34 @@ Source: https://emacs.stackexchange.com/a/50834/13661"
       scroll-conservatively 0)
 
 ;;; ..:: Searching ::..
+
+(use-package neotree
+  ;; https://github.com/jaypei/emacs-neotree
+  ;; A emacs tree plugin like NerdTree for Vim.
+  :after (all-the-icons)
+  :bind (("C-c t n" . neotree-toggle))
+  :init (setq neo-theme (if (display-graphic-p) 'icons 'arrow)))
+
+;;;###autoload
+(defun danylo/imenu-list-jump ()
+  "Activate and go to Imenu list."
+  (interactive)
+  (if (string= (format "%s" (current-buffer)) imenu-list-buffer-name)
+      (danylo/switch-to-last-window)
+    (let ((current-window (selected-window))
+	  (imenu-list-exists (get-buffer-window
+			      imenu-list-buffer-name t)))
+      (imenu-list)
+      (unless imenu-list-exists
+	;; Go back to current window if showing Imenu list when it was not
+	;; shown already shown
+	(select-window current-window)))))
+
+(use-package imenu-list
+  ;; https://github.com/bmag/imenu-list
+  ;; Emacs plugin to show the current buffer's imenu entries
+  :bind (("C-c t i" . danylo/imenu-list-jump))
+  :init (setq imenu-list-size 30))
 
 (defun danylo/smart-select-region (start end)
   "Select region in file, removing possible indent of all
@@ -448,7 +482,6 @@ lines according to the first line."
   :bind (("M-i" . danylo/swiper-thing-at-point)
 	 ("C-x b" . danylo/counsel-switch-buffer-no-preview)
 	 ("M-x" . counsel-M-x)
-	 ("C-c q" . counsel-semantic-or-imenu)
 	 :map company-mode-map
 	 ("S-SPC" . counsel-company)
 	 :map ivy-minibuffer-map
@@ -508,6 +541,7 @@ lines according to the first line."
   ;; Emacs incremental completion and selection narrowing framework
   :ensure t
   :bind (("C-x C-f" . helm-find-files)
+	 ("C-c q" . helm-imenu)
 	 :map helm-map
 	 ("TAB" . helm-execute-persistent-action))
   :init (setq helm-display-buffer-default-height
@@ -937,20 +971,25 @@ With argument ARG, do this that many times."
 
 ;;;; Fill column (line width)
 
-(setq-default fill-column 79)
+(setq-default fill-column danylo/fill-column)
+
+;;;###autoload
+(defun danylo/set-whitespace-mode-colors ()
+  "Set colors for whitespace-mode for overflowing lines."
+  (set-face-attribute 'whitespace-line nil
+		      :foreground `,danylo/yellow
+		      :background nil
+		      :weight 'bold
+		      :inherit 'default))
 
 ;; Indicate lines that are too wide
 (use-package whitespace
   :ensure nil
   :init (setq whitespace-line-column nil
 	      whitespace-style '(face lines-tail))
+  (add-hook 'whitespace-mode-hook 'danylo/set-whitespace-mode-colors)
   :config
-  (global-whitespace-mode t)
-  ;; Face style for overflowing characters
-  (set-face-attribute 'whitespace-line nil
-		      :foreground `,danylo/yellow
-		      :background nil
-		      :bold t))
+  (global-whitespace-mode t))
 
 ;;; ..:: Window management ::..
 
@@ -961,6 +1000,16 @@ With argument ARG, do this that many times."
  "C-<right>" 'windmove-right
  "C-<up>" 'windmove-up
  "C-<down>" 'windmove-down)
+
+;;;###autoload
+(defun danylo/switch-to-last-window ()
+  "Return to the last active window."
+  (interactive)
+  (let ((win (get-mru-window t t t)))
+    (unless win (error "Last window not found"))
+    (let ((frame (window-frame win)))
+      (select-frame-set-input-focus frame)
+      (select-window win))))
 
 ;;;; >> Splitting windows <<
 
@@ -977,6 +1026,38 @@ With argument ARG, do this that many times."
 	      windsize-rows 1)
   :config
   (windsize-default-keybindings))
+
+;;;###autoload
+(defun danylo/set-window-width (width)
+  "Set the selected window's width."
+  (let ((delta (- width (window-width))))
+    (if (>= delta 0)
+	(enlarge-window-horizontally delta)
+      (shrink-window-horizontally (* -1 delta)))))
+
+;;;###autoload
+(defun danylo/set-window-columns-precise ()
+  "Set the selected window to user-specified number of columns.
+Default is 80"
+  (interactive)
+  (let ((desired-width
+	 (let ((user-input (read-string
+			    (format "input [default %d]: "
+				    danylo/fill-column))))
+	   (cond ((string= user-input "")
+		  ;; Default column width
+		  danylo/fill-column)
+		 ((not (string-match "\\`[1-9][0-9]*\\'" user-input))
+		  ;; Bad input - ignore
+		  nil)
+		 (t
+		  ;; Good input - record as an integer
+		  (string-to-number user-input))))))
+    (when desired-width
+      (danylo/set-window-width desired-width))))
+
+(general-define-key
+ "C-x ~" 'danylo/set-window-columns-precise)
 
 ;;;; >> Swapping windows between buffers <<
 
@@ -1825,14 +1906,12 @@ find a definion."
 
 ;;;###autoload
 (defun danylo/python-imenu ()
-  (interactive)
   (let ((python-imenu (imenu--generic-function
 		       imenu-generic-expression)))
     (append python-imenu)))
 
 ;;;###autoload
 (defun danylo/python-imenu-hooks ()
-  (interactive)
   (setq imenu-generic-expression
 	'(("Function" "^[[:blank:]]*def \\(.*\\).*(.*$" 1)
 	  ("Class" "^class \\(.*\\).*:$" 1)))
@@ -1842,7 +1921,6 @@ find a definion."
   )
 
 (add-hook 'python-mode-hook 'danylo/python-imenu-hooks)
-(add-hook 'lsp-mode-hook 'danylo/python-imenu-hooks)
 
 ;;;; Python shell interaction
 
@@ -2037,6 +2115,25 @@ lines according to the first line."
             (define-key map (kbd "q") 'kill-buffer-and-window)
             map)
   (read-only-mode +1))
+
+;;;; Imenu setup
+
+;;;###autoload
+(defun danylo/julia-imenu ()
+  (let ((python-imenu (imenu--generic-function
+		       imenu-generic-expression)))
+    (append python-imenu)))
+
+;;;###autoload
+(defun danylo/julia-imenu-hooks ()
+  (setq imenu-generic-expression
+	'(("Function" "^[[:blank:]]*function \\(.*\\).*(.*$" 1)
+	  ("Struct" "^.*struct \\(.*\\).*$" 1)))
+  (setq imenu-create-index-function 'danylo/julia-imenu)
+  ;; Rescan the buffer as contents are added
+  (setq imenu-auto-rescan t))
+
+(add-hook 'julia-mode-hook 'danylo/julia-imenu-hooks)
 
 ;;;; Block comment
 

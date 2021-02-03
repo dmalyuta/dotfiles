@@ -34,6 +34,11 @@
   :type 'float
   :group 'danylo)
 
+(defcustom danylo/fill-column 79
+  "Line width beyond which line wrapping should happen."
+  :type 'integer
+  :group 'danylo)
+
 (defcustom danylo/python-shell-type "ipython"
   "Which shell type to use for Python."
   :type 'string

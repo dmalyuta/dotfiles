@@ -1267,18 +1267,6 @@ also closes the buffer"
   (add-to-list 'company-backends 'company-shell)
   )
 
-(use-package company-math
-  ;; https://github.com/vspinu/company-math
-  ;; Completion back-ends for for math unicode symbols and latex tags
-  )
-
-;;;###autoload
-(defun danylo/company-unicode-activate ()
-  "Activate usage of unicode symbols completion."
-  (setq-local company-backends
-              (append '((company-math-symbols-unicode))
-                      company-backends)))
-
 ;;; ..:: File management ::..
 
 ;;;###autoload
@@ -1927,8 +1915,7 @@ lines according to the first line."
   ;; https://github.com/JuliaEditorSupport/julia-emacs
   ;; Major mode for the julia programming language
   :hook ((julia-mode . yas-minor-mode)
-	 (julia-mode . julia-math-mode)
-	 (julia-mode . danylo/company-unicode-activate))
+	 (julia-mode . julia-math-mode))
   :bind (:map julia-mode-map
 	      ("C-h ." . danylo/julia-help-at-point)))
 

@@ -54,6 +54,11 @@
   :type 'string
   :group 'danylo)
 
+(defcustom danylo/julia-help-buffer-name "*JuliaHelp*"
+  "Name of the Julia help buffer."
+  :type 'string
+  :group 'danylo)
+
 (defcustom danylo/ivy-window-name "*ivy-candidate-list*"
   "Name of ivy candidate list buffer."
   :type 'string

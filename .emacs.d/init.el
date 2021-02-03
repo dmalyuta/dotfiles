@@ -497,6 +497,8 @@ lines according to the first line."
   (add-to-list 'ivy-ignore-buffers '"\\*CPU-Profiler-Report.*\\*")
   (add-to-list 'ivy-ignore-buffers '"\\*TeX Help\\*")
   (add-to-list 'ivy-ignore-buffers '"\\*Buffer List\\*")
+  (add-to-list 'ivy-ignore-buffers '"\\*Julia")
+  (add-to-list 'ivy-ignore-buffers '"\\*Python")
   (add-to-list 'ivy-ignore-buffers '"magit.*:")
   :config
   (ivy-mode 1))
@@ -532,7 +534,12 @@ lines according to the first line."
 				  :foreground `,danylo/black
 				  :background `,danylo/yellow)
 	      (set-face-attribute 'helm-selection nil
-				  :extend nil)))
+				  :extend nil)
+	      (set-face-attribute 'helm-match nil
+				  :background `,danylo/orange
+				  :foreground `,danylo/black
+				  :weight 'normal
+				  :inherit 'default)))
   (add-to-list 'ivy-ignore-buffers '"\\*helm")
   :config
   (helm-mode 1))
@@ -1167,7 +1174,9 @@ also closes the buffer"
 	 (julia-mode . flycheck-mode))
   :bind (("C-c f e" . flycheck-display-error-at-point)
 	 ("C-c f v" . flycheck-verify-setup)
-	 ("C-c f l" . danylo/flycheck-list-errors))
+	 ("C-c f l" . danylo/flycheck-list-errors)
+	 :map flycheck-mode-map
+	 ("C-c ! l" . danylo/flycheck-list-errors))
   :init
   (setq flycheck-enabled-checkers '(c/c++-gcc)
 	flycheck-check-syntax-automatically '(mode-enabled save)
@@ -1192,15 +1201,19 @@ also closes the buffer"
   ;; Reset the error filter
   (flycheck-error-list-reset-filter)
   ;; Open the error buffer
-  (if (get-buffer-window flycheck-error-list-buffer)
-      (pop-to-buffer flycheck-error-list-buffer)
-    (let ((this-window (selected-window))
-	  (new-window (split-window-vertically
-		       (* -1 (max 4 (min danylo/flycheck-error-list-size
-					 (/ (window-total-height) 2)))))))
-      (select-window new-window)
-      (switch-to-buffer flycheck-error-list-buffer)
-      (select-window this-window))))
+  (let ((source (current-buffer)))
+    (if (get-buffer-window flycheck-error-list-buffer)
+	(progn
+	  (pop-to-buffer flycheck-error-list-buffer)
+	  (flycheck-error-list-set-source source))
+      (let ((this-window (selected-window))
+	    (new-window (split-window-vertically
+			 (* -1 (max 4 (min danylo/flycheck-error-list-size
+					   (/ (window-total-height) 2)))))))
+	(select-window new-window)
+	(switch-to-buffer flycheck-error-list-buffer)
+	(flycheck-error-list-set-source source)
+	(select-window this-window)))))
 
 ;;;###autoload
 (defun danylo/toggle-spellcheck ()
@@ -1253,6 +1266,18 @@ also closes the buffer"
   :config
   (add-to-list 'company-backends 'company-shell)
   )
+
+(use-package company-math
+  ;; https://github.com/vspinu/company-math
+  ;; Completion back-ends for for math unicode symbols and latex tags
+  )
+
+;;;###autoload
+(defun danylo/company-unicode-activate ()
+  "Activate usage of unicode symbols completion."
+  (setq-local company-backends
+              (append '((company-math-symbols-unicode))
+                      company-backends)))
 
 ;;; ..:: File management ::..
 
@@ -1577,6 +1602,34 @@ If there is no shell open, prints a message to inform."
 	(term-send-raw-string (format "%s\n" command)))
     (message "No shell open.")))
 
+;;;###autoload
+(defun danylo/shell-get-point (shell-buffer-name)
+  "Get the current location of point in the shell."
+  (setq current-point nil)
+  (if (danylo/shell~check-open shell-buffer-name)
+      (with-current-buffer shell-buffer-name
+	(danylo/switch-to-term-char-mode)
+	(danylo/switch-to-term-line-mode)
+	(setq current-point (point))
+	(danylo/switch-to-term-char-mode))
+    (message "No shell open."))
+  current-point)
+
+;;;###autoload
+(defun danylo/shell-get-content (shell-buffer-name start end)
+  "Get the shell text between START and END point positions."
+  (setq shell-content nil)
+  (if (danylo/shell~check-open shell-buffer-name)
+      (with-current-buffer shell-buffer-name
+	(setq in-char-mode (term-in-char-mode))
+	(danylo/switch-to-term-line-mode)
+	(let ((start (max start (point-min)))
+	      (end (min end (point-max))))
+	  (setq shell-content (buffer-substring start end)))
+	(when in-char-mode (danylo/switch-to-term-char-mode)))
+    (message "No shell open."))
+  shell-content)
+
 ;;; ..:: Language server protocol ::..
 
 ;; Increase the amount of data which Emacs reads from the process
@@ -1865,11 +1918,7 @@ lines according to the first line."
   (define-key python-mode-map (kbd "C-c C-s") 'danylo/python-shell-open)
   (define-key python-mode-map (kbd "C-c C-f") 'danylo/python-shell-run-file)
   (define-key python-mode-map (kbd "C-c C-r") 'danylo/python-shell-run-region)
-  (define-key python-mode-map (kbd "C-c C-p") nil)
-  ;; Hide shell buffers from buffer list
-  (let ((buf-name (replace-regexp-in-string
-		   "*+" "\\\\*" danylo/python-buffer-name t t)))
-    (add-to-list 'ivy-ignore-buffers `,buf-name)))
+  (define-key python-mode-map (kbd "C-c C-p") nil))
 (add-hook 'python-mode-hook (lambda () (danylo/python-config)))
 
 ;;; ..:: Julia ::..
@@ -1877,7 +1926,11 @@ lines according to the first line."
 (use-package julia-mode
   ;; https://github.com/JuliaEditorSupport/julia-emacs
   ;; Major mode for the julia programming language
-  :hook ((julia-mode . yas-minor-mode)))
+  :hook ((julia-mode . yas-minor-mode)
+	 (julia-mode . julia-math-mode)
+	 (julia-mode . danylo/company-unicode-activate))
+  :bind (:map julia-mode-map
+	      ("C-h ." . danylo/julia-help-at-point)))
 
 (use-package lsp-julia
   ;; https://github.com/non-Jedi/lsp-julia
@@ -1943,12 +1996,60 @@ lines according to the first line."
   (define-key julia-mode-map (kbd "C-c C-s") 'danylo/julia-shell-open)
   (define-key julia-mode-map (kbd "C-c C-f") 'danylo/julia-shell-run-file)
   (define-key julia-mode-map (kbd "C-c C-r") 'danylo/julia-shell-run-region)
-  (define-key julia-mode-map (kbd "C-c C-l") 'julia-latexsub-or-indent)
-  ;; Hide shell buffers from buffer list
-  (let ((buf-name (replace-regexp-in-string
-		   "*+" "\\\\*" danylo/julia-buffer-name t t)))
-    (add-to-list 'ivy-ignore-buffers `,buf-name)))
+  (define-key julia-mode-map (kbd "C-c C-l") 'julia-latexsub-or-indent))
 (add-hook 'julia-mode-hook (lambda () (danylo/julia-config)))
+
+;;;; Get help at point
+
+;;;###autoload
+(defun danylo/julia-help-at-point (&optional start end)
+  "Query Julia REPL for help about thing at point."
+  (interactive (if (use-region-p) (list (region-beginning) (region-end))))
+  (let ((thing (if start (buffer-substring start end)
+		 (thing-at-point 'symbol)))
+	(start-point (danylo/shell-get-point danylo/julia-buffer-name)))
+    (when start-point
+      ;; Record the help string
+      (danylo/shell-exec danylo/julia-buffer-name (format "?%s" thing))
+      (run-with-timer
+       0.5 nil
+       (lambda (start-point)
+	 ;; Get end point, removing the final "julia> " prompt
+	 (setq end-point (- (danylo/shell-get-point danylo/julia-buffer-name) 8))
+	 (setq julia-help-docstring
+	       (danylo/shell-get-content danylo/julia-buffer-name
+					 start-point end-point))
+	 ;; Show help buffer
+	 (let ((this-window (selected-window))
+	       (julia-help-existing-window
+		(get-buffer-window danylo/julia-help-buffer-name)))
+	   (when julia-help-existing-window
+	     (select-window julia-help-existing-window)
+	     (kill-buffer-and-window)
+	     (select-window this-window)))
+	 (let ((this-window (selected-window))
+	       (new-window (split-window-vertically)))
+	   (select-window new-window)
+	   (setq julia-help-buf
+		 (get-buffer-create danylo/julia-help-buffer-name))
+	   (switch-to-buffer julia-help-buf)
+	   (insert "[Press q to quit]\n\n")
+	   (insert julia-help-docstring)
+	   (danylo-julia-help-mode)
+	   (goto-char (point-min))
+	   ;; Go back to original window
+	   (select-window this-window))
+	 )
+       start-point))))
+
+(define-minor-mode danylo-julia-help-mode
+  "Minor mode for Julia help buffer."
+  :init-value nil
+  :lighter " danylo-julia-help"
+  :keymap (let ((map (make-sparse-keymap)))
+            (define-key map (kbd "q") 'kill-buffer-and-window)
+            map)
+  (read-only-mode +1))
 
 ;;;; Block comment
 

@@ -77,7 +77,7 @@ using Pkg
 Pkg.add(PackageSpec(url="https://github.com/julia-vscode/LanguageServer.jl"))
 Pkg.add(PackageSpec(url="https://github.com/julia-vscode/StaticLint.jl"))
 Pkg.add(PackageSpec(url="https://github.com/julia-vscode/SymbolServer.jl"))
-Pkg.add([Artifacts","ZipFile","BinaryProvider","Requires"])
+Pkg.add([Artifacts","ZipFile","BinaryProvider","Requires","ForwardDiff"])
 EOF
 fi
 

@@ -386,20 +386,67 @@ there. If not visible, open it but don't focus."
   :after (all-the-icons)
   :bind (("C-c t n" . danylo/neotree-jump))
   :init (setq neo-theme (if (display-graphic-p) 'icons 'arrow)
-	      neo-window-width danylo/side-window-width))
+	      neo-window-width danylo/side-window-width
+	      neo-smart-open t
+	      neo-show-hidden-files t
+	      neo-autorefresh t)
+  (add-hook 'after-init-hook (lambda () (require 'neotree))))
+
+(defvar danylo/imenu-list--displayed-window nil
+  "The **window** who owns the saved imenu entries.")
 
 ;;;###autoload
 (defun danylo/imenu-list-jump ()
   "Smart open imenu-list side window."
   (interactive)
+  (setq danylo/imenu-list--displayed-window (selected-window))
   (danylo/side-window-jump 'imenu-list imenu-list-buffer-name))
 
 (use-package imenu-list
   ;; https://github.com/bmag/imenu-list
   ;; Emacs plugin to show the current buffer's imenu entries
-  :bind (("C-c t i" . danylo/imenu-list-jump))
+  :bind (:map prog-mode-map
+	      ("C-c t i" . danylo/imenu-list-jump)
+	      :map imenu-list-major-mode-map
+	      ("C-c t i" . danylo/imenu-list-jump))
   :init (setq imenu-list-size danylo/side-window-width
-	      imenu-list-position 'left))
+	      imenu-list-position 'left
+	      imenu-list-mode-line-format
+	      '("%e" mode-line-front-space
+		(:propertize "%b" face mode-line-buffer-id) " "
+		(:eval (buffer-name imenu-list--displayed-buffer)) " "
+		mode-line-end-spaces))
+  (add-hook 'prog-mode-hook (lambda () (require 'imenu-list))))
+
+;; Patches to imenu so as to navigate using the **window** that owns the
+;; current Imenu, not the buffer. This way handles multiple windows showing the
+;; same buffer. Otherwise, the jump happens in the wrong window than the one
+;; the user was browsing.
+
+(require 'imenu-list)
+
+(defun imenu-list-goto-entry ()
+  "Switch to the original buffer and display the entry under point.
+Patched to use original **window** instead of buffer."
+  (interactive)
+  (let ((entry (imenu-list--find-entry)))
+    (select-window danylo/imenu-list--displayed-window)
+    (imenu entry)
+    (run-hooks 'imenu-list-after-jump-hook)
+    (imenu-list--show-current-entry)))
+
+(defun imenu-list-display-entry ()
+  "Display in original buffer the entry under point.
+Patched to use original **window** instead of buffer."
+  (interactive)
+  (let ((entry (imenu-list--find-entry)))
+    (save-selected-window
+      (select-window danylo/imenu-list--displayed-window)
+      (imenu entry)
+      (run-hooks 'imenu-list-after-jump-hook)
+      (imenu-list--show-current-entry))))
+
+;; (end of Imenu-list patches)
 
 (defun danylo/smart-select-region (start end)
   "Select region in file, removing possible indent of all
@@ -631,25 +678,8 @@ lines according to the first line."
   :hook ((prog-mode . rainbow-delimiters-mode)))
 
 ;;;;  Highlight matching parentheses
-;; Some code from https://emacs.stackexchange.com/a/40833/13661
-(require 'delsel)
 
 (setq show-paren-delay `,danylo/fontify-delay)
-
-;;;###autoload
-(defun danylo/show-paren-clear-highlight ()
-  "Turn off any previous paren highlighting."
-  (delete-overlay show-paren--overlay)
-  (delete-overlay show-paren--overlay-1))
-
-;;;###autoload
-(defun danylo/show-paren-update-on-insert ()
-  ;; A command with `delete-selection' property probably inserts text.
-  (if (get this-command 'delete-selection)
-      (show-paren-function)
-    (danylo/show-paren-clear-highlight)))
-(add-hook 'post-command-hook #'danylo/show-paren-update-on-insert)
-
 (show-paren-mode 1)
 
 (use-package solaire-mode
@@ -755,9 +785,31 @@ lines according to the first line."
 	      doom-modeline-project-detection 'project
 	      doom-modeline-enable-word-count nil)
   :config
+  ;;;; Custom segment definitions
+  (defsubst danylo/doom-modeline--multiple-cursors ()
+    "Show the number of multiple cursors."
+    (cl-destructuring-bind (count . face)
+	(cond ((bound-and-true-p multiple-cursors-mode)
+               (cons (mc/num-cursors)
+                     (if (doom-modeline--active)
+			 'doom-modeline-panel
+                       'mode-line-inactive)))
+              ((bound-and-true-p evil-mc-cursor-list)
+               (cons (length evil-mc-cursor-list)
+                     (cond ((not (doom-modeline--active)) 'mode-line-inactive)
+			   (evil-mc-frozen 'doom-modeline-bar)
+			   ('doom-modeline-panel))))
+              ((cons nil nil)))
+      (when count
+	(concat (propertize " mc:" 'face face)
+		(propertize (format "%d " count) 'face face)))))
+  (doom-modeline-def-segment danylo/matches
+    (let ((meta (concat (danylo/doom-modeline--multiple-cursors))))
+      meta))
+  ;;;; Custom modeline definitions
   ;; Default mode line
   (doom-modeline-def-modeline 'my-simple-line
-    '(matches buffer-info remote-host buffer-position parrot selection-info)
+    '(danylo/matches buffer-info remote-host buffer-position parrot selection-info)
     '(input-method debug lsp major-mode vcs process))
   (add-hook 'doom-modeline-mode-hook
 	    (lambda () (doom-modeline-set-modeline 'my-simple-line 'default)))
@@ -769,6 +821,11 @@ lines according to the first line."
   (doom-modeline-def-modeline 'dashboard
     '(window-number buffer-default-directory-simple)
     '(battery mu4e)))
+
+;; Redefine the multiple cursors segment of Doom modeline
+
+(require 'doom-modeline)
+
 
 ;; Activate the Doom modeline mode
 (add-hook 'after-init-hook (lambda () (doom-modeline-mode 1)))
@@ -2016,12 +2073,11 @@ lines according to the first line."
   :after lsp-mode
   :ensure nil
   :quelpa ((lsp-julia :fetcher github
-                      :repo "non-Jedi/lsp-julia"
-                      :files (:defaults "languageserver")))
+                      :repo "non-Jedi/lsp-julia"))
   :hook ((julia-mode . (lambda () (require 'lsp-julia) (lsp))))
+  :init (setq lsp-julia-package-dir nil
+	      lsp-julia-default-environment "~/.julia/environments/v1.5")
   :config
-  (setq lsp-julia-package-dir nil
-	lsp-julia-default-environment "~/.julia/environments/v1.5")
   (require 'lsp-julia))
 
 (use-package julia-staticlint
@@ -2113,10 +2169,15 @@ lines according to the first line."
 	   (switch-to-buffer julia-help-buf)
 	   (insert "[Press q to quit]\n\n")
 	   (insert julia-help-docstring)
+	   (special-mode)
 	   (danylo-julia-help-mode)
 	   (goto-char (point-min))
 	   ;; Go back to original window
-	   (select-window this-window))
+	   (select-window this-window)
+	   ;; Return to help window. Quitting will return cursor to original
+	   ;; window
+	   (select-window new-window)
+	   )
 	 )
        start-point))))
 
@@ -2141,7 +2202,8 @@ lines according to the first line."
 (defun danylo/julia-imenu-hooks ()
   (setq imenu-generic-expression
 	'(("Function" "^[[:blank:]]*function \\(.*\\).*(.*$" 1)
-	  ("Struct" "^.*struct \\(.*\\).*$" 1)))
+	  ("Struct" "^[^#]*\s+struct\s+\\(.*?\\)$" 1)
+	  ("Struct" "^struct\s+\\(.*?\\)$" 1)))
   (setq imenu-create-index-function 'danylo/julia-imenu)
   ;; Rescan the buffer as contents are added
   (setq imenu-auto-rescan t))
@@ -2154,7 +2216,7 @@ lines according to the first line."
 (defun danylo/julia-block-comment (start end)
   "Julia block comment."
   (interactive "r")
-  (danylo/section-msg "\"\"\"\n" "" "\n\"\"\"" start end t))
+  (danylo/section-msg "#=\n" "" "=#" start end t))
 
 ;;; ..:: MATLAB ::..
 

@@ -147,7 +147,8 @@
 		  (0 '(face danylo/class-other-face) t)
 		  (1 '(face danylo/class-keyword-face) t)
 		  (2 '(face danylo/class-name-face) t))
-		 ("^\s*\\(return\\|break\\|raise\\)" (1 '(face danylo/return-face) t))
+		 ("^\s*\\b\\(return\\|break\\|raise\\)\\b"
+		  (1 '(face danylo/return-face) t))
 		 ("^\s*\\(continue\\|pass\\)" (1 '(face danylo/continue-face) t))
 		 ("^\s*\\(function\\)\s+" (1 '(face danylo/function-face) t))
 		 ("\\(?:true\\|false\\)" (0 '(face danylo/bool-face) t))

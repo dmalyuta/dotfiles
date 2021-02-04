@@ -50,17 +50,29 @@
 ;;; ..:: General helper functions ::..
 
 ;;;###autoload
-(defun danylo/fa-icon (icon &optional fg)
+(defun danylo/fancy-icon (icon-lib icon-family icon &optional fg)
   "Fontawesome icon with proper formatting for minibuffer"
   (unless fg
     (setq fg `,(face-attribute 'default :foreground)))
   (if (window-system)
-      (propertize (all-the-icons-faicon icon)
-		  'face `(:family ,(all-the-icons-faicon-family)
+      (propertize (funcall icon-lib icon)
+		  'face `(:family ,(funcall icon-family)
 				  :height 0.95
 				  :foreground ,fg)
 		  'display '(raise -0.05))
     ""))
+
+;;;###autoload
+(defun danylo/fa-icon (icon &optional fg)
+  "Fontawesome icon with proper formatting."
+  (danylo/fancy-icon 'all-the-icons-faicon 'all-the-icons-faicon-family
+		     icon fg))
+
+;;;###autoload
+(defun danylo/octicon (icon &optional fg)
+  "Octicon with proper formatting."
+  (danylo/fancy-icon 'all-the-icons-octicon 'all-the-icons-octicon-family
+		     icon fg))
 
 ;;;###autoload
 (cl-defun danylo/quelpa-use-package-upgrade (&key (reloadp t))
@@ -601,6 +613,47 @@ lines according to the first line."
   :config
   (ivy-mode 1))
 
+;;;###autoload
+(defun danylo/company-adjust (start)
+  "Adjust bounds of thing at point.
+This is a 'patch' to handle things like @ and \\ in the prefix correctly."
+  (save-excursion
+    (goto-char start)
+    (when (or (= (char-before) ?\\)
+	      (= (char-before) ?@))
+      (setq start (1- start)))
+    start))
+
+(require 'counsel)
+;;;###autoload
+(defun counsel-company ()
+  "Complete using `company-candidates'.
+Patched so that symbols beginning with \\, @, etc. are correctly handled."
+  (interactive)
+  (company-complete)
+  (let ((len (cond (company-common
+		    (length company-common))
+		   (company-prefix
+		     (length company-prefix)))
+	     ))
+    (when (and len (> (length company-candidates) 0))
+      (setq ivy-completion-beg (- (point) len))
+      (setq ivy-completion-beg (danylo/company-adjust ivy-completion-beg))
+      (setq ivy-completion-end (point))
+      (ivy-read "Candidate: " company-candidates
+                :action #'ivy-completion-in-region-action
+                :caller 'counsel-company)
+      )))
+
+;;;###autoload
+(defun danylo/expand-unicode (orig-fun &rest args)
+  "Expand unicode symbol if necessary."
+  (apply orig-fun args)
+  (when (= (string-to-char (substring (nth 0 args) 0 1)) ?\\)
+    (julia-latexsub)))
+
+(advice-add 'ivy-completion-in-region-action :around #'danylo/expand-unicode)
+
 (use-package helm
   ;; https://emacs-helm.github.io/helm/
   ;; Emacs incremental completion and selection narrowing framework
@@ -778,7 +831,7 @@ lines according to the first line."
   ;; https://github.com/seagle0128/doom-modeline
   ;; A fancy and fast mode-line inspired by minimalism design.
   :init (setq doom-modeline-height 10
-	      doom-modeline-bar-width 3
+	      doom-modeline-bar-width 2
 	      doom-modeline-major-mode-icon nil
 	      doom-modeline-icon nil
 	      doom-modeline-buffer-state-icon nil
@@ -809,28 +862,45 @@ lines according to the first line."
 	(concat (propertize " mc:" 'face face)
 		(propertize (format "%d " count) 'face face)))))
   (doom-modeline-def-segment danylo/matches
+    "Show the number of active cursors in the buffer from `multiple-cursors'."
     (let ((meta (concat (danylo/doom-modeline--multiple-cursors))))
       meta))
+  (doom-modeline-def-segment danylo/mu4e
+    "Show notifications of any unread emails in `mu4e'."
+    (when (and doom-modeline-mu4e
+               (doom-modeline--active)
+               (not doom-modeline--limited-width-p)
+               (bound-and-true-p mu4e-alert-mode-line)
+               (numberp mu4e-alert-mode-line)
+               ;; don't display if the unread mails count is zero
+               (> mu4e-alert-mode-line 0))
+      (concat
+       (doom-modeline-spc)
+       (propertize
+        (format "mail:%d" mu4e-alert-mode-line)
+        'face '(:inherit (doom-modeline-unread-number
+			  doom-modeline-warning)))
+       (doom-modeline-spc))
+      ))
+  (add-hook 'doom-modeline-mode-hook
+	    (lambda ()
+	      (set-face-attribute 'doom-modeline-vspc-face nil
+				  :inherit 'mode-line)))
   ;;;; Custom modeline definitions
   ;; Default mode line
   (doom-modeline-def-modeline 'my-simple-line
-    '(danylo/matches buffer-info remote-host buffer-position parrot selection-info)
-    '(input-method debug lsp major-mode vcs process))
+    '(bar danylo/matches buffer-info remote-host buffer-position parrot selection-info)
+    '(danylo/mu4e input-method debug lsp major-mode vcs process))
   (add-hook 'doom-modeline-mode-hook
 	    (lambda () (doom-modeline-set-modeline 'my-simple-line 'default)))
   ;; Helm mode line
   (doom-modeline-def-modeline 'helm
-    '(helm-buffer-id helm-number helm-follow helm-prefix-argument)
+    '(bar helm-buffer-id helm-number helm-follow helm-prefix-argument)
     '())
   ;; Dashboard mode line
   (doom-modeline-def-modeline 'dashboard
-    '(window-number buffer-default-directory-simple)
-    '(battery mu4e)))
-
-;; Redefine the multiple cursors segment of Doom modeline
-
-(require 'doom-modeline)
-
+    '(bar window-number buffer-default-directory-simple)
+    '(battery danylo/mu4e)))
 
 ;; Activate the Doom modeline mode
 (add-hook 'after-init-hook (lambda () (doom-modeline-mode 1)))
@@ -1593,7 +1663,11 @@ also closes the buffer"
 (with-eval-after-load "mu4e"
   ;; Disable message sending with C-c C-s (make it more complicated to
   ;; not send messages by accident)
-  (define-key mu4e-headers-mode-map (kbd "C-c C-s") 'nil))
+  (define-key mu4e-headers-mode-map (kbd "C-c C-s") 'nil)
+  ;; Update mail periodically in the background
+  (run-with-timer `,danylo/email-refresh-period
+		  `,danylo/email-refresh-period
+		  (lambda () (mu4e-update-mail-and-index t))))
 
 ;;;###autoload
 (defun danylo/mu4e~headers-remove-handler (docid &optional skip-hook)
@@ -1687,7 +1761,8 @@ This version deletes backup files without asking."
 (use-package mu4e-alert
   ;; https://github.com/iqbalansari/mu4e-alert
   ;; Desktop notifications and modeline display for mu4e
-  )
+  :init
+  (add-hook 'after-init-hook #'mu4e-alert-enable-mode-line-display))
 
 ;;; ..:: Git ::..
 

@@ -1613,8 +1613,12 @@ also closes the buffer"
 	      ("x" . (lambda () (interactive) (mu4e-mark-execute-all t)))
 	      :map mu4e-compose-mode-map
 	      ("C-c C-s C-s" . 'message-send)
+	      ("C-c C-c" . nil)
 	      ("C-c C-a" . 'mail-add-attachment)
-	      ("C-c x s" . danylo/toggle-spellcheck))
+	      ("C-c x s" . danylo/toggle-spellcheck)
+	      :map mu4e-main-mode-map
+	      ("C-c C-u" . danylo/get-mail)
+	      ("U" . danylo/get-mail))
   :init
   (setq message-mail-user-agent t
 	mail-user-agent 'mu4e-user-agent
@@ -1660,6 +1664,12 @@ also closes the buffer"
   (advice-add #'shr-colorize-region :around
 	      (defun shr-no-colourise-region (&rest ignore))))
 
+;;;###autoload
+(defun danylo/get-mail (arg)
+  "Get new email silently."
+  (interactive "P")
+  (mu4e-update-mail-and-index t))
+
 (with-eval-after-load "mu4e"
   ;; Disable message sending with C-c C-s (make it more complicated to
   ;; not send messages by accident)
@@ -1667,7 +1677,7 @@ also closes the buffer"
   ;; Update mail periodically in the background
   (run-with-timer `,danylo/email-refresh-period
 		  `,danylo/email-refresh-period
-		  (lambda () (mu4e-update-mail-and-index t))))
+		  (lambda () (danylo/get-mail))))
 
 ;;;###autoload
 (defun danylo/mu4e~headers-remove-handler (docid &optional skip-hook)

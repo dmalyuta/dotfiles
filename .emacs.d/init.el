@@ -584,6 +584,11 @@ lines according to the first line."
 				  :extend nil
 				  :height 1.0)))
   (add-to-list 'ivy-ignore-buffers '"\\*ivy-")
+  (add-to-list 'ivy-ignore-buffers '"\\*lsp-")
+  (add-to-list 'ivy-ignore-buffers '"\\*Flycheck")
+  (add-to-list 'ivy-ignore-buffers '"\\*Help")
+  (add-to-list 'ivy-ignore-buffers '"\\*Ilist")
+  (add-to-list 'ivy-ignore-buffers '"\\*dashboard\\*")
   (add-to-list 'ivy-ignore-buffers '"\\*xref\\*")
   (add-to-list 'ivy-ignore-buffers '"\\*toc\\*")
   (add-to-list 'ivy-ignore-buffers '"\\*Compile-Log\\*")

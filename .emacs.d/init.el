@@ -42,10 +42,24 @@
 
 ;;; ..:: Customization variables ::..
 
+;;;###autoload
+(defun danylo/make-path (rel-path)
+  "Prepend emacs home directory to relative path in the home
+directory."
+  (expand-file-name rel-path user-emacs-directory))
+
+(defconst danylo/emacs-custom-lisp-dir
+  `,(danylo/make-path "lisp/")
+  "Location of additional custom Lisp code directory.")
+
+(defconst danylo/emacs-backup-dir
+  `,(danylo/make-path "backups/")
+  "Location where backup files are saved.")
+
 (use-package danylo-custom-variables
   ;; Customization variables for init file.
   :ensure nil
-  :load-path "lisp/")
+  :load-path danylo/emacs-custom-lisp-dir)
 
 ;;; ..:: General helper functions ::..
 
@@ -113,8 +127,7 @@ Source: https://github.com/alphapapa/unpackaged.el#upgrade-a-quelpa-use-package-
 	     (not (active-minibuffer-window)))
     (let ((message-log-max nil))
       ;; Print "<TRASH_ICON> GC"
-      (message "%s %s" (danylo/fa-icon "trash-o" `,danylo/faded)
-	       (propertize "GC" 'face `(:foreground ,danylo/faded)))
+      (danylo/print-in-minibuffer (format "%s GC" (danylo/fa-icon "trash-o")))
       )))
 
 (add-hook 'post-gc-hook (lambda () (danylo/gc-message)))
@@ -175,18 +188,22 @@ Source: https://github.com/alphapapa/unpackaged.el#upgrade-a-quelpa-use-package-
 ;; Do not resize minibuffer for long path on file save
 
 ;;;###autoload
+(defun danylo/print-in-minibuffer (str)
+  "Echo STR in the minibuffer."
+  (with-selected-window (minibuffer-window)
+    (setq cursor-type nil)
+    (message (propertize str 'face `(:foreground ,danylo/faded)))
+    (setq cursor-type t)))
+
+;;;###autoload
 (defadvice save-buffer (around danylo/minibuffer-preserve-size-on-save)
   "Don't increase the size of the echo area if the path of the
 file being saved is too long to show on one line."
   (let ((message-truncate-lines t)
 	(this-file-name (file-name-nondirectory (buffer-file-name))))
     ad-do-it
-    (with-selected-window (minibuffer-window)
-      ;; Print a custom save message
-      (message "%s %s" (danylo/fa-icon "archive" `,danylo/faded)
-	       (propertize `,(concat "Saved " this-file-name) 'face
-			   `(:foreground ,danylo/faded)))
-      )))
+    (danylo/print-in-minibuffer
+     (format "%s Saved %s" (danylo/fa-icon "archive") this-file-name))))
 
 (add-hook 'after-init-hook (lambda () (ad-activate 'save-buffer)))
 
@@ -214,8 +231,7 @@ file being saved is too long to show on one line."
 (setq initial-scratch-message ";; Change The World")
 
 ;; Keep init.el clean from custom-set-variable
-(setq-default custom-file
-	      (expand-file-name ".custom.el" user-emacs-directory))
+(setq-default custom-file (danylo/make-path ".custom.el"))
 (when (file-exists-p custom-file)
   (load custom-file))
 
@@ -295,16 +311,15 @@ file being saved is too long to show on one line."
 (setq backup-by-copying t)
 
 ;; Backup behaviour: store everything in single location
-(defvar danylo/backup-dir "~/.emacs.d/backups/")
-(setq backup-directory-alist (list (cons "." danylo/backup-dir)))
-(setq auto-save-file-name-transforms `((".*" ,danylo/backup-dir t)))
+(setq backup-directory-alist (list (cons "." danylo/emacs-backup-dir)))
+(setq auto-save-file-name-transforms `((".*" ,danylo/emacs-backup-dir t)))
 (setq auto-save-default nil) ;; Disable auto-save (I save myself)
 
 (defun danylo/byte-compile-init-dir ()
   "Byte-compile Emacs config."
   (interactive)
-  (byte-recompile-file "~/.emacs.d/init.el" nil 0)
-  (byte-recompile-directory "~/.emacs.d/lisp" 0))
+  (byte-recompile-file (danylo/make-path "init.el") nil 0)
+  (byte-recompile-directory danylo/emacs-custom-lisp-dir 0))
 
 ;;;; Dired (directory listing)
 
@@ -435,9 +450,8 @@ there. If not visible, open it but don't focus."
 ;; same buffer. Otherwise, the jump happens in the wrong window than the one
 ;; the user was browsing.
 
-(require 'imenu-list)
-
-(defun imenu-list-goto-entry ()
+;;;###autoload
+(defun danylo/imenu-list-goto-entry (orig-fun &rest args)
   "Switch to the original buffer and display the entry under point.
 Patched to use original **window** instead of buffer."
   (interactive)
@@ -446,8 +460,10 @@ Patched to use original **window** instead of buffer."
     (imenu entry)
     (run-hooks 'imenu-list-after-jump-hook)
     (imenu-list--show-current-entry)))
+(advice-add 'imenu-list-goto-entry :around #'danylo/imenu-list-goto-entry)
 
-(defun imenu-list-display-entry ()
+;;;###autoload
+(defun danylo/imenu-list-display-entry (orig-fun &rest args)
   "Display in original buffer the entry under point.
 Patched to use original **window** instead of buffer."
   (interactive)
@@ -457,6 +473,7 @@ Patched to use original **window** instead of buffer."
       (imenu entry)
       (run-hooks 'imenu-list-after-jump-hook)
       (imenu-list--show-current-entry))))
+(advice-add 'imenu-list-display-entry :around #'danylo/imenu-list-display-entry)
 
 ;; (end of Imenu-list patches)
 
@@ -510,7 +527,9 @@ lines according to the first line."
 		(substring text 1 nil))
 	  (insert (propertize danylo/completion-candidate-list
 			      'display '(height 1.0))))
-	(setq-local truncate-lines t))
+	(setq-local truncate-lines t)
+	;; "Hack" to make sure that viewing start of line
+	(move-beginning-of-line 0))
       (with-ivy-window
 	(let ((window (selected-window)))
 	  (if (window-parameter window 'window-side)
@@ -526,9 +545,7 @@ lines according to the first line."
 	     buffer
 	     `((display-buffer-reuse-window display-buffer-below-selected)
 	       (window-height . ,danylo/num-completion-candidates))))))
-      )
-    )
-  )
+      )))
 
 ;;;###autoload
 (defun danylo/side-window-tmp ()
@@ -595,21 +612,13 @@ lines according to the first line."
 	      (set-face-attribute 'ivy-current-match nil
 				  :extend nil
 				  :height 1.0)))
-  (add-to-list 'ivy-ignore-buffers '"\\*ivy-")
-  (add-to-list 'ivy-ignore-buffers '"\\*lsp-")
-  (add-to-list 'ivy-ignore-buffers '"\\*Flycheck")
-  (add-to-list 'ivy-ignore-buffers '"\\*Help")
-  (add-to-list 'ivy-ignore-buffers '"\\*Ilist")
-  (add-to-list 'ivy-ignore-buffers '"\\*dashboard\\*")
-  (add-to-list 'ivy-ignore-buffers '"\\*xref\\*")
-  (add-to-list 'ivy-ignore-buffers '"\\*toc\\*")
-  (add-to-list 'ivy-ignore-buffers '"\\*Compile-Log\\*")
-  (add-to-list 'ivy-ignore-buffers '"\\*CPU-Profiler-Report.*\\*")
-  (add-to-list 'ivy-ignore-buffers '"\\*TeX Help\\*")
-  (add-to-list 'ivy-ignore-buffers '"\\*Buffer List\\*")
-  (add-to-list 'ivy-ignore-buffers '"\\*Julia")
-  (add-to-list 'ivy-ignore-buffers '"\\*Python")
-  (add-to-list 'ivy-ignore-buffers '"magit.*:")
+  (setq ivy-ignore-buffers
+	(append ivy-ignore-buffers
+		'("\\*ivy-" "\\*lsp-" "\\*quelpa-" "\\*Flycheck" "\\*Help"
+		  "\\*Ilist" "\\*dashboard\\*" "\\*xref\\*" "\\*toc\\*"
+		  "\\*Compile-Log\\*" "\\*CPU-Profiler-Report.*\\*"
+		  "\\*TeX Help\\*" "\\*Buffer List\\*" "\\*Julia" "\\*Python"
+		  "magit.*:")))
   :config
   (ivy-mode 1))
 
@@ -624,9 +633,8 @@ This is a 'patch' to handle things like @ and \\ in the prefix correctly."
       (setq start (1- start)))
     start))
 
-(require 'counsel)
 ;;;###autoload
-(defun counsel-company ()
+(defun danylo/counsel-company (orig-fun &rest args)
   "Complete using `company-candidates'.
 Patched so that symbols beginning with \\, @, etc. are correctly handled."
   (interactive)
@@ -644,6 +652,7 @@ Patched so that symbols beginning with \\, @, etc. are correctly handled."
                 :action #'ivy-completion-in-region-action
                 :caller 'counsel-company)
       )))
+(advice-add 'counsel-company :around #'danylo/counsel-company)
 
 ;;;###autoload
 (defun danylo/expand-unicode (orig-fun &rest args)
@@ -844,26 +853,9 @@ Patched so that symbols beginning with \\, @, etc. are correctly handled."
 	      doom-modeline-enable-word-count nil)
   :config
   ;;;; Custom segment definitions
-  (defsubst danylo/doom-modeline--multiple-cursors ()
-    "Show the number of multiple cursors."
-    (cl-destructuring-bind (count . face)
-	(cond ((bound-and-true-p multiple-cursors-mode)
-               (cons (mc/num-cursors)
-                     (if (doom-modeline--active)
-			 'doom-modeline-panel
-                       'mode-line-inactive)))
-              ((bound-and-true-p evil-mc-cursor-list)
-               (cons (length evil-mc-cursor-list)
-                     (cond ((not (doom-modeline--active)) 'mode-line-inactive)
-			   (evil-mc-frozen 'doom-modeline-bar)
-			   ('doom-modeline-panel))))
-              ((cons nil nil)))
-      (when count
-	(concat (propertize " mc:" 'face face)
-		(propertize (format "%d " count) 'face face)))))
   (doom-modeline-def-segment danylo/matches
     "Show the number of active cursors in the buffer from `multiple-cursors'."
-    (let ((meta (concat (danylo/doom-modeline--multiple-cursors))))
+    (let ((meta (concat (danylo/doom-modeline-multiple-cursors))))
       meta))
   (doom-modeline-def-segment danylo/mu4e
     "Show notifications of any unread emails in `mu4e'."
@@ -876,10 +868,22 @@ Patched so that symbols beginning with \\, @, etc. are correctly handled."
                (> mu4e-alert-mode-line 0))
       (concat
        (doom-modeline-spc)
-       (propertize
-        (format "mail:%d" mu4e-alert-mode-line)
-        'face '(:inherit (doom-modeline-unread-number
-			  doom-modeline-warning)))
+       (format "%s %s"
+	       (propertize
+		;; Trick: to make the alignment correct, replace spaces with
+		;; the icons, which lets Emacs know that the envelope icon
+		;; takes up the column amount equivalent to that many spaces
+		"  "
+		'face `(:inherit (doom-modeline-unread-number
+				  doom-modeline-warning))
+		'display
+		(propertize (danylo/fa-icon "envelope")
+			    'face `(:family ,(all-the-icons-faicon-family)
+					    :inherit (doom-modeline-unread-number
+						      doom-modeline-warning))))
+	       (propertize `,(format "%s" mu4e-alert-mode-line)
+			   'face '(:inherit (doom-modeline-unread-number
+					     doom-modeline-warning))))
        (doom-modeline-spc))
       ))
   (add-hook 'doom-modeline-mode-hook
@@ -888,36 +892,95 @@ Patched so that symbols beginning with \\, @, etc. are correctly handled."
 				  :inherit 'mode-line)))
   ;;;; Custom modeline definitions
   ;; Default mode line
-  (doom-modeline-def-modeline 'my-simple-line
+  (doom-modeline-def-modeline 'danylo/mode-line
     '(bar danylo/matches buffer-info remote-host buffer-position parrot selection-info)
-    '(danylo/mu4e input-method debug lsp major-mode vcs process))
+    '(danylo/mu4e input-method debug lsp major-mode vcs))
   (add-hook 'doom-modeline-mode-hook
-	    (lambda () (doom-modeline-set-modeline 'my-simple-line 'default)))
+	    (lambda () (doom-modeline-set-modeline 'danylo/mode-line 'default)))
   ;; Helm mode line
   (doom-modeline-def-modeline 'helm
-    '(bar helm-buffer-id helm-number helm-follow helm-prefix-argument)
-    '())
+    '(bar helm-buffer-id helm-number helm-follow helm-prefix-argument) '())
   ;; Dashboard mode line
   (doom-modeline-def-modeline 'dashboard
-    '(bar window-number buffer-default-directory-simple)
-    '(battery danylo/mu4e)))
+    '(bar window-number buffer-default-directory-simple) '(danylo/mu4e))
+  ;; Messages and scratch buffer mode line
+  (doom-modeline-def-modeline 'danylo/bare-modeline
+    '(bar window-number buffer-info-simple) '(danylo/mu4e))
+  (add-hook 'after-init-hook
+	    (lambda ()
+	      (dolist (bname '("*scratch*" "*Messages*"))
+		(if (buffer-live-p (get-buffer bname))
+		    (with-current-buffer bname
+		      (doom-modeline-set-modeline 'danylo/bare-modeline)))))))
 
 ;; Activate the Doom modeline mode
 (add-hook 'after-init-hook (lambda () (doom-modeline-mode 1)))
 
+;;;###autoload
+(defun danylo/doom-modeline-multiple-cursors ()
+  "Show the number of multiple cursors."
+  (cl-destructuring-bind (count . face)
+      (cond ((bound-and-true-p multiple-cursors-mode)
+             (cons (mc/num-cursors)
+                   (if (doom-modeline--active)
+		       'doom-modeline-panel
+                     'mode-line-inactive)))
+            ((bound-and-true-p evil-mc-cursor-list)
+             (cons (length evil-mc-cursor-list)
+                   (cond ((not (doom-modeline--active)) 'mode-line-inactive)
+			 (evil-mc-frozen 'doom-modeline-bar)
+			 ('doom-modeline-panel))))
+            ((cons nil nil)))
+    (when count
+      (concat (propertize " mc:" 'face face)
+	      (propertize (format "%d " count) 'face face)))))
+
+;;;###autoload
+(defun danylo/doom-modeline-update-vcs-icon (orig-fun &rest args)
+  "Update icon of vcs state in mode-line.
+Patched for my own icons."
+  (setq doom-modeline--vcs-icon
+        (when (and vc-mode buffer-file-name)
+          (let* ((backend (vc-backend buffer-file-name))
+                 (state   (vc-state buffer-file-name backend)))
+            (cond ((memq state '(edited added))
+		   (propertize (danylo/octicon "git-compare") 'face
+   		    	       `(:family ,(all-the-icons-octicon-family)
+					 :inherit doom-modeline-warning)))
+                  ((eq state 'needs-merge)
+                   (propertize (danylo/octicon "git-merge") 'face
+   		    	       `(:family ,(all-the-icons-octicon-family)
+					 :inherit doom-modeline-warning)))
+                  ((eq state 'needs-update)
+                   (propertize (danylo/octicon "arrow-down") 'face
+   		    	       `(:family ,(all-the-icons-octicon-family)
+					 :inherit doom-modeline-warning)))
+                  ((memq state '(removed conflict unregistered))
+                   (propertize (danylo/octicon "alert") 'face
+   		    	       `(:family ,(all-the-icons-octicon-family)
+					 :inherit doom-modeline-warning)))
+                  (t
+		   (propertize (danylo/octicon "git-branch") 'face
+   		    	       `(:family ,(all-the-icons-octicon-family)
+					 :inherit doom-modeline-warning))))))))
+
+(advice-add 'doom-modeline-update-vcs-icon
+	    :around #'danylo/doom-modeline-update-vcs-icon)
+
 (use-package danylo-text-font-lock
   ;; Personal minor mode for text document highlighting
   :ensure nil
-  :load-path "lisp/"
+  :load-path danylo/emacs-custom-lisp-dir
   :hook ((LaTeX-mode . danylo-text-font-lock-mode)
 	 (org-mode . danylo-text-font-lock-mode)))
 
 (use-package danylo-prog-font-lock
   ;; Personal minor mode for code highlighting
   :ensure nil
-  :load-path "lisp/"
+  :load-path danylo/emacs-custom-lisp-dir
   :hook ((python-mode . danylo-prog-font-lock-mode)
 	 (julia-mode . danylo-prog-font-lock-mode)))
+(require 'danylo-prog-font-lock)
 
 ;;; ..:: Code editing ::..
 
@@ -1135,6 +1198,9 @@ With argument ARG, do this that many times."
   (add-hook 'whitespace-mode-hook 'danylo/set-whitespace-mode-colors)
   :config
   (global-whitespace-mode t))
+
+(require 'whitespace)
+(danylo/set-whitespace-mode-colors)
 
 ;;; ..:: Window management ::..
 
@@ -1442,6 +1508,30 @@ also closes the buffer"
 	(select-window this-window)))))
 
 ;;;###autoload
+(defun danylo/flycheck-jump-in-buffer (orig-fun &rest args)
+  "In BUFFER, jump to ERROR.
+Patched so that if the last window visited is the buffer, jump to that one.
+This improves the default behaviour of just jumping to any open window that
+holds the buffer, which can be erratic.
+The remainder of the function is a carbon-copy from Flycheck."
+  (setq buffer (nth 0 args)
+	error (nth 1 args))
+  (if (eq (window-buffer) (get-buffer flycheck-error-list-buffer))
+      (progn
+	;; The patch: try first by going to last window
+	(let ((current-window (selected-window)))
+	  (danylo/switch-to-last-window)
+	  (unless (eq (current-buffer) buffer)
+	    (pop-to-buffer buffer 'other-window))))
+    (switch-to-buffer buffer))
+  (let ((pos (flycheck-error-pos error)))
+    (unless (eq (goto-char pos) (point))
+      (widen)
+      (goto-char pos)))
+  (flycheck-error-list-highlight-errors 'preserve-pos))
+(advice-add 'flycheck-jump-in-buffer :around #'danylo/flycheck-jump-in-buffer)
+
+;;;###autoload
 (defun danylo/toggle-spellcheck ()
   "Turn on spell checking."
   (interactive)
@@ -1665,11 +1755,13 @@ also closes the buffer"
 	      (defun shr-no-colourise-region (&rest ignore))))
 
 ;;;###autoload
-(defun danylo/get-mail (arg)
+(defun danylo/get-mail (&optional arg)
   "Get new email silently."
   (interactive "P")
-  (mu4e-update-mail-and-index t))
-
+  (mu4e-update-mail-and-index t)
+  (danylo/print-in-minibuffer
+   (format "%s Refreshed inbox" (danylo/octicon "database"))))
+(forward-list)
 (with-eval-after-load "mu4e"
   ;; Disable message sending with C-c C-s (make it more complicated to
   ;; not send messages by accident)
@@ -1697,7 +1789,7 @@ benefit of preserving window layout."
     (run-hooks 'mu4e-message-changed-hook)))
 
 ;;;###autoload
-(defun message-kill-buffer ()
+(defun danylo/message-kill-buffer (orig-fun &rest args)
   "Patched message-kill-buffer from gnus/message.el.gz.
 This version deletes backup files without asking."
   (interactive)
@@ -1720,6 +1812,7 @@ This version deletes backup files without asking."
 	(let ((message-draft-article draft-article))
 	  (message-disassociate-draft)))
       (message-do-actions actions))))
+(advice-add 'message-kill-buffer :around #'danylo/message-kill-buffer)
 
 ;;;###autoload
 (defun danylo/launch-mu4e (arg)
@@ -1745,7 +1838,7 @@ This version deletes backup files without asking."
 (use-package danylo-email
   ;; Personal mu4e context setup.
   :ensure nil
-  :load-path "lisp/")
+  :load-path danylo/emacs-custom-lisp-dir)
 
 ;;;; Signature before message history
 
@@ -2152,8 +2245,7 @@ lines according to the first line."
 (use-package julia-mode
   ;; https://github.com/JuliaEditorSupport/julia-emacs
   ;; Major mode for the julia programming language
-  :hook ((julia-mode . yas-minor-mode)
-	 (julia-mode . julia-math-mode))
+  :hook ((julia-mode . yas-minor-mode))
   :bind (:map julia-mode-map
 	      ("C-h ." . danylo/julia-help-at-point)))
 
@@ -2442,12 +2534,12 @@ lines according to the first line."
   (add-to-list 'LaTeX-indent-environment-list '("pykzmathblock" current-indentation))
   (add-to-list 'LaTeX-indent-environment-list '("@pie@shell" current-indentation)))
 
-(require 'latex)
 ;;;###autoload
-(defun TeX-dwim-master ()
+(defun danylo/TeX-dwim-master (orig-fun &rest args)
   "Find a likely `TeX-master'.
 Patched so that any new file by default is guessed as being its own master."
   nil)
+(advice-add 'TeX-dwim-master :around #'danylo/TeX-dwim-master)
 
 (use-package company-auctex
   ;; https://github.com/alexeyr/company-auctex

@@ -893,7 +893,7 @@ Patched so that symbols beginning with \\, @, etc. are correctly handled."
   ;;;; Custom modeline definitions
   ;; Default mode line
   (doom-modeline-def-modeline 'danylo/mode-line
-    '(bar danylo/matches buffer-info remote-host buffer-position parrot selection-info)
+    '(bar danylo/matches buffer-info remote-host buffer-position selection-info)
     '(danylo/mu4e input-method debug lsp major-mode vcs))
   (add-hook 'doom-modeline-mode-hook
 	    (lambda () (doom-modeline-set-modeline 'danylo/mode-line 'default)))
@@ -903,6 +903,10 @@ Patched so that symbols beginning with \\, @, etc. are correctly handled."
   ;; Dashboard mode line
   (doom-modeline-def-modeline 'dashboard
     '(bar window-number buffer-default-directory-simple) '(danylo/mu4e))
+  ;; Magit
+  (doom-modeline-def-modeline 'vcs
+    '(bar danylo/matches buffer-info buffer-position selection-info)
+    '(danylo/mu4e gnus github debug minor-modes buffer-encoding major-mode process))
   ;; Messages and scratch buffer mode line
   (doom-modeline-def-modeline 'danylo/bare-modeline
     '(bar window-number buffer-info-simple) '(danylo/mu4e))

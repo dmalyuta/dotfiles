@@ -127,7 +127,7 @@ Source: https://github.com/alphapapa/unpackaged.el#upgrade-a-quelpa-use-package-
 	     (not (active-minibuffer-window)))
     (let ((message-log-max nil))
       ;; Print "<TRASH_ICON> GC"
-      (danylo/print-in-minibuffer (format "%s GC" (danylo/fa-icon "trash-o")))
+      (danylo/print-in-minibuffer (format "%s GC" (danylo/fa-icon "trash")))
       )))
 
 (add-hook 'post-gc-hook (lambda () (danylo/gc-message)))

@@ -108,6 +108,17 @@ in a while."
   :type 'integer
   :group 'danylo)
 
+(defcustom danylo/email-refresh-period `,(* 10 60)
+  "How often (in seconds) to get new mail."
+  :type 'integer
+  :group 'danylo)
+
+(defcustom danylo/get-mail-min-interval 5
+  "How often (in seconds) the inbox refresh command can be
+called (manually or automatically)."
+  :type 'integer
+  :group 'danylo)
+
 ;;;; Faces
 
 ;; Colors taken from doom-one theme
@@ -121,6 +132,16 @@ in a while."
 (defconst danylo/dark-blue  "#375c79")
 (defconst danylo/faded-blue "#31495d")
 (defconst danylo/green      "#98be65")
+
+;;;; Fringe objects
+
+;; Flycheck fringe indicator, from Spacemacs
+;; (https://github.com/syl20bnr/spacemacs)
+(define-fringe-bitmap 'danylo/flycheck-fringe-indicator
+  (vector #b00000000 #b00000000 #b00000000 #b00000000 #b00000000
+          #b00000000 #b00000000 #b00011100 #b00111110 #b00111110
+          #b00111110 #b00011100 #b00000000 #b00000000 #b00000000
+          #b00000000 #b00000000))
 
 (provide 'danylo-custom-variables)
 ;;; danylo-custom-variables.el ends here

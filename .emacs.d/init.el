@@ -65,7 +65,7 @@ directory."
 
 ;;;###autoload
 (defun danylo/fancy-icon (icon-lib icon-family icon &optional fg)
-  "Fontawesome icon with proper formatting for minibuffer"
+  "Icon with proper formatting for minibuffer"
   (unless fg
     (setq fg `,(face-attribute 'default :foreground)))
   (if (window-system)
@@ -196,16 +196,17 @@ Source: https://github.com/alphapapa/unpackaged.el#upgrade-a-quelpa-use-package-
     (setq cursor-type t)))
 
 ;;;###autoload
-(defadvice save-buffer (around danylo/minibuffer-preserve-size-on-save)
-  "Don't increase the size of the echo area if the path of the
-file being saved is too long to show on one line."
+(defun danylo/save-buffer (orig-fun &rest args)
+  "Pretty print save buffer, preserver height of minibuffer."
   (let ((message-truncate-lines t)
 	(this-file-name (file-name-nondirectory (buffer-file-name))))
-    ad-do-it
+    (let ((inhibit-message t))
+      (apply orig-fun args))
     (danylo/print-in-minibuffer
-     (format "%s Saved %s" (danylo/fa-icon "archive") this-file-name))))
+     (format "%s Saved %s" (danylo/fa-icon "database") this-file-name))
+    ))
 
-(add-hook 'after-init-hook (lambda () (ad-activate 'save-buffer)))
+(advice-add 'save-buffer :around #'danylo/save-buffer)
 
 ;; Better start screen
 (use-package dashboard
@@ -384,6 +385,17 @@ Source: https://emacs.stackexchange.com/a/50834/13661"
 
 (setq fast-but-imprecise-scrolling t
       scroll-conservatively 0)
+
+;;;; eval-buffer default directory fix
+
+;;;###autoload
+(defun danylo/eval-buffer-maintain-dir (orig-fun &rest args)
+  "Maintain default-directory when eval-buffer."
+  (let ((current-dir default-directory))
+    (apply orig-fun args)
+    (setq-local default-directory current-dir)))
+
+(advice-add 'eval-buffer :around #'danylo/eval-buffer-maintain-dir)
 
 ;;; ..:: Searching ::..
 
@@ -618,7 +630,7 @@ lines according to the first line."
 		  "\\*Ilist" "\\*dashboard\\*" "\\*xref\\*" "\\*toc\\*"
 		  "\\*Compile-Log\\*" "\\*CPU-Profiler-Report.*\\*"
 		  "\\*TeX Help\\*" "\\*Buffer List\\*" "\\*Julia" "\\*Python"
-		  "magit.*:")))
+		  "magit.*:" "\\*Backtrace\\*")))
   :config
   (ivy-mode 1))
 
@@ -886,15 +898,11 @@ Patched so that symbols beginning with \\, @, etc. are correctly handled."
 					     doom-modeline-warning))))
        (doom-modeline-spc))
       ))
-  (add-hook 'doom-modeline-mode-hook
-	    (lambda ()
-	      (set-face-attribute 'doom-modeline-vspc-face nil
-				  :inherit 'mode-line)))
   ;;;; Custom modeline definitions
   ;; Default mode line
   (doom-modeline-def-modeline 'danylo/mode-line
     '(bar danylo/matches buffer-info remote-host buffer-position selection-info)
-    '(danylo/mu4e input-method debug lsp major-mode vcs))
+    '(danylo/mu4e input-method debug lsp major-mode vcs process))
   (add-hook 'doom-modeline-mode-hook
 	    (lambda () (doom-modeline-set-modeline 'danylo/mode-line 'default)))
   ;; Helm mode line
@@ -919,6 +927,16 @@ Patched so that symbols beginning with \\, @, etc. are correctly handled."
 
 ;; Activate the Doom modeline mode
 (add-hook 'after-init-hook (lambda () (doom-modeline-mode 1)))
+
+;;;###autoload
+(defun danylo/doom-modeline-vspc (orig-fun &rest args)
+  "Text style with icons in mode-line.
+Patched for normal font."
+  (propertize " " 'face (if (doom-modeline--active)
+                            'mode-line
+                          '(:inherit mode-line-inactive))))
+
+(advice-add 'doom-modeline-vspc :around #'danylo/doom-modeline-vspc)
 
 ;;;###autoload
 (defun danylo/doom-modeline-multiple-cursors ()
@@ -984,7 +1002,6 @@ Patched for my own icons."
   :load-path danylo/emacs-custom-lisp-dir
   :hook ((python-mode . danylo-prog-font-lock-mode)
 	 (julia-mode . danylo-prog-font-lock-mode)))
-(require 'danylo-prog-font-lock)
 
 ;;; ..:: Code editing ::..
 
@@ -1476,13 +1493,34 @@ also closes the buffer"
   :init
   (setq flycheck-enabled-checkers '(c/c++-gcc)
 	flycheck-check-syntax-automatically '(mode-enabled save)
-	flycheck-display-errors-delay 0.5)
+	flycheck-display-errors-delay 0.5
+	flycheck-indication-mode 'left-fringe
+	flycheck-highlighting-style `(conditional
+				      ,most-positive-fixnum
+				      level-face (delimiters "" "")))
   (add-hook 'flycheck-mode-hook
 	    (lambda ()
-	      (set-face-attribute 'flycheck-error nil
-				  :underline `,danylo/red)
-	      (set-face-attribute 'flycheck-warning nil
-				  :underline `,danylo/yellow))))
+	      )))
+
+(with-eval-after-load "flycheck"
+  ;; Update Flycheck fringe indicators
+  ;; Inspired by Spacemacs (https://github.com/syl20bnr/spacemacs)
+  (flycheck-define-error-level 'error
+    :severity 2
+    :overlay-category 'flycheck-error-overlay
+    :fringe-bitmap 'danylo/flycheck-fringe-indicator
+    :error-list-face 'flycheck-error-list-error
+    :fringe-face 'flycheck-fringe-error)
+  ;; Removes the "hatch pattern" for multi-line errors
+  (define-fringe-bitmap 'flycheck-fringe-bitmap-continuation
+    (vector #b0))
+  ;; Update faces
+  (set-face-attribute 'flycheck-error nil
+		      :underline `,danylo/red)
+  (set-face-attribute 'flycheck-fringe-error nil
+		      :foreground `,danylo/red)
+  (set-face-attribute 'flycheck-warning nil
+		      :underline `,danylo/yellow))
 
 ;;;###autoload
 (defun danylo/flycheck-list-errors ()
@@ -1759,21 +1797,59 @@ The remainder of the function is a carbon-copy from Flycheck."
 	      (defun shr-no-colourise-region (&rest ignore))))
 
 ;;;###autoload
+(defun danylo/launch-mu4e (arg)
+  "Launch mu4e, or quit it if preceded by C-u"
+  (interactive "P")
+  (if arg (mu4e-quit) (mu4e)))
+
+(general-define-key
+ "C-c m" 'danylo/launch-mu4e)
+
+(defvar danylo/got-mail nil
+  "Indicator that mailbox has been updated")
+
+;;;###autoload
 (defun danylo/get-mail (&optional arg)
   "Get new email silently."
   (interactive "P")
-  (mu4e-update-mail-and-index t)
-  (danylo/print-in-minibuffer
-   (format "%s Refreshed inbox" (danylo/octicon "database"))))
-(forward-list)
+  (unless danylo/got-mail
+    (mu4e-update-mail-and-index t)
+    (danylo/print-in-minibuffer
+     (format "%s Refreshed inbox" (danylo/fa-icon "database")))
+    (setq danylo/got-mail t)
+    (run-with-timer danylo/get-mail-min-interval nil
+		    (lambda () (setq danylo/got-mail nil)))))
+
+;;;###autoload
+(defun danylo/mu4e-error-handler (orig-fun &rest args)
+  "Handler function for showing an error.
+Patched for my own better error messages."
+  (let ((errcode (nth 0 args))
+	(errmsg (nth 1 args)))
+    (cl-case errcode
+      (1 (danylo/print-in-minibuffer "mu4e database locked"))
+      (4 (user-error "No matches for this search query."))
+      (t (error "Error %d: %s" errcode errmsg)))))
+
+(advice-add 'mu4e-error-handler :around #'danylo/mu4e-error-handler)
+
 (with-eval-after-load "mu4e"
   ;; Disable message sending with C-c C-s (make it more complicated to
   ;; not send messages by accident)
   (define-key mu4e-headers-mode-map (kbd "C-c C-s") 'nil)
-  ;; Update mail periodically in the background
-  (run-with-timer `,danylo/email-refresh-period
-		  `,danylo/email-refresh-period
-		  (lambda () (danylo/get-mail))))
+  ;; Setup a timer to update the email inbox in the background
+  (run-with-timer danylo/email-refresh-period danylo/email-refresh-period
+		  (lambda ()
+		    (with-temp-buffer
+		      ;; Check that mu server is not already running
+		      (call-process "ps" nil t nil "aux")
+		      (unless (eq (call-process-region
+				   nil nil "grep" nil nil nil "mu") 0)
+			;; Get new mail
+			(danylo/get-mail)
+			;; Kill the mu process once updating has finished
+			(run-with-timer 0.5 nil 'mu4e~proc-kill)))
+		    )))
 
 ;;;###autoload
 (defun danylo/mu4e~headers-remove-handler (docid &optional skip-hook)
@@ -1817,15 +1893,6 @@ This version deletes backup files without asking."
 	  (message-disassociate-draft)))
       (message-do-actions actions))))
 (advice-add 'message-kill-buffer :around #'danylo/message-kill-buffer)
-
-;;;###autoload
-(defun danylo/launch-mu4e (arg)
-  "Launch mu4e, or quit it if preceded by C-u"
-  (interactive "P")
-  (if arg (mu4e-quit) (mu4e)))
-
-(general-define-key
- "C-c m" 'danylo/launch-mu4e)
 
 (with-eval-after-load "mu4e"
   (set-face-attribute 'mu4e-unread-face nil :foreground `,danylo/yellow)
@@ -1876,8 +1943,7 @@ This version deletes backup files without asking."
 (use-package magit
   ;; https://github.com/magit/magit
   ;; An interface to the version control system Git
-  :bind (("C-x g" . magit-status))
-  )
+  :bind (("C-x g" . magit-status)))
 
 ;;; ..:: Shell interaction ::..
 
@@ -2003,6 +2069,43 @@ If there is no shell open, prints a message to inform."
 		 (setq company-minimum-prefix-length 1)
 		 (push 'company-capf company-backends))))
   )
+
+;; Replace LSP spinner with a static gear (I like this better visually)
+
+;;;###autoload
+(defun danylo/lsp-gear-show (orig-fun &rest args)
+  "Replace LSP spinner with a static gear, while the LSP process executes."
+  (mapc
+   (lambda (buf)
+     (with-current-buffer buf
+       (when (and buffer-file-name
+		  (boundp 'lsp-mode))
+	 ;; Snow process icon
+	 (setq mode-line-process
+	       (propertize
+		"   " 'display
+		(propertize (danylo/fa-icon "cogs") 'face
+   			    `(:family ,(all-the-icons-faicon-family)
+				      :inherit doom-modeline-warning)))))))
+   (buffer-list))
+  (force-mode-line-update t))
+
+;;;###autoload
+(defun danylo/lsp-gear-hide (orig-fun &rest args)
+  "Hide the gear icon."
+  (when (--all? (eq (lsp--workspace-status it) 'initialized)
+                lsp--buffer-workspaces)
+    (mapc
+     (lambda (buf)
+       (with-current-buffer buf
+	 (when (and buffer-file-name
+		    (boundp 'lsp-mode))
+	   (setq mode-line-process ""))))
+     (buffer-list))
+    (force-mode-line-update t)))
+
+(advice-add 'lsp--spinner-start :around #'danylo/lsp-gear-show)
+(advice-add 'lsp--spinner-stop :around #'danylo/lsp-gear-hide)
 
 ;;;; Open files manually, rather than through xref
 
@@ -2321,6 +2424,9 @@ lines according to the first line."
 
 ;;;; Get help at point
 
+(defconst julia-docstring-refresh-rate 0.5
+  "How often to check Julia REPL if docstring has finished printing.")
+
 ;;;###autoload
 (defun danylo/julia-help-at-point (&optional start end)
   "Query Julia REPL for help about thing at point."
@@ -2331,41 +2437,52 @@ lines according to the first line."
     (when start-point
       ;; Record the help string
       (danylo/shell-exec danylo/julia-buffer-name (format "?%s" thing))
-      (run-with-timer
-       0.5 nil
-       (lambda (start-point)
-	 ;; Get end point, removing the final "julia> " prompt
-	 (setq end-point (- (danylo/shell-get-point danylo/julia-buffer-name) 8))
-	 (setq julia-help-docstring
-	       (danylo/shell-get-content danylo/julia-buffer-name
-					 start-point end-point))
-	 ;; Show help buffer
-	 (let ((this-window (selected-window))
-	       (julia-help-existing-window
-		(get-buffer-window danylo/julia-help-buffer-name)))
-	   (when julia-help-existing-window
-	     (select-window julia-help-existing-window)
-	     (kill-buffer-and-window)
-	     (select-window this-window)))
-	 (let ((this-window (selected-window))
-	       (new-window (split-window-vertically)))
-	   (select-window new-window)
-	   (setq julia-help-buf
-		 (get-buffer-create danylo/julia-help-buffer-name))
-	   (switch-to-buffer julia-help-buf)
-	   (insert "[Press q to quit]\n\n")
-	   (insert julia-help-docstring)
-	   (special-mode)
-	   (danylo-julia-help-mode)
-	   (goto-char (point-min))
-	   ;; Go back to original window
-	   (select-window this-window)
-	   ;; Return to help window. Quitting will return cursor to original
-	   ;; window
-	   (select-window new-window)
-	   )
-	 )
-       start-point))))
+      (setq julia-help-docstring "")
+      (run-with-timer julia-docstring-refresh-rate nil
+		      'danylo/julia-show-help-docstring start-point
+		      julia-help-docstring))))
+
+;;;###autoload
+(defun danylo/julia-show-help-docstring (start-point last-docstring)
+  "Record the docstring output by the Julia REPL and put it into a help buffer.
+Calls itself until the docstring has completed printing."
+  ;; Get end point, removing the final "julia> " prompt
+  (setq end-point (- (danylo/shell-get-point danylo/julia-buffer-name) 8))
+  (setq julia-help-docstring
+	(danylo/shell-get-content danylo/julia-buffer-name
+				  start-point end-point))
+  (if (string= julia-help-docstring last-docstring)
+      ;; Show help buffer
+      (progn
+	(let ((this-window (selected-window))
+	      (julia-help-existing-window
+	       (get-buffer-window danylo/julia-help-buffer-name)))
+	  (when julia-help-existing-window
+	    (select-window julia-help-existing-window)
+	    (kill-buffer-and-window)
+	    (select-window this-window)))
+	(let ((this-window (selected-window))
+	      (new-window (split-window-vertically)))
+	  (select-window new-window)
+	  (setq julia-help-buf
+		(get-buffer-create danylo/julia-help-buffer-name))
+	  (switch-to-buffer julia-help-buf)
+	  (insert "[Press q to quit]\n\n")
+	  (insert julia-help-docstring)
+	  (special-mode)
+	  (danylo-julia-help-mode)
+	  (goto-char (point-min))
+	  ;; Go back to original window
+	  (select-window this-window)
+	  ;; Return to help window. Quitting will return cursor to original
+	  ;; window
+	  (select-window new-window)
+	  ))
+    ;; Run again in a little while
+    (run-with-timer julia-docstring-refresh-rate nil
+		    'danylo/julia-show-help-docstring start-point
+		    julia-help-docstring))
+  )
 
 (define-minor-mode danylo-julia-help-mode
   "Minor mode for Julia help buffer."

@@ -1526,16 +1526,28 @@ also closes the buffer"
     :fringe-bitmap 'danylo/flycheck-fringe-indicator
     :error-list-face 'flycheck-error-list-error
     :fringe-face 'flycheck-fringe-error)
+  (flycheck-define-error-level 'warning
+    :severity 1
+    :overlay-category 'flycheck-warning-overlay
+    :fringe-bitmap 'danylo/flycheck-fringe-indicator
+    :error-list-face 'flycheck-error-list-warning
+    :fringe-face 'flycheck-fringe-warning)
+  (flycheck-define-error-level 'info
+    :severity 0
+    :overlay-category 'flycheck-info-overlay
+    :fringe-bitmap 'danylo/flycheck-fringe-indicator
+    :error-list-face 'flycheck-error-list-info
+    :fringe-face 'flycheck-fringe-info)
   ;; Removes the "hatch pattern" for multi-line errors
   (define-fringe-bitmap 'flycheck-fringe-bitmap-continuation
     (vector #b0))
   ;; Update faces
-  (set-face-attribute 'flycheck-error nil
-		      :underline `,danylo/red)
-  (set-face-attribute 'flycheck-fringe-error nil
-		      :foreground `,danylo/red)
-  (set-face-attribute 'flycheck-warning nil
-		      :underline `,danylo/yellow))
+  (set-face-attribute 'flycheck-fringe-error nil :foreground `,danylo/red)
+  (set-face-attribute 'flycheck-error nil :underline `,danylo/red)
+  (set-face-attribute 'flycheck-fringe-warning nil :foreground `,danylo/yellow)
+  (set-face-attribute 'flycheck-warning nil :underline `,danylo/yellow)
+  (set-face-attribute 'flycheck-fringe-info nil :foreground `,danylo/green)
+  (set-face-attribute 'flycheck-info nil :foreground `,danylo/green))
 
 ;;;###autoload
 (defun danylo/flycheck-list-errors ()
@@ -1863,7 +1875,11 @@ Patched for my own better error messages."
 			;; Get new mail
 			(danylo/get-mail)
 			;; Kill the mu process once updating has finished
-			(run-with-timer 0.5 nil 'mu4e~proc-kill)))
+			(run-with-timer
+			 0.5 nil
+			 (lambda ()
+			   (mu4e~proc-kill)
+			   (mu4e-alert-enable-mode-line-display)))))
 		    )))
 
 ;;;###autoload

@@ -564,6 +564,21 @@ lines according to the first line."
   (interactive)
   (display-buffer-in-side-window (get-buffer "*Messages*") '((side . right))))
 
+;;;###autoload
+(defun danylo/counsel-imenu ()
+  "Jump to a buffer position indexed by imenu.
+**Do not sort the items**, so that the order is as the items
+appear in the file."
+  (interactive)
+  (ivy-read "imenu items: " (counsel--imenu-candidates)
+            :preselect (thing-at-point 'symbol)
+            :require-match t
+            :action #'counsel-imenu-action
+            :keymap counsel-imenu-map
+            :history 'counsel-imenu-history
+            :caller 'counsel-imenu
+	    :sort nil))
+
 (use-package ivy-prescient
   ;; https://github.com/raxod502/prescient.el
   ;; Simple but effective sorting and filtering for Emacs.
@@ -583,6 +598,7 @@ lines according to the first line."
   :bind (("M-i" . danylo/swiper-thing-at-point)
 	 ("C-x b" . danylo/counsel-switch-buffer-no-preview)
 	 ("M-x" . counsel-M-x)
+	 ("C-c q" . danylo/counsel-imenu)
 	 :map company-mode-map
 	 ("S-SPC" . counsel-company)
 	 :map ivy-minibuffer-map
@@ -630,7 +646,7 @@ lines according to the first line."
 		  "\\*Ilist" "\\*dashboard\\*" "\\*xref\\*" "\\*toc\\*"
 		  "\\*Compile-Log\\*" "\\*CPU-Profiler-Report.*\\*"
 		  "\\*TeX Help\\*" "\\*Buffer List\\*" "\\*Julia" "\\*Python"
-		  "magit.*:" "\\*Backtrace\\*")))
+		  "magit.*:" "\\*Backtrace\\*" "\\*Process List\\*")))
   :config
   (ivy-mode 1))
 
@@ -680,7 +696,6 @@ Patched so that symbols beginning with \\, @, etc. are correctly handled."
   ;; Emacs incremental completion and selection narrowing framework
   :ensure t
   :bind (("C-x C-f" . helm-find-files)
-	 ("C-c q" . helm-imenu)
 	 :map helm-map
 	 ("TAB" . helm-execute-persistent-action))
   :init (setq helm-display-buffer-default-height
@@ -1815,7 +1830,7 @@ The remainder of the function is a carbon-copy from Flycheck."
   (unless danylo/got-mail
     (mu4e-update-mail-and-index t)
     (danylo/print-in-minibuffer
-     (format "%s Refreshed inbox" (danylo/fa-icon "database")))
+     (format "%s Refreshed inbox" (danylo/fa-icon "inbox")))
     (setq danylo/got-mail t)
     (run-with-timer danylo/get-mail-min-interval nil
 		    (lambda () (setq danylo/got-mail nil)))))

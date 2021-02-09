@@ -111,11 +111,11 @@
   :group 'danylo)
 
 ;;;###autoload
-(defun danylo/make-highlight-keywords ()
+(defun danylo/make-prog-highlight-keywords ()
   "Make the font-lock keywords for prog-font-lock-mode fontification."
   ;; ..:: Python ::..
   (cond ((eq major-mode 'python-mode)
-	 (setq danylo/highlight-keywords
+	 (setq danylo/prog-highlight-keywords
 	       '(("^\s*\\(Args\\|Returns\\|Raises\\):$"
 		  (0 '(face danylo/python-docstring-heading-face) t))
 		 ("^\\(class\\)\s+[^:]*\\(:\\)$"
@@ -135,7 +135,7 @@
 		  (0 '(face danylo/control-face) t))
 		 )))
 	((eq major-mode 'julia-mode)
-	 (setq danylo/highlight-keywords
+	 (setq danylo/prog-highlight-keywords
 	       '(("^\\(using\\|include\\)" (1 '(face danylo/import-face) t))
 		 ("^\s*#*\s*\\(Args\\|Returns\\|Raises\\):$"
 		  (1 '(face danylo/python-docstring-heading-face) t))
@@ -156,7 +156,7 @@
 		  (0 '(face danylo/control-face) t))
 		 )))
 	)
-  danylo/highlight-keywords)
+  danylo/prog-highlight-keywords)
 
 ;;;###autoload
 (defun danylo/prog-font-lock-mode-on ()
@@ -165,7 +165,7 @@
   (add-to-list 'font-lock-extra-managed-props 'invisible)
   (add-to-list 'font-lock-extra-managed-props 'display)
   ;; Add keywords
-  (font-lock-add-keywords nil (danylo/make-highlight-keywords))
+  (font-lock-add-keywords nil (danylo/make-prog-highlight-keywords))
   (font-lock-flush)
   (message "Custom code highlighting on"))
 
@@ -173,7 +173,7 @@
 (defun danylo/prog-font-lock-mode-off ()
   "Shutdown minor mode."
   ;; Remove keywords
-  (font-lock-remove-keywords nil (danylo/make-highlight-keywords))
+  (font-lock-remove-keywords nil (danylo/make-prog-highlight-keywords))
   (font-lock-flush)
   (message "Custom code highlighting off"))
 

@@ -126,15 +126,15 @@
     changed))
 
 ;;;###autoload
-(defun danylo/make-highlight-keywords ()
+(defun danylo/make-text-highlight-keywords ()
   "Make the font-lock keywords for text-font-lock-mode fontification."
   (setq danylo/ref-prefix-raise (- 1 0.8))
-  (setq danylo/highlight-keywords nil)
+  (setq danylo/text-highlight-keywords nil)
   ;; ..:: References ::..
   (when (eq major-mode 'latex-mode)
     ;; >> Citations <<
     (add-to-list
-     'danylo/highlight-keywords
+     'danylo/text-highlight-keywords
      `("\\(\\\\\\)\\(cite.?\\)\\({\\)\\(?:.\\|\n\\)*?\\(}\\)"
        (0 '(face danylo/latex-face-ref invisible nil) t)
        (1 '(face danylo/latex-face-ref invisible t) t)
@@ -143,7 +143,7 @@
        (3 '(face danylo/latex-face-ref display "[") t)
        (4 '(face danylo/latex-face-ref display "]") t)))
     (add-to-list
-     'danylo/highlight-keywords
+     'danylo/text-highlight-keywords
      `("\\(\\\\\\)\\(cite.?\\)\\(\\[\\)\\(?:.\\|\n\\)*?\\(\\]\\)\\({\\)\\(?:.\\|\n\\)*?\\(}\\)"
        (0 '(face danylo/latex-face-ref invisible nil) t)
        (1 '(face danylo/latex-face-ref invisible t) t)
@@ -155,14 +155,14 @@
        (6 '(face danylo/latex-face-ref display "]") t)))
     ;; >> Labels <<
     (add-to-list
-     'danylo/highlight-keywords
+     'danylo/text-highlight-keywords
      `("\\(\\\\label{\\)\\(?:[^}]*\\)\\(}\\)"
        (0 '(face danylo/latex-face-ref invisible nil) t)
        (1 '(face danylo/latex-face-ref display "<") t)
        (2 '(face danylo/latex-face-ref display ">") t)))
     ;; >> \[...]ref{[...]} <<
     (add-to-list
-     'danylo/highlight-keywords
+     'danylo/text-highlight-keywords
      `("\\(\\\\\\)\\([^{}\\\t\r\n\s]*?\\)\\(ref\\)\\({\\)\\(?:.\\|\n\\)*?\\(}\\)"
        (0 '(face danylo/latex-face-ref invisible nil) t)
        (1 '(face danylo/latex-face-ref-prefix invisible t) t)
@@ -176,7 +176,7 @@
   (mapcar
    (lambda (arg)
      (add-to-list
-      'danylo/highlight-keywords
+      'danylo/text-highlight-keywords
       `(,(format "\\(?:%s\\)" arg)
 	(0 '(face danylo/latex-face-equation-delim invisible nil) t))))
    `("\\$\\(?:\\$\\)?"
@@ -186,7 +186,7 @@
   (mapcar
    (lambda (arg)
      (add-to-list
-      'danylo/highlight-keywords
+      'danylo/text-highlight-keywords
       `(,(format "\\(?:%s\\)\\(\\(?:.\\|\n\\)*?\\)\\(?:%s\\)"
 		 (car arg) (cdr arg))
 	(1 '(face danylo/latex-face-equation-main invisible nil) t))))
@@ -202,63 +202,63 @@
   ;; ..:: Lists ::..
   (when (eq major-mode 'latex-mode)
     (add-to-list
-     'danylo/highlight-keywords
+     'danylo/text-highlight-keywords
      `("\\\\\\(?:begin\\|end\\){\\(?:itemize\\|enumerate\\)}"
        (0 '(face danylo/latex-face-item invisible nil) t)))
     (add-to-list
-     'danylo/highlight-keywords
+     'danylo/text-highlight-keywords
      '("\\(\\\\item\\) " 1 '(face danylo/latex-face-item display "●"))))
   ;; ..:: Sections ::..
   (cond ((eq major-mode 'latex-mode)
 	 (add-to-list
-	  'danylo/highlight-keywords
+	  'danylo/text-highlight-keywords
 	  '("^\\(\\\\section[\\*]?{\\)\\(?:.\\|\n\\)*?\\(}\\)"
 	    (0 '(face danylo/face-section) t)
 	    (1 '(face danylo/face-section display "§ ") t)
 	    (2 '(face danylo/face-section invisible t) t)))
 	 (add-to-list
-	  'danylo/highlight-keywords
+	  'danylo/text-highlight-keywords
 	  '("^\\(\\\\subsection[\\*]?{\\)\\(?:.\\|\n\\)*?\\(}\\)"
 	    (0 '(face danylo/face-subsection) t)
 	    (1 '(face danylo/face-subsection display "§§ ") t)
 	    (2 '(face danylo/face-subsection invisible t) t)))
 	 (add-to-list
-	  'danylo/highlight-keywords
+	  'danylo/text-highlight-keywords
 	  '("^\\(\\\\subsubsection[\\*]?{\\)\\(?:.\\|\n\\)*?\\(}\\)"
 	    (0 '(face danylo/face-subsubsection) t)
 	    (1 '(face danylo/face-subsubsection display "§§§ ") t)
 	    (2 '(face danylo/face-subsubsection invisible t) t))))
 	((eq major-mode 'org-mode)
 	 (add-to-list
-	  'danylo/highlight-keywords
+	  'danylo/text-highlight-keywords
 	  '("^\\(\\*\\{1\\}\s\\)\\(?:.*\\)$"
 	    (0 '(face danylo/face-section) t)))
 	 (add-to-list
-	  'danylo/highlight-keywords
+	  'danylo/text-highlight-keywords
 	  '("^\\(\\*\\{2\\}\s\\)\\(?:.*\\)$"
 	    (0 '(face danylo/face-subsection) t)))
 	 (add-to-list
-	  'danylo/highlight-keywords
+	  'danylo/text-highlight-keywords
 	  '("^\\(\\*\\{3\\}\s\\)\\(?:.*\\)$"
 	    (0 '(face danylo/face-subsubsection) t)))
 	 (mapcar
 	  (lambda (arg)
 	    (add-to-list
-	     'danylo/highlight-keywords
+	     'danylo/text-highlight-keywords
 	     `(,(format "^\\(\\*\\{%d\\}\s\\)\\(?:.*\\)$" arg)
 	       (0 '(face danylo/face-deepsection) t))))
 	  '(4 5 6 7 8))))
   ;; ..:: Miscellaneous ::..
   (when (eq major-mode 'latex-mode)
     (add-to-list
-     'danylo/highlight-keywords
+     'danylo/text-highlight-keywords
      `("\\(\\\\if[a-zA-Z]*\\)\\(?:[\s\r\n]?\\)"
        (1 '(face danylo/latex-boolean) t)))
     (add-to-list
-     'danylo/highlight-keywords
+     'danylo/text-highlight-keywords
      `("\\(\\\\fi\\|\\\\else\\)\\(?:[\s\r\n]\\{1\\}\\)"
        (1 '(face danylo/latex-boolean) t))))
-  danylo/highlight-keywords)
+  danylo/text-highlight-keywords)
 
 ;;;###autoload
 (defun danylo/text-font-lock-mode-on ()
@@ -270,7 +270,7 @@
   (set (make-local-variable 'font-lock-multiline) t)
   (add-hook 'font-lock-extend-region-functions 'danylo/font-lock-extend-region)
   ;; Add keywords
-  (font-lock-add-keywords nil (danylo/make-highlight-keywords))
+  (font-lock-add-keywords nil (danylo/make-text-highlight-keywords))
   (font-lock-flush)
   (message "Custom text highlighting on"))
 
@@ -278,7 +278,7 @@
 (defun danylo/text-font-lock-mode-off ()
   "Shutdown minor mode."
   ;; Remove keywords
-  (font-lock-remove-keywords nil (danylo/make-highlight-keywords))
+  (font-lock-remove-keywords nil (danylo/make-text-highlight-keywords))
   (font-lock-flush)
   (message "Custom text highlighting off"))
 

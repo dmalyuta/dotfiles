@@ -40,6 +40,10 @@
  :upgrade nil)
 (require 'quelpa-use-package)
 
+;; Lisp deprecation
+;; https://github.com/kiwanami/emacs-epc/issues/35
+(setq byte-compile-warnings '(cl-functions))
+
 ;;; ..:: Customization variables ::..
 
 ;;;###autoload
@@ -88,29 +92,30 @@ directory."
   (danylo/fancy-icon 'all-the-icons-octicon 'all-the-icons-octicon-family
 		     icon fg))
 
-;;;###autoload
-(cl-defun danylo/quelpa-use-package-upgrade (&key (reloadp t))
-  "Eval the current `use-package' form with `quelpa-upgrade-p' true.
-Delete the package first to remove obsolete versions.  When
-RELOADP is non-nil, reload the package's features after upgrade
-using `unpackaged/reload-package'; otherwise (interactively, with
-prefix), leave old features loaded.
-Source: https://github.com/alphapapa/unpackaged.el#upgrade-a-quelpa-use-package-forms-package"
-  (interactive (list :reloadp (not current-prefix-arg)))
-  (save-excursion
-    (if (or (looking-at (rx "(use-package "))
-            (let ((limit (save-excursion
-                           (or (re-search-backward (rx bol "("))
-                               (point-min)))))
-              ;; Don't go past previous top-level form
-              (re-search-backward (rx "(use-package ") limit t)))
-        (progn
-          (pcase-let* ((`(use-package ,package-name . ,rest) (read (current-buffer))))
-            (cl-assert package-name nil "Can't determine package name")
-            (cl-assert (memq :quelpa rest) nil "`:quelpa' form not found")
-            (let ((quelpa-upgrade-p t))
-              (call-interactively #'eval-defun))))
-      (user-error "Not in a `use-package' form"))))
+(use-package ts
+  ;; https://github.com/alphapapa/ts.el
+  ;; Emacs timestamp and date-time library
+  ;; **Loading this just because unpackaged needs it**
+  :ensure nil
+  :quelpa ((ts :fetcher github
+	       :repo "alphapapa/ts.el")))
+
+(use-package unpackaged
+  ;; https://github.com/alphapapa/unpackaged.el
+  ;; A collection of useful Emacs Lisp code
+  ;;
+  ;; Use:
+  ;;   unpackaged/quelpa-use-package-upgrade: select a (use-package ...) that
+  ;;       uses Quelpa and completely upgrade it to the latest online version
+  ;;       (replaces all associated directories)
+  :ensure nil
+  :after (general hydra ts esxml)
+  :init (setq danylo/use-package-always-ensure use-package-always-ensure
+	      use-package-always-ensure nil)
+  :quelpa ((unpackaged :fetcher github
+		       :repo "alphapapa/unpackaged.el"))
+  :config
+  (setq use-package-always-ensure danylo/use-package-always-ensure))
 
 ;;; ..:: Garbage collection ::..
 
@@ -151,6 +156,11 @@ Source: https://github.com/alphapapa/unpackaged.el#upgrade-a-quelpa-use-package-
   ;; More convenient key definitions in emacs
   )
 
+(use-package hydra
+  ;; https://github.com/abo-abo/hydra
+  ;; Make Emacs bindings that stick around
+  )
+
 ;;; ..:: General usability ::..
 
 ;; Remove GUI elements
@@ -177,10 +187,6 @@ Source: https://github.com/alphapapa/unpackaged.el#upgrade-a-quelpa-use-package-
 ;; Move by paragraph
 (global-set-key (kbd "M-n") 'forward-paragraph)
 (global-set-key (kbd "M-p") 'backward-paragraph)
-
-;; Lisp deprecation
-;; https://github.com/kiwanami/emacs-epc/issues/35
-(setq byte-compile-warnings '(cl-functions))
 
 ;; Show column number
 (setq-default column-number-mode t)
@@ -913,11 +919,27 @@ Patched so that symbols beginning with \\, @, etc. are correctly handled."
 					     doom-modeline-warning))))
        (doom-modeline-spc))
       ))
+  (doom-modeline-def-segment danylo/vcs
+    "Displays the current branch, colored based on its state."
+    (let ((active (doom-modeline--active)))
+      (when-let ((icon doom-modeline--vcs-icon)
+		 (text doom-modeline--vcs-text))
+	(concat
+	 (doom-modeline-spc)
+	 (concat
+          (if active
+              icon
+            (doom-modeline-propertize-icon icon 'mode-line-inactive))
+          (doom-modeline-spc))
+	 (if active
+             text
+           (propertize text 'face 'mode-line-inactive))
+	 (doom-modeline-spc)))))
   ;;;; Custom modeline definitions
   ;; Default mode line
   (doom-modeline-def-modeline 'danylo/mode-line
     '(bar danylo/matches buffer-info remote-host buffer-position selection-info)
-    '(danylo/mu4e input-method debug lsp major-mode vcs process))
+    '(danylo/mu4e input-method debug lsp major-mode danylo/vcs process))
   (add-hook 'doom-modeline-mode-hook
 	    (lambda () (doom-modeline-set-modeline 'danylo/mode-line 'default)))
   ;; Helm mode line
@@ -942,16 +964,6 @@ Patched so that symbols beginning with \\, @, etc. are correctly handled."
 
 ;; Activate the Doom modeline mode
 (add-hook 'after-init-hook (lambda () (doom-modeline-mode 1)))
-
-;;;###autoload
-(defun danylo/doom-modeline-vspc (orig-fun &rest args)
-  "Text style with icons in mode-line.
-Patched for normal font."
-  (propertize " " 'face (if (doom-modeline--active)
-                            'mode-line
-                          '(:inherit mode-line-inactive))))
-
-(advice-add 'doom-modeline-vspc :around #'danylo/doom-modeline-vspc)
 
 ;;;###autoload
 (defun danylo/doom-modeline-multiple-cursors ()
@@ -2748,3 +2760,11 @@ Patched so that any new file by default is guessed as being its own master."
    "\\.local.bashrc\\'"
    "\\.local.bashrc.private\\'"
    "\\.profile\\'"))
+
+;;; ..:: XML ::..
+
+(use-package esxml
+  ;; https://github.com/tali713/esxml
+  ;; An elisp library for working with xml, esxml and sxml.
+  ;; **Loading this just because unpackaged needs it**
+  )

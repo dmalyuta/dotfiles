@@ -384,7 +384,8 @@ Source: https://emacs.stackexchange.com/a/50834/13661"
   (danylo/set-whitespace-mode-colors))
 
 (general-define-key
- "C-x C-c" 'danylo/close-frame-or-kill-emacs
+ "C-x C-c" nil ;; Kind of dangerous (can quit Emacs by accident)
+ "C-x C-c C-c" 'danylo/close-frame-or-kill-emacs
  "C-x n f" 'danylo/make-new-frame)
 
 ;;;; Scrolling performance
@@ -1780,6 +1781,7 @@ The remainder of the function is a carbon-copy from Flycheck."
   :load-path "/usr/local/share/emacs/site-lisp/mu4e"
   :bind (:map mu4e-headers-mode-map
 	      ("x" . (lambda () (interactive) (mu4e-mark-execute-all t)))
+	      ("C-c C-u" . danylo/get-mail)
 	      :map mu4e-view-mode-map
 	      ("x" . (lambda () (interactive) (mu4e-mark-execute-all t)))
 	      :map mu4e-compose-mode-map
@@ -1875,7 +1877,7 @@ Patched for my own better error messages."
 (with-eval-after-load "mu4e"
   ;; Disable message sending with C-c C-s (make it more complicated to
   ;; not send messages by accident)
-  (define-key mu4e-headers-mode-map (kbd "C-c C-s") 'nil)
+  (define-key mu4e-compose-mode-map (kbd "C-c C-s") 'nil)
   ;; Setup a timer to update the email inbox in the background
   (run-with-timer danylo/email-refresh-period danylo/email-refresh-period
 		  (lambda ()

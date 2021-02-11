@@ -63,6 +63,15 @@
   "Face for function keyword."
   :group 'danylo)
 
+(defface danylo/macro-face
+  `((t (:foreground ,danylo/yellow
+		    :background ,danylo/dark-blue
+		    :slant italic
+		    :weight bold
+		    :inherit default)))
+  "Face for function keyword."
+  :group 'danylo)
+
 (defface danylo/return-face
   `((t (:foreground ,danylo/red
 		    :weight bold
@@ -147,10 +156,11 @@
 		  (0 '(face danylo/class-other-face) t)
 		  (1 '(face danylo/class-keyword-face) t)
 		  (2 '(face danylo/class-name-face) t))
-		 ("^\s*\\b\\(return\\|break\\|raise\\)\\b"
+		 ("^\s*\\b\\(return\\|break\\|throw\\)\\b"
 		  (1 '(face danylo/return-face) t))
 		 ("^\s*\\(continue\\|pass\\)" (1 '(face danylo/continue-face) t))
 		 ("^\s*\\(function\\)\s+" (1 '(face danylo/function-face) t))
+		 ("^\s*\\(macro\\)\s+" (1 '(face danylo/macro-face) t))
 		 ("\\(?:true\\|false\\)" (0 '(face danylo/bool-face) t))
 		 ("^\s*\\(?:if\\|for\\|while\\|elseif\\|else\\)\s+"
 		  (0 '(face danylo/control-face) t))

@@ -14,34 +14,6 @@ alias copy='xargs echo -n | xclip -selection clipboard'
 # Display processes matching grep
 alias listproc='~/.bin/listproc.sh'
 
-# Join PDF files into one
-# Call: $ pdfjoin <in1.pdf> [in2.pdf ...] <out.pdf>
-pdfjoin() {
-    local length=$(($#-1))
-    local input_pdf=("${@: 1:$length}")
-    local output_pdf=("${@: -1}")
-    pdftk "${input_pdf[@]}" cat output "${output_pdf[@]}"
-}
-
-# Extract PDF pages
-# Call: $ pdfgetpages <in.pdf> <page_start>[-page_end] <out.pdf>
-pdfgetpages() {
-    local length=$(($#-2))
-    local input_pdf=("$1")
-    local pages=("${@: 2:$length}")
-    local output_pdf=("${@: -1}")
-    if [ "$input_pdf" = "$output_pdf" ]; then
-	local random_string=$(tr -dc A-Za-z0-9 </dev/urandom | \
-				  head -c 13 ; echo '')
-	local output_pdf_tmp="${random_string}${output_pdf}"
-	pdftk "$input_pdf" cat "${pages[@]}" output "$output_pdf_tmp"
-	mv "$output_pdf_tmp" "$input_pdf"
-	rm -rf "$output_pdf_tmp"
-    else
-	pdftk "$input_pdf" cat "${pages[@]}" output "$output_pdf"
-    fi
-}
-
 # Kill processes matching grep
 alias killgrep='~/.bin/killgrep.sh'
 
@@ -63,6 +35,7 @@ gedit() {
 semacs() {
     nohup emacs $@ &>/dev/null & disown
 }
+
 semacsd() {
     semacs
     exit
@@ -163,3 +136,58 @@ alias showlinenumbers='cat --number'
 
 # ls with directories first when `ls -1`
 alias ls='ls --color -h --group-directories-first'
+
+# ..:: Working with PDF ::..
+
+# Join PDF files into one
+# Call: $ pdfjoin <in1.pdf> [in2.pdf ...] <out.pdf>
+pdfjoin() {
+    local length=$(($#-1))
+    local input_pdf=("${@: 1:$length}")
+    local output_pdf=("${@: -1}")
+    pdftk "${input_pdf[@]}" cat output "${output_pdf[@]}"
+}
+
+# Extract PDF pages
+# Call: $ pdfgetpages <in.pdf> <page_start>[-page_end] <out.pdf>
+pdfgetpages() {
+    local length=$(($#-2))
+    local input_pdf=("$1")
+    local pages=("${@: 2:$length}")
+    local output_pdf=("${@: -1}")
+    if [ "$input_pdf" = "$output_pdf" ]; then
+	local random_string=$(tr -dc A-Za-z0-9 </dev/urandom | \
+				  head -c 13 ; echo '')
+	local output_pdf_tmp="${random_string}${output_pdf}"
+	pdftk "$input_pdf" cat "${pages[@]}" output "$output_pdf_tmp"
+	mv "$output_pdf_tmp" "$input_pdf"
+	rm -rf "$output_pdf_tmp"
+    else
+	pdftk "$input_pdf" cat "${pages[@]}" output "$output_pdf"
+    fi
+}
+
+# Rotate all pages +90 degrees
+# Call: $ pdfrotate <in.pdf>
+pdfrotate() {
+    local input_pdf="$1"
+    pdftk "$input_pdf" cat 1-endright output /tmp/"$input_pdf".pdf
+    mv /tmp/"$input_pdf".pdf "$input_pdf"
+}
+
+# Reverse page order
+# Call: $ pdfreverse <in.pdf>
+pdfreverse() {
+    local input_pdf="$1"
+    pdftk "$input_pdf" cat end-1 output /tmp/"$input_pdf".pdf
+    mv /tmp/"$input_pdf".pdf "$input_pdf"
+}
+
+# Interleave even and odd pages
+# Call: $ pdfinterleave <odd.pdf> <even.pdf> <out.pdf>
+pdfinterleave() {
+    local odd_pdf="$1"
+    local even_pdf="$2"
+    local output_pdf="$3"
+    pdftk A="$odd_pdf" B="$even_pdf" shuffle A B output "$output_pdf"
+}

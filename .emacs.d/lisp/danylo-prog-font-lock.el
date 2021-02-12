@@ -20,6 +20,11 @@
   :type 'float
   :group 'danylo)
 
+(defcustom danylo/module-height 1.3
+  "Module name font size."
+  :type 'float
+  :group 'danylo)
+
 (defface danylo/python-docstring-heading-face
   `((t (:foreground ,danylo/yellow
 		    :weight normal
@@ -39,12 +44,28 @@
 (defface danylo/class-other-face
   `((t (:height ,danylo/class-height
 		:inherit font-lock-keyword-face)))
-  "Face for class name."
+  "Face for other keywords in the class line."
   :group 'danylo)
 
 (defface danylo/class-name-face
   `((t (:foreground ,danylo/yellow
 		:height ,danylo/class-height
+	        :inherit default)))
+  "Face for class name."
+  :group 'danylo)
+
+(defface danylo/module-keyword-face
+  `((t (:foreground ,danylo/white
+		    :background ,danylo/red
+		    :height ,danylo/module-height
+		    :weight bold
+		    :inherit default)))
+  "Face for module keyword."
+  :group 'danylo)
+
+(defface danylo/module-name-face
+  `((t (:foreground ,danylo/red
+		:height ,danylo/module-height
 	        :inherit default)))
   "Face for class name."
   :group 'danylo)
@@ -156,6 +177,9 @@
 		  (0 '(face danylo/class-other-face) t)
 		  (1 '(face danylo/class-keyword-face) t)
 		  (2 '(face danylo/class-name-face) t))
+		 ("^\\(module\\)\s+\\(.*?\\)$"
+		  (1 '(face danylo/module-keyword-face) t)
+		  (2 '(face danylo/module-name-face) t))
 		 ("^\s*\\b\\(return\\|break\\|throw\\)\\b"
 		  (1 '(face danylo/return-face) t))
 		 ("^\s*\\(continue\\|pass\\)" (1 '(face danylo/continue-face) t))

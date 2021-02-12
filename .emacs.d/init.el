@@ -1138,15 +1138,15 @@ Patched for my own icons."
 ;;;; Section delimiters
 
 ;;;###autoload
-(defun danylo/section-msg (left msg right start end &optional nospace)
+(defun danylo/section-msg (left msg right &optional nospace)
   "Section delimiters for comment.
 LEFT and RIGHT are the section delimineters.
 MSG is the section name.
-START and END give the start/end of current selection.
 NOSPACE, if t, means that there is no spacing added between delimiters."
-  (interactive "r")
-  (if (use-region-p)
-      (let ((regionp (buffer-substring start end)))
+  (if (region-active-p)
+      (let* ((start (region-beginning))
+	     (end (region-end))
+	     (regionp (buffer-substring start end)))
 	(delete-region start end)
 	(if nospace
 	    (insert (format "%s%s%s" left regionp right))
@@ -1156,22 +1156,22 @@ NOSPACE, if t, means that there is no spacing added between delimiters."
       (insert (format "%s %s %s" left msg right)))))
 
 ;;;###autoload
-(defun danylo/code-section (start end)
+(defun danylo/code-section ()
   "Section delimiters for comment."
-  (interactive "r")
-  (danylo/section-msg "..::" "SECTION" "::.." start end))
+  (interactive)
+  (danylo/section-msg "..::" "SECTION" "::.."))
 
 ;;;###autoload
-(defun danylo/code-subsection (start end)
+(defun danylo/code-subsection ()
   "Subsection delimiters for comment."
-  (interactive "r")
-  (danylo/section-msg ">>" "SUBSECTION" "<<" start end))
+  (interactive)
+  (danylo/section-msg ">>" "SUBSECTION" "<<"))
 
 ;;;###autoload
-(defun danylo/code-subsubsection (start end)
+(defun danylo/code-subsubsection ()
   "Subsubsection delimiters for comment."
-  (interactive "r")
-  (danylo/section-msg "@" "SUBSUBSECTION" "@" start end))
+  (interactive)
+  (danylo/section-msg "@" "SUBSUBSECTION" "@"))
 
 ;;;; Duplicate line
 
@@ -1556,11 +1556,11 @@ also closes the buffer"
     (vector #b0))
   ;; Update faces
   (set-face-attribute 'flycheck-fringe-error nil :foreground `,danylo/red)
-  (set-face-attribute 'flycheck-error nil :underline `,danylo/red)
   (set-face-attribute 'flycheck-fringe-warning nil :foreground `,danylo/yellow)
-  (set-face-attribute 'flycheck-warning nil :underline `,danylo/yellow)
   (set-face-attribute 'flycheck-fringe-info nil :foreground `,danylo/green)
-  (set-face-attribute 'flycheck-info nil :foreground `,danylo/green))
+  (set-face-attribute 'flycheck-error nil :underline `,danylo/red)
+  (set-face-attribute 'flycheck-warning nil :underline `,danylo/yellow)
+  (set-face-attribute 'flycheck-info nil :underline `,danylo/green))
 
 ;;;###autoload
 (defun danylo/flycheck-list-errors ()
@@ -2042,15 +2042,15 @@ If there is no shell open, prints a message to inform."
 ;;;###autoload
 (defun danylo/shell-get-point (shell-buffer-name)
   "Get the current location of point in the shell."
-  (setq current-point nil)
-  (if (danylo/shell~check-open shell-buffer-name)
-      (with-current-buffer shell-buffer-name
-	(danylo/switch-to-term-char-mode)
-	(danylo/switch-to-term-line-mode)
-	(setq current-point (point))
-	(danylo/switch-to-term-char-mode))
-    (message "No shell open."))
-  current-point)
+  (let ((current-point nil))
+    (if (danylo/shell~check-open shell-buffer-name)
+	(with-current-buffer shell-buffer-name
+	  (danylo/switch-to-term-char-mode)
+	  (danylo/switch-to-term-line-mode)
+	  (setq current-point (point))
+	  (danylo/switch-to-term-char-mode))
+      (message "No shell open."))
+    current-point))
 
 ;;;###autoload
 (defun danylo/shell-get-content (shell-buffer-name start end)
@@ -2469,7 +2469,10 @@ lines according to the first line."
 
 ;;;; Get help at point
 
-(defconst julia-docstring-refresh-rate 0.5
+(defconst julia-docstring-delay 0.5
+  "After what time to check Julia REPL if docstring has finished printing.")
+
+(defconst julia-docstring-refresh-rate 0.1
   "How often to check Julia REPL if docstring has finished printing.")
 
 ;;;###autoload
@@ -2482,52 +2485,51 @@ lines according to the first line."
     (when start-point
       ;; Record the help string
       (danylo/shell-exec danylo/julia-buffer-name (format "?%s" thing))
-      (setq julia-help-docstring "")
-      (run-with-timer julia-docstring-refresh-rate nil
-		      'danylo/julia-show-help-docstring start-point
-		      julia-help-docstring))))
+      (run-with-timer julia-docstring-delay nil
+		      'danylo/julia-show-help-docstring start-point))))
 
 ;;;###autoload
-(defun danylo/julia-show-help-docstring (start-point last-docstring)
+(defun danylo/julia-show-help-docstring (start-point)
   "Record the docstring output by the Julia REPL and put it into a help buffer.
 Calls itself until the docstring has completed printing."
-  ;; Get end point, removing the final "julia> " prompt
-  (setq end-point (- (danylo/shell-get-point danylo/julia-buffer-name) 8))
-  (setq julia-help-docstring
-	(danylo/shell-get-content danylo/julia-buffer-name
-				  start-point end-point))
-  (if (string= julia-help-docstring last-docstring)
-      ;; Show help buffer
-      (progn
-	(let ((this-window (selected-window))
-	      (julia-help-existing-window
-	       (get-buffer-window danylo/julia-help-buffer-name)))
-	  (when julia-help-existing-window
-	    (select-window julia-help-existing-window)
-	    (kill-buffer-and-window)
-	    (select-window this-window)))
-	(let ((this-window (selected-window))
-	      (new-window (split-window-vertically)))
-	  (select-window new-window)
-	  (setq julia-help-buf
-		(get-buffer-create danylo/julia-help-buffer-name))
-	  (switch-to-buffer julia-help-buf)
-	  (insert "[Press q to quit]\n\n")
-	  (insert julia-help-docstring)
-	  (special-mode)
-	  (danylo-julia-help-mode)
-	  (goto-char (point-min))
-	  ;; Go back to original window
-	  (select-window this-window)
-	  ;; Return to help window. Quitting will return cursor to original
-	  ;; window
-	  (select-window new-window)
-	  ))
-    ;; Run again in a little while
-    (run-with-timer julia-docstring-refresh-rate nil
-		    'danylo/julia-show-help-docstring start-point
-		    julia-help-docstring))
-  )
+  (let* (;; Get end point, removing the final "julia> " prompt
+	 (end-point (danylo/shell-get-point danylo/julia-buffer-name))
+	 ;; Get docstring printed thus far
+	 (julia-help-docstring
+	  (danylo/shell-get-content danylo/julia-buffer-name
+				    start-point end-point))
+	 ;; Check if the document printout finished
+	 (julia-help-docstring-end
+	  (string-match "^julia>\s$" julia-help-docstring)))
+    (if julia-help-docstring-end
+	;; Show help buffer
+	(progn
+	  (let ((this-window (selected-window))
+		(julia-help-existing-window
+		 (get-buffer-window danylo/julia-help-buffer-name)))
+	    (when julia-help-existing-window
+	      (select-window julia-help-existing-window)
+	      (kill-buffer-and-window)
+	      (select-window this-window)))
+	  (let ((this-window (selected-window))
+		(new-window (split-window-vertically)))
+	    (select-window new-window)
+	    (setq julia-help-buf
+		  (get-buffer-create danylo/julia-help-buffer-name))
+	    (switch-to-buffer julia-help-buf)
+	    (insert "[Press q to quit]\n\n")
+	    (insert (substring julia-help-docstring 0 julia-help-docstring-end))
+	    (special-mode)
+	    (danylo-julia-help-mode)
+	    (goto-char (point-min))
+	    ;; Go back to original window
+	    (select-window this-window)
+	    ;; Return to help window. Quitting will return cursor to original
+	    ;; window
+	    (select-window new-window)))
+      ;; Run again in a little while
+      (run-with-timer julia-docstring-refresh-rate nil
+		      'danylo/julia-show-help-docstring start-point))))
 
 (define-minor-mode danylo-julia-help-mode
   "Minor mode for Julia help buffer."
@@ -2561,10 +2563,10 @@ Calls itself until the docstring has completed printing."
 ;;;; Block comment
 
 ;;;###autoload
-(defun danylo/julia-block-comment (start end)
+(defun danylo/julia-block-comment ()
   "Julia block comment."
-  (interactive "r")
-  (danylo/section-msg "#=\n" "" "=#" start end t))
+  (interactive)
+  (danylo/section-msg "#=\n" "" "=#" t))
 
 ;;; ..:: MATLAB ::..
 

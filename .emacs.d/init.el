@@ -380,8 +380,7 @@ Source: https://emacs.stackexchange.com/a/50834/13661"
 (defun danylo/make-new-frame ()
   "Make a new frame, and make sure it behaves like I want."
   (interactive)
-  (make-frame-command)
-  (danylo/set-whitespace-mode-colors))
+  (make-frame-command))
 
 (general-define-key
  "C-x C-c" nil ;; Kind of dangerous (can quit Emacs by accident)
@@ -1229,27 +1228,6 @@ With argument ARG, do this that many times."
 ;;;; Fill column (line width)
 
 (setq-default fill-column danylo/fill-column)
-
-;;;###autoload
-(defun danylo/set-whitespace-mode-colors ()
-  "Set colors for whitespace-mode for overflowing lines."
-  (set-face-attribute 'whitespace-line nil
-		      :foreground `,danylo/yellow
-		      :background nil
-		      :weight 'bold
-		      :inherit 'default))
-
-;; Indicate lines that are too wide
-(use-package whitespace
-  :ensure nil
-  :init (setq whitespace-line-column nil
-	      whitespace-style '(face lines-tail))
-  (add-hook 'whitespace-mode-hook 'danylo/set-whitespace-mode-colors)
-  :config
-  (global-whitespace-mode t))
-
-(require 'whitespace)
-(danylo/set-whitespace-mode-colors)
 
 ;;; ..:: Window management ::..
 

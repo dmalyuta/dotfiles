@@ -1409,6 +1409,7 @@ also closes the buffer"
   (define-key term-raw-map (kbd "M-x") 'nil)
   (define-key term-raw-map (kbd "M-&") 'nil)
   (define-key term-raw-map (kbd "M-!") 'nil)
+  (define-key term-raw-map (kbd "C-c m") 'danylo/launch-mu4e)
   ;; Make sure C-c t e launches a new ansi-term buffer when current buffer is
   ;; also ansi-term
   (define-key term-raw-map (kbd "C-c t e") 'nil)

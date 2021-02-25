@@ -44,6 +44,16 @@ if not_installed brave-browser; then
     sudo apt-get -y install brave-browser
 fi
 
+# ..:: Enpass password manager ::..
+
+if [[ ! -d /opt/enpass ]]; then
+    echo "deb https://apt.enpass.io/ stable main" | \
+	sudo tee /etc/apt/sources.list.d/enpass.list
+    wget -O - https://apt.enpass.io/keys/enpass-linux.key | sudo apt-key add -
+    sudo apt-get -y update
+    sudo apt-get -y install enpass
+fi
+
 # ..:: Inkscape ::..
 
 if not_installed inkscape; then

@@ -522,8 +522,8 @@ lines according to the first line."
   (if start
       (let ((selection (buffer-substring start end)))
 	(deactivate-mark)
-	(swiper selection))
-    (swiper (thing-at-point 'symbol))))
+	(counsel-grep-or-swiper selection))
+    (counsel-grep-or-swiper (thing-at-point 'symbol))))
 
 ;;;###autoload
 (defun danylo/counsel-switch-buffer-no-preview ()
@@ -629,6 +629,7 @@ appear in the file."
 	;;         https://github.com/abo-abo/swiper/issues/2471
 	;;         https://github.com/abo-abo/swiper/issues/2588
 	swiper-use-visual-line-p #'ignore
+	swiper-use-visual-line nil
 	;; Set minimum length for searching in project
 	ivy-more-chars-alist '((t . 1))
 	)

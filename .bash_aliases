@@ -95,7 +95,7 @@ gitpushoverleaf() {
 }
 
 # Shortcut Ctrl+Alt+F for Firefox
-python ~/.bin/set_customshortcut.py 'launch-firefox' 'firefox' '<Ctrl><Alt>F'
+python ~/.bin/set_customshortcut.py 'launch-brave' 'brave-browser' '<Ctrl><Alt>B'
 
 # Shortcut Ctrl+Alt+E for Emacs
 python ~/.bin/set_customshortcut.py 'launch-emacs' 'emacs' '<Ctrl><Alt>E'

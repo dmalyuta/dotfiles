@@ -1017,6 +1017,33 @@ Patched for my own icons."
 (advice-add 'doom-modeline-update-vcs-icon
 	    :around #'danylo/doom-modeline-update-vcs-icon)
 
+;;;; (start) Patch so that doom-modeline does not lose focus on ansi-term printout
+
+(defun danylo/internal--after-save-selected-window (orig-fun &rest args)
+  "Patch to remove select-window modification in ansi-term redisplay."
+  (advice-remove 'select-window #'danylo/select-window)
+  (apply orig-fun args))
+
+(defun danylo/select-window (orig-fun &rest args)
+  "Patch to modify select-window so that modeline is not
+activated on output into a buffer, e.g. ansi-term."
+  (add-to-list 'args ':mark-for-redisplay t)
+  (apply orig-fun args))
+
+(defun danylo/term-emulate-terminal (orig-fun &rest args)
+  "Patch so that doom-modeline does not lose focus when there is
+a buffer like ansi-term that is printing out information."
+  (advice-add 'select-window :around #'danylo/select-window)
+  (advice-add 'internal--after-save-selected-window :around
+	      #'danylo/internal--after-save-selected-window)
+  (apply orig-fun args)
+  (advice-remove 'internal--after-save-selected-window
+		 #'danylo/internal--after-save-selected-window))
+
+(advice-add 'term-emulate-terminal :around #'danylo/term-emulate-terminal)
+
+;;;; (end patch)
+
 (use-package danylo-text-font-lock
   ;; Personal minor mode for text document highlighting
   :ensure nil

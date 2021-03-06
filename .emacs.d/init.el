@@ -4,6 +4,11 @@
 ;; No garbage collection at startup
 (setq gc-cons-threshold most-positive-fixnum)
 
+;; Nativecomp stuff
+(setq comp-deferred-compilation t
+      warning-suppress-log-types '((comp))
+      warning-suppress-types '((comp)))
+
 ;;; ..:: Package management ::..
 
 (require 'package)
@@ -79,6 +84,21 @@ directory."
 				  :foreground ,fg)
 		  'display '(raise -0.05))
     ""))
+
+(use-package all-the-icons
+  ;; https://github.com/domtronn/all-the-icons.el
+  ;; Pretty icons
+  :config
+  (when (and (window-system)
+	     (not (member "all-the-icons" (font-family-list))))
+    (all-the-icons-install-fonts t))
+  ;; Fix MATLAB icon
+  (when (window-system)
+    (setq all-the-icons-icon-alist
+	  (add-to-list 'all-the-icons-icon-alist
+		       '("\\.m$" all-the-icons-fileicon "matlab"
+			 :face all-the-icons-orange))))
+  )
 
 ;;;###autoload
 (defun danylo/fa-icon (icon &optional fg)
@@ -855,21 +875,6 @@ Patched so that symbols beginning with \\, @, etc. are correctly handled."
   ;; Coverage and timing tool for font-lock keywords
   )
 
-(use-package all-the-icons
-  ;; https://github.com/domtronn/all-the-icons.el
-  ;; Pretty icons
-  :config
-  (when (and (window-system)
-	     (not (member "all-the-icons" (font-family-list))))
-    (all-the-icons-install-fonts t))
-  ;; Fix MATLAB icon
-  (when (window-system)
-    (setq all-the-icons-icon-alist
-	  (add-to-list 'all-the-icons-icon-alist
-		       '("\\.m$" all-the-icons-fileicon "matlab"
-			 :face all-the-icons-orange))))
-  )
-
 (use-package doom-modeline
   ;; https://github.com/seagle0128/doom-modeline
   ;; A fancy and fast mode-line inspired by minimalism design.
@@ -1027,7 +1032,7 @@ Patched for my own icons."
 (defun danylo/select-window (orig-fun &rest args)
   "Patch to modify select-window so that modeline is not
 activated on output into a buffer, e.g. ansi-term."
-  (add-to-list 'args ':mark-for-redisplay t)
+  (setq args `(,(nth 0 args) t))
   (apply orig-fun args))
 
 (defun danylo/term-emulate-terminal (orig-fun &rest args)

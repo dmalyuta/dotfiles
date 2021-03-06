@@ -10,26 +10,30 @@ if not_installed emacs; then
     # Dependencies
     sudo apt-get -y build-dep emacs
     sudo apt-get -y install libwebkit2gtk-4.0-dev \
-	 libjansson-dev \
 	 autoconf \
 	 texinfo \
 	 libncurses-dev
 
+    # Get libgcc for native compilation
+    sudo add-apt-repository -y ppa:ubuntu-toolchain-r/ppa
+    sudo apt-get update
+    sudo apt-get -y install gcc-10 libgccjit0 libgccjit-10-dev
+
+    # Get fast JSON
+    sudo apt-get -y install libjansson4 libjansson-dev
+
     rm -rf /tmp/emacs/
-    git clone --branch emacs-27.1.90 --depth 1 git://git.sv.gnu.org/emacs.git \
+    git clone --branch feature/native-comp --depth 1 git://git.savannah.gnu.org/emacs.git \
 	/tmp/emacs
     ( cd /tmp/emacs/ && \
-	  git checkout emacs-27.1.90 && \
+	  git checkout feature/native-comp && \
+	  export CC="gcc-10" && \
 	  ./autogen.sh && \
 	  # run `./configure --help > /tmp/emacs_configure_help.txt` to print
 	  # out a file of configuration options
-	  ./configure --with-x-toolkit=lucid --with-json \
-		      CFLAGS='-O3 -march=native -pipe' \
-		      ' -falign-functions=64 -fomit-frame-pointer -ftracer' \
-		      ' -funit-at-a-time -fweb -fforce-addr -fpeel-loops' \
-		      ' -funswitch-loops -frename-registers -mfpmath=sse' \
-		      ' -ffast-math -fno-finite-math-only -fstack-check' && \
-	      make && sudo make install )
+	  ./configure --with-native-compilation --with-json \
+	   CFLAGS="-O3 -march=native" && \
+	   make -j2 && sudo make install )
 fi
 
 # ..:: Language Server Protocols ::..
@@ -115,9 +119,9 @@ if not_installed mu; then
     # Dependencies
     sudo apt-get -y install libgmime-3.0-dev libxapian-dev
 
-    wget -4 https://github.com/djcb/mu/releases/download/1.4.13/mu-1.4.13.tar.xz -P /tmp/
-    tar -zxvf /tmp/mu-1.4.13.tar.xz -C /tmp
-    ( cd /tmp/mu-1.4.13/ && ./configure && make && sudo make install )
+    wget -4 https://github.com/djcb/mu/releases/download/1.4.15/mu-1.4.15.tar.xz -P /tmp/
+    tar -zxvf /tmp/mu-1.4.15.tar.xz -C /tmp
+    ( cd /tmp/mu-1.4.15/ && ./configure && make && sudo make install )
 fi
 
 # ..:: Other ::..

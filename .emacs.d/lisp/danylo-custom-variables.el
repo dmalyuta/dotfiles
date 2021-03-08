@@ -119,6 +119,11 @@ called (manually or automatically)."
   :type 'integer
   :group 'danylo)
 
+(defcustom danylo/windsize-big-step 3
+  "Step amount for the large-step mode of window resizing."
+  :type 'integer
+  :group 'danylo)
+
 ;;;; Faces
 
 ;; Colors taken from doom-one theme

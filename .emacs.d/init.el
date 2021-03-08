@@ -33,6 +33,7 @@
      "https://raw.githubusercontent.com/quelpa/quelpa/master/quelpa.el")
     (eval-buffer)
     (quelpa-self-upgrade)))
+(require 'quelpa)
 (setq quelpa-update-melpa-p nil
       quelpa-upgrade-p nil
       quelpa-verbose nil
@@ -51,28 +52,41 @@
 
 ;;; ..:: Customization variables ::..
 
-;;;###autoload
-(defun danylo/make-path (rel-path)
-  "Prepend emacs home directory to relative path in the home
+(eval-and-compile
+  (defun danylo/make-path (rel-path)
+    "Prepend emacs home directory to relative path in the home
 directory."
-  (expand-file-name rel-path user-emacs-directory))
+    (expand-file-name rel-path user-emacs-directory))
 
-(defconst danylo/emacs-custom-lisp-dir
-  `,(danylo/make-path "lisp/")
-  "Location of additional custom Lisp code directory.")
+  (defconst danylo/emacs-custom-lisp-dir
+    `,(danylo/make-path "lisp/")
+    "Location of additional custom Lisp code directory.")
 
-(defconst danylo/emacs-backup-dir
-  `,(danylo/make-path "backups/")
-  "Location where backup files are saved.")
+  (defconst danylo/emacs-backup-dir
+    `,(danylo/make-path "backups/")
+    "Location where backup files are saved."))
 
 (use-package danylo-custom-variables
   ;; Customization variables for init file.
   :ensure nil
   :load-path danylo/emacs-custom-lisp-dir)
 
+;;; ..:: Keybinding management ::..
+
+(require 'bind-key)
+
+(use-package general
+  ;; https://github.com/noctuid/general.el
+  ;; More convenient key definitions in emacs
+  )
+
+(use-package hydra
+  ;; https://github.com/abo-abo/hydra
+  ;; Make Emacs bindings that stick around
+  )
+
 ;;; ..:: General helper functions ::..
 
-;;;###autoload
 (defun danylo/fancy-icon (icon-lib icon-family icon &optional fg)
   "Icon with proper formatting for minibuffer"
   (unless fg
@@ -100,17 +114,22 @@ directory."
 			 :face all-the-icons-orange))))
   )
 
-;;;###autoload
 (defun danylo/fa-icon (icon &optional fg)
   "Fontawesome icon with proper formatting."
   (danylo/fancy-icon 'all-the-icons-faicon 'all-the-icons-faicon-family
 		     icon fg))
 
-;;;###autoload
 (defun danylo/octicon (icon &optional fg)
   "Octicon with proper formatting."
   (danylo/fancy-icon 'all-the-icons-octicon 'all-the-icons-octicon-family
 		     icon fg))
+
+(defun danylo/print-in-minibuffer (str)
+  "Echo STR in the minibuffer."
+  (with-selected-window (minibuffer-window)
+    (setq cursor-type nil)
+    (message (propertize str 'face `(:foreground ,danylo/faded)))
+    (setq cursor-type t)))
 
 (use-package ts
   ;; https://github.com/alphapapa/ts.el
@@ -119,6 +138,9 @@ directory."
   :ensure nil
   :quelpa ((ts :fetcher github
 	       :repo "alphapapa/ts.el")))
+
+(defvar danylo/use-package-always-ensure
+  "Memory variable for use-package-always-ensure")
 
 (use-package unpackaged
   ;; https://github.com/alphapapa/unpackaged.el
@@ -143,9 +165,6 @@ directory."
 (add-hook 'after-init-hook
 	  (lambda () (setq gc-cons-threshold danylo/gc-cons-threshold)))
 
-;; Garbage collection message
-
-;;;###autoload
 (defun danylo/gc-message ()
   "Garbage collection message."
   (when (and danylo/gc-collect-print
@@ -166,20 +185,6 @@ directory."
 	      gcmh-high-cons-threshold most-positive-fixnum)
   :config
   (gcmh-mode 1))
-
-;;; ..:: Keybinding management ::..
-
-(require 'bind-key)
-
-(use-package general
-  ;; https://github.com/noctuid/general.el
-  ;; More convenient key definitions in emacs
-  )
-
-(use-package hydra
-  ;; https://github.com/abo-abo/hydra
-  ;; Make Emacs bindings that stick around
-  )
 
 ;;; ..:: General usability ::..
 
@@ -213,15 +218,6 @@ directory."
 
 ;; Do not resize minibuffer for long path on file save
 
-;;;###autoload
-(defun danylo/print-in-minibuffer (str)
-  "Echo STR in the minibuffer."
-  (with-selected-window (minibuffer-window)
-    (setq cursor-type nil)
-    (message (propertize str 'face `(:foreground ,danylo/faded)))
-    (setq cursor-type t)))
-
-;;;###autoload
 (defun danylo/save-buffer (orig-fun &rest args)
   "Pretty print save buffer, preserver height of minibuffer."
   (let ((message-truncate-lines t)
@@ -267,11 +263,13 @@ directory."
 (defvar danylo/default-font-size nil
   "The default font size when Emacs opens.")
 
-;;;###autoload
 (defun danylo/reset-font-size ()
   (interactive)
-  (setq danylo/current-font-size (face-attribute 'default :height))
-  (setq danylo/text-increment (- danylo/default-font-size danylo/current-font-size))
+  (defvar danylo/current-font-size)
+  (defvar danylo/text-increment)
+  (setq danylo/current-font-size (face-attribute 'default :height)
+	danylo/text-increment (- danylo/default-font-size
+				 danylo/current-font-size))
   (require 'default-text-scale)
   (default-text-scale-increment danylo/text-increment)
   )
@@ -314,7 +312,6 @@ directory."
 
 ;;;; Working with buffers
 
-;;;###autoload
 (defun danylo/revert-buffer-no-confirm ()
   "Revert buffer without confirmation."
   (interactive)
@@ -330,7 +327,7 @@ directory."
 ;; Enable clipboard in emacs
 (xterm-mouse-mode t)
 (mouse-wheel-mode t)
-(setq x-select-enable-clipboard t)
+(setq select-enable-clipboard t)
 
 ;;;; Backing up
 
@@ -380,7 +377,6 @@ directory."
 
 ;;;; Handle killing Emacs
 
-;;;###autoload
 (defun danylo/close-frame-or-kill-emacs (arg)
   "Delete frame or kill Emacs if there are only one frame.
 When called with C-u prefix, force kill Emacs (all frames).
@@ -396,7 +392,6 @@ Source: https://emacs.stackexchange.com/a/50834/13661"
       ;; Traditional C-x C-c (kill Emacs)
       (save-buffers-kill-terminal))))
 
-;;;###autoload
 (defun danylo/make-new-frame ()
   "Make a new frame, and make sure it behaves like I want."
   (interactive)
@@ -414,7 +409,6 @@ Source: https://emacs.stackexchange.com/a/50834/13661"
 
 ;;;; eval-buffer default directory fix
 
-;;;###autoload
 (defun danylo/eval-buffer-maintain-dir (orig-fun &rest args)
   "Maintain default-directory when eval-buffer."
   (let ((current-dir default-directory))
@@ -425,7 +419,6 @@ Source: https://emacs.stackexchange.com/a/50834/13661"
 
 ;;; ..:: Searching ::..
 
-;;;###autoload
 (defun danylo/side-window-jump (fun buf-name)
   "Smart go to a side window. If side window visible, jump
 there. If not visible, open it but don't focus."
@@ -439,7 +432,6 @@ there. If not visible, open it but don't focus."
 	;; shown already shown
 	(select-window current-window)))))
 
-;;;###autoload
 (defun danylo/neotree-jump ()
   "Smart open neotree side window."
   (interactive)
@@ -460,7 +452,6 @@ there. If not visible, open it but don't focus."
 (defvar danylo/imenu-list--displayed-window nil
   "The **window** who owns the saved imenu entries.")
 
-;;;###autoload
 (defun danylo/imenu-list-jump ()
   "Smart open imenu-list side window."
   (interactive)
@@ -488,7 +479,6 @@ there. If not visible, open it but don't focus."
 ;; same buffer. Otherwise, the jump happens in the wrong window than the one
 ;; the user was browsing.
 
-;;;###autoload
 (defun danylo/imenu-list-goto-entry (orig-fun &rest args)
   "Switch to the original buffer and display the entry under point.
 Patched to use original **window** instead of buffer."
@@ -500,7 +490,6 @@ Patched to use original **window** instead of buffer."
     (imenu-list--show-current-entry)))
 (advice-add 'imenu-list-goto-entry :around #'danylo/imenu-list-goto-entry)
 
-;;;###autoload
 (defun danylo/imenu-list-display-entry (orig-fun &rest args)
   "Display in original buffer the entry under point.
 Patched to use original **window** instead of buffer."
@@ -535,7 +524,9 @@ lines according to the first line."
     (message "No region selected.")
     nil))
 
-;;;###autoload
+(use-package counsel)
+(use-package swiper)
+
 (defun danylo/swiper-thing-at-point (&optional start end)
   "Put thing at point in swiper buffer."
   (interactive (if (use-region-p) (list (region-beginning) (region-end))))
@@ -545,13 +536,11 @@ lines according to the first line."
 	(counsel-grep-or-swiper selection))
     (counsel-grep-or-swiper (thing-at-point 'symbol))))
 
-;;;###autoload
 (defun danylo/counsel-switch-buffer-no-preview ()
   "Switch to another buffer without preview."
   (interactive)
   (ivy-switch-buffer))
 
-;;;###autoload
 (defun danylo/ivy-display-function-window (text)
   "Show ivy candidate completion list in a temporary buffer, like Helm."
   (when (> (length text) 0)
@@ -560,6 +549,7 @@ lines according to the first line."
 	(setq cursor-type nil) ;; Hide cursor
 	(let ((inhibit-read-only t))
 	  (erase-buffer)
+	  (defvar danylo/completion-candidate-list)
 	  (setq danylo/completion-candidate-list
 		;; Remove the first character, which is '\n' (blank line)
 		(substring text 1 nil))
@@ -585,12 +575,10 @@ lines according to the first line."
 	       (window-height . ,danylo/num-completion-candidates))))))
       )))
 
-;;;###autoload
 (defun danylo/side-window-tmp ()
   (interactive)
   (display-buffer-in-side-window (get-buffer "*Messages*") '((side . right))))
 
-;;;###autoload
 (defun danylo/counsel-imenu ()
   "Jump to a buffer position indexed by imenu.
 **Do not sort the items**, so that the order is as the items
@@ -615,8 +603,6 @@ appear in the file."
   ;; intelligent over time
   (prescient-persist-mode +1))
 
-(use-package counsel)
-(use-package swiper)
 (use-package ivy
   ;; https://github.com/abo-abo/swiper
   ;; Ivy - a generic completion frontend for Emacs
@@ -677,7 +663,6 @@ appear in the file."
   :config
   (ivy-mode 1))
 
-;;;###autoload
 (defun danylo/company-adjust (start)
   "Adjust bounds of thing at point.
 This is a 'patch' to handle things like @ and \\ in the prefix correctly."
@@ -688,7 +673,6 @@ This is a 'patch' to handle things like @ and \\ in the prefix correctly."
       (setq start (1- start)))
     start))
 
-;;;###autoload
 (defun danylo/counsel-company (orig-fun &rest args)
   "Complete using `company-candidates'.
 Patched so that symbols beginning with \\, @, etc. are correctly handled."
@@ -709,7 +693,6 @@ Patched so that symbols beginning with \\, @, etc. are correctly handled."
       )))
 (advice-add 'counsel-company :around #'danylo/counsel-company)
 
-;;;###autoload
 (defun danylo/expand-unicode (orig-fun &rest args)
   "Expand unicode symbol if necessary."
   (apply orig-fun args)
@@ -731,7 +714,7 @@ Patched so that symbols beginning with \\, @, etc. are correctly handled."
 	      helm-comp-read-mode-line ""
 	      helm-buffer-max-length 30
 	      helm-buffers-truncate-lines nil
-	      helm-split-window-in-side-p t
+	      helm-split-window-inside-p t
 	      helm-move-to-line-cycle-in-source t
 	      helm-echo-input-in-header-line nil
 	      helm-display-header-line nil
@@ -971,7 +954,6 @@ Patched so that symbols beginning with \\, @, etc. are correctly handled."
 ;; Activate the Doom modeline mode
 (add-hook 'after-init-hook (lambda () (doom-modeline-mode 1)))
 
-;;;###autoload
 (defun danylo/doom-modeline-multiple-cursors ()
   "Show the number of multiple cursors."
   (cl-destructuring-bind (count . face)
@@ -990,7 +972,6 @@ Patched so that symbols beginning with \\, @, etc. are correctly handled."
       (concat (propertize " mc:" 'face face)
 	      (propertize (format "%d " count) 'face face)))))
 
-;;;###autoload
 (defun danylo/doom-modeline-update-vcs-icon (orig-fun &rest args)
   "Update icon of vcs state in mode-line.
 Patched for my own icons."
@@ -1101,7 +1082,6 @@ a buffer like ansi-term that is printing out information."
   :config
   (move-text-default-bindings))
 
-;;;###autoload
 (defun danylo/undo-no-gc ()
   "Undo function. Turns off GC prior to undoing."
   (interactive)
@@ -1169,7 +1149,6 @@ a buffer like ansi-term that is printing out information."
 
 ;;;; Section delimiters
 
-;;;###autoload
 (defun danylo/section-msg (left msg right &optional nospace)
   "Section delimiters for comment.
 LEFT and RIGHT are the section delimineters.
@@ -1187,19 +1166,16 @@ NOSPACE, if t, means that there is no spacing added between delimiters."
 	(insert (format "%s%s%s" left msg right))
       (insert (format "%s %s %s" left msg right)))))
 
-;;;###autoload
 (defun danylo/code-section ()
   "Section delimiters for comment."
   (interactive)
   (danylo/section-msg "..::" "SECTION" "::.."))
 
-;;;###autoload
 (defun danylo/code-subsection ()
   "Subsection delimiters for comment."
   (interactive)
   (danylo/section-msg ">>" "SUBSECTION" "<<"))
 
-;;;###autoload
 (defun danylo/code-subsubsection ()
   "Subsubsection delimiters for comment."
   (interactive)
@@ -1207,7 +1183,6 @@ NOSPACE, if t, means that there is no spacing added between delimiters."
 
 ;;;; Duplicate line
 
-;;;###autoload
 (defun danylo/duplicate-line-or-region (arg)
   "Duplicates the current line or region ARG times.
 If there's no region, the current line will be duplicated. However, if
@@ -1235,7 +1210,6 @@ there's a region, all lines that region covers will be duplicated."
 
 ;;;; Delete words without putting them into kill ring
 
-;;;###autoload
 (defun danylo/forward-delete-word (arg)
   "Delete characters forward until encountering the end of a word.
 With argument, do this that many times.
@@ -1247,7 +1221,6 @@ This command does not push text to `kill-ring'."
      (forward-word arg)
      (point))))
 
-;;;###autoload
 (defun danylo/backward-delete-word (arg)
   "Delete characters backward until encountering the beginning of a word.
 With argument ARG, do this that many times."
@@ -1272,7 +1245,6 @@ With argument ARG, do this that many times."
  "C-<up>" 'windmove-up
  "C-<down>" 'windmove-down)
 
-;;;###autoload
 (defun danylo/switch-to-last-window ()
   "Return to the last active window."
   (interactive)
@@ -1294,11 +1266,50 @@ With argument ARG, do this that many times."
   ;; https://github.com/grammati/windsize
   ;; Easy resizing of emacs windows
   :init (setq windsize-cols 1
-	      windsize-rows 1)
-  :config
-  (windsize-default-keybindings))
+	      windsize-rows 1))
 
-;;;###autoload
+(defvar danylo/windsize-current-step 1
+  "The step amount by which to resize windows.")
+
+(defvar danylo/windsize-timer nil
+  "Timer object for windsize increment resetting.")
+
+(defun danylo/windsize-smart-step (dir &optional arg)
+  (interactive "P")
+  (when arg
+    ;; Cancel existing timer
+    (when danylo/windsize-timer
+      (cancel-timer danylo/windsize-timer))
+    ;; Change step increment and crete new timer
+    (setq danylo/windsize-current-step danylo/windsize-big-step
+	  danylo/windsize-timer (run-with-idle-timer
+				 2.0 nil
+				 (lambda ()
+				   (setq danylo/windsize-current-step 1)))))
+  (windsize-resize dir danylo/windsize-current-step))
+
+(defun danylo/windsize-up-smart (&optional arg)
+  (interactive "P")
+  (danylo/windsize-smart-step 'up arg))
+
+(defun danylo/windsize-down-smart (&optional arg)
+  (interactive "P")
+  (danylo/windsize-smart-step 'down arg))
+
+(defun danylo/windsize-left-smart (&optional arg)
+  (interactive "P")
+  (danylo/windsize-smart-step 'left arg))
+
+(defun danylo/windsize-right-smart (&optional arg)
+  (interactive "P")
+  (danylo/windsize-smart-step 'right arg))
+
+(general-define-key
+ "C-S-<up>" 'danylo/windsize-up-smart
+ "C-S-<down>" 'danylo/windsize-down-smart
+ "C-S-<left>" 'danylo/windsize-left-smart
+ "C-S-<right>" 'danylo/windsize-right-smart)
+
 (defun danylo/set-window-width (width)
   "Set the selected window's width."
   (let ((delta (- width (window-width))))
@@ -1306,7 +1317,6 @@ With argument ARG, do this that many times."
 	(enlarge-window-horizontally delta)
       (shrink-window-horizontally (* -1 delta)))))
 
-;;;###autoload
 (defun danylo/set-window-columns-precise ()
   "Set the selected window to user-specified number of columns.
 Default is 80"
@@ -1351,7 +1361,6 @@ Default is 80"
 
 ;; Move cursor to minibuffer (useful if lost focus, due to mouse click)
 
-;;;###autoload
 (defun danylo/switch-to-minibuffer-window ()
   "switch to minibuffer window (if active)"
   (interactive)
@@ -1364,7 +1373,6 @@ Default is 80"
 
 ;;;; Improve quit-window behavior (automatically delete-window sometimes)
 
-;;;###autoload
 (defun danylo/quit-and-kill-window (orig-fun &rest args)
   "Optionally also kill the window after quitting it."
   (setq delete-this-window nil)
@@ -1386,7 +1394,6 @@ Default is 80"
 
 ;;; ..:: Terminal emulator ::..
 
-;;;###autoload
 (defun danylo/run-terminator-here ()
   "Run terminal from current buffer"
   (interactive "@")
@@ -1396,14 +1403,12 @@ Default is 80"
  "C-c t e" 'ansi-term
  "C-c t r" 'danylo/run-terminator-here)
 
-;;;###autoload
 (defadvice ansi-term (before force-bash)
   "Always use bash"
   (interactive (list "/bin/bash")))
 
 (add-hook 'after-init-hook (lambda  () (ad-activate 'ansi-term)))
 
-;;;###autoload
 (defun danylo/ansi-term-use-utf8 ()
   "Display of certain characters and control codes to UTF-8"
   (set-buffer-process-coding-system 'utf-8-unix 'utf-8-unix))
@@ -1412,7 +1417,6 @@ Default is 80"
 ;; Clickable URLs
 (add-hook 'term-mode-hook (lambda () (goto-address-mode)))
 
-;;;###autoload
 (defadvice term-sentinel (around my-advice-term-sentinel (proc msg))
   "Make that typing exit in ansi-term (which exits the shell)
 also closes the buffer"
@@ -1425,7 +1429,6 @@ also closes the buffer"
 
 (add-hook 'after-init-hook (lambda  () (ad-activate 'term-sentinel)))
 
-;;;###autoload
 (defun danylo/set-no-process-query-on-exit ()
   "No 'are you sure' query on exit"
   (let ((proc (get-buffer-process (current-buffer))))
@@ -1435,6 +1438,20 @@ also closes the buffer"
 (add-hook 'term-exec-hook 'danylo/set-no-process-query-on-exit)
 
 ;; Key bindings
+
+(defun danylo/switch-to-term-line-mode () (interactive)
+       (term-line-mode)
+       (read-only-mode +1))
+
+(defun danylo/switch-to-term-char-mode () (interactive)
+       (term-char-mode)
+       (read-only-mode 0))
+
+(defun danylo/toggle-term-line-char-mode ()
+  (interactive)
+  (if (term-in-char-mode)
+      (danylo/switch-to-term-line-mode)
+    (danylo/switch-to-term-char-mode)))
 
 (with-eval-after-load "term"
   (define-key term-raw-map (kbd "C-c r") 'rename-buffer)
@@ -1455,17 +1472,6 @@ also closes the buffer"
   (defun danylo/term-send-tab () (interactive) (term-send-raw-string "\t"))
   (define-key term-raw-map (kbd "S-SPC") 'danylo/term-send-tab)
   ;; Switch between char and line move
-  (defun danylo/switch-to-term-line-mode () (interactive)
-	 (term-line-mode)
-	 (read-only-mode +1))
-  (defun danylo/switch-to-term-char-mode () (interactive)
-	 (term-char-mode)
-	 (read-only-mode 0))
-  (defun danylo/toggle-term-line-char-mode ()
-    (interactive)
-    (if (term-in-char-mode)
-	(danylo/switch-to-term-line-mode)
-      (danylo/switch-to-term-char-mode)))
   (define-key term-raw-map (kbd "C-c t c") 'danylo/switch-to-term-char-mode)
   (define-key term-raw-map (kbd "C-c t l") 'danylo/switch-to-term-line-mode)
   (define-key term-raw-map (kbd "C-c t t") 'danylo/toggle-term-line-char-mode)
@@ -1574,7 +1580,6 @@ also closes the buffer"
   (set-face-attribute 'flycheck-warning nil :underline `,danylo/yellow)
   (set-face-attribute 'flycheck-info nil :underline `,danylo/green))
 
-;;;###autoload
 (defun danylo/flycheck-list-errors ()
   "Open the list of errors in the current buffer."
   (interactive)
@@ -1601,7 +1606,6 @@ also closes the buffer"
 	(flycheck-error-list-set-source source)
 	(select-window this-window)))))
 
-;;;###autoload
 (defun danylo/flycheck-jump-in-buffer (orig-fun &rest args)
   "In BUFFER, jump to ERROR.
 Patched so that if the last window visited is the buffer, jump to that one.
@@ -1625,7 +1629,6 @@ The remainder of the function is a carbon-copy from Flycheck."
   (flycheck-error-list-highlight-errors 'preserve-pos))
 (advice-add 'flycheck-jump-in-buffer :around #'danylo/flycheck-jump-in-buffer)
 
-;;;###autoload
 (defun danylo/toggle-spellcheck ()
   "Turn on spell checking."
   (interactive)
@@ -1679,7 +1682,6 @@ The remainder of the function is a carbon-copy from Flycheck."
 
 ;;; ..:: File management ::..
 
-;;;###autoload
 (defun danylo/maintain-xref-history (orig-fun &rest args)
   "Push marker to stack to that M-, works to jump back."
   (xref-push-marker-stack)
@@ -1701,11 +1703,10 @@ The remainder of the function is a carbon-copy from Flycheck."
 	projectile-globally-ignored-files
 	(append '(".DS_Store" ".gitignore")
 		projectile-globally-ignored-files))
-  (projectile-global-mode))
+  (projectile-mode))
 
 ;;; ..:: Org ::..
 
-;;;###autoload
 (defun danylo/org-mode-setup ()
   "Configure org mode after loading it"
   (setq org-adapt-indentation nil
@@ -1745,14 +1746,12 @@ The remainder of the function is a carbon-copy from Flycheck."
   (add-to-list 'org-file-apps
 	       '("\\.pdf::\\([0-9]+\\)\\'" . "evince -p %1 %s") t))
 
-;;;###autoload
 (defun danylo/org-emphasize (char)
   "Emphasize text in org-mode. CHAR is the character to wrap the
   text with."
   (interactive)
   (org-emphasize (string-to-char char)))
 
-;;;###autoload
 (defun danylo/org-emphasize-equation (&optional start end)
   "Wrap an equation in $ symbols in org-mode."
   (interactive (if (use-region-p) (list (region-beginning) (region-end))))
@@ -1849,7 +1848,6 @@ The remainder of the function is a carbon-copy from Flycheck."
   (advice-add #'shr-colorize-region :around
 	      (defun shr-no-colourise-region (&rest ignore))))
 
-;;;###autoload
 (defun danylo/launch-mu4e (arg)
   "Launch mu4e, or quit it if preceded by C-u"
   (interactive "P")
@@ -1861,19 +1859,18 @@ The remainder of the function is a carbon-copy from Flycheck."
 (defvar danylo/got-mail nil
   "Indicator that mailbox has been updated")
 
-;;;###autoload
 (defun danylo/get-mail (&optional arg)
   "Get new email silently."
   (interactive "P")
   (unless danylo/got-mail
     (mu4e-update-mail-and-index t)
+    (mu4e-alert-enable-mode-line-display)
     (danylo/print-in-minibuffer
      (format "%s Refreshed inbox" (danylo/fa-icon "inbox")))
     (setq danylo/got-mail t)
     (run-with-timer danylo/get-mail-min-interval nil
 		    (lambda () (setq danylo/got-mail nil)))))
 
-;;;###autoload
 (defun danylo/mu4e-error-handler (orig-fun &rest args)
   "Handler function for showing an error.
 Patched for my own better error messages."
@@ -1908,7 +1905,6 @@ Patched for my own better error messages."
 			   (mu4e-alert-enable-mode-line-display)))))
 		    )))
 
-;;;###autoload
 (defun danylo/mu4e~headers-remove-handler (docid &optional skip-hook)
   "This is a patched version of mu4e~headers-remove-handler in
 mu4e-headers.el. The original function throws an error after
@@ -1925,7 +1921,6 @@ benefit of preserving window layout."
   (unless skip-hook
     (run-hooks 'mu4e-message-changed-hook)))
 
-;;;###autoload
 (defun danylo/message-kill-buffer (orig-fun &rest args)
   "Patched message-kill-buffer from gnus/message.el.gz.
 This version deletes backup files without asking."
@@ -1970,7 +1965,6 @@ This version deletes backup files without asking."
 
 ;;;; Signature before message history
 
-;;;###autoload
 (defun danylo/insert-mu4e-signature ()
   "Insert the email signature."
   (when (stringp mu4e-compose-signature)
@@ -2004,12 +1998,10 @@ This version deletes backup files without asking."
 
 ;;; ..:: Shell interaction ::..
 
-;;;###autoload
 (defun danylo/shell~check-open (shell-buffer-name)
   "Check if a shell is running."
   (if (get-buffer shell-buffer-name) t nil))
 
-;;;###autoload
 (defun danylo/shell-open (shell-buffer-name shell-type &optional in-place)
   "Open a shell."
   (if (danylo/shell~check-open shell-buffer-name)
@@ -2041,7 +2033,6 @@ This version deletes backup files without asking."
 	(rename-buffer shell-buffer-name)
 	(select-window this-window)))))
 
-;;;###autoload
 (defun danylo/shell-exec (shell-buffer-name command)
   "Run command in the shell.
 If there is no shell open, prints a message to inform."
@@ -2051,7 +2042,6 @@ If there is no shell open, prints a message to inform."
 	(term-send-raw-string (format "%s\n" command)))
     (message "No shell open.")))
 
-;;;###autoload
 (defun danylo/shell-get-point (shell-buffer-name)
   "Get the current location of point in the shell."
   (let ((current-point nil))
@@ -2064,7 +2054,6 @@ If there is no shell open, prints a message to inform."
       (message "No shell open."))
     current-point))
 
-;;;###autoload
 (defun danylo/shell-get-content (shell-buffer-name start end)
   "Get the shell text between START and END point positions."
   (setq shell-content nil)
@@ -2129,7 +2118,6 @@ If there is no shell open, prints a message to inform."
 
 ;; Replace LSP spinner with a static gear (I like this better visually)
 
-;;;###autoload
 (defun danylo/lsp-gear-show (orig-fun &rest args)
   "Replace LSP spinner with a static gear, while the LSP process executes."
   (mapc
@@ -2147,7 +2135,6 @@ If there is no shell open, prints a message to inform."
    (buffer-list))
   (force-mode-line-update t))
 
-;;;###autoload
 (defun danylo/lsp-gear-hide (orig-fun &rest args)
   "Hide the gear icon."
   (when (--all? (eq (lsp--workspace-status it) 'initialized)
@@ -2166,7 +2153,6 @@ If there is no shell open, prints a message to inform."
 
 ;;;; Open files manually, rather than through xref
 
-;;;###autoload
 (defun danylo/ffap (&optional filename)
   "A variant of find-file-at-point without prompting.
 Source: https://www.reddit.com/r/emacs/comments/676r5b/how_to_stop_
@@ -2178,7 +2164,6 @@ Source: https://www.reddit.com/r/emacs/comments/676r5b/how_to_stop_
         (find-file fname)
       (find-file-at-point filename))))
 
-;;;###autoload
 (defun danylo/xref-find-definitions (orig-fun &rest args)
   "Wraps xref-find-definitions so that we open files manually.
 This avoids some errors, such as Julia LSP server failing with
@@ -2197,7 +2182,6 @@ relative file paths."
 
 ;;;; If cannot find definition, search project with AG
 
-;;;###autoload
 (defun danylo/xref-find-defintion-with-ag-fallback (orig-fun &rest args)
   "Use AG as a fallback in case xref standard command fails to
 find a definion."
@@ -2271,13 +2255,12 @@ find a definion."
 ;; Configure Flycheck
 (add-hook 'python-mode-hook
 	  (lambda ()
-	    (setq flycheck-enabled-checkers '(python-flake8))
+	    (setq flycheck--automatically-enabled-checkers '(python-flake8))
 	    (setq flycheck-disabled-checkers
 		  '(python-mypy
 		    python-pylint
 		    python-pyright))))
 
-;;;###autoload
 (defun danylo/lsp-eldoc-toggle-hover ()
   "Toggle variable info"
   (interactive)
@@ -2287,7 +2270,6 @@ find a definion."
     (progn (setq lsp-eldoc-enable-hover t)
 	   (eldoc-mode 1))))
 
-;;;###autoload
 (defun danylo/lsp-variable-info-message (string)
   "Display variable info"
   (message "%s %s"
@@ -2295,7 +2277,6 @@ find a definion."
 	   (propertize string 'face
 		       `(:foreground ,danylo/yellow))))
 
-;;;###autoload
 (defun danylo/lsp-display-variable-info ()
   (interactive)
   (if (not (looking-at "[[:space:]\n]"))
@@ -2321,13 +2302,11 @@ find a definion."
 
 ;;;; Imenu setup
 
-;;;###autoload
 (defun danylo/python-imenu ()
   (let ((python-imenu (imenu--generic-function
 		       imenu-generic-expression)))
     (append python-imenu)))
 
-;;;###autoload
 (defun danylo/python-imenu-hooks ()
   (setq imenu-generic-expression
 	'(("Function" "^[[:blank:]]*def \\(.*\\).*(.*$" 1)
@@ -2341,7 +2320,6 @@ find a definion."
 
 ;;;; Python shell interaction
 
-;;;###autoload
 (defun danylo/python-shell-open (arg)
   "Open a Python shell."
   (interactive "P")
@@ -2353,7 +2331,6 @@ find a definion."
     (danylo/shell-open danylo/python-buffer-name
 		       danylo/python-shell-type)))
 
-;;;###autoload
 (defun danylo/python-shell-run-file ()
   "Run current Python file."
   (interactive)
@@ -2362,7 +2339,6 @@ find a definion."
     (danylo/shell-exec danylo/python-buffer-name command)
     ))
 
-;;;###autoload
 (defun danylo/smart-select-region (start end)
   "Select region in file, removing possible indent of all
 lines according to the first line."
@@ -2383,7 +2359,6 @@ lines according to the first line."
     (message "No region selected.")
     nil))
 
-;;;###autoload
 (defun danylo/python-shell-run-region (start end)
   "Run highlighted selection in file."
   (interactive "r")
@@ -2395,7 +2370,6 @@ lines according to the first line."
       (danylo/shell-exec danylo/python-buffer-name "%autoindent\n")
       )))
 
-;;;###autoload
 (defun danylo/python-config ()
   ;; Key bindings
   (define-key python-mode-map (kbd "C-c C-s") 'danylo/python-shell-open)
@@ -2440,7 +2414,6 @@ lines according to the first line."
 
 ;;;; Julia shell interaction
 
-;;;###autoload
 (defun danylo/julia-shell-open (arg)
   "Open a Julia shell."
   (interactive "P")
@@ -2452,7 +2425,6 @@ lines according to the first line."
     (danylo/shell-open danylo/julia-buffer-name
 		       danylo/julia-shell-type)))
 
-;;;###autoload
 (defun danylo/julia-shell-run-file ()
   "Run current Julia file."
   (interactive)
@@ -2461,7 +2433,6 @@ lines according to the first line."
     (danylo/shell-exec danylo/julia-buffer-name command)
     ))
 
-;;;###autoload
 (defun danylo/julia-shell-run-region (start end)
   "Run highlighted selection in file."
   (interactive "r")
@@ -2470,7 +2441,6 @@ lines according to the first line."
       (setq command (format "%s\n" command))
       (danylo/shell-exec danylo/julia-buffer-name command))))
 
-;;;###autoload
 (defun danylo/julia-config ()
   ;; Key bindings
   (define-key julia-mode-map (kbd "C-c C-s") 'danylo/julia-shell-open)
@@ -2487,7 +2457,6 @@ lines according to the first line."
 (defconst julia-docstring-refresh-rate 0.1
   "How often to check Julia REPL if docstring has finished printing.")
 
-;;;###autoload
 (defun danylo/julia-help-at-point (&optional start end)
   "Query Julia REPL for help about thing at point."
   (interactive (if (use-region-p) (list (region-beginning) (region-end))))
@@ -2500,7 +2469,6 @@ lines according to the first line."
       (run-with-timer julia-docstring-delay nil
 		      'danylo/julia-show-help-docstring start-point))))
 
-;;;###autoload
 (defun danylo/julia-show-help-docstring (start-point)
   "Record the docstring output by the Julia REPL and put it into a help buffer.
 Calls itself until the docstring has completed printing."
@@ -2554,13 +2522,11 @@ Calls itself until the docstring has completed printing."
 
 ;;;; Imenu setup
 
-;;;###autoload
 (defun danylo/julia-imenu ()
   (let ((python-imenu (imenu--generic-function
 		       imenu-generic-expression)))
     (append python-imenu)))
 
-;;;###autoload
 (defun danylo/julia-imenu-hooks ()
   (setq imenu-generic-expression
 	'(("Function" "^[[:blank:]]*function \\(.*\\).*(.*$" 1)
@@ -2574,7 +2540,6 @@ Calls itself until the docstring has completed printing."
 
 ;;;; Block comment
 
-;;;###autoload
 (defun danylo/julia-block-comment ()
   "Julia block comment."
   (interactive)
@@ -2598,7 +2563,6 @@ Calls itself until the docstring has completed printing."
 	matlab-indent-function-body nil)
   )
 
-;;;###autoload
 (defun danylo/matlab-view-doc ()
   "Look up the matlab help info and show in another buffer."
   (interactive)
@@ -2714,7 +2678,6 @@ Calls itself until the docstring has completed printing."
   (add-to-list 'LaTeX-indent-environment-list '("pykzmathblock" current-indentation))
   (add-to-list 'LaTeX-indent-environment-list '("@pie@shell" current-indentation)))
 
-;;;###autoload
 (defun danylo/TeX-dwim-master (orig-fun &rest args)
   "Find a likely `TeX-master'.
 Patched so that any new file by default is guessed as being its own master."

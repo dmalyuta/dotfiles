@@ -1439,20 +1439,6 @@ also closes the buffer"
 
 ;; Key bindings
 
-(defun danylo/switch-to-term-line-mode () (interactive)
-       (term-line-mode)
-       (read-only-mode +1))
-
-(defun danylo/switch-to-term-char-mode () (interactive)
-       (term-char-mode)
-       (read-only-mode 0))
-
-(defun danylo/toggle-term-line-char-mode ()
-  (interactive)
-  (if (term-in-char-mode)
-      (danylo/switch-to-term-line-mode)
-    (danylo/switch-to-term-char-mode)))
-
 (with-eval-after-load "term"
   (define-key term-raw-map (kbd "C-c r") 'rename-buffer)
   ;; Make sure typical key combos work in term-char-mode
@@ -1472,6 +1458,17 @@ also closes the buffer"
   (defun danylo/term-send-tab () (interactive) (term-send-raw-string "\t"))
   (define-key term-raw-map (kbd "S-SPC") 'danylo/term-send-tab)
   ;; Switch between char and line move
+  (defun danylo/switch-to-term-line-mode () (interactive)
+	 (term-line-mode)
+	 (read-only-mode +1))
+  (defun danylo/switch-to-term-char-mode () (interactive)
+	 (term-char-mode)
+	 (read-only-mode 0))
+  (defun danylo/toggle-term-line-char-mode ()
+    (interactive)
+    (if (term-in-char-mode)
+	(danylo/switch-to-term-line-mode)
+      (danylo/switch-to-term-char-mode)))
   (define-key term-raw-map (kbd "C-c t c") 'danylo/switch-to-term-char-mode)
   (define-key term-raw-map (kbd "C-c t l") 'danylo/switch-to-term-line-mode)
   (define-key term-raw-map (kbd "C-c t t") 'danylo/toggle-term-line-char-mode)

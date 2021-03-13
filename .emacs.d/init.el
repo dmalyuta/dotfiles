@@ -419,6 +419,8 @@ Source: https://emacs.stackexchange.com/a/50834/13661"
 
 ;;; ..:: Searching ::..
 
+;;;; Neotree: view the source code file tree
+
 (defun danylo/side-window-jump (fun buf-name)
   "Smart go to a side window. If side window visible, jump
 there. If not visible, open it but don't focus."
@@ -448,6 +450,8 @@ there. If not visible, open it but don't focus."
 	      neo-show-hidden-files t
 	      neo-autorefresh t)
   (add-hook 'after-init-hook (lambda () (require 'neotree))))
+
+;;;; Imenu list: view the list of functions and classes in the file
 
 (defvar danylo/imenu-list--displayed-window nil
   "The **window** who owns the saved imenu entries.")
@@ -502,210 +506,20 @@ Patched to use original **window** instead of buffer."
       (imenu-list--show-current-entry))))
 (advice-add 'imenu-list-display-entry :around #'danylo/imenu-list-display-entry)
 
-;; (end of Imenu-list patches)
-
-(defun danylo/smart-select-region (start end)
-  "Select region in file, removing possible indent of all
-lines according to the first line."
-  (interactive "r")
-  (if (use-region-p)
-      (let* ((selection (buffer-substring start end))
-	     (starting-spaces (progn (string-match "^\s+" selection)
-				     (match-end 0)))
-	     (starting-space-replace-regexp
-	      `,(format "^\s\\{%d\\}" starting-spaces))
-	     ;; Remove the initial spaces
-	     (trimmed-selection (replace-regexp-in-string
-				 starting-space-replace-regexp "" selection))
-	     ;; Remove any trailing newlines
-	     (trimmed-selection (replace-regexp-in-string "\n$" "" trimmed-selection)))
-	trimmed-selection)
-    ;; No region active
-    (message "No region selected.")
-    nil))
-
-(use-package counsel)
-(use-package swiper)
-
-(defun danylo/swiper-thing-at-point (&optional start end)
-  "Put thing at point in swiper buffer."
-  (interactive (if (use-region-p) (list (region-beginning) (region-end))))
-  (if start
-      (let ((selection (buffer-substring start end)))
-	(deactivate-mark)
-	(counsel-grep-or-swiper selection))
-    (counsel-grep-or-swiper (thing-at-point 'symbol))))
-
-(defun danylo/counsel-switch-buffer-no-preview ()
-  "Switch to another buffer without preview."
-  (interactive)
-  (ivy-switch-buffer))
-
-(defun danylo/ivy-display-function-window (text)
-  "Show ivy candidate completion list in a temporary buffer, like Helm."
-  (when (> (length text) 0)
-    (let ((buffer (get-buffer-create danylo/ivy-window-name)))
-      (with-current-buffer buffer
-	(setq cursor-type nil) ;; Hide cursor
-	(let ((inhibit-read-only t))
-	  (erase-buffer)
-	  (defvar danylo/completion-candidate-list)
-	  (setq danylo/completion-candidate-list
-		;; Remove the first character, which is '\n' (blank line)
-		(substring text 1 nil))
-	  (insert (propertize danylo/completion-candidate-list
-			      'display '(height 1.0))))
-	(setq-local truncate-lines t)
-	;; "Hack" to make sure that viewing start of line
-	(move-beginning-of-line 0))
-      (with-ivy-window
-	(let ((window (selected-window)))
-	  (if (window-parameter window 'window-side)
-	      ;; In side window
-	      ;; Cannot use display-buffer-below-selected because a
-	      ;; side window cannot be split (most likely)
-	      (display-buffer
-	       buffer
-	       `((display-buffer-reuse-window display-buffer-pop-up-window)
-		 (window-height . ,danylo/num-completion-candidates)))
-	    ;; In regular window
-	    (display-buffer
-	     buffer
-	     `((display-buffer-reuse-window display-buffer-below-selected)
-	       (window-height . ,danylo/num-completion-candidates))))))
-      )))
-
-(defun danylo/side-window-tmp ()
-  (interactive)
-  (display-buffer-in-side-window (get-buffer "*Messages*") '((side . right))))
-
-(defun danylo/counsel-imenu ()
-  "Jump to a buffer position indexed by imenu.
-**Do not sort the items**, so that the order is as the items
-appear in the file."
-  (interactive)
-  (ivy-read "imenu items: " (counsel--imenu-candidates)
-            :preselect (thing-at-point 'symbol)
-            :require-match t
-            :action #'counsel-imenu-action
-            :keymap counsel-imenu-map
-            :history 'counsel-imenu-history
-            :caller 'counsel-imenu
-	    :sort nil))
-
-(use-package ivy-prescient
-  ;; https://github.com/raxod502/prescient.el
-  ;; Simple but effective sorting and filtering for Emacs.
-  ;; For Ivy.
-  :config
-  (ivy-prescient-mode +1)
-  ;; Save your command history on disk, so the sorting gets more
-  ;; intelligent over time
-  (prescient-persist-mode +1))
-
-(use-package ivy
-  ;; https://github.com/abo-abo/swiper
-  ;; Ivy - a generic completion frontend for Emacs
-  :after (company counsel swiper ivy-prescient)
-  :bind (("M-i" . danylo/swiper-thing-at-point)
-	 ("C-x b" . danylo/counsel-switch-buffer-no-preview)
-	 ("M-x" . counsel-M-x)
-	 ("C-c q" . danylo/counsel-imenu)
-	 :map company-mode-map
-	 ("S-SPC" . counsel-company)
-	 :map ivy-minibuffer-map
-	 ("C-l" . ivy-backward-delete-char)
-	 ("TAB" . ivy-alt-done))
-  :init
-  (setq ivy-display-functions-alist
-	'((t . danylo/ivy-display-function-window))
-	ivy-use-virtual-buffers nil
-	enable-recursive-minibuffers t
-	;; Remove the default "^" in search string
-	;; Source: https://emacs.stackexchange.com/a/38842/13661
-	ivy-initial-inputs-alist nil
-	ivy-height danylo/num-completion-candidates
-	;; Wrap-around scroll C-n and C-p
-	ivy-wrap t
-	counsel-switch-buffer-preview-virtual-buffers nil
-	ivy-truncate-lines t
-	ivy-display-style 'fancy
-	;; Speed up Swiper when in visual-line-mode
-	;; Source: https://github.com/abo-abo/swiper/issues/1952
-	;;         https://github.com/abo-abo/swiper/issues/2471
-	;;         https://github.com/abo-abo/swiper/issues/2588
-	swiper-use-visual-line-p #'ignore
-	swiper-use-visual-line nil
-	;; Set minimum length for searching in project
-	ivy-more-chars-alist '((t . 1))
-	)
-  (add-hook 'ivy-mode-hook
-	    (lambda ()
-	      (set-face-attribute 'ivy-minibuffer-match-face-2 nil
-				  :background `,danylo/orange
-				  :foreground `,danylo/black
-				  :weight 'normal
-				  :inherit 'default)
-	      (set-face-attribute 'swiper-match-face-1 nil
-				  :background `,danylo/orange
-				  :foreground `,danylo/black
-				  :weight 'normal)
-	      (set-face-attribute 'ivy-current-match nil
-				  :extend nil
-				  :height 1.0)))
-  (setq ivy-ignore-buffers
-	(append ivy-ignore-buffers
-		'("\\*ivy-" "\\*lsp-" "\\*quelpa-" "\\*Flycheck" "\\*Help"
-		  "\\*Ilist" "\\*dashboard\\*" "\\*xref\\*" "\\*toc\\*"
-		  "\\*Compile-Log\\*" "\\*CPU-Profiler-Report.*\\*"
-		  "\\*TeX Help\\*" "\\*Buffer List\\*" "\\*Julia" "\\*Python"
-		  "magit.*:" "\\*Backtrace\\*" "\\*Process List\\*")))
-  :config
-  (ivy-mode 1))
-
-(defun danylo/company-adjust (start)
-  "Adjust bounds of thing at point.
-This is a 'patch' to handle things like @ and \\ in the prefix correctly."
-  (save-excursion
-    (goto-char start)
-    (when (or (= (char-before) ?\\)
-	      (= (char-before) ?@))
-      (setq start (1- start)))
-    start))
-
-(defun danylo/counsel-company (orig-fun &rest args)
-  "Complete using `company-candidates'.
-Patched so that symbols beginning with \\, @, etc. are correctly handled."
-  (interactive)
-  (company-complete)
-  (let ((len (cond (company-common
-		    (length company-common))
-		   (company-prefix
-		     (length company-prefix)))
-	     ))
-    (when (and len (> (length company-candidates) 0))
-      (setq ivy-completion-beg (- (point) len))
-      (setq ivy-completion-beg (danylo/company-adjust ivy-completion-beg))
-      (setq ivy-completion-end (point))
-      (ivy-read "Candidate: " company-candidates
-                :action #'ivy-completion-in-region-action
-                :caller 'counsel-company)
-      )))
-(advice-add 'counsel-company :around #'danylo/counsel-company)
-
-(defun danylo/expand-unicode (orig-fun &rest args)
-  "Expand unicode symbol if necessary."
-  (apply orig-fun args)
-  (when (= (string-to-char (substring (nth 0 args) 0 1)) ?\\)
-    (julia-latexsub)))
-
-(advice-add 'ivy-completion-in-region-action :around #'danylo/expand-unicode)
+;;;; Helm: search everything sledgehammer
 
 (use-package helm
   ;; https://emacs-helm.github.io/helm/
   ;; Emacs incremental completion and selection narrowing framework
   :ensure t
-  :bind (("C-x C-f" . helm-find-files)
+  :after company
+  :bind (("M-x" . helm-M-x)
+	 ("M-i" . helm-swoop)
+	 ("C-x b" . helm-buffers-list)
+	 ("C-c q" . helm-imenu)
+	 ("C-x C-f" . helm-find-files)
+	 :map company-mode-map
+	 ("S-SPC" . helm-company)
 	 :map helm-map
 	 ("TAB" . helm-execute-persistent-action))
   :init (setq helm-display-buffer-default-height
@@ -714,6 +528,8 @@ Patched so that symbols beginning with \\, @, etc. are correctly handled."
 	      helm-comp-read-mode-line ""
 	      helm-buffer-max-length 30
 	      helm-buffers-truncate-lines nil
+	      helm-buffer-details-flag nil
+	      helm-source-buffer-not-found nil
 	      helm-split-window-inside-p t
 	      helm-move-to-line-cycle-in-source t
 	      helm-echo-input-in-header-line nil
@@ -738,29 +554,66 @@ Patched so that symbols beginning with \\, @, etc. are correctly handled."
 				  :foreground `,danylo/black
 				  :weight 'normal
 				  :inherit 'default)))
-  (add-to-list 'ivy-ignore-buffers '"\\*helm")
   :config
-  (helm-mode 1))
+  (helm-mode 1)
+  (setq helm-boring-buffer-regexp-list
+	(append helm-boring-buffer-regexp-list
+		'("\\*lsp-" "\\*quelpa-" "\\*Flycheck" "\\*Help" "\\*Ilist"
+		  "\\*dashboard\\*" "\\*xref\\*" "\\*toc\\*"
+		  "\\*Compile-Log\\*" "\\*CPU-Profiler-Report.*\\*"
+		  "\\*TeX Help\\*" "\\*Buffer List\\*" "\\*Julia" "\\*Python"
+		  "magit.*:" "\\*Backtrace\\*" "\\*Process List\\*"
+		  "\\*Async-" "\\*Native-" "\\*.*output\\*" "\\*helm"))))
 
-(use-package counsel-projectile
-  ;; https://github.com/ericdanan/counsel-projectile
-  ;; Ivy UI for Projectile
-  :init (setq projectile-completion-system 'ivy
-	      counsel-projectile-ag-initial-input '(ivy-thing-at-point)))
+(defun danylo/helm-swoop-split-window-function (buf &rest _args)
+  "Show Helm Swoop at bottom of current window, with the correct
+height."
+  (setq danylo/helm-swoop-height
+	(- 0 (1+ danylo/num-completion-candidates)))
+  (if helm-swoop-split-with-multiple-windows
+      (split-window-vertically danylo/helm-swoop-height)
+    (when (one-window-p)
+      (split-window-vertically danylo/helm-swoop-height)))
+  (other-window 1)
+  (switch-to-buffer buf))
 
-(require 'cc-mode)
-(use-package counsel-gtags
-  ;; https://github.com/syohex/emacs-counsel-gtags
-  ;; GNU Global with ivy completion
-  :bind
-  (:map c-mode-base-map
-	("M-." . counsel-gtags-dwim)))
+(use-package helm-swoop
+  ;; https://github.com/emacsorphanage/helm-swoop
+  ;; Efficiently hopping squeezed lines powered by Emacs helm interface
+  :init (setq helm-swoop-split-with-multiple-windows t
+	      helm-swoop-split-window-function
+	      'danylo/helm-swoop-split-window-function))
 
-(use-package ivy-xref
-  ;; https://github.com/alexmurray/ivy-xref
-  ;; Ivy interface for xref results
+(use-package helm-ag
+  ;; https://github.com/emacsorphanage/helm-ag
+  ;; The silver searcher with helm interface
+  :init (setq helm-ag-insert-at-point 'symbol))
+
+(use-package helm-company
+  ;; https://github.com/Sodel-the-Vociferous/helm-company
+  ;; Helm interface for company-mode
+  )
+
+(use-package helm-projectile
+  ;; https://github.com/bbatsov/helm-projectile
+  ;; Helm UI for Projectile
+  :after company
+  :init (setq projectile-completion-system 'helm))
+
+(use-package helm-xref
+  ;; https://github.com/brotzeit/helm-xref
+  ;; Helm interface for xref results
+  :after company
   :init
-  (setq xref-show-definitions-function #'ivy-xref-show-defs))
+  (setq xref-show-xrefs-function #'helm-xref-show-xrefs-27
+	xref-show-definitions-function #'helm-xref-show-defs-27))
+
+(use-package helm-unicode
+  ;; https://github.com/bomgar/helm-unicode
+  ;; Helm source for unicode/emoji
+  )
+
+;;;; Other things
 
 (use-package avy
   ;; https://github.com/abo-abo/avy
@@ -800,16 +653,18 @@ Patched so that symbols beginning with \\, @, etc. are correctly handled."
  "C-x n l" 'display-line-numbers-mode)
 
 (add-hook 'display-line-numbers-mode-hook
-	  (lambda ()
-	    ;; Line highlight face
+ 	  (lambda ()
+ 	    ;; Line highlight face
 	    (set-face-attribute 'line-number-current-line nil
-				  :foreground `,danylo/yellow
-				  :height `,danylo/linum-height
-				  :weight 'normal
-				  :inherit 'default)
+				:foreground `,danylo/yellow
+				:height `,danylo/linum-height
+				:weight 'normal
+				:inherit 'default)
 	    (set-face-attribute 'line-number nil
 				:height `,danylo/linum-height
 				:inherit 'default)))
+
+;;;; General Emacs theme
 
 (use-package doom-themes
   ;; https://github.com/hlissner/emacs-doom-themes
@@ -927,23 +782,23 @@ Patched so that symbols beginning with \\, @, etc. are correctly handled."
   ;;;; Custom modeline definitions
   ;; Default mode line
   (doom-modeline-def-modeline 'danylo/mode-line
-    '(bar danylo/matches buffer-info remote-host buffer-position selection-info)
+    '(bar window-number danylo/matches buffer-info remote-host buffer-position selection-info)
     '(danylo/mu4e input-method debug lsp major-mode danylo/vcs process))
   (add-hook 'doom-modeline-mode-hook
 	    (lambda () (doom-modeline-set-modeline 'danylo/mode-line 'default)))
   ;; Helm mode line
   (doom-modeline-def-modeline 'helm
-    '(bar helm-buffer-id helm-number helm-follow helm-prefix-argument) '())
+    '(bar window-number helm-buffer-id helm-number helm-follow helm-prefix-argument) '())
   ;; Dashboard mode line
   (doom-modeline-def-modeline 'dashboard
-    '(bar window-number buffer-default-directory-simple) '(danylo/mu4e))
+    '(bar window-number window-number buffer-default-directory-simple) '(danylo/mu4e))
   ;; Magit
   (doom-modeline-def-modeline 'vcs
-    '(bar danylo/matches buffer-info buffer-position selection-info)
+    '(bar window-number danylo/matches buffer-info buffer-position selection-info)
     '(danylo/mu4e gnus github debug minor-modes buffer-encoding major-mode process))
   ;; Messages and scratch buffer mode line
   (doom-modeline-def-modeline 'danylo/bare-modeline
-    '(bar window-number buffer-info-simple) '(danylo/mu4e))
+    '(bar window-number window-number buffer-info-simple) '(danylo/mu4e))
   (add-hook 'after-init-hook
 	    (lambda ()
 	      (dolist (bname '("*scratch*" "*Messages*"))
@@ -1239,12 +1094,6 @@ With argument ARG, do this that many times."
 
 ;;;; >> Movement across windows <<
 
-(general-define-key
- "C-<left>" 'windmove-left
- "C-<right>" 'windmove-right
- "C-<up>" 'windmove-up
- "C-<down>" 'windmove-down)
-
 (defun danylo/switch-to-last-window ()
   "Return to the last active window."
   (interactive)
@@ -1253,6 +1102,19 @@ With argument ARG, do this that many times."
     (let ((frame (window-frame win)))
       (select-frame-set-input-focus frame)
       (select-window win))))
+
+(general-define-key
+ "C-<left>" 'windmove-left
+ "C-<right>" 'windmove-right
+ "C-<up>" 'windmove-up
+ "C-<down>" 'windmove-down
+ "C-x l" 'danylo/switch-to-last-window)
+
+(use-package window-numbering
+  ;; https://github.com/nikolas/window-number
+  ;; Allows you to select windows by numbers.
+  :config
+  (window-numbering-mode 1))
 
 ;;;; >> Splitting windows <<
 
@@ -1466,6 +1328,7 @@ also closes the buffer"
 	 (read-only-mode 0))
   (defun danylo/toggle-term-line-char-mode ()
     (interactive)
+    (require 'term)
     (if (term-in-char-mode)
 	(danylo/switch-to-term-line-mode)
       (danylo/switch-to-term-char-mode)))
@@ -1684,7 +1547,7 @@ The remainder of the function is a carbon-copy from Flycheck."
   (xref-push-marker-stack)
   (apply orig-fun args))
 
-(advice-add 'counsel-projectile-ag :around #'danylo/maintain-xref-history)
+(advice-add 'helm-projectile-ag :around #'danylo/maintain-xref-history)
 
 (use-package projectile
   ;; https://github.com/bbatsov/projectile
@@ -1692,7 +1555,7 @@ The remainder of the function is a carbon-copy from Flycheck."
   :init (setq projectile-enable-caching nil)
   :bind (:map projectile-mode-map
 	      ("C-c p" . projectile-command-map)
-	      ("C-c p s g" . counsel-projectile-ag))
+	      ("C-c p s g" . helm-projectile-ag))
   :config
   (setq projectile-globally-ignored-directories
 	(append '(".svn" ".git")
@@ -1896,10 +1759,9 @@ Patched for my own better error messages."
 			(danylo/get-mail)
 			;; Kill the mu process once updating has finished
 			(run-with-timer
-			 0.5 nil
+			 2.0 nil
 			 (lambda ()
-			   (mu4e~proc-kill)
-			   (mu4e-alert-enable-mode-line-display)))))
+			   (mu4e~proc-kill)))))
 		    )))
 
 (defun danylo/mu4e~headers-remove-handler (docid &optional skip-hook)
@@ -2179,15 +2041,15 @@ relative file paths."
 
 ;;;; If cannot find definition, search project with AG
 
-(defun danylo/xref-find-defintion-with-ag-fallback (orig-fun &rest args)
+(defun danylo/xref-find-definition-with-ag-fallback (orig-fun &rest args)
   "Use AG as a fallback in case xref standard command fails to
 find a definion."
   (condition-case nil
       (apply orig-fun args)
-      (user-error (counsel-projectile-ag))))
+      (user-error (helm-projectile-ag))))
 
 (advice-add 'xref-find-definitions :around
-	    #'danylo/xref-find-defintion-with-ag-fallback)
+	    #'danylo/xref-find-definition-with-ag-fallback)
 
 ;;; ..:: C/C++ ::..
 
@@ -2641,7 +2503,6 @@ Calls itself until the docstring has completed printing."
 	      TeX-electric-math '("$" . "$")
 	      texmathp-tex-commands '(("optimization" env-on)))
   (setq-default TeX-master nil)
-  (add-to-list 'ivy-ignore-buffers '"\\*.*output\\*")
   :bind (:map LaTeX-mode-map
 	      ("C-c i w" . ispell-word)
 	      ("C-x C-<backspace>" . electric-pair-delete-pair)

@@ -94,6 +94,11 @@ gitpushoverleaf() {
     git push
 }
 
+# Git GUI viewer
+gitview() {
+    nohup gitg $@ &>/dev/null & disown
+}
+
 # Shortcut Ctrl+Alt+F for Firefox
 python ~/.bin/set_customshortcut.py 'launch-brave' 'brave-browser' '<Ctrl><Alt>B'
 

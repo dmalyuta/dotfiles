@@ -29,6 +29,10 @@ sudo apt-get -y install gitk \
      bash-completion \
      meld
 
+# >> Git GUI <<
+
+sudo apt-get -y install gitg
+
 # ..:: CMake ::..
 
 if not_installed cmake; then

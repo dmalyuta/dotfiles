@@ -99,6 +99,9 @@ gitview() {
     nohup gitg $@ &>/dev/null & disown
 }
 
+# Shortcut Ctrl+Alt+T for Termiantor
+python ~/.bin/set_customshortcut.py 'launch-terminator' 'terminator' '<Ctrl><Alt>T'
+
 # Shortcut Ctrl+Alt+F for Firefox
 python ~/.bin/set_customshortcut.py 'launch-brave' 'brave-browser' '<Ctrl><Alt>B'
 
@@ -116,7 +119,7 @@ alias sleep_mode='cat /sys/power/mem_sleep'
 # Invert screen colors
 alias neg='xcalib -invert -alter'
 
-# Shortcut for screen color inverse
+# Shortcut Shift+Ctrl+Alt+N for screen color inverse
 python ~/.bin/set_customshortcut.py 'invert-color' 'xcalib -invert -alter' '<Shift><Ctrl><Alt>N'
 
 # Start Emacs server for Git

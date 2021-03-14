@@ -1319,25 +1319,6 @@ also closes the buffer"
   ;; Completion via S-SPC as well as TAB
   (defun danylo/term-send-tab () (interactive) (term-send-raw-string "\t"))
   (define-key term-raw-map (kbd "S-SPC") 'danylo/term-send-tab)
-  ;; Switch between char and line move
-  (defun danylo/switch-to-term-line-mode () (interactive)
-	 (term-line-mode)
-	 (read-only-mode +1))
-  (defun danylo/switch-to-term-char-mode () (interactive)
-	 (term-char-mode)
-	 (read-only-mode 0))
-  (defun danylo/toggle-term-line-char-mode ()
-    (interactive)
-    (require 'term)
-    (if (term-in-char-mode)
-	(danylo/switch-to-term-line-mode)
-      (danylo/switch-to-term-char-mode)))
-  (define-key term-raw-map (kbd "C-c t c") 'danylo/switch-to-term-char-mode)
-  (define-key term-raw-map (kbd "C-c t l") 'danylo/switch-to-term-line-mode)
-  (define-key term-raw-map (kbd "C-c t t") 'danylo/toggle-term-line-char-mode)
-  (define-key term-mode-map (kbd "C-c t c") 'danylo/switch-to-term-char-mode)
-  (define-key term-mode-map (kbd "C-c t l") 'danylo/switch-to-term-line-mode)
-  (define-key term-mode-map (kbd "C-c t t") 'danylo/toggle-term-line-char-mode)
   ;; Copy/paste native Emacs keystrokes
   (define-key term-raw-map (kbd "C-k") 'term-send-raw)
   (define-key term-raw-map (kbd "C-y") 'term-paste)
@@ -1363,6 +1344,27 @@ also closes the buffer"
     'danylo/term-send-delete-word-backward)
   (define-key term-raw-map (kbd "M-<right>") 'danylo/term-send-m-right)
   (define-key term-raw-map (kbd "M-<left>") 'danylo/term-send-m-left))
+
+(add-hook 'term-mode-hook
+	  (lambda ()
+	    ;; Switch between char and line move
+	    (defun danylo/switch-to-term-line-mode () (interactive)
+		   (term-line-mode)
+		   (read-only-mode +1))
+	    (defun danylo/switch-to-term-char-mode () (interactive)
+		   (term-char-mode)
+		   (read-only-mode 0))
+	    (defun danylo/toggle-term-line-char-mode ()
+	      (interactive)
+	      (if (term-in-char-mode)
+		  (danylo/switch-to-term-line-mode)
+		(danylo/switch-to-term-char-mode)))
+	    (define-key term-raw-map (kbd "C-c t c") 'danylo/switch-to-term-char-mode)
+	    (define-key term-raw-map (kbd "C-c t l") 'danylo/switch-to-term-line-mode)
+	    (define-key term-raw-map (kbd "C-c t t") 'danylo/toggle-term-line-char-mode)
+	    (define-key term-mode-map (kbd "C-c t c") 'danylo/switch-to-term-char-mode)
+	    (define-key term-mode-map (kbd "C-c t l") 'danylo/switch-to-term-line-mode)
+	    (define-key term-mode-map (kbd "C-c t t") 'danylo/toggle-term-line-char-mode)))
 
 ;; Turn off line wrap
 (add-hook 'term-mode-hook (lambda () (setq truncate-lines t)))

@@ -99,14 +99,6 @@ gitview() {
     nohup gitg $@ &>/dev/null & disown
 }
 
-# Shortcut Ctrl+Alt+T for Termiantor
-python ~/.bin/set_customshortcut.py 'launch-terminator' 'terminator' '<Ctrl><Alt>T'
-
-# Shortcut Ctrl+Alt+F for Firefox
-python ~/.bin/set_customshortcut.py 'launch-brave' 'brave-browser' '<Ctrl><Alt>B'
-
-# Shortcut Ctrl+Alt+E for Emacs
-python ~/.bin/set_customshortcut.py 'launch-emacs' 'emacs' '<Ctrl><Alt>E'
 # Show kernel log
 # See for more info: https://www.digitalocean.com/community/tutorials/how-to-use-journalctl-to-view-and-manipulate-systemd-logs
 alias viewkernel='journalctl -k --no-pager'
@@ -118,9 +110,6 @@ alias sleep_mode='cat /sys/power/mem_sleep'
 
 # Invert screen colors
 alias neg='xcalib -invert -alter'
-
-# Shortcut Shift+Ctrl+Alt+N for screen color inverse
-python ~/.bin/set_customshortcut.py 'invert-color' 'xcalib -invert -alter' '<Shift><Ctrl><Alt>N'
 
 # Start Emacs server for Git
 emacsgit() {
@@ -199,3 +188,20 @@ pdfinterleave() {
     local output_pdf="$3"
     pdftk A="$odd_pdf" B="$even_pdf" shuffle A B output "$output_pdf"
 }
+
+# ..:: Shortcuts ::..
+# You can clear these by doing:
+# $ gsettings set org.gnome.settings-daemon.plugins.media-keys custom-keybindings []
+
+# Shortcut Ctrl+Alt+F for Firefox
+python ~/.bin/set_customshortcut.py 'launch-brave' 'brave-browser' '<Ctrl><Alt>B'
+
+# Shortcut Ctrl+Alt+E for Emacs
+python ~/.bin/set_customshortcut.py 'launch-emacs' 'emacs' '<Ctrl><Alt>E'
+
+# Shortcut Shift+Ctrl+Alt+N for screen color inverse
+python ~/.bin/set_customshortcut.py 'invert-color' 'xcalib -invert -alter' '<Shift><Ctrl><Alt>N'
+
+# Rofi desktop searching
+python ~/.bin/set_customshortcut.py 'launch-rofi' \
+       "rofi -modi window,drun,find:~/.bin/finder.sh -show window" '<Ctrl><Alt>R'

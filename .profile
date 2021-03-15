@@ -22,3 +22,6 @@ fi
 
 # Mouse cursor size
 gsettings set org.gnome.desktop.interface cursor-size 22
+
+# Disable the dock (use Rofi to view open windows list)
+gnome-extensions disable ubuntu-dock@ubuntu.com

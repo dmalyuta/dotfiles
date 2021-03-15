@@ -42,6 +42,10 @@ ln -sf "$DIR"/.config/terminator/config ~/.config/terminator
 cp -f "$DIR"/.gitconfig ~
 ln -sf "$DIR"/.gitk ~
 
+# Rofi desktop search
+mkdir -p ~/.config/rofi
+ln -sf "$DIR"/.config/rofi/config.rasi ~/.config/rofi/config.rasi
+
 # Input devices
 ln -sf "$DIR"/.input_config.sh ~
 sudo ln -sf "$DIR"/.peripherals/40-libinput.conf /usr/share/X11/xorg.conf.d

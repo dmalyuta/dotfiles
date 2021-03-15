@@ -40,7 +40,8 @@ sudo adduser "$USER" input
 
 sudo apt-get -y install recoll \
      pdfgrep \
-     synapse
+     rofi \
+     exo-utils
 
 # ..:: Other ::..
 

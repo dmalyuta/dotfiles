@@ -16,6 +16,11 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 mkdir -p ~/.config/gtk-3.0
 ln -sf "$DIR"/.config/gtk-3.0/gtk.css ~/.config/gtk-3.0/
 
+# i3wm
+mkdir -p ~/.config/i3
+ln -sf "$DIR"/.config/i3/config ~/.config/i3/
+ln -sf "$DIR"/.config/compton.conf ~/.config/
+
 # Bash
 ln -sf "$DIR"/.profile ~
 ln -sf "$DIR"/.bash_aliases ~

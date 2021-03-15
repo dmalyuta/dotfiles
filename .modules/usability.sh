@@ -43,26 +43,6 @@ sudo apt-get -y install recoll \
      rofi \
      exo-utils
 
-# ..:: i3 window manager ::..
-
-if not_installed i3; then
-    # Basic tools
-    sudo apt-get -y install i3 \
-	 i3status \
-	 i3lock \
-	 i3blocks \
-	 rofi \
-	 feh \
-	 sysstat \
-	 acpi \
-	 compton
-
-    # Gaps in windows
-    sudo add-apt-repository -y ppa:kgilmer/speed-ricer
-    sudo apt-get update
-    sudo apt-get -y install i3-gaps
-fi
-
 # ..:: Other ::..
 
 sudo apt-get -y install xcalib \

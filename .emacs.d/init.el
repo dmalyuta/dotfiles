@@ -87,18 +87,6 @@ directory."
 
 ;;; ..:: General helper functions ::..
 
-(defun danylo/fancy-icon (icon-lib icon-family icon &optional fg)
-  "Icon with proper formatting for minibuffer"
-  (unless fg
-    (setq fg `,(face-attribute 'default :foreground)))
-  (if (window-system)
-      (propertize (funcall icon-lib icon)
-		  'face `(:family ,(funcall icon-family)
-				  :height 0.95
-				  :foreground ,fg)
-		  'display '(raise -0.05))
-    ""))
-
 (use-package all-the-icons
   ;; https://github.com/domtronn/all-the-icons.el
   ;; Pretty icons
@@ -114,6 +102,18 @@ directory."
 			 :face all-the-icons-orange))))
   )
 
+(defun danylo/fancy-icon (icon-lib icon-family icon &optional fg)
+  "Icon with proper formatting for minibuffer"
+  (unless fg
+    (setq fg `,(face-attribute 'default :foreground)))
+  (if (window-system)
+      (propertize (funcall icon-lib icon)
+		  'face `(:family ,(funcall icon-family)
+				  :height 0.95
+				  :foreground ,fg)
+		  'display '(raise -0.05))
+    ""))
+
 (defun danylo/fa-icon (icon &optional fg)
   "Fontawesome icon with proper formatting."
   (danylo/fancy-icon 'all-the-icons-faicon 'all-the-icons-faicon-family
@@ -128,7 +128,20 @@ directory."
   "Echo STR in the minibuffer."
   (with-selected-window (minibuffer-window)
     (setq cursor-type nil)
-    (message (propertize str 'face `(:foreground ,danylo/faded)))
+    ;; Loop through the string and replace the foreground color of each
+    ;; character to a faded color
+    (setq danylo/~i 0)
+    (while (< danylo/~i (length str))
+      (setq danylo/face~props (get-text-property danylo/~i 'face str))
+      (setq danylo/fg~pos (cl-position :foreground danylo/face~props))
+      (if danylo/fg~pos
+	  (setf (nth (1+ danylo/fg~pos) danylo/face~props) `,danylo/faded)
+	(setq danylo/face~props (append danylo/face~props
+					`(:foreground ,danylo/faded))))
+      (put-text-property danylo/~i (1+ danylo/~i) 'face danylo/face~props str)
+      (setq danylo/~i (1+ danylo/~i)))
+    ;; Print the string to minibuffer
+    (message "%s" str)
     (setq cursor-type t)))
 
 (use-package ts
@@ -1749,18 +1762,12 @@ Patched for my own better error messages."
   ;; Setup a timer to update the email inbox in the background
   (run-with-timer danylo/email-refresh-period danylo/email-refresh-period
 		  (lambda ()
-		    (with-temp-buffer
-		      ;; Check that mu server is not already running
-		      (call-process "ps" nil t nil "aux")
-		      (unless (eq (call-process-region
-				   nil nil "grep" nil nil nil "mu") 0)
-			;; Get new mail
-			(danylo/get-mail)
-			;; Kill the mu process once updating has finished
-			(run-with-timer
-			 2.0 nil
-			 (lambda ()
-			   (mu4e~proc-kill)))))
+		    (unless (eq (call-process-region
+				 nil nil "pgrep" nil nil nil "mu") 0)
+		      ;; Get new mail
+		      (danylo/get-mail)
+		      ;; Kill the mu process once updating has finished
+		      (run-with-timer 5.0 nil (lambda () (mu4e~proc-kill))))
 		    )))
 
 (defun danylo/mu4e~headers-remove-handler (docid &optional skip-hook)

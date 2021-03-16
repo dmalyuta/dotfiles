@@ -2,9 +2,14 @@
 
 /* ..:: General ::.. */
 
+/* To see what can be customized, do: */
+/* $ cd /tmp/ */
+/* $ rofi -dump-config >> rofi_current_config.txt */
+
 configuration {
    show-icons: true;
    icon-theme: "Papirus";
+   kb-mode-next: "Shift+Right,Control+Tab,Control+Alt+r";
 }
 
 /* ..:: Theme ::.. */

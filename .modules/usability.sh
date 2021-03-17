@@ -81,7 +81,11 @@ gsettings set org.gnome.desktop.interface show-battery-percentage true
 # Use GoogleDot cursor theme
 gsettings set org.gnome.desktop.interface cursor-theme 'GoogleDot'
 
+# Mouse cursor size
+gsettings set org.gnome.desktop.interface cursor-size 22
+
 # Enable the extensions
+gnome-extensions disable ubuntu-dock@ubuntu.com
 gsettings set org.gnome.shell enabled-extensions \
 	  "['dash-to-panel@jderose9.github.com', 'arcmenu@arcmenu.com']"
 
@@ -116,7 +120,9 @@ sudo apt-get -y install xcalib \
      compizconfig-settings-manager \
      gnome-tweak-tool \
      pdftk \
-     unrar
+     unrar \
+     xdotool \
+     xbindkeys
 
 # Increase inotify to make sure Evince updates on PDF update
 # Source: https://superuser.com/a/1387905/512940

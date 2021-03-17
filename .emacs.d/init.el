@@ -1755,20 +1755,49 @@ Patched for my own better error messages."
 
 (advice-add 'mu4e-error-handler :around #'danylo/mu4e-error-handler)
 
+(defun danylo/email-bg-refresh ()
+  ;; Check if any mu4e buffers are open
+  (defvar danylo/mu4e~is~open)
+  (setq danylo/mu4e~is~open nil)
+  (mapc (lambda (buf)
+	  (with-current-buffer buf
+	    (when (or (derived-mode-p 'mu4e-main-mode)
+		      (derived-mode-p 'mu4e-view-mode)
+		      (derived-mode-p 'mu4e-compose-mode)
+		      (derived-mode-p 'mu4e-headers-mode)
+		      (derived-mode-p 'mu4e-org-mode))
+	      (setq danylo/mu4e~is~open t))))
+	(buffer-list))
+  ;; If no buffer is open, delete any "message loading" buffer
+  (unless danylo/mu4e~is~open
+    (mapc (lambda (buf)
+	    (with-current-buffer buf
+	      (when (derived-mode-p 'mu4e-loading-mode)
+		(kill-buffer))))
+	  (buffer-list)))
+  ;; Check if mu server is running
+  (defvar danylo/mu~is~running)
+  (setq danylo/mu~is~running
+	(eq (call-process-region
+	     nil nil "pgrep" nil nil nil "mu") 0))
+  ;; Check if this Emacs session owns the mu process
+  (defvar danylo/mu~own)
+  (setq danylo/mu~own mu4e~proc-process)
+  ;; Run mail update if mu is not running
+  (when (or danylo/mu~own (not danylo/mu~is~running))
+    ;; Get new mail
+    (danylo/get-mail)
+    ;; Kill the mu process once updating has finished
+    (run-with-timer 5.0 nil 'mu4e~proc-kill)))
+
 (with-eval-after-load "mu4e"
   ;; Disable message sending with C-c C-s (make it more complicated to
   ;; not send messages by accident)
   (define-key mu4e-compose-mode-map (kbd "C-c C-s") 'nil)
   ;; Setup a timer to update the email inbox in the background
-  (run-with-timer danylo/email-refresh-period danylo/email-refresh-period
-		  (lambda ()
-		    (unless (eq (call-process-region
-				 nil nil "pgrep" nil nil nil "mu") 0)
-		      ;; Get new mail
-		      (danylo/get-mail)
-		      ;; Kill the mu process once updating has finished
-		      (run-with-timer 5.0 nil (lambda () (mu4e~proc-kill))))
-		    )))
+  (run-with-timer danylo/email-refresh-period
+		  danylo/email-refresh-period
+		  'danylo/email-bg-refresh))
 
 (defun danylo/mu4e~headers-remove-handler (docid &optional skip-hook)
   "This is a patched version of mu4e~headers-remove-handler in

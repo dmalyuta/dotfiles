@@ -14,7 +14,7 @@ if ! (sudo ls -1 /etc/apt/sources.list.d/ | grep -q "libreoffice"); then
     sudo add-apt-repository -y ppa:libreoffice/ppa
 fi
 
-if not_installed libreoffice || ! (libreoffice --version | grep -Eq ".*7\.0.*"); then
+if not_installed libreoffice || ! (libreoffice --version | grep -Eq ".*7.*"); then
     sudo apt-get -y purge libreoffice*
     sudo apt-get -y clean
     sudo apt-get -y autoremove

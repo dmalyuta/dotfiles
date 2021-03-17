@@ -12,7 +12,7 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
 # ..:: Copy dotfiles to home directory ::..
 
-# GTK
+# Gnome desktop
 mkdir -p ~/.config/gtk-3.0
 ln -sf "$DIR"/.config/gtk-3.0/gtk.css ~/.config/gtk-3.0/
 

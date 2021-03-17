@@ -11,8 +11,8 @@
 
 # Super+Shift+Space to trigger a right-click
 "sleep .1 && xdotool click 3"
-Mod4+Shift + space
+Shift + F9
 
 # Super+Shift+Enter to trigger a middle-click
 "sleep .1 && xdotool click 2"
-Mod4+Shift + Return
+Shift + F10

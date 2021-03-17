@@ -112,7 +112,8 @@ sudo adduser "$USER" input
 sudo apt-get -y install recoll \
      pdfgrep \
      rofi \
-     exo-utils
+     exo-utils \
+     tree
 
 # ..:: Other ::..
 

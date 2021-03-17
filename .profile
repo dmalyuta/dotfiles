@@ -21,4 +21,6 @@ if [ -d ~/.bin ]; then
 fi
 
 # Custom key bindings
-xbindkeys
+if ! pgrep xbindkeys > /dev/null; then
+    xbindkeys
+fi

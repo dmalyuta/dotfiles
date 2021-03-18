@@ -7,12 +7,8 @@
 
 # List of modifier:
 #   Release, Control, Shift, Mod1 (Alt), Mod2 (NumLock),
-#   Mod3 (CapsLock), Mod4, Mod5 (Scroll).
+#   Caps_Lock, Mod4 (Super), Mod5 (Scroll).
 
-# Super+Shift+Space to trigger a right-click
-"sleep .1 && xdotool click 3"
-Shift + F9
-
-# Super+Shift+Enter to trigger a middle-click
+# Shift+<left_click> to trigger a middle-click
 "sleep .1 && xdotool click 2"
-Shift + F10
+Shift + b:1

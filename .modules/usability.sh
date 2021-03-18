@@ -102,6 +102,9 @@ gsettings set org.gnome.desktop.wm.preferences num-workspaces 4
 # Turn off natural scrolling
 gsettings set org.gnome.desktop.peripherals.mouse natural-scroll false
 
+# Disable Capslock (who uses it?), which frees it use in other shortcuts
+gsettings set org.gnome.desktop.input-sources xkb-options "['caps:none']"
+
 # ..:: Input device driver ::..
 
 sudo apt-get -y install xserver-xorg-input-all xserver-xorg-input-synaptics

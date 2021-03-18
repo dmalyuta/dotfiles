@@ -9,6 +9,6 @@
 #   Release, Control, Shift, Mod1 (Alt), Mod2 (NumLock),
 #   Caps_Lock, Mod4 (Super), Mod5 (Scroll).
 
-# Shift+<left_click> to trigger a middle-click
-"sleep .1 && xdotool click 2"
-Shift + b:1
+# Shift+<right_click> to trigger a middle-click
+"sleep .2 && xdotool click 2"
+Shift + b:3

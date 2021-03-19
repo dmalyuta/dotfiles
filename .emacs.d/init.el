@@ -576,7 +576,8 @@ Patched to use original **window** instead of buffer."
 		  "\\*Compile-Log\\*" "\\*CPU-Profiler-Report.*\\*"
 		  "\\*TeX Help\\*" "\\*Buffer List\\*" "\\*Julia" "\\*Python"
 		  "magit.*:" "\\*Backtrace\\*" "\\*Process List\\*"
-		  "\\*Async-" "\\*Native-" "\\*.*output\\*" "\\*helm"))))
+		  "\\*Async-" "\\*Native-" "\\*.*output\\*" "\\*helm"
+		  "\\*eww\\*"))))
 
 (defun danylo/helm-swoop-split-window-function (buf &rest _args)
   "Show Helm Swoop at bottom of current window, with the correct

@@ -54,8 +54,8 @@ sudo ln -sf "$DIR"/.peripherals/51-synaptics-quirks.conf /usr/share/X11/xorg.con
 sudo ln -sf "$DIR"/.peripherals/70-synaptics.conf /usr/share/X11/xorg.conf.d
 
 # Python
-ln -sf "$DIR"/setup.cfg ~
 cp -r "$DIR"/.jupyter ~
+ln -sf "$DIR"/.config/flake8 ~/.config
 
 # Emacs
 mkdir -p ~/.emacs.d

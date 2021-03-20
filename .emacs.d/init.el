@@ -2150,7 +2150,7 @@ find a definion."
 ;; Configure Flycheck
 (add-hook 'python-mode-hook
 	  (lambda ()
-	    (setq flycheck--automatically-enabled-checkers '(python-flake8))
+	    (setq flycheck-enabled-checkers '(python-flake8))
 	    (setq flycheck-disabled-checkers
 		  '(python-mypy
 		    python-pylint

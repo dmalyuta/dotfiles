@@ -872,7 +872,7 @@ Patched for my own icons."
 (advice-add 'doom-modeline-update-vcs-icon
 	    :around #'danylo/doom-modeline-update-vcs-icon)
 
-;;;; (start) Patch so that doom-modeline does not lose focus on ansi-term printout
+;;;; (start) Patch so that doom-modeline maintains highlight focus on active buffer
 
 (defun danylo/internal--after-save-selected-window (orig-fun &rest args)
   "Patch to remove select-window modification in ansi-term redisplay."
@@ -886,8 +886,8 @@ activated on output into a buffer, e.g. ansi-term."
   (apply orig-fun args))
 
 (defun danylo/term-emulate-terminal (orig-fun &rest args)
-  "Patch so that doom-modeline does not lose focus when there is
-a buffer like ansi-term that is printing out information."
+  "Patch so that doom-modeline does not lose focus of active buffer
+when there is another buffer printing out information."
   (advice-add 'select-window :around #'danylo/select-window)
   (advice-add 'internal--after-save-selected-window :around
 	      #'danylo/internal--after-save-selected-window)
@@ -1275,122 +1275,56 @@ Default is 80"
   (interactive "@")
   (shell-command (concat "terminator > /dev/null 2>&1 & disown") nil nil))
 
+(use-package vterm
+  ;; https://github.com/akermu/emacs-libvterm
+  ;; Emacs libvterm integration
+  :bind (:map vterm-mode-map
+	      ("C-<up>" . nil)
+	      ("C-<down>" . nil)
+	      ("C-<left>" . nil)
+	      ("C-<right>" . nil)
+	      ("C-c t t" . vterm-copy-mode)
+	      ("C-c r" . rename-buffer)
+	      ("S-SPC" . vterm-send-tab)
+	      :map vterm-copy-mode-map
+	      ("C-c t t" . vterm-copy-mode-done))
+  :hook ((vterm-mode-hook . (lambda ()
+			      (goto-address-mode 1))))
+  :init (setq vterm-always-compile-module t
+	      vterm-kill-buffer-on-exit t)
+  )
+
+(defun danylo/vterm (orig-fun &rest args)
+  "Create a new vterm buffer, or open an existing one. This
+function is a patch around the original one, such that a call
+to (vterm) with no argument will create a **new** vterm buffer."
+  (setq danylo/vterm~buf-num (nth 0 args))
+  (if danylo/vterm~buf-num
+      (apply orig-fun args)
+    (progn
+      ;; Create a new vterm buffer
+      (setq danylo/vterm~buf-num 0)
+      (mapc (lambda (buf)
+	      (let* ((this-buffer (buffer-name buf))
+		     (existing-num
+		      (string-match
+		       (concat (regexp-quote vterm-buffer-name) "<\\([0-9]+\\)>")
+		       this-buffer)))
+		(when existing-num
+		  (setq existing-num (string-to-number
+				      (match-string 1 this-buffer)))
+		  (when (>= existing-num danylo/vterm~buf-num)
+		    (setq danylo/vterm~buf-num (1+ existing-num)))
+		  )))
+	    (buffer-list))
+      (vterm danylo/vterm~buf-num)
+      )))
+
+(advice-add 'vterm :around #'danylo/vterm)
+
 (general-define-key
- "C-c t e" 'ansi-term
+ "C-c t e" 'vterm
  "C-c t r" 'danylo/run-terminator-here)
-
-(defadvice ansi-term (before force-bash)
-  "Always use bash"
-  (interactive (list "/bin/bash")))
-
-(add-hook 'after-init-hook (lambda  () (ad-activate 'ansi-term)))
-
-(defun danylo/ansi-term-use-utf8 ()
-  "Display of certain characters and control codes to UTF-8"
-  (set-buffer-process-coding-system 'utf-8-unix 'utf-8-unix))
-(add-hook 'term-exec-hook 'danylo/ansi-term-use-utf8)
-
-;; Clickable URLs
-(add-hook 'term-mode-hook (lambda () (goto-address-mode)))
-
-(defadvice term-sentinel (around my-advice-term-sentinel (proc msg))
-  "Make that typing exit in ansi-term (which exits the shell)
-also closes the buffer"
-  (if (memq (process-status proc)
-	    '(signal exit))
-      (let ((buffer (process-buffer proc)))
-	ad-do-it
-	(kill-buffer buffer))
-    ad-do-it))
-
-(add-hook 'after-init-hook (lambda  () (ad-activate 'term-sentinel)))
-
-(defun danylo/set-no-process-query-on-exit ()
-  "No 'are you sure' query on exit"
-  (let ((proc (get-buffer-process (current-buffer))))
-    (when (processp proc)
-      (set-process-query-on-exit-flag proc nil))))
-
-(add-hook 'term-exec-hook 'danylo/set-no-process-query-on-exit)
-
-;; Key bindings
-
-(with-eval-after-load "term"
-  (define-key term-raw-map (kbd "C-c r") 'rename-buffer)
-  ;; Make sure typical key combos work in term-char-mode
-  (define-key term-raw-map (kbd "M-x") 'nil)
-  (define-key term-raw-map (kbd "M-&") 'nil)
-  (define-key term-raw-map (kbd "M-!") 'nil)
-  (define-key term-raw-map (kbd "C-c m") 'danylo/launch-mu4e)
-  ;; Make sure C-c t e launches a new ansi-term buffer when current buffer is
-  ;; also ansi-term
-  (define-key term-raw-map (kbd "C-c t e") 'nil)
-  ;; Word deletion fix
-  (defun danylo/term-send-Mbackspace ()
-    (interactive) (term-send-raw-string "\e\d"))
-  (define-key term-raw-map (kbd "C-w") 'danylo/term-send-Mbackspace)
-  (define-key term-raw-map (kbd "M-<backspace>") 'danylo/term-send-Mbackspace)
-  ;; Completion via S-SPC as well as TAB
-  (defun danylo/term-send-tab () (interactive) (term-send-raw-string "\t"))
-  (define-key term-raw-map (kbd "S-SPC") 'danylo/term-send-tab)
-  ;; Switch between char and line move
-  (defun danylo/switch-to-term-line-mode () (interactive)
-	 (term-line-mode)
-	 (read-only-mode +1))
-  (defun danylo/switch-to-term-char-mode () (interactive)
-	 (term-char-mode)
-	 (read-only-mode 0))
-  (defun danylo/toggle-term-line-char-mode ()
-    (interactive)
-    (if (eq (current-local-map) term-raw-map)
-	(danylo/switch-to-term-line-mode)
-      (danylo/switch-to-term-char-mode)))
-  (define-key term-raw-map (kbd "C-c t c") 'danylo/switch-to-term-char-mode)
-  (define-key term-raw-map (kbd "C-c t l") 'danylo/switch-to-term-line-mode)
-  (define-key term-raw-map (kbd "C-c t t") 'danylo/toggle-term-line-char-mode)
-  (define-key term-mode-map (kbd "C-c t c") 'danylo/switch-to-term-char-mode)
-  (define-key term-mode-map (kbd "C-c t l") 'danylo/switch-to-term-line-mode)
-  (define-key term-mode-map (kbd "C-c t t") 'danylo/toggle-term-line-char-mode)
-  ;; Copy/paste native Emacs keystrokes
-  (define-key term-raw-map (kbd "C-k") 'term-send-raw)
-  (define-key term-raw-map (kbd "C-y") 'term-paste)
-  ;; Max history
-  (setq term-buffer-maximum-size 50000)
-  ;; Make sure window movement keys are not captured by terminal
-  (define-key term-raw-map (kbd "C-<up>") 'nil)
-  (define-key term-raw-map (kbd "C-<down>") 'nil)
-  (define-key term-raw-map (kbd "C-<left>") 'nil)
-  (define-key term-raw-map (kbd "C-<right>") 'nil)
-  ;; Cursor movement key bindings
-  (defun danylo/term-send-delete-word-forward ()
-    (interactive) (term-send-raw-string "\ed"))
-  (defun danylo/term-send-delete-word-backward ()
-    (interactive) (term-send-raw-string "\e\C-h"))
-  (defun danylo/term-send-m-right ()
-    (interactive) (term-send-raw-string "\e[1;3C"))
-  (defun danylo/term-send-m-left ()
-    (interactive) (term-send-raw-string "\e[1;3D"))
-  (define-key term-raw-map (kbd "C-<del>")
-    'danylo/term-send-delete-word-forward)
-  (define-key term-raw-map (kbd "C-<backspace>")
-    'danylo/term-send-delete-word-backward)
-  (define-key term-raw-map (kbd "M-<right>") 'danylo/term-send-m-right)
-  (define-key term-raw-map (kbd "M-<left>") 'danylo/term-send-m-left))
-
-;; Turn off line wrap
-(add-hook 'term-mode-hook (lambda () (setq truncate-lines t)))
-
-;; Bi-directional text support problem fix, which seems to be the cause of text
-;; jumbling when going back commands in ansi-term. This fixes it, yay!
-(add-hook 'term-mode-hook (lambda () (setq bidi-paragraph-direction 'left-to-right)))
-
-(use-package eterm-256color
-  ;; https://github.com/dieggsy/eterm-256color
-  ;; Customizable 256 colors for emacs term and ansi-term
-  :after xterm-color
-  :config
-  (advice-add 'term-handle-ansi-escape
-	      :around #'eterm-256color-handle-ansi-escape))
 
 ;;; ..:: Syntax checking ::..
 
@@ -1918,14 +1852,14 @@ This version deletes backup files without asking."
     (if in-place
 	;; Create shell in current window
 	(progn
-	  (ansi-term shell-type)
-	  (rename-buffer shell-buffer-name))
+	  (let ((vterm-shell shell-type))
+	    (vterm shell-buffer-name)))
       ;; Create shell in new window
       (let ((this-window (selected-window))
 	    (new-window (split-window-vertically)))
 	(select-window new-window)
-	(ansi-term shell-type)
-	(rename-buffer shell-buffer-name)
+	(let ((vterm-shell shell-type))
+	  (vterm shell-buffer-name))
 	(select-window this-window)))))
 
 (defun danylo/shell-exec (shell-buffer-name command)
@@ -1934,7 +1868,7 @@ If there is no shell open, prints a message to inform."
   (if (danylo/shell~check-open shell-buffer-name)
       ;; Send a run command for the current file
       (with-current-buffer shell-buffer-name
-	(term-send-raw-string (format "%s\n" command)))
+	(vterm-send-string (format "%s\n" command)))
     (message "No shell open.")))
 
 (defun danylo/shell-get-point (shell-buffer-name)
@@ -1942,10 +1876,9 @@ If there is no shell open, prints a message to inform."
   (let ((current-point nil))
     (if (danylo/shell~check-open shell-buffer-name)
 	(with-current-buffer shell-buffer-name
-	  (danylo/switch-to-term-char-mode)
-	  (danylo/switch-to-term-line-mode)
+	  (vterm-copy-mode)
 	  (setq current-point (point))
-	  (danylo/switch-to-term-char-mode))
+	  (vterm-copy-mode-done nil))
       (message "No shell open."))
     current-point))
 
@@ -1954,12 +1887,11 @@ If there is no shell open, prints a message to inform."
   (setq shell-content nil)
   (if (danylo/shell~check-open shell-buffer-name)
       (with-current-buffer shell-buffer-name
-	(setq in-char-mode (term-in-char-mode))
-	(danylo/switch-to-term-line-mode)
+	(vterm-copy-mode)
 	(let ((start (max start (point-min)))
 	      (end (min end (point-max))))
 	  (setq shell-content (buffer-substring start end)))
-	(when in-char-mode (danylo/switch-to-term-char-mode)))
+	(vterm-copy-mode-done nil))
     (message "No shell open."))
   shell-content)
 
@@ -2362,7 +2294,9 @@ lines according to the first line."
       ;; Record the help string
       (danylo/shell-exec danylo/julia-buffer-name (format "?%s" thing))
       (run-with-timer julia-docstring-delay nil
-		      'danylo/julia-show-help-docstring start-point))))
+		      'danylo/julia-show-help-docstring start-point)
+      )
+    ))
 
 (defun danylo/julia-show-help-docstring (start-point)
   "Record the docstring output by the Julia REPL and put it into a help buffer.

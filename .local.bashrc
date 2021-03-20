@@ -74,3 +74,35 @@ export EDITOR="emacs -nw"
 if [ -f ~/.input_config.sh ]; then
     source ~/.input_config.sh
 fi
+
+# Vterm configuration
+# https://github.com/akermu/emacs-libvterm/blob/master/README.md
+
+# Shell-side config
+vterm_printf(){
+    if [ -n "$TMUX" ] && ([ "${TERM%%-*}" = "tmux" ] || [ "${TERM%%-*}" = "screen" ] ); then
+        # Tell tmux to pass the escape sequences through
+        printf "\ePtmux;\e\e]%s\007\e\\" "$1"
+    elif [ "${TERM%%-*}" = "screen" ]; then
+        # GNU screen (screen, screen-256color, screen-256color-bce)
+        printf "\eP\e]%s\007\e\\" "$1"
+    else
+        printf "\e]%s\e\\" "$1"
+    fi
+}
+
+# Terminal output clearing
+if [[ "$INSIDE_EMACS" = 'vterm' ]]; then
+    function clear(){
+        vterm_printf "51;Evterm-clear-scrollback";
+        tput clear;
+    }
+fi
+
+# Directory tracking
+vterm_prompt_end(){
+    if [[ "$INSIDE_EMACS" = 'vterm' ]]; then
+	vterm_printf "51;A$(whoami)@$(hostname):$(pwd)"
+    fi
+}
+PS1=$PS1'\[$(vterm_prompt_end)\]'

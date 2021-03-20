@@ -126,9 +126,8 @@ fi
 
 # ..:: Other ::..
 
+# Fonts
 sudo apt-get -y install fonts-powerline
 
-# ansi-term colorization
-mkdir -p ~/.terminfo
-cp "$(find /usr/local/share/emacs/2*\.* -name 'eterm-color')" \
-   ~/.terminfo/eterm-256color
+# libvterm fast terminal emulation inside Emacs
+sudo apt-get -y install libvterm-dev

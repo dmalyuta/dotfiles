@@ -250,11 +250,12 @@ directory."
   :diminish dashboard-mode
   :init
   (setq dashboard-banner-logo-title "Change the world, step by step"
-	;; dashboard-startup-banner nil ; No image
+	dashboard-startup-banner 'logo
 	dashboard-items '((recents  . 5) (projects . 5) (bookmarks . 5))
 	dashboard-center-content t
 	dashboard-set-heading-icons t
 	dashboard-set-file-icons t
+	dashboard-set-footer nil
 	)
   :config
   (dashboard-setup-startup-hook))
@@ -714,6 +715,27 @@ height."
 	      ;; locking will occur during "idle" times)!
 	      jit-lock-defer-time `,danylo/fontify-delay
 	      font-lock-maximum-decoration nil)
+
+;;;; Tree-sitter
+
+(defun danylo/start-tree-sitter ()
+  "Start the tree-sitter minor mode."
+  (require 'tree-sitter-langs)
+  (tree-sitter-mode)
+  (tree-sitter-hl-mode))
+
+(use-package tree-sitter
+  ;; https://github.com/ubolonton/emacs-tree-sitter
+  ;; Tree-sitter in Emacs
+  )
+
+(use-package tree-sitter-langs
+  ;; https://github.com/ubolonton/tree-sitter-langs
+  ;; Language bundle for Emacs's tree-sitter package
+  :no-require t
+  :after tree-sitter
+  :hook ((python-mode . danylo/start-tree-sitter)
+	 (julia-mode . danylo/start-tree-sitter)))
 
 ;;;; Font lock debug tools
 

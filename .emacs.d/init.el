@@ -314,6 +314,52 @@ directory."
 ;; https://emacs.stackexchange.com/questions/28736/emacs-pointcursor-movement-lag
 (setq auto-window-vscroll nil)
 
+;;;; Better electric indentation
+
+(setq-default electric-indent-inhibit t)
+(electric-indent-mode -1)
+
+(defun danylo/fast-get-line ()
+  (string-to-number (format-mode-line "%l")))
+
+(defvar-local danylo/indent-char-min -1)
+(defvar-local danylo/indent-disable nil)
+(defun danylo/newline-with-indent (orig-fun &rest args)
+  "Maintain default-directory when eval-buffer. Automatically
+indents the new lines jit-lock style in case of a rapid-fire
+succession of newline commands."
+  (if (or danylo/indent-disable
+	  (not (or (derived-mode-p 'prog-mode))))
+      ;; Normal newline and do nothing else
+      (apply orig-fun args)
+    (progn
+      ;; Newline with indent afterwards, jit style in case of a rapid-fire
+      ;; set of newlines
+      (setq danylo/indent~first~call (< danylo/indent-char-min 0))
+      (when danylo/indent~first~call
+	;; Save the starting character of new line
+	(save-excursion
+	  (forward-line)
+	  (setq danylo/indent-char-min (point)))
+	(run-with-idle-timer
+	 0.05 nil
+	 (lambda ()
+	   (setq danylo/indent-line-max (danylo/fast-get-line))
+	   (save-excursion
+	     ;; Indent every line between min and max point
+	     (goto-char danylo/indent-char-min)
+	     (forward-line 0)
+	     (while (< (danylo/fast-get-line) danylo/indent-line-max)
+	       (indent-for-tab-command)
+	       (forward-line)))
+	   (indent-for-tab-command)
+	   (setq danylo/indent-char-min -1))))
+      (apply orig-fun args)
+      ;; Indent on first call so that cursor doesn't jump if just one newline
+      (when danylo/indent~first~call (indent-for-tab-command)))))
+
+(advice-add 'newline :around #'danylo/newline-with-indent)
+
 ;; Turn off Abbrev mode
 (setq-default abbrev-mode nil)
 
@@ -1086,7 +1132,8 @@ there's a region, all lines that region covers will be duplicated."
     (if mark-active
         (exchange-point-and-mark))
     (setq end (line-end-position))
-    (let ((region (buffer-substring-no-properties beg end)))
+    (let ((region (buffer-substring-no-properties beg end))
+	  (danylo/indent-disable t))
       (dotimes (i arg)
         (goto-char end)
         (newline)
@@ -1309,7 +1356,7 @@ Default is 80"
 	      ("C-c r" . rename-buffer)
 	      ("S-SPC" . vterm-send-tab)
 	      :map vterm-copy-mode-map
-	      ("C-c t t" . vterm-copy-mode-done))
+	      ("C-c t t" . vterm-copy-mode))
   :hook ((vterm-mode-hook . (lambda ()
 			      (goto-address-mode 1))))
   :init (setq vterm-always-compile-module t
@@ -1680,7 +1727,10 @@ The remainder of the function is a carbon-copy from Flycheck."
 (defun danylo/launch-mu4e (arg)
   "Launch mu4e, or quit it if preceded by C-u"
   (interactive "P")
-  (if arg (mu4e-quit) (mu4e)))
+  (if arg (mu4e-quit)
+    (progn
+      (danylo/email-bg-refresh)
+      (mu4e))))
 
 (general-define-key
  "C-c m" 'danylo/launch-mu4e)
@@ -1712,40 +1762,50 @@ Patched for my own better error messages."
 
 (advice-add 'mu4e-error-handler :around #'danylo/mu4e-error-handler)
 
+(defun danylo/is-mu4e-buffer (buf)
+  "Return t if the buffer is a mu4e buffer, otherwise false."
+  (or (derived-mode-p 'mu4e-main-mode)
+      (derived-mode-p 'mu4e-view-mode)
+      (derived-mode-p 'mu4e-compose-mode)
+      (derived-mode-p 'mu4e-headers-mode)
+      (derived-mode-p 'mu4e-org-mode)
+      (derived-mode-p 'mu4e-loading-mode)))
+
 (defun danylo/email-bg-refresh ()
+  "Refresh the inbox in the background. This function does nothing
+if a mu4e is currently visible in any frame. I judge that it is
+dangerous then to kill the mu4e process, as it might be used by
+something important that the user is currently doing."
+  (interactive)
   ;; Check if any mu4e buffers are open
-  (defvar danylo/mu4e~is~open)
-  (setq danylo/mu4e~is~open nil)
+  (setq danylo/mu4e~is~active nil)
   (mapc (lambda (buf)
 	  (with-current-buffer buf
-	    (when (or (derived-mode-p 'mu4e-main-mode)
-		      (derived-mode-p 'mu4e-view-mode)
-		      (derived-mode-p 'mu4e-compose-mode)
-		      (derived-mode-p 'mu4e-headers-mode)
-		      (derived-mode-p 'mu4e-org-mode))
-	      (setq danylo/mu4e~is~open t))))
+	    (when (and (danylo/is-mu4e-buffer buf)
+		       ;; Is the buffer visible in any frame?
+		       (get-buffer-window buf t))
+	      (setq danylo/mu4e~is~active t))))
 	(buffer-list))
-  ;; If no buffer is open, delete any "message loading" buffer
-  (unless danylo/mu4e~is~open
+  ;; If inactive, proceed to refreshing the email
+  (unless danylo/mu4e~is~active
+    ;; Delete every mu4e buffer ("clean up")
     (mapc (lambda (buf)
-	    (with-current-buffer buf
-	      (when (derived-mode-p 'mu4e-loading-mode)
-		(kill-buffer))))
-	  (buffer-list)))
-  ;; Check if mu server is running
-  (defvar danylo/mu~is~running)
-  (setq danylo/mu~is~running
-	(eq (call-process-region
-	     nil nil "pgrep" nil nil nil "mu") 0))
-  ;; Check if this Emacs session owns the mu process
-  (defvar danylo/mu~own)
-  (setq danylo/mu~own mu4e~proc-process)
-  ;; Run mail update if mu is not running
-  (when (or danylo/mu~own (not danylo/mu~is~running))
+	    (when (danylo/is-mu4e-buffer buf) (kill-buffer buf)))
+	  (buffer-list))
+    ;; Double-check that killed for sure
+    (call-process-region
+     nil nil "pkill" nil nil nil "mu")
     ;; Get new mail
     (danylo/get-mail)
     ;; Kill the mu process once updating has finished
-    (run-with-timer 5.0 nil 'mu4e~proc-kill)))
+    (setq danylo/mu4e~kill~timer
+	  (run-with-timer
+	   2.0 2.0
+	   (lambda ()
+	     (unless (buffer-live-p mu4e~update-buffer)
+	       (call-process-region
+		nil nil "pkill" nil nil nil "mu")
+	       (cancel-timer danylo/mu4e~kill~timer)))))))
 
 (with-eval-after-load "mu4e"
   ;; Disable message sending with C-c C-s (make it more complicated to
@@ -1890,6 +1950,7 @@ If there is no shell open, prints a message to inform."
   (if (danylo/shell~check-open shell-buffer-name)
       ;; Send a run command for the current file
       (with-current-buffer shell-buffer-name
+	(vterm-copy-mode -1)
 	(vterm-send-string (format "%s\n" command)))
     (message "No shell open.")))
 
@@ -1898,22 +1959,22 @@ If there is no shell open, prints a message to inform."
   (let ((current-point nil))
     (if (danylo/shell~check-open shell-buffer-name)
 	(with-current-buffer shell-buffer-name
-	  (vterm-copy-mode)
+	  (vterm-copy-mode 1)
 	  (setq current-point (point))
-	  (vterm-copy-mode-done nil))
+	  (vterm-copy-mode -1))
       (message "No shell open."))
     current-point))
 
 (defun danylo/shell-get-content (shell-buffer-name start end)
   "Get the shell text between START and END point positions."
-  (setq shell-content nil)
+  (setq shell-content "")
   (if (danylo/shell~check-open shell-buffer-name)
       (with-current-buffer shell-buffer-name
-	(vterm-copy-mode)
+	(vterm-copy-mode 1)
 	(let ((start (max start (point-min)))
 	      (end (min end (point-max))))
 	  (setq shell-content (buffer-substring start end)))
-	(vterm-copy-mode-done nil))
+	(vterm-copy-mode -1))
     (message "No shell open."))
   shell-content)
 

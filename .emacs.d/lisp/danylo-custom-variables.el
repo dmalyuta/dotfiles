@@ -108,7 +108,7 @@ in a while."
   :type 'integer
   :group 'danylo)
 
-(defcustom danylo/email-refresh-period `,(* 1 60)
+(defcustom danylo/email-refresh-period `,(* 3 60)
   "How often (in seconds) to get new mail."
   :type 'integer
   :group 'danylo)

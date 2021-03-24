@@ -320,10 +320,17 @@ directory."
 (electric-indent-mode -1)
 
 (defun danylo/fast-get-line ()
+  "Get the line number at current point."
   (string-to-number (format-mode-line "%l")))
 
+(defun danylo/fast-get-column ()
+  "Get the column number at current point."
+  (string-to-number (format-mode-line "%c")))
+
 (defvar-local danylo/indent-char-min -1)
+(defvar-local danylo/indent-string "")
 (defvar-local danylo/indent-disable nil)
+
 (defun danylo/newline-with-indent (orig-fun &rest args)
   "Maintain default-directory when eval-buffer. Automatically
 indents the new lines jit-lock style in case of a rapid-fire
@@ -353,12 +360,27 @@ succession of newline commands."
 	       (indent-for-tab-command)
 	       (forward-line)))
 	   (indent-for-tab-command)
-	   (setq danylo/indent-char-min -1))))
+	   (setq danylo/indent-char-min -1
+		 danylo/indent-string ""))))
       (apply orig-fun args)
+      (insert danylo/indent-string)
+      ;; (dotimes (_ danylo/indent-amount) (insert " "))
       ;; Indent on first call so that cursor doesn't jump if just one newline
-      (when danylo/indent~first~call (indent-for-tab-command)))))
+      (when danylo/indent~first~call
+	(indent-for-tab-command)
+	(save-excursion
+	  (let ((pt-now (point)))
+	    (forward-line 0)
+	    (let ((pt-start (point)))
+	      (setq danylo/indent-string (buffer-substring pt-start pt-now))
+	      ))))
+      )))
 
 (advice-add 'newline :around #'danylo/newline-with-indent)
+
+;; Make region selection faster
+;; https://emacs.stackexchange.com/a/61764/13661
+(setq select-active-regions nil)
 
 ;; Turn off Abbrev mode
 (setq-default abbrev-mode nil)
@@ -1205,6 +1227,10 @@ With argument ARG, do this that many times."
  "C-x -" 'split-window-below
  "C-x |" 'split-window-right)
 
+(setq split-window-preferred-function 'split-window-sensibly
+      split-height-threshold 80
+      split-width-threshold 160)
+
 ;;;; >> Resizing windows <<
 
 (use-package windsize
@@ -1905,7 +1931,9 @@ This version deletes backup files without asking."
 (use-package magit
   ;; https://github.com/magit/magit
   ;; An interface to the version control system Git
-  :bind (("C-x g" . magit-status)))
+  :bind (("C-x g" . magit-status))
+  :init (setq magit-display-buffer-function
+	      #'magit-display-buffer-same-window-except-diff-v1))
 
 ;;; ..:: Shell interaction ::..
 

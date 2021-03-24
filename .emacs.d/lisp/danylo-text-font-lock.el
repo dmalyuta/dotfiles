@@ -1,12 +1,11 @@
 ;;; danylo-text-font-lock.el --- Font locking for Org and LaTeX files
-
+;;
 ;; Author: Danylo Malyuta
-
+;;
 ;; Keywords: font lock
-
-
+;;
 ;; This file is not part of GNU Emacs
-
+;;
 ;;; Commentary:
 ;;
 ;;  Font locking for text files like Org and LaTeX files.

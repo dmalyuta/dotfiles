@@ -1,12 +1,11 @@
 ;;; danylo-prog-font-lock.el --- Font locking for programming code files
-
+;;
 ;; Author: Danylo Malyuta
-
+;;
 ;; Keywords: font lock
-
-
+;;
 ;; This file is not part of GNU Emacs
-
+;;
 ;;; Commentary:
 ;;
 ;;  Font locking for programming code files (Python and so on).

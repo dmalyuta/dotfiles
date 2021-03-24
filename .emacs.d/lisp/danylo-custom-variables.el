@@ -1,12 +1,11 @@
 ;;; danylo-custom-variables.el --- Emacs init file customization variables
-
+;;
 ;; Author: Danylo Malyuta
-
+;;
 ;; Keywords: variables, defcustom, defface
-
-
+;;
 ;; This file is not part of GNU Emacs
-
+;;
 ;;; Commentary:
 ;;
 ;;  Custom parameters (variables, faces) used by init file.

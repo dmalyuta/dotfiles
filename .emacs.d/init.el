@@ -994,24 +994,12 @@ when there is another buffer printing out information."
   :config
   (move-text-default-bindings))
 
-(defun danylo/undo-no-gc ()
-  "Undo function. Turns off GC prior to undoing."
-  (interactive)
-  (let ((gc-cons-threshold most-positive-fixnum))
-    ;; GC "turned off" in this block by setting gc-cons-threshold very
-    ;; high
-    (undo-tree-undo)))
-
-(use-package undo-tree
-  ;; http://www.dr-qubit.org/undo-tree/undo-tree.el
-  ;; Treat undo history as a tree
-  :bind (:map undo-tree-map
-	      ("C-/" . danylo/undo-no-gc)))
-
-(add-hook 'after-init-hook
-	  (lambda ()
-	    (require 'undo-tree)
-	    (global-undo-tree-mode)))
+(use-package undo-fu
+  ;; Undo helper with redo
+  ;; Simple, stable linear undo with redo for Emacs.
+  :bind (("C-/" . undo-fu-only-undo)
+	 ("C-?" . undo-fu-only-redo))
+  )
 
 (use-package hl-todo
   ;; https://github.com/tarsius/hl-todo
@@ -1502,6 +1490,9 @@ The remainder of the function is a carbon-copy from Flycheck."
 	    (set-face-attribute 'flyspell-duplicate nil
 				:underline `,danylo/yellow)))
 
+(setq flyspell-issue-welcome-flag nil
+      flyspell-issue-message-flag nil)
+
 (general-define-key
  "C-c x s" 'danylo/toggle-spellcheck)
 
@@ -1770,11 +1761,14 @@ something important that the user is currently doing."
     (mapc (lambda (buf)
 	    (when (danylo/is-mu4e-buffer buf) (kill-buffer buf)))
 	  (buffer-list))
-    ;; Double-check that killed for sure
-    (call-process-region
-     nil nil "pkill" nil nil nil "mu")
-    ;; Get new mail
-    (danylo/get-mail)))
+    ;; Kill mu4e if this Emacs instance owns the process
+    (when mu4e~proc-process
+      (call-process-region
+       nil nil "pkill" nil nil nil "mu"))
+    ;; Get new mail, if no mu4e process is currently running
+    (unless (eq (call-process-region
+		 nil nil "pgrep" nil nil nil "mu") 0)
+      (danylo/get-mail))))
 
 (with-eval-after-load "mu4e"
   ;; Disable message sending with C-c C-s (make it more complicated to

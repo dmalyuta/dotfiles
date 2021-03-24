@@ -316,67 +316,20 @@ directory."
 
 ;;;; Better electric indentation
 
-(setq-default electric-indent-inhibit t)
-(electric-indent-mode -1)
-
-(defun danylo/fast-get-line ()
-  "Get the line number at current point."
-  (string-to-number (format-mode-line "%l")))
-
-(defun danylo/fast-get-column ()
-  "Get the column number at current point."
-  (string-to-number (format-mode-line "%c")))
-
-(defvar-local danylo/indent-char-min -1)
-(defvar-local danylo/indent-string "")
-(defvar-local danylo/indent-disable nil)
-
-(defun danylo/newline-with-indent (orig-fun &rest args)
-  "Maintain default-directory when eval-buffer. Automatically
-indents the new lines jit-lock style in case of a rapid-fire
-succession of newline commands."
-  (if (or danylo/indent-disable
-	  (not (or (derived-mode-p 'prog-mode))))
-      ;; Normal newline and do nothing else
-      (apply orig-fun args)
-    (progn
-      ;; Newline with indent afterwards, jit style in case of a rapid-fire
-      ;; set of newlines
-      (setq danylo/indent~first~call (< danylo/indent-char-min 0))
-      (when danylo/indent~first~call
-	;; Save the starting character of new line
-	(save-excursion
-	  (forward-line)
-	  (setq danylo/indent-char-min (point)))
+(defvar-local danylo/do-electric-indent t)
+(defun danylo/electric-indent-jit (char)
+  "Turn off electric indent temporarily during a rapid-fire
+sequence of newlines."
+  (if danylo/do-electric-indent
+      (progn
+	(setq danylo/do-electric-indent nil)
 	(run-with-idle-timer
 	 0.05 nil
-	 (lambda ()
-	   (setq danylo/indent-line-max (danylo/fast-get-line))
-	   (save-excursion
-	     ;; Indent every line between min and max point
-	     (goto-char danylo/indent-char-min)
-	     (forward-line 0)
-	     (while (< (danylo/fast-get-line) danylo/indent-line-max)
-	       (indent-for-tab-command)
-	       (forward-line)))
-	   (indent-for-tab-command)
-	   (setq danylo/indent-char-min -1
-		 danylo/indent-string ""))))
-      (apply orig-fun args)
-      (insert danylo/indent-string)
-      ;; (dotimes (_ danylo/indent-amount) (insert " "))
-      ;; Indent on first call so that cursor doesn't jump if just one newline
-      (when danylo/indent~first~call
-	(indent-for-tab-command)
-	(save-excursion
-	  (let ((pt-now (point)))
-	    (forward-line 0)
-	    (let ((pt-start (point)))
-	      (setq danylo/indent-string (buffer-substring pt-start pt-now))
-	      ))))
-      )))
+	 (lambda () (setq danylo/do-electric-indent t)))
+	t)
+    'no-indent))
 
-(advice-add 'newline :around #'danylo/newline-with-indent)
+(add-hook 'electric-indent-functions 'danylo/electric-indent-jit)
 
 ;; Make region selection faster
 ;; https://emacs.stackexchange.com/a/61764/13661
@@ -1154,8 +1107,7 @@ there's a region, all lines that region covers will be duplicated."
     (if mark-active
         (exchange-point-and-mark))
     (setq end (line-end-position))
-    (let ((region (buffer-substring-no-properties beg end))
-	  (danylo/indent-disable t))
+    (let ((region (buffer-substring-no-properties beg end)))
       (dotimes (i arg)
         (goto-char end)
         (newline)
@@ -1822,16 +1774,7 @@ something important that the user is currently doing."
     (call-process-region
      nil nil "pkill" nil nil nil "mu")
     ;; Get new mail
-    (danylo/get-mail)
-    ;; Kill the mu process once updating has finished
-    (setq danylo/mu4e~kill~timer
-	  (run-with-timer
-	   2.0 2.0
-	   (lambda ()
-	     (unless (buffer-live-p mu4e~update-buffer)
-	       (call-process-region
-		nil nil "pkill" nil nil nil "mu")
-	       (cancel-timer danylo/mu4e~kill~timer)))))))
+    (danylo/get-mail)))
 
 (with-eval-after-load "mu4e"
   ;; Disable message sending with C-c C-s (make it more complicated to
@@ -2581,6 +2524,8 @@ Calls itself until the docstring has completed printing."
 	      TeX-save-query nil
 	      reftex-plug-into-AUCTeX t
 	      LaTeX-electric-left-right-brace t
+	      TeX-insert-macro-default-style 'mandatory-args-only
+	      LaTeX-beamer-item-overlay-flag nil
 	      TeX-electric-math '("$" . "$")
 	      texmathp-tex-commands '(("optimization" env-on)))
   (setq-default TeX-master nil)

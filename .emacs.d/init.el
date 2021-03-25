@@ -322,10 +322,13 @@ directory."
 sequence of newlines."
   (if danylo/do-electric-indent
       (progn
-	(setq danylo/do-electric-indent nil)
-	(run-with-idle-timer
-	 0.05 nil
-	 (lambda () (setq danylo/do-electric-indent t)))
+	(run-with-timer
+	 0.025 nil
+	 (lambda ()
+	   (setq danylo/do-electric-indent nil)
+	   (run-with-idle-timer
+	    0.05 nil
+	    (lambda () (setq danylo/do-electric-indent t)))))
 	t)
     'no-indent))
 
@@ -1740,6 +1743,41 @@ Patched for my own better error messages."
       (derived-mode-p 'mu4e-org-mode)
       (derived-mode-p 'mu4e-loading-mode)))
 
+(defvar danylo/mu4e~proc-sentinel-triggered nil
+  "Indicator if the mu4e process sentinel was triggered.")
+
+(defun danylo/mu4e~proc-silent-sentinel (orig-fun &rest args)
+  "Do not run the process sentinel, basically."
+  (setq danylo/mu4e~proc-sentinel-triggered t))
+
+(defun danylo/kill-mu4e-silently ()
+  "Kill any running mu4e process silently. This basically disables
+the errors that mu4e~proc-sentinel normally prints out, which are
+distracting since the process kill here is intentional."
+  (mapc
+   (lambda (proc)
+     ;; Check if this is a mu4e process
+     (when (string-match-p
+	    (regexp-quote mu4e~proc-name)
+	    (process-name proc))
+       ;; Silently kill mu4e process
+       (advice-add 'mu4e~proc-sentinel :around
+		   #'danylo/mu4e~proc-silent-sentinel)
+       (ignore-errors (signal-process proc 'SIGINT))
+       (setq mu4e~proc-process nil
+	     mu4e~proc-buf "")
+       ;; Reset the process sentinel once finished
+       (setq danylo/mu4e~proc-sentinel-timer
+	     (run-with-idle-timer
+	      1.0 t
+	      (lambda ()
+		(when danylo/mu4e~proc-sentinel-triggered
+		  (advice-remove 'mu4e~proc-sentinel
+				 #'danylo/mu4e~proc-silent-sentinel)
+		  (setq danylo/mu4e~proc-sentinel-triggered nil))
+		(cancel-timer danylo/mu4e~proc-sentinel-timer))))))
+   (process-list)))
+
 (defun danylo/email-bg-refresh ()
   "Refresh the inbox in the background. This function does nothing
 if a mu4e is currently visible in any frame. I judge that it is
@@ -1761,14 +1799,10 @@ something important that the user is currently doing."
     (mapc (lambda (buf)
 	    (when (danylo/is-mu4e-buffer buf) (kill-buffer buf)))
 	  (buffer-list))
-    ;; Kill mu4e if this Emacs instance owns the process
-    (when mu4e~proc-process
-      (call-process-region
-       nil nil "pkill" nil nil nil "mu"))
+    ;; Kill mu4e silently if this Emacs instance owns the process
+    (danylo/kill-mu4e-silently)
     ;; Get new mail, if no mu4e process is currently running
-    (unless (eq (call-process-region
-		 nil nil "pgrep" nil nil nil "mu") 0)
-      (danylo/get-mail))))
+    (danylo/get-mail)))
 
 (with-eval-after-load "mu4e"
   ;; Disable message sending with C-c C-s (make it more complicated to
@@ -2555,6 +2589,14 @@ Calls itself until the docstring has completed printing."
   (add-to-list 'LaTeX-indent-environment-list '("pycode" current-indentation))
   (add-to-list 'LaTeX-indent-environment-list '("pykzmathblock" current-indentation))
   (add-to-list 'LaTeX-indent-environment-list '("@pie@shell" current-indentation)))
+
+(use-package bibtex
+  ;; http://www.jonathanleroux.org/bibtex-mode.html
+  ;; Package for writing and formatting BibTeX files
+  :ensure bibtex
+  :bind ((:map bibtex-mode-map
+	       ("M-q" . 'bibtex-fill-entry)))
+  :init (setq bibtex-align-at-equal-sign t))
 
 (defun danylo/TeX-dwim-master (orig-fun &rest args)
   "Find a likely `TeX-master'.

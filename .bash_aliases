@@ -118,6 +118,9 @@ emacsgit() {
     fi
 }
 
+# Connect to the Emacs server for Git (opens a GUI frame)
+alias emacsgitconnect='emacsclient --create-frame --socket-name=git'
+
 # Find files and folders
 alias findfile='find . -type f -name'
 alias finddir='find . -type d -name'

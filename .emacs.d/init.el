@@ -319,17 +319,22 @@ directory."
 (defun danylo/electric-indent-jit (char)
   "Turn off electric indent temporarily during a rapid-fire
 sequence of newlines."
-  (if danylo/do-electric-indent
-      (progn
-	(run-with-timer
-	 0.025 nil
-	 (lambda ()
-	   (setq danylo/do-electric-indent nil)
-	   (run-with-idle-timer
-	    0.05 nil
-	    (lambda () (setq danylo/do-electric-indent t)))))
-	t)
-    'no-indent))
+  (if (char-equal char ?\n)
+    (if danylo/do-electric-indent
+	(progn
+	  (run-with-timer
+	   0.025 nil
+	   (lambda ()
+	     (setq danylo/do-electric-indent nil)
+	     (run-with-idle-timer
+	      0.05 nil
+	      (lambda () (setq danylo/do-electric-indent t)))))
+	  ;; Do indent (normal mode)
+	  t)
+      ;; Don't indent (rapid fire mode)
+      'no-indent)
+    ;; Let other functions decide
+    nil))
 
 (add-hook 'electric-indent-functions 'danylo/electric-indent-jit)
 

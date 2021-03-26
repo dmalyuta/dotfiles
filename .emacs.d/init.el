@@ -240,7 +240,6 @@ directory."
     (danylo/print-in-minibuffer
      (format "%s Saved %s" (danylo/fa-icon "database") this-file-name))
     ))
-
 (advice-add 'save-buffer :around #'danylo/save-buffer)
 
 ;; Better start screen
@@ -440,6 +439,15 @@ Source: https://emacs.stackexchange.com/a/50834/13661"
  "C-x C-c C-c" 'danylo/close-frame-or-kill-emacs
  "C-x n f" 'danylo/make-new-frame)
 
+;; Do not ask whether to kill active processes
+(add-hook 'after-init-hook
+ (lambda ()
+   (require 'cl-lib)
+   (defadvice save-buffers-kill-emacs (around no-query-kill-emacs activate)
+     "Prevent \"Active processes exist\" query when quitting Emacs."
+     (cl-letf (((symbol-function #'process-list) (lambda ())))
+       ad-do-it))))
+
 ;;;; Scrolling performance
 
 (setq fast-but-imprecise-scrolling t
@@ -452,7 +460,6 @@ Source: https://emacs.stackexchange.com/a/50834/13661"
   (let ((current-dir default-directory))
     (apply orig-fun args)
     (setq-local default-directory current-dir)))
-
 (advice-add 'eval-buffer :around #'danylo/eval-buffer-maintain-dir)
 
 ;;; ..:: Searching ::..
@@ -914,7 +921,6 @@ Patched for my own icons."
 		   (propertize (danylo/octicon "git-branch") 'face
    		    	       `(:family ,(all-the-icons-octicon-family)
 					 :inherit doom-modeline-warning))))))))
-
 (advice-add 'doom-modeline-update-vcs-icon
 	    :around #'danylo/doom-modeline-update-vcs-icon)
 
@@ -940,7 +946,6 @@ when there is another buffer printing out information."
   (apply orig-fun args)
   (advice-remove 'internal--after-save-selected-window
 		 #'danylo/internal--after-save-selected-window))
-
 (advice-add 'term-emulate-terminal :around #'danylo/term-emulate-terminal)
 
 ;;;; (end patch)
@@ -1303,7 +1308,6 @@ Default is 80"
 	(apply orig-fun args)
 	(delete-window))
     (apply orig-fun args)))
-
 (advice-add 'quit-window :around #'danylo/quit-and-kill-window)
 
 ;;; ..:: Terminal emulator ::..
@@ -1357,7 +1361,6 @@ to (vterm) with no argument will create a **new** vterm buffer."
 	    (buffer-list))
       (vterm danylo/vterm~buf-num)
       )))
-
 (advice-add 'vterm :around #'danylo/vterm)
 
 (general-define-key
@@ -1534,7 +1537,6 @@ The remainder of the function is a carbon-copy from Flycheck."
   "Push marker to stack to that M-, works to jump back."
   (xref-push-marker-stack)
   (apply orig-fun args))
-
 (advice-add 'helm-projectile-ag :around #'danylo/maintain-xref-history)
 
 (use-package projectile
@@ -1731,7 +1733,6 @@ Patched for my own better error messages."
       (1 (danylo/print-in-minibuffer "mu4e database locked"))
       (4 (user-error "No matches for this search query."))
       (t (error "Error %d: %s" errcode errmsg)))))
-
 (advice-add 'mu4e-error-handler :around #'danylo/mu4e-error-handler)
 
 (defun danylo/is-mu4e-buffer (buf)
@@ -1743,39 +1744,34 @@ Patched for my own better error messages."
       (derived-mode-p 'mu4e-org-mode)
       (derived-mode-p 'mu4e-loading-mode)))
 
-(defvar danylo/mu4e~proc-sentinel-triggered nil
-  "Indicator if the mu4e process sentinel was triggered.")
+(defun danylo/mu4e~error-wrapper (orig-fun &rest args)
+  "A better mu4e error handler that prints the error as
+non-attention grabbing faded output to minibuffer."
+  (condition-case err
+      (progn
+	(apply orig-fun args))
+    (error
+     ;; Some error occured, print what it is
+     (danylo/print-in-minibuffer
+      (format "%s mu4e: %s" (danylo/fa-icon "inbox")
+	      (error-message-string err))))
+    ))
+(advice-add 'mu4e-error :around #'danylo/mu4e~error-wrapper)
+(advice-add 'mu4e~proc-sentinel :around #'danylo/mu4e~error-wrapper)
+(advice-add 'mu4e~main-menu :around #'danylo/mu4e~error-wrapper)
+(advice-add 'mu4e~main-queue-size :around #'danylo/mu4e~error-wrapper)
+(advice-add 'mu4e-view-scroll-up-or-next :around #'danylo/mu4e~error-wrapper)
 
-(defun danylo/mu4e~proc-silent-sentinel (orig-fun &rest args)
-  "Do not run the process sentinel, basically."
-  (setq danylo/mu4e~proc-sentinel-triggered t))
-
-(defun danylo/kill-mu4e-silently ()
-  "Kill any running mu4e process silently. This basically disables
-the errors that mu4e~proc-sentinel normally prints out, which are
-distracting since the process kill here is intentional."
+(defun danylo/kill-mu4e ()
+  "Kill any running mu4e process."
   (mapc
    (lambda (proc)
      ;; Check if this is a mu4e process
      (when (string-match-p
 	    (regexp-quote mu4e~proc-name)
 	    (process-name proc))
-       ;; Silently kill mu4e process
-       (advice-add 'mu4e~proc-sentinel :around
-		   #'danylo/mu4e~proc-silent-sentinel)
-       (ignore-errors (signal-process proc 'SIGINT))
-       (setq mu4e~proc-process nil
-	     mu4e~proc-buf "")
-       ;; Reset the process sentinel once finished
-       (setq danylo/mu4e~proc-sentinel-timer
-	     (run-with-idle-timer
-	      1.0 t
-	      (lambda ()
-		(when danylo/mu4e~proc-sentinel-triggered
-		  (advice-remove 'mu4e~proc-sentinel
-				 #'danylo/mu4e~proc-silent-sentinel)
-		  (setq danylo/mu4e~proc-sentinel-triggered nil))
-		(cancel-timer danylo/mu4e~proc-sentinel-timer))))))
+       ;; Kill mu4e process
+       (ignore-errors (signal-process proc 'SIGINT))))
    (process-list)))
 
 (defun danylo/email-bg-refresh ()
@@ -1800,9 +1796,15 @@ something important that the user is currently doing."
 	    (when (danylo/is-mu4e-buffer buf) (kill-buffer buf)))
 	  (buffer-list))
     ;; Kill mu4e silently if this Emacs instance owns the process
-    (danylo/kill-mu4e-silently)
+    (danylo/kill-mu4e)
     ;; Get new mail, if no mu4e process is currently running
-    (danylo/get-mail)))
+    (unless (eq (call-process-region
+		 nil nil "pgrep" nil nil nil "mu") 0)
+      (danylo/get-mail))
+    ;; Clean up by killing the mu4e process that got created
+    (run-with-timer danylo/get-mail-min-interval nil
+		    (lambda () (danylo/kill-mu4e)))
+    ))
 
 (with-eval-after-load "mu4e"
   ;; Disable message sending with C-c C-s (make it more complicated to
@@ -2056,7 +2058,6 @@ If there is no shell open, prints a message to inform."
 	   (setq mode-line-process ""))))
      (buffer-list))
     (force-mode-line-update t)))
-
 (advice-add 'lsp--spinner-start :around #'danylo/lsp-gear-show)
 (advice-add 'lsp--spinner-stop :around #'danylo/lsp-gear-hide)
 
@@ -2097,7 +2098,6 @@ find a definion."
   (condition-case nil
       (apply orig-fun args)
       (user-error (helm-projectile-ag))))
-
 (advice-add 'xref-find-definitions :around
 	    #'danylo/xref-find-definition-with-ag-fallback)
 

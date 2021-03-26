@@ -31,7 +31,8 @@ if not_installed emacs; then
 	  ./autogen.sh && \
 	  # run `./configure --help > /tmp/emacs_configure_help.txt` to print
 	  # out a file of configuration options
-	  ./configure --with-native-compilation --with-json --with-x-toolkit=lucid \
+	  ./configure --with-native-compilation --with-json \
+	   --with-x-toolkit=lucid --with-mailutils \
 	   CFLAGS="-O3 -march=native" && \
 	   make -j2 && sudo make install )
 fi

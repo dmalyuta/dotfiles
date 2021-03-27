@@ -1708,7 +1708,7 @@ The remainder of the function is a carbon-copy from Flycheck."
   (interactive "P")
   (if arg (mu4e-quit)
     (progn
-      (danylo/email-bg-refresh)
+      (danylo/email-bg-refresh t)
       (mu4e))))
 
 (general-define-key
@@ -1779,11 +1779,14 @@ non-attention grabbing faded output to minibuffer."
        (ignore-errors (signal-process proc 'SIGINT))))
    (process-list)))
 
-(defun danylo/email-bg-refresh ()
+(defun danylo/email-bg-refresh (&optional stay)
   "Refresh the inbox in the background. This function does nothing
 if a mu4e is currently visible in any frame. I judge that it is
 dangerous then to kill the mu4e process, as it might be used by
-something important that the user is currently doing."
+something important that the user is currently doing.
+
+If STAY is not nil, then do not kill the mu4e process created
+when getting mail."
   (interactive)
   ;; Check if any mu4e buffers are open
   (setq danylo/mu4e~is~active nil)
@@ -1807,8 +1810,9 @@ something important that the user is currently doing."
 		 nil nil "pgrep" nil nil nil "mu") 0)
       (danylo/get-mail))
     ;; Clean up by killing the mu4e process that got created
-    (run-with-timer danylo/get-mail-min-interval nil
-		    (lambda () (danylo/kill-mu4e)))
+    (unless stay
+      (run-with-timer danylo/get-mail-min-interval nil
+		      (lambda () (danylo/kill-mu4e))))
     ))
 
 (with-eval-after-load "mu4e"
@@ -2566,7 +2570,8 @@ Calls itself until the docstring has completed printing."
 	      ("C-c i w" . ispell-word)
 	      ("C-x C-<backspace>" . electric-pair-delete-pair)
 	      ("C-c f e" . danylo/org-emphasize-equation)
-	      ("C-c x s" . danylo/toggle-spellcheck))
+	      ("C-c x s" . danylo/toggle-spellcheck)
+	      ("C-c x c" . reftex-citep))
   :config
   (require 'latex)
   ;; Shell-escape compilation

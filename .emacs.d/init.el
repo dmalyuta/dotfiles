@@ -666,6 +666,19 @@ height."
 
 ;;;; Other things
 
+(use-package smex
+  ;; https://github.com/nonsequitur/smex
+  ;; A smart M-x enhancement for Emacs
+  )
+
+(use-package helm-smex
+  ;; https://github.com/ptrv/helm-smex
+  ;; Helm interface for smex
+  :after smex
+  :bind (("M-x" . helm-smex)
+	 ("M-X" . helm-smex-major-mode-commands))
+  )
+
 (use-package avy
   ;; https://github.com/abo-abo/avy
   ;; Jump to things in Emacs tree-style

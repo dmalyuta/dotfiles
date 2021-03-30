@@ -631,9 +631,11 @@ height."
 (use-package helm-swoop
   ;; https://github.com/emacsorphanage/helm-swoop
   ;; Efficiently hopping squeezed lines powered by Emacs helm interface
-  :init (setq helm-swoop-split-with-multiple-windows t
-	      helm-swoop-split-window-function
-	      'danylo/helm-swoop-split-window-function))
+  :init
+  (setq
+   helm-swoop-split-with-multiple-windows t
+   helm-swoop-split-window-function 'danylo/helm-swoop-split-window-function
+   helm-swoop-flash-region-function 'pulse-momentary-highlight-region))
 
 (use-package helm-ag
   ;; https://github.com/emacsorphanage/helm-ag
@@ -1056,6 +1058,7 @@ when there is another buffer printing out information."
 			    (when (featurep 'filladapt)
 			      (c-setup-filladapt))))
 	 (python-mode . filladapt-mode)
+	 (julia-mode . filladapt-mode)
 	 (org-mode . filladapt-mode)
 	 (text-mode . filladapt-mode))
   :bind (("M-q" . 'fill-paragraph)
@@ -2316,7 +2319,8 @@ lines according to the first line."
   ;; Major mode for the julia programming language
   :hook ((julia-mode . yas-minor-mode))
   :bind (:map julia-mode-map
-	      ("C-h ." . danylo/julia-help-at-point)))
+	      ("C-h ." . danylo/julia-help-at-point)
+	      ("M-q" . danylo/julia-fill-string)))
 
 (use-package lsp-julia
   ;; https://github.com/non-Jedi/lsp-julia
@@ -2477,6 +2481,47 @@ Calls itself until the docstring has completed printing."
   "Julia block comment."
   (interactive)
   (danylo/section-msg "#=\n" "" "=#" t))
+
+(defun danylo/julia-function-docstring ()
+  "Julia block comment."
+  (interactive)
+  (danylo/section-msg
+   "\"\"\""
+   (concat " Short description.\n"
+	   "\n"
+	   "Longer description.\n"
+	   "\n"
+	   "Args:\n"
+	   "\n\n"
+	   "Returns:\n")
+   "\n\"\"\"" t))
+
+(defun danylo/fill-if-docstring ()
+  "Fill a Julia docstring, if the cursor is inside one right now.
+Original: https://tamaspapp.eu/post/emacs-julia-customizations/"
+  (when (or (looking-at
+	     (rx "\"\"\""
+                 (group
+                  (*? (or (not (any "\\"))
+                          (seq "\\" anything))))
+                 "\"\"\"")))
+    (let ((start (match-beginning 1))
+          (end (match-end 1)))
+      (pulse-momentary-highlight-region start end)
+      ;; (ess-blink-region start end)
+      (fill-region start end nil nil nil))))
+
+(defun danylo/julia-fill-string ()
+  "If inside a docstring, fill while preserving newlines before and
+after triple quotation marks. Otherwise, do a normal fill."
+  (interactive)
+  (if (and transient-mark-mode mark-active)
+      (fill-region (region-beginning) (region-end) nil t)
+    (save-excursion
+      (let ((s (syntax-ppss)))
+        (when (fourth s) (goto-char (ninth s))))
+      (unless (danylo/fill-if-docstring)
+	(fill-region)))))
 
 ;;; ..:: MATLAB ::..
 
@@ -2671,7 +2716,9 @@ Patched so that any new file by default is guessed as being its own master."
   :mode (("README\\.md\\'" . gfm-mode)
 	 ("\\.md\\'" . markdown-mode)
 	 ("\\.markdown\\'" . markdown-mode))
-  :init (setq markdown-command "multimarkdown"))
+  :init (setq markdown-command "multimarkdown")
+  (add-hook 'markdown-mode-hook
+	    (lambda () (filladapt-mode -1))))
 
 ;;; ..:: Bash ::..
 

@@ -1720,13 +1720,34 @@ The remainder of the function is a carbon-copy from Flycheck."
   (advice-add #'shr-colorize-region :around
 	      (defun shr-no-colourise-region (&rest ignore))))
 
+(defun danylo/mu-db-busy ()
+  "Return t if the mu database is busy, otherwise nil."
+  (eq (call-process-region
+       nil nil "pgrep" nil nil nil "mu") 0))
+
+(defun danylo/mu4e-active ()
+  "Return t if a mu4e buffer is current visible, otherwise nil."
+  (let ((danylo/mu4e~is~active nil))
+    (mapc (lambda (buf)
+	    (with-current-buffer buf
+	      (when (and (danylo/is-mu4e-buffer buf)
+			 ;; Is the buffer visible in any frame?
+			 (get-buffer-window buf t))
+		(setq danylo/mu4e~is~active t))))
+	  (buffer-list))
+    danylo/mu4e~is~active))
+
 (defun danylo/launch-mu4e (arg)
   "Launch mu4e, or quit it if preceded by C-u"
   (interactive "P")
   (if arg (mu4e-quit)
     (progn
       (danylo/email-bg-refresh t)
-      (mu4e))))
+      (if (and (danylo/mu-db-busy) (not (danylo/mu4e-active)))
+	  (danylo/print-in-minibuffer
+	   (format "%s mu4e: database locked by another process"
+		   (danylo/fa-icon "inbox")))
+	(mu4e)))))
 
 (general-define-key
  "C-c m" 'danylo/launch-mu4e)
@@ -1805,17 +1826,8 @@ something important that the user is currently doing.
 If STAY is not nil, then do not kill the mu4e process created
 when getting mail."
   (interactive)
-  ;; Check if any mu4e buffers are open
-  (setq danylo/mu4e~is~active nil)
-  (mapc (lambda (buf)
-	  (with-current-buffer buf
-	    (when (and (danylo/is-mu4e-buffer buf)
-		       ;; Is the buffer visible in any frame?
-		       (get-buffer-window buf t))
-	      (setq danylo/mu4e~is~active t))))
-	(buffer-list))
   ;; If inactive, proceed to refreshing the email
-  (unless danylo/mu4e~is~active
+  (unless (danylo/mu4e-active)
     ;; Delete every mu4e buffer ("clean up")
     (mapc (lambda (buf)
 	    (when (danylo/is-mu4e-buffer buf) (kill-buffer buf)))
@@ -1823,8 +1835,7 @@ when getting mail."
     ;; Kill mu4e silently if this Emacs instance owns the process
     (danylo/kill-mu4e)
     ;; Get new mail, if no mu4e process is currently running
-    (unless (eq (call-process-region
-		 nil nil "pgrep" nil nil nil "mu") 0)
+    (unless (danylo/mu-db-busy)
       (danylo/get-mail))
     ;; Clean up by killing the mu4e process that got created
     (unless stay

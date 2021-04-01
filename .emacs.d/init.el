@@ -1668,9 +1668,9 @@ The remainder of the function is a carbon-copy from Flycheck."
 	      :map mu4e-view-mode-map
 	      ("x" . (lambda () (interactive) (mu4e-mark-execute-all t)))
 	      :map mu4e-compose-mode-map
-	      ("C-c C-s C-s" . 'message-send)
+	      ("C-c m s" . 'message-send)
 	      ("C-c C-c" . nil)
-	      ("C-c C-a" . 'mail-add-attachment)
+	      ("C-c m a" . 'mail-add-attachment)
 	      ("C-c x s" . danylo/toggle-spellcheck)
 	      :map mu4e-main-mode-map
 	      ("C-c C-u" . danylo/get-mail)

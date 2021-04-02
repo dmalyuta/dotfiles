@@ -2587,6 +2587,16 @@ after triple quotation marks. Otherwise, do a normal fill."
 
 ;;; ..:: LaTeX ::..
 
+(defun danylo/symbol-at-point-with-underscore ()
+  "Get the symbol at current point, with an underscore. Useful for
+swooping inside LaTeX document."
+  (interactive)
+  (let ((table (copy-syntax-table (syntax-table))))
+    (modify-syntax-entry ?_ "w" table)
+    (modify-syntax-entry ?: "w" table)
+    (with-syntax-table table
+      (thing-at-point 'symbol))))
+
 (use-package tex
   ;; https://elpa.gnu.org/packages/auctex.html
   ;; Package for writing and formatting TeX files
@@ -2615,6 +2625,9 @@ after triple quotation marks. Otherwise, do a normal fill."
 			 (add-to-list 'helm-completing-read-handlers-alist
 				      '(LaTeX-environment
 					. helm-completing-read-default-handler))
+			 ;; Helm swoop include underscores
+			 (setq-local helm-swoop-pre-input-function
+				     'danylo/symbol-at-point-with-underscore)
 			 ))
 	 (reftex-mode . (lambda ()
 			  ;; Unset C-c /, which conflicts with google-this
@@ -2668,7 +2681,7 @@ after triple quotation marks. Otherwise, do a normal fill."
   (add-to-list 'LaTeX-verbatim-environments "@pie@shell")
   (add-to-list 'LaTeX-indent-environment-list '("pycode" current-indentation))
   (add-to-list 'LaTeX-indent-environment-list '("pykzmathblock" current-indentation))
-  (add-to-list 'LaTeX-indent-environment-list '("@pie@shell" current-indentation)))
+  (add-to-list 'LaTeX-indent-environment-list '("@pie@shell" current-indentation)))b
 
 (use-package bibtex
   ;; http://www.jonathanleroux.org/bibtex-mode.html

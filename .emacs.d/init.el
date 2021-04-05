@@ -2681,7 +2681,7 @@ swooping inside LaTeX document."
   (add-to-list 'LaTeX-verbatim-environments "@pie@shell")
   (add-to-list 'LaTeX-indent-environment-list '("pycode" current-indentation))
   (add-to-list 'LaTeX-indent-environment-list '("pykzmathblock" current-indentation))
-  (add-to-list 'LaTeX-indent-environment-list '("@pie@shell" current-indentation)))b
+  (add-to-list 'LaTeX-indent-environment-list '("@pie@shell" current-indentation)))
 
 (use-package bibtex
   ;; http://www.jonathanleroux.org/bibtex-mode.html

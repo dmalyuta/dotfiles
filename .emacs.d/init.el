@@ -390,7 +390,7 @@ sequence of newlines."
 ;;;; Dired (directory listing)
 
 (use-package dired+
-  ;;  Redo/undo system for Emacs
+  ;; Better directory browser
   :ensure nil
   :quelpa ((dired+ :fetcher url
 		   :url "https://raw.githubusercontent.com/emacsmirror/dired-plus/master/dired+.el"))
@@ -1499,30 +1499,34 @@ The remainder of the function is a carbon-copy from Flycheck."
   (flycheck-error-list-highlight-errors 'preserve-pos))
 (advice-add 'flycheck-jump-in-buffer :around #'danylo/flycheck-jump-in-buffer)
 
+;;;; >> Spell checking <<
+
+(use-package speck
+  ;; Minor mode for spell checking
+  :ensure nil
+  :quelpa ((speck :fetcher url
+		  :url "https://raw.githubusercontent.com/emacsmirror/emacswiki.org/master/speck.el"))
+  :bind (:map speck-mode-map
+	      ("C-c s w" . speck-popup-menu-at-point)
+	      ("C-c s r" . speck-replace-next)
+	      ("C-c s a" . speck-add-next))
+  :init
+  (add-hook 'speck-mode-hook
+	    (lambda () (set-face-attribute 'speck-mouse nil
+					   :background `,danylo/faded))))
+
 (defun danylo/toggle-spellcheck ()
   "Turn on spell checking."
   (interactive)
-  (if (bound-and-true-p flyspell-mode)
+  (if (bound-and-true-p speck-mode)
       ;; Turn off spellcheck
       (progn (flycheck-mode -1)
-	     (flyspell-mode -1))
+	     (speck-mode -1))
     ;; Turn on spellcheck
-    (progn (flycheck-mode +1)
-	   (flyspell-mode +1)
-	   (flyspell-buffer))))
-
-(add-hook 'flyspell-mode-hook
-	  (lambda ()
-	    (set-face-attribute 'flyspell-incorrect nil
-				:underline `,danylo/red)
-	    (set-face-attribute 'flyspell-duplicate nil
-				:underline `,danylo/yellow)))
-
-(setq flyspell-issue-welcome-flag nil
-      flyspell-issue-message-flag nil)
+    (speck-mode +1)))
 
 (general-define-key
- "C-c x s" 'danylo/toggle-spellcheck)
+ "C-c s s" 'danylo/toggle-spellcheck)
 
 ;;; ..:: Completion ::..
 
@@ -2583,7 +2587,7 @@ after triple quotation marks. Otherwise, do a normal fill."
 ;; Turn off (by default) function signatures popping up in minibuffer
 (add-hook 'emacs-lisp-mode-hook
 	  (lambda ()
-	    (eldoc-mode 0)))
+	    (eldoc-mode -1)))
 
 ;;; ..:: LaTeX ::..
 

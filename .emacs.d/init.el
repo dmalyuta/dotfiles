@@ -2659,7 +2659,8 @@ swooping inside LaTeX document."
 	      ("C-x C-<backspace>" . electric-pair-delete-pair)
 	      ("C-c f e" . danylo/org-emphasize-equation)
 	      ("C-c x s" . danylo/toggle-spellcheck)
-	      ("C-c x c" . reftex-citep))
+	      ("C-c x c" . reftex-citep)
+	      ("C-c s" . nil))
   :config
   (require 'latex)
   ;; Shell-escape compilation

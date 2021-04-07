@@ -1784,12 +1784,13 @@ Patched for my own better error messages."
 
 (defun danylo/is-mu4e-buffer (buf)
   "Return t if the buffer is a mu4e buffer, otherwise false."
-  (or (derived-mode-p 'mu4e-main-mode)
-      (derived-mode-p 'mu4e-view-mode)
-      (derived-mode-p 'mu4e-compose-mode)
-      (derived-mode-p 'mu4e-headers-mode)
-      (derived-mode-p 'mu4e-org-mode)
-      (derived-mode-p 'mu4e-loading-mode)))
+  (with-current-buffer buf
+    (or (derived-mode-p 'mu4e-main-mode)
+	(derived-mode-p 'mu4e-view-mode)
+	(derived-mode-p 'mu4e-compose-mode)
+	(derived-mode-p 'mu4e-headers-mode)
+	(derived-mode-p 'mu4e-org-mode)
+	(derived-mode-p 'mu4e-loading-mode))))
 
 (defun danylo/mu4e~error-wrapper (orig-fun &rest args)
   "A better mu4e error handler that prints the error as

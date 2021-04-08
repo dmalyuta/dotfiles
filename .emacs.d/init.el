@@ -2336,8 +2336,7 @@ lines according to the first line."
   ;; Major mode for the julia programming language
   :hook ((julia-mode . yas-minor-mode))
   :bind (:map julia-mode-map
-	      ("C-h ." . danylo/julia-help-at-point)
-	      ("M-q" . danylo/julia-fill-string)))
+	      ("C-h ." . danylo/julia-help-at-point)))
 
 (use-package lsp-julia
   ;; https://github.com/non-Jedi/lsp-julia
@@ -2512,33 +2511,6 @@ Calls itself until the docstring has completed printing."
 	   "\n\n"
 	   "Returns:\n")
    "\n\"\"\"" t))
-
-(defun danylo/fill-if-docstring ()
-  "Fill a Julia docstring, if the cursor is inside one right now.
-Original: https://tamaspapp.eu/post/emacs-julia-customizations/"
-  (when (or (looking-at
-	     (rx "\"\"\""
-                 (group
-                  (*? (or (not (any "\\"))
-                          (seq "\\" anything))))
-                 "\"\"\"")))
-    (let ((start (match-beginning 1))
-          (end (match-end 1)))
-      (pulse-momentary-highlight-region start end)
-      ;; (ess-blink-region start end)
-      (fill-region start end nil nil nil))))
-
-(defun danylo/julia-fill-string ()
-  "If inside a docstring, fill while preserving newlines before and
-after triple quotation marks. Otherwise, do a normal fill."
-  (interactive)
-  (if (and transient-mark-mode mark-active)
-      (fill-region (region-beginning) (region-end) nil t)
-    (save-excursion
-      (let ((s (syntax-ppss)))
-        (when (fourth s) (goto-char (ninth s))))
-      (unless (danylo/fill-if-docstring)
-	(fill-region)))))
 
 ;;; ..:: MATLAB ::..
 

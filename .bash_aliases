@@ -14,6 +14,9 @@ alias copy='xargs echo -n | xclip -selection clipboard'
 # Display processes matching grep
 alias listproc='~/.bin/listproc.sh'
 
+# Display hardware list
+alias abouthw='sudo lshw -short'
+
 # Kill processes matching grep
 alias killgrep='~/.bin/killgrep.sh'
 

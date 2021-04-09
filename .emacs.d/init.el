@@ -615,6 +615,7 @@ Patched to use original **window** instead of buffer."
 		  "magit.*:" "\\*Backtrace\\*" "\\*Process List\\*"
 		  "\\*Async-" "\\*Native-" "\\*.*output\\*" "\\*helm"
 		  "\\*eww\\*" "\\*timer-list\\*" "\\*Disabled Command\\*"
+		  "\\*Man .*\\*"
 		  ))))
 
 (defun danylo/helm-swoop-split-window-function (buf &rest _args)
@@ -1949,6 +1950,12 @@ This version deletes backup files without asking."
   :bind (("C-x g" . magit-status))
   :init (setq magit-display-buffer-function
 	      #'magit-display-buffer-same-window-except-diff-v1))
+
+(with-eval-after-load "magit"
+  (set-face-attribute 'magit-branch-current nil
+		      :foreground `,danylo/black
+		      :background `,danylo/yellow
+		      :weight 'bold))
 
 ;;; ..:: Shell interaction ::..
 

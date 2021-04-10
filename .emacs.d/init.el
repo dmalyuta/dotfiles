@@ -1356,7 +1356,8 @@ Default is 80"
   :hook ((vterm-mode-hook . (lambda ()
 			      (goto-address-mode 1))))
   :init (setq vterm-always-compile-module t
-	      vterm-kill-buffer-on-exit t)
+	      vterm-kill-buffer-on-exit t
+	      vterm-max-scrollback 100000)
   )
 
 (defun danylo/vterm (orig-fun &rest args)

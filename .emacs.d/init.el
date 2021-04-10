@@ -1953,8 +1953,8 @@ This version deletes backup files without asking."
 
 (with-eval-after-load "magit"
   (set-face-attribute 'magit-branch-current nil
-		      :foreground `,danylo/black
-		      :background `,danylo/yellow
+		      :foreground `,danylo/blue
+		      :box t
 		      :weight 'bold))
 
 ;;; ..:: Shell interaction ::..

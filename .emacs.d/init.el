@@ -1060,7 +1060,6 @@ when there is another buffer printing out information."
 			    (when (featurep 'filladapt)
 			      (c-setup-filladapt))))
 	 (python-mode . filladapt-mode)
-	 (julia-mode . filladapt-mode)
 	 (org-mode . filladapt-mode)
 	 (text-mode . filladapt-mode))
   :bind (("M-q" . 'fill-paragraph)
@@ -1596,7 +1595,6 @@ The remainder of the function is a carbon-copy from Flycheck."
   ;; Your life in plain text
   :hook ((org-mode . danylo/org-mode-setup))
   :bind (:map org-mode-map
-	      ("C-c x s" . danylo/toggle-spellcheck)
 	      ("M-." . org-open-at-point)
 	      ("M-," . org-mark-ring-goto))
   :init
@@ -1677,7 +1675,6 @@ The remainder of the function is a carbon-copy from Flycheck."
 	      ("C-c m s" . 'message-send)
 	      ("C-c C-c" . nil)
 	      ("C-c m a" . 'mail-add-attachment)
-	      ("C-c x s" . danylo/toggle-spellcheck)
 	      :map mu4e-main-mode-map
 	      ("C-c C-u" . danylo/get-mail)
 	      ("U" . danylo/get-mail))
@@ -2344,7 +2341,8 @@ lines according to the first line."
   ;; Major mode for the julia programming language
   :hook ((julia-mode . yas-minor-mode))
   :bind (:map julia-mode-map
-	      ("C-h ." . danylo/julia-help-at-point)))
+	      ("C-h ." . danylo/julia-help-at-point)
+	      ("M-q" . danylo/julia-fill-region)))
 
 (use-package lsp-julia
   ;; https://github.com/non-Jedi/lsp-julia
@@ -2520,6 +2518,42 @@ Calls itself until the docstring has completed printing."
 	   "Returns:\n")
    "\n\"\"\"" t))
 
+(defun danylo/fill-julia-docstring ()
+  "Fill a Julia function docstring.
+Inspired from: https://tamaspapp.eu/post/emacs-julia-customizations/"
+  (interactive)
+  (let ((danylo/is~docstring nil))
+    (save-excursion
+      (let ((s (syntax-ppss)))
+	(when (fourth s) (goto-char (ninth s))))
+      (when (looking-at
+	     (rx "\"\"\""
+		 (group
+		  (*? (or (not (any "\\"))
+			  (seq "\\" anything))))
+		 "\"\"\""))
+	(let ((start (match-beginning 1))
+	      (end (match-end 1)))
+	  (pulse-momentary-highlight-region start end)
+	  (fill-region start end)
+	  (setq danylo/is~docstring t))))
+    danylo/is~docstring))
+
+(defun danylo/julia-fill-region ()
+  "Fill-region for julia language."
+  (interactive)
+  (if (and transient-mark-mode mark-active)
+      (fill-region (region-beginning) (region-end))
+    (unless (danylo/fill-julia-docstring)
+      (save-excursion
+	(let ((start (progn
+		       (forward-line 0)
+		       (point)))
+	      (end (progn
+		     (forward-line)
+		     (point))))
+	  (fill-region start end))))))
+
 ;;; ..:: MATLAB ::..
 
 (use-package s
@@ -2638,9 +2672,14 @@ swooping inside LaTeX document."
 	      ("C-c i w" . ispell-word)
 	      ("C-x C-<backspace>" . electric-pair-delete-pair)
 	      ("C-c f e" . danylo/org-emphasize-equation)
-	      ("C-c x s" . danylo/toggle-spellcheck)
 	      ("C-c x c" . reftex-citep)
-	      ("C-c s" . nil))
+	      ("C-c s" . nil)
+	      ("C-c x b" . (lambda ()
+			     (interactive)
+			     (TeX-command "LaTeX" 'TeX-master-file)))
+	      ("C-c x v" . (lambda ()
+			     (interactive)
+			     (TeX-command "View" 'TeX-master-file))))
   :config
   (require 'latex)
   ;; Shell-escape compilation

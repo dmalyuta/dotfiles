@@ -2546,12 +2546,8 @@ Inspired from: https://tamaspapp.eu/post/emacs-julia-customizations/"
       (fill-region (region-beginning) (region-end))
     (unless (danylo/fill-julia-docstring)
       (save-excursion
-	(let ((start (progn
-		       (forward-line 0)
-		       (point)))
-	      (end (progn
-		     (forward-line)
-		     (point))))
+	(let ((start (progn (forward-line 0) (point)))
+	      (end (progn (forward-line) (point))))
 	  (fill-region start end))))))
 
 ;;; ..:: MATLAB ::..
@@ -2677,9 +2673,7 @@ swooping inside LaTeX document."
 	      ("C-c x b" . (lambda ()
 			     (interactive)
 			     (TeX-command "LaTeX" 'TeX-master-file)))
-	      ("C-c x v" . (lambda ()
-			     (interactive)
-			     (TeX-command "View" 'TeX-master-file))))
+	      ("C-c x v" . TeX-view))
   :config
   (require 'latex)
   ;; Shell-escape compilation

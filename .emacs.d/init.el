@@ -1202,6 +1202,47 @@ With argument ARG, do this that many times."
       split-height-threshold 80
       split-width-threshold 160)
 
+(defun danylo/ask-for-integer (prompt default)
+  "Prompt user to enter an integer number, with a DEFAULT value.
+Show PROMPT string in the minibuffer."
+  (let ((user-input (read-string
+		     (format "%s [default %d]: " prompt default))))
+    (cond ((string= user-input "")
+	   ;; Default column width
+	   default)
+	  ((not (string-match "\\`[1-9][0-9]*\\'" user-input))
+	   ;; Bad input - ignore
+	   nil)
+	  (t
+	   ;; Good input - record as an integer
+	   (string-to-number user-input)))))
+
+(defun danylo/split-main-window ()
+  "Split the main window left/right/below/above the entire current
+frame. Based on https://emacs.stackexchange.com/a/681/13661. Will
+ask user for split direction (which user selects using the arrow
+keys), and for the size of the resulting new window."
+  (interactive)
+  (let ((direction (progn
+		     (message "direction up/down/left/right")
+		     (read-event))))
+    (when (member direction '(up down left right))
+      (let* ((horizontal (member direction '(right left)))
+	     (default-size (if horizontal
+			       (/ (window-total-width) 2)
+			     (/ (window-total-height) 2)))
+	     (size (danylo/ask-for-integer
+		    (if horizontal "width" "height") default-size)))
+	(let ((new-window (split-window (frame-root-window) nil direction)))
+	  (save-excursion
+	    (select-window new-window)
+	    (enlarge-window (- size (if horizontal
+					(window-width)
+                                      (window-height)))
+			    horizontal))
+	  new-window)
+	))))
+
 ;;;; >> Resizing windows <<
 
 (use-package windsize
@@ -1263,19 +1304,8 @@ With argument ARG, do this that many times."
   "Set the selected window to user-specified number of columns.
 Default is 80"
   (interactive)
-  (let ((desired-width
-	 (let ((user-input (read-string
-			    (format "input [default %d]: "
-				    danylo/fill-column))))
-	   (cond ((string= user-input "")
-		  ;; Default column width
-		  danylo/fill-column)
-		 ((not (string-match "\\`[1-9][0-9]*\\'" user-input))
-		  ;; Bad input - ignore
-		  nil)
-		 (t
-		  ;; Good input - record as an integer
-		  (string-to-number user-input))))))
+  (let ((desired-width (danylo/ask-for-integer
+			"width" danylo/fill-column)))
     (when desired-width
       (danylo/set-window-width desired-width))))
 
@@ -1295,6 +1325,13 @@ Default is 80"
 ;; winner-mode, which lets you go back (C-c <left>) and forward (C-c <right>) in
 ;; window layout history
 (when (fboundp 'winner-mode) (winner-mode 1))
+
+;;;; >> Transposing the window layout <<
+
+(use-package transpose-frame
+  ;; https://melpa.org/#/transpose-frame
+  ;; Transpose windows arrangement in a frame
+  )
 
 ;;;; >> Buffer menu <<
 

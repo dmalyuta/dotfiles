@@ -27,6 +27,7 @@
 (defface danylo/python-docstring-heading-face
   `((t (:foreground ,danylo/yellow
 		    :weight normal
+		    :slant italic
 		    :inherit default)))
   "Face for Python docstring headings for arguments, returns, etc."
   :group 'danylo)
@@ -166,7 +167,7 @@
 	((eq major-mode 'julia-mode)
 	 (setq danylo/prog-highlight-keywords
 	       '(("^\\(using\\|include\\)" (1 '(face danylo/import-face) t))
-		 ("^\s*#*\s*\\(Args\\|Returns\\|Raises\\):$"
+		 ("^\s*\\(#\s*\\(?:Arguments\\|Keywords\\|Returns\\|Throws\\)\\)$"
 		  (1 '(face danylo/python-docstring-heading-face) t))
 		 ("^[^#\n]*\s+\\(struct\\)\s+\\(.*?\\)$"
 		  (0 '(face danylo/class-other-face) t)

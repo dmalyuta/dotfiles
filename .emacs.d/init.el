@@ -1060,6 +1060,7 @@ when there is another buffer printing out information."
 			    (when (featurep 'filladapt)
 			      (c-setup-filladapt))))
 	 (python-mode . filladapt-mode)
+	 (julia-mode . filladapt-mode)
 	 (org-mode . filladapt-mode)
 	 (text-mode . filladapt-mode))
   :bind (("M-q" . 'fill-paragraph)
@@ -2339,7 +2340,11 @@ lines according to the first line."
 (use-package julia-mode
   ;; https://github.com/JuliaEditorSupport/julia-emacs
   ;; Major mode for the julia programming language
-  :hook ((julia-mode . yas-minor-mode))
+  :hook ((julia-mode . yas-minor-mode)
+	 (julia-mode . (lambda ()
+			 (make-variable-buffer-local 'electric-pair-text-pairs)
+			 (add-to-list 'electric-pair-text-pairs '(?` . ?`))
+			 )))
   :bind (:map julia-mode-map
 	      ("C-h ." . danylo/julia-help-at-point)
 	      ("M-q" . danylo/julia-fill-region)))
@@ -2509,13 +2514,16 @@ Calls itself until the docstring has completed printing."
   (interactive)
   (danylo/section-msg
    "\"\"\""
-   (concat " Short description.\n"
+   (concat "\n"
+	   "    Signature\n"
 	   "\n"
-	   "Longer description.\n"
+	   "Description.\n"
 	   "\n"
-	   "Args:\n"
+	   "# Arguments\n"
+	   "- `foo`: description."
 	   "\n\n"
-	   "Returns:\n")
+	   "# Returns\n"
+	   "- `bar`: description.")
    "\n\"\"\"" t))
 
 (defun danylo/fill-julia-docstring ()
@@ -2543,7 +2551,9 @@ Inspired from: https://tamaspapp.eu/post/emacs-julia-customizations/"
   "Fill-region for julia language."
   (interactive)
   (if (and transient-mark-mode mark-active)
-      (fill-region (region-beginning) (region-end))
+      (progn
+	(fill-region (region-beginning) (region-end))
+	(deactivate-mark))
     (unless (danylo/fill-julia-docstring)
       (save-excursion
 	(let ((start (progn (forward-line 0) (point)))

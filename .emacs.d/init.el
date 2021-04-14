@@ -2667,7 +2667,6 @@ swooping inside LaTeX document."
 	 (LaTeX-mode . turn-on-reftex)
 	 (LaTeX-mode . TeX-source-correlate-mode)
 	 (LaTeX-mode . TeX-PDF-mode)
-	 (LaTeX-mode . TeX-source-correlate-mode)
 	 (LaTeX-mode . auto-fill-mode)
 	 (LaTeX-mode . (lambda ()
 			 ;; View program
@@ -2709,7 +2708,8 @@ swooping inside LaTeX document."
 	      TeX-insert-macro-default-style 'mandatory-args-only
 	      LaTeX-beamer-item-overlay-flag nil
 	      TeX-electric-math '("$" . "$")
-	      texmathp-tex-commands '(("optimization" env-on)))
+	      texmathp-tex-commands '(("optimization" env-on))
+	      reftex-plug-into-AUCTeX nil)
   (setq-default TeX-master nil)
   :bind (:map LaTeX-mode-map
 	      ("C-c i w" . ispell-word)

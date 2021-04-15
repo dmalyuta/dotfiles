@@ -1592,9 +1592,8 @@ The remainder of the function is a carbon-copy from Flycheck."
 (use-package company-shell
   ;; https://github.com/Alexander-Miller/company-shell
   ;; company mode completion backends for your shell functions
-  :config
-  (add-to-list 'company-backends 'company-shell)
-  )
+  :hook ((shell-mode . (lambda ()
+			 (add-to-list 'company-backends 'company-shell)))))
 
 ;;; ..:: File management ::..
 
@@ -2669,13 +2668,16 @@ Inspired from: https://tamaspapp.eu/post/emacs-julia-customizations/"
 
 ;;; ..:: LaTeX ::..
 
-(defun danylo/symbol-at-point-with-underscore ()
-  "Get the symbol at current point, with an underscore. Useful for
-swooping inside LaTeX document."
+(defun danylo/symbol-at-point-with-special ()
+  "Get the symbol at current point, with special characters that I
+tend to use in LaTeX (_, @, :, \\). Useful for swooping inside
+LaTeX document."
   (interactive)
   (let ((table (copy-syntax-table (syntax-table))))
     (modify-syntax-entry ?_ "w" table)
+    (modify-syntax-entry ?@ "w" table)
     (modify-syntax-entry ?: "w" table)
+    (modify-syntax-entry ?\\ "w" table)
     (with-syntax-table table
       (thing-at-point 'symbol))))
 
@@ -2708,7 +2710,7 @@ swooping inside LaTeX document."
 					. helm-completing-read-default-handler))
 			 ;; Helm swoop include underscores
 			 (setq-local helm-swoop-pre-input-function
-				     'danylo/symbol-at-point-with-underscore)
+				     'danylo/symbol-at-point-with-special)
 			 ))
 	 (reftex-mode . (lambda ()
 			  ;; Unset C-c /, which conflicts with google-this
@@ -2797,6 +2799,16 @@ Patched so that any new file by default is guessed as being its own master."
 	      ("C-c s" . company-auctex-symbols))
   :config
   (company-auctex-init)
+  )
+
+(use-package company-reftex
+  ;; https://github.com/TheBB/company-reftex
+  ;; RefTeX backends for company-mode
+  :after company
+  :hook ((LaTeX-mode
+	  . (lambda ()
+	      (add-to-list 'company-backends 'company-reftex-labels)
+	      (add-to-list 'company-backends 'company-reftex-citations))))
   )
 
 ;;; ..:: Gnuplot ::..

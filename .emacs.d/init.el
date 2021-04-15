@@ -1658,7 +1658,23 @@ The remainder of the function is a carbon-copy from Flycheck."
   ;; see: https://stackoverflow.com/a/9116029/4605946
   (setcdr (assoc "\\.pdf\\'" org-file-apps) "evince %s")
   (add-to-list 'org-file-apps
-	       '("\\.pdf::\\([0-9]+\\)\\'" . "evince -p %1 %s") t))
+	       '("\\.pdf::\\([0-9]+\\)\\'" . "evince -p %1 %s") t)
+  ;; Make sure window movement keys are not over-written
+  (define-key org-mode-map (kbd "C-S-<up>") 'nil)
+  (define-key org-mode-map (kbd "C-S-<down>") 'nil)
+  (define-key org-mode-map (kbd "C-S-<left>") 'nil)
+  (define-key org-mode-map (kbd "C-S-<right>") 'nil)
+  ;; Text emphasis
+  (add-to-list 'org-emphasis-alist '("$" danylo/org-equation-face))
+  (define-key org-mode-map (kbd "C-c f b")
+    (lambda () (interactive) (danylo/org-emphasize "*")))
+  (define-key org-mode-map (kbd "C-c f i")
+    (lambda () (interactive) (danylo/org-emphasize "/")))
+  (define-key org-mode-map (kbd "C-c f u")
+    (lambda () (interactive) (danylo/org-emphasize "_")))
+  (define-key org-mode-map (kbd "C-c f c")
+    (lambda () (interactive) (danylo/org-emphasize "~")))
+  (define-key org-mode-map (kbd "C-c f e") 'danylo/org-emphasize-equation))
 
 (defun danylo/org-emphasize (char)
   "Emphasize text in org-mode. CHAR is the character to wrap the
@@ -1679,23 +1695,27 @@ The remainder of the function is a carbon-copy from Flycheck."
 	(progn (insert "$$$$") (backward-char 2))
       (progn (insert "$$") (backward-char 1)))))
 
-(with-eval-after-load "org"
-  ;; Make sure window movement keys are not over-written
-  (define-key org-mode-map (kbd "C-S-<up>") 'nil)
-  (define-key org-mode-map (kbd "C-S-<down>") 'nil)
-  (define-key org-mode-map (kbd "C-S-<left>") 'nil)
-  (define-key org-mode-map (kbd "C-S-<right>") 'nil)
-  ;; Text emphasis
-  (add-to-list 'org-emphasis-alist '("$" danylo/org-equation-face))
-  (define-key org-mode-map (kbd "C-c f b")
-    (lambda () (interactive) (danylo/org-emphasize "*")))
-  (define-key org-mode-map (kbd "C-c f i")
-    (lambda () (interactive) (danylo/org-emphasize "/")))
-  (define-key org-mode-map (kbd "C-c f u")
-    (lambda () (interactive) (danylo/org-emphasize "_")))
-  (define-key org-mode-map (kbd "C-c f c")
-    (lambda () (interactive) (danylo/org-emphasize "~")))
-  (define-key org-mode-map (kbd "C-c f e") 'danylo/org-emphasize-equation))
+(defun danylo/org-insert-link (&optional noinsert)
+  "Prompt user for link name and description, then insert a
+link. If NOINSERT is t then only store the link as a string and
+return it, but do not print to buffer."
+  (interactive)
+  (let ((link (read-string "Reference: "))
+	(desc (read-string "Description: "))
+	(orig-pos (point))
+	new-pos link-text)
+    (setq link-text (format "[[%s][%s]]" link desc))
+    (if noinsert
+	link-text
+      (progn
+	(insert link-text)
+	(setq new-pos (point))
+	(fill-region orig-pos new-pos)))))
+
+(defun danylo/org-eqref ()
+  "Prompt user for link to an equation reference, then insert link."
+  (interactive)
+  (insert (format "(%s)" (danylo/org-insert-link t))))
 
 ;;; ..:: Email ::..
 

@@ -1559,8 +1559,7 @@ The remainder of the function is a carbon-copy from Flycheck."
   (interactive)
   (if (bound-and-true-p speck-mode)
       ;; Turn off spellcheck
-      (progn (flycheck-mode -1)
-	     (speck-mode -1))
+      (speck-mode -1)
     ;; Turn on spellcheck
     (speck-mode +1)))
 

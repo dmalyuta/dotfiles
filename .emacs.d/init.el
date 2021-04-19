@@ -517,6 +517,8 @@ there. If not visible, open it but don't focus."
   ;; Emacs plugin to show the current buffer's imenu entries
   :bind (:map prog-mode-map
 	      ("C-c t i" . danylo/imenu-list-jump)
+	      :map org-mode-map
+	      ("C-c t i" . danylo/imenu-list-jump)
 	      :map imenu-list-major-mode-map
 	      ("C-c t i" . danylo/imenu-list-jump))
   :init (setq imenu-list-size danylo/side-window-width
@@ -1166,6 +1168,61 @@ With argument ARG, do this that many times."
 
 (setq-default fill-column danylo/fill-column)
 
+;;;; Filling special structures
+
+(defun danylo/search-region-delims (start-re &optional end-re)
+  "Return the start and end points of a region using regular
+expressions. If not inside the region, returns nil."
+  (unless end-re (setq end-re start-re))
+  (setq danylo/begin nil danylo/end nil)
+  (save-excursion
+    (let ((danylo/region-begin (re-search-backward start-re nil t 1))
+	  (danylo/region-end (re-search-forward end-re nil t 1)))
+      (when (and danylo/region-begin
+		 danylo/region-end
+		 (> danylo/region-end danylo/region-begin))
+	(setq danylo/begin danylo/region-begin)
+	(setq danylo/end danylo/region-end))
+      )))
+
+(defun danylo/org-inside-block ()
+  "Check if point is inside org-mode structure."
+  (danylo/search-region-delims "#\\+begin_export" "#\\+end_export")
+  (if danylo/begin t nil))
+
+(defun danylo/julia-inside-docstring ()
+  "Check if point is inside julia-mode function docstring."
+  (danylo/search-region-delims "\"\"\"")
+  (if danylo/begin t nil))
+
+(defun danylo/fill-region (delim-fun)
+  "Fill an Org-mode block structure. The DELIM-FUN specifies which
+function to use to get the region delimiters."
+  (interactive)
+  (save-excursion
+    (when (funcall delim-fun)
+      (let* ((region-start (progn (goto-char danylo/begin)
+				  (forward-line)
+				  (point)))
+	     (region-end (progn (goto-char danylo/end)
+				(forward-line 0)
+				(1- (point)))))
+	(pulse-momentary-highlight-region region-start region-end)
+	(fill-region region-start region-end)))))
+
+(defun danylo/fill (&optional justify region)
+  "Enable custom filling depending on mode."
+  (cond ((and (not (and transient-mark-mode mark-active))
+	      (derived-mode-p 'org-mode)
+	      (danylo/org-inside-block))
+	 (danylo/fill-region 'danylo/org-inside-block))
+	((and (not (and transient-mark-mode mark-active))
+	      (derived-mode-p 'julia-mode)
+	      (danylo/julia-inside-block))
+	 (danylo/fill-region 'danylo/julia-inside-block))))
+(advice-add 'fill-paragraph :before 'danylo/fill)
+;; (advice-remove 'fill-paragraph #'danylo/fill)
+
 ;;; ..:: Window management ::..
 
 ;;;; >> Movement across windows <<
@@ -1637,8 +1694,20 @@ The remainder of the function is a carbon-copy from Flycheck."
   (setq org-startup-folded nil
 	;;org-ellipsis "..." ;; " ▾"
 	org-src-tab-acts-natively t
+	org-fontify-quote-and-verse-blocks t
+	;; LaTeX options
 	org-startup-with-latex-preview nil
-	org-fontify-quote-and-verse-blocks t))
+	;; minuted setup: https://emacs.stackexchange.com/a/27984/13661
+	org-latex-listings 'minted
+	org-latex-packages-alist '(("" "minted"))
+	org-latex-pdf-process
+	'("pdflatex -shell-escape -interaction nonstopmode -output-directory %o %f"
+          "pdflatex -shell-escape -interaction nonstopmode -output-directory %o %f")
+	;; Jumping around headings
+	org-goto-interface 'outline-path-completionp
+	org-outline-path-complete-in-steps nil
+	org-imenu-depth 6
+	))
 
 (with-eval-after-load "org"
   (define-key org-mode-map [remap fill-paragraph] nil)
@@ -1699,9 +1768,13 @@ link. If NOINSERT is t then only store the link as a string and
 return it, but do not print to buffer."
   (interactive)
   (let ((link (read-string "Reference: "))
-	(desc (read-string "Description: "))
+	(desc (if (and transient-mark-mode mark-active)
+		  (delete-and-extract-region (region-beginning) (region-end))
+		(read-string "Description: ")))
 	(orig-pos (point))
 	new-pos link-text)
+    (when (string= "" desc)
+      (setq desc link))
     (setq link-text (format "[[%s][%s]]" link desc))
     (if noinsert
 	link-text
@@ -2401,8 +2474,7 @@ lines according to the first line."
 			 (add-to-list 'electric-pair-text-pairs '(?` . ?`))
 			 )))
   :bind (:map julia-mode-map
-	      ("C-h ." . danylo/julia-help-at-point)
-	      ("M-q" . danylo/julia-fill-region)))
+	      ("C-h ." . danylo/julia-help-at-point)))
 
 (use-package lsp-julia
   ;; https://github.com/non-Jedi/lsp-julia
@@ -2580,40 +2652,6 @@ Calls itself until the docstring has completed printing."
 	   "# Returns\n"
 	   "- `bar`: description.")
    "\n\"\"\"" t))
-
-(defun danylo/fill-julia-docstring ()
-  "Fill a Julia function docstring.
-Inspired from: https://tamaspapp.eu/post/emacs-julia-customizations/"
-  (interactive)
-  (let ((danylo/is~docstring nil))
-    (save-excursion
-      (let ((s (syntax-ppss)))
-	(when (fourth s) (goto-char (ninth s))))
-      (when (looking-at
-	     (rx "\"\"\""
-		 (group
-		  (*? (or (not (any "\\"))
-			  (seq "\\" anything))))
-		 "\"\"\""))
-	(let ((start (match-beginning 1))
-	      (end (match-end 1)))
-	  (pulse-momentary-highlight-region start end)
-	  (fill-region start end)
-	  (setq danylo/is~docstring t))))
-    danylo/is~docstring))
-
-(defun danylo/julia-fill-region ()
-  "Fill-region for julia language."
-  (interactive)
-  (if (and transient-mark-mode mark-active)
-      (progn
-	(fill-region (region-beginning) (region-end))
-	(deactivate-mark))
-    (unless (danylo/fill-julia-docstring)
-      (save-excursion
-	(let ((start (progn (forward-line 0) (point)))
-	      (end (progn (forward-line) (point))))
-	  (fill-region start end))))))
 
 ;;; ..:: MATLAB ::..
 

@@ -1176,8 +1176,8 @@ expressions. If not inside the region, returns nil."
   (unless end-re (setq end-re start-re))
   (setq danylo/begin nil danylo/end nil)
   (save-excursion
-    (let ((danylo/region-begin (re-search-backward start-re nil t 1))
-	  (danylo/region-end (re-search-forward end-re nil t 1)))
+    (let ((danylo/region-begin (save-excursion (re-search-backward start-re nil t 1)))
+	  (danylo/region-end (save-excursion (re-search-forward end-re nil t 1))))
       (when (and danylo/region-begin
 		 danylo/region-end
 		 (> danylo/region-end danylo/region-begin))
@@ -1218,8 +1218,8 @@ function to use to get the region delimiters."
 	 (danylo/fill-region 'danylo/org-inside-block))
 	((and (not (and transient-mark-mode mark-active))
 	      (derived-mode-p 'julia-mode)
-	      (danylo/julia-inside-block))
-	 (danylo/fill-region 'danylo/julia-inside-block))))
+	      (danylo/julia-inside-docstring))
+	 (danylo/fill-region 'danylo/julia-inside-docstring))))
 (advice-add 'fill-paragraph :before 'danylo/fill)
 ;; (advice-remove 'fill-paragraph #'danylo/fill)
 

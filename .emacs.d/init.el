@@ -1182,9 +1182,9 @@ expressions. If not inside the region, returns nil."
 	  (danylo/post-first-end (save-excursion (re-search-forward end-re nil t 1))))
       (when (and danylo/pre-first-begin danylo/post-first-end
 		 (or (not danylo/pre-first-end)
-		     (> danylo/pre-first-begin danylo/pre-first-end))
+		     (>= danylo/pre-first-begin danylo/pre-first-end))
 		 (or (not danylo/post-first-begin)
-		     (> danylo/post-first-begin danylo/post-first-end)))
+		     (>= danylo/post-first-begin danylo/post-first-end)))
 	(setq danylo/begin danylo/pre-first-begin
 	      danylo/end danylo/post-first-end)
 	))))
@@ -1196,7 +1196,7 @@ expressions. If not inside the region, returns nil."
 
 (defun danylo/julia-inside-docstring ()
   "Check if point is inside julia-mode function docstring."
-  (danylo/search-region-delims "\"\"\"")
+  (danylo/search-region-delims "\"\"\"\n\s\\{4\\}" "\"\"\"")
   (if danylo/begin t nil))
 
 (defun danylo/fill-region (delim-fun)
@@ -1699,6 +1699,7 @@ The remainder of the function is a carbon-copy from Flycheck."
 	;;org-ellipsis "..." ;; " ▾"
 	org-src-tab-acts-natively t
 	org-fontify-quote-and-verse-blocks t
+	org-src-preserve-indentation t
 	;; LaTeX options
 	org-startup-with-latex-preview nil
 	;; minuted setup: https://emacs.stackexchange.com/a/27984/13661

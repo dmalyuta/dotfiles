@@ -1065,8 +1065,7 @@ when there is another buffer printing out information."
 	 (julia-mode . filladapt-mode)
 	 (org-mode . filladapt-mode)
 	 (text-mode . filladapt-mode))
-  :bind (("M-q" . 'fill-paragraph)
-	 ("M-r" . 'fill-region)))
+  :bind (("M-r" . 'fill-region)))
 
 (use-package so-long
   ;; https://www.emacswiki.org/emacs/SoLong
@@ -1214,18 +1213,32 @@ function to use to get the region delimiters."
 	(pulse-momentary-highlight-region region-start region-end)
 	(fill-region region-start region-end)))))
 
-(defun danylo/fill (&optional justify region)
-  "Enable custom filling depending on mode."
+(defun danylo/fill ()
+  "Custom filling depending on mode and point location in special
+regions."
   (cond ((and (not (and transient-mark-mode mark-active))
 	      (derived-mode-p 'org-mode)
 	      (danylo/org-inside-block))
-	 (danylo/fill-region 'danylo/org-inside-block))
+	 (danylo/fill-region 'danylo/org-inside-block)
+	 t)
 	((and (not (and transient-mark-mode mark-active))
 	      (derived-mode-p 'julia-mode)
 	      (danylo/julia-inside-docstring))
-	 (danylo/fill-region 'danylo/julia-inside-docstring))))
-(advice-add 'fill-paragraph :before 'danylo/fill)
-;; (advice-remove 'fill-paragraph #'danylo/fill)
+	 (danylo/fill-region 'danylo/julia-inside-docstring)
+	 t)
+	(t nil)))
+
+(defun danylo/smart-fill ()
+  "Smart select between regular filling and my own filling."
+  (interactive)
+  (if (and transient-mark-mode mark-active)
+      (fill-region (region-beginning) (region-end) nil t)
+    (unless (danylo/fill)
+      (fill-paragraph))
+    ))
+
+(general-define-key
+ "M-q" 'danylo/smart-fill)
 
 ;;; ..:: Window management ::..
 

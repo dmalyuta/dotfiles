@@ -1176,14 +1176,18 @@ expressions. If not inside the region, returns nil."
   (unless end-re (setq end-re start-re))
   (setq danylo/begin nil danylo/end nil)
   (save-excursion
-    (let ((danylo/region-begin (save-excursion (re-search-backward start-re nil t 1)))
-	  (danylo/region-end (save-excursion (re-search-forward end-re nil t 1))))
-      (when (and danylo/region-begin
-		 danylo/region-end
-		 (> danylo/region-end danylo/region-begin))
-	(setq danylo/begin danylo/region-begin)
-	(setq danylo/end danylo/region-end))
-      )))
+    (let ((danylo/pre-first-begin (save-excursion (re-search-backward start-re nil t 1)))
+	  (danylo/pre-first-end (save-excursion (re-search-backward end-re nil t 1)))
+	  (danylo/post-first-begin (save-excursion (re-search-forward start-re nil t 1)))
+	  (danylo/post-first-end (save-excursion (re-search-forward end-re nil t 1))))
+      (when (and danylo/pre-first-begin danylo/post-first-end
+		 (or (not danylo/pre-first-end)
+		     (> danylo/pre-first-begin danylo/pre-first-end))
+		 (or (not danylo/post-first-begin)
+		     (> danylo/post-first-begin danylo/post-first-end)))
+	(setq danylo/begin danylo/pre-first-begin
+	      danylo/end danylo/post-first-end)
+	))))
 
 (defun danylo/org-inside-block ()
   "Check if point is inside org-mode structure."
@@ -2800,6 +2804,7 @@ LaTeX document."
 		    nil t :help "Create nomenclature file")))
 
   ;; Correct environment selection and indentation
+  (add-to-list 'LaTeX-verbatim-environments "minted")
   (add-to-list 'LaTeX-verbatim-environments "pycode")
   (add-to-list 'LaTeX-verbatim-environments "pykzmathinline")
   (add-to-list 'LaTeX-verbatim-environments "pykzmathblock")

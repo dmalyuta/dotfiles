@@ -203,7 +203,7 @@ pdfinterleave() {
 python ~/.bin/set_customshortcut.py 'launch-brave' 'brave-browser' '<Ctrl><Alt>B'
 
 # Shortcut Ctrl+Alt+E for Emacs
-python ~/.bin/set_customshortcut.py 'launch-emacs' 'emacs' '<Ctrl><Alt>E'
+python ~/.bin/set_customshortcut.py 'launch-emacs' 'emacs' '<Ctrl><Alt>M'
 
 # Shortcut Shift+Ctrl+Alt+N for screen color inverse
 python ~/.bin/set_customshortcut.py 'invert-color' 'xcalib -invert -alter' '<Shift><Ctrl><Alt>N'

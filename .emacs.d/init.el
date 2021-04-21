@@ -208,6 +208,9 @@ directory."
 (tooltip-mode 0)
 (blink-cursor-mode 0)
 
+;; X-event timeout
+(setq x-wait-for-event-timeout nil)
+
 ;; Frame size
 (setq default-frame-alist
       (append default-frame-alist '((height . 50) (width . 100))))
@@ -1211,7 +1214,9 @@ function to use to get the region delimiters."
 				(forward-line 0)
 				(1- (point)))))
 	(pulse-momentary-highlight-region region-start region-end)
-	(fill-region region-start region-end)))))
+	(fill-region region-start region-end)
+	;; Clear the fill-prefix so that does not mess with future indenting
+	(if filladapt-mode (setq fill-prefix nil))))))
 
 (defun danylo/fill ()
   "Custom filling depending on mode and point location in special

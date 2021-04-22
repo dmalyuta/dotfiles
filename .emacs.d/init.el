@@ -575,7 +575,7 @@ Patched to use original **window** instead of buffer."
 	 ("C-c q" . helm-imenu)
 	 ("C-x C-f" . helm-find-files)
 	 :map company-mode-map
-	 ("S-SPC" . helm-company)
+	 ("H-s-q" . helm-company)
 	 :map helm-map
 	 ("TAB" . helm-execute-persistent-action))
   :init (setq helm-display-buffer-default-height

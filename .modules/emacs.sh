@@ -6,6 +6,8 @@
 
 # ..:: Emacs ::..
 
+# Source: https://blog.cesarolea.com/posts/emacs-native-compile/index.html
+
 if not_installed emacs; then
     # Dependencies
     sudo apt-get -y build-dep emacs
@@ -14,27 +16,44 @@ if not_installed emacs; then
 	 texinfo \
 	 libncurses-dev
 
-    # Get libgcc for native compilation
+    # Get libgcc and other libs for native compilation
     sudo add-apt-repository -y ppa:ubuntu-toolchain-r/ppa
     sudo apt-get update
-    sudo apt-get -y install gcc-10 libgccjit0 libgccjit-10-dev
+    sudo apt-get -y install libxpm-dev \
+	 libgif-dev \
+	 libjpeg-dev \
+	 libpng-dev \
+	 libtiff-dev \
+	 libx11-dev \
+	 libncurses5-dev \
+	 automake \
+	 autoconf \
+	 texinfo \
+	 libgtk2.0-dev \
+	 gcc-10 \
+	 g++-10 \
+	 libgccjit0 \
+	 libgccjit-10-dev \
+	 libjansson4 \
+	 libjansson-dev
 
     # Get fast JSON
     sudo apt-get -y install libjansson4 libjansson-dev
 
     rm -rf /tmp/emacs/
-    git clone --branch feature/native-comp --depth 1 git://git.savannah.gnu.org/emacs.git \
+    git clone --branch pgtk-nativecomp --depth 1 https://github.com/flatwhatson/emacs \
 	/tmp/emacs
     ( cd /tmp/emacs/ && \
-	  git checkout feature/native-comp && \
-	  export CC="gcc-10" && \
+	  git checkout pgtk-nativecomp && \
+	  export CC=/usr/bin/gcc-10 CXX=/usr/bin/gcc-10 && \
 	  ./autogen.sh && \
 	  # run `./configure --help > /tmp/emacs_configure_help.txt` to print
 	  # out a file of configuration options
-	  ./configure --with-native-compilation --with-json \
-	   --with-x-toolkit=lucid --with-mailutils \
-	   CFLAGS="-O3 -march=native" && \
-	   make -j2 && sudo make install )
+	  ./configure --without-gpm --with-xwidgets --with-mailutils \
+	   --with-native-compilation --with-pgtk --with-json \
+	   CFLAGS="-O3 -mtune=native -march=native -fomit-frame-pointer" && \
+	   make -j2 NATIVE_FULL_AOT=1 && \
+	   sudo make install )
 fi
 
 # ..:: Language Server Protocols ::..

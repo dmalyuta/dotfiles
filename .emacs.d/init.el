@@ -4,10 +4,11 @@
 ;; No garbage collection at startup
 (setq gc-cons-threshold most-positive-fixnum)
 
-;; Nativecomp stuff
-(setq comp-deferred-compilation t
-      warning-suppress-log-types '((comp))
-      warning-suppress-types '((comp)))
+;; Native compilation settings
+(when (fboundp 'native-compile-async)
+  (setq comp-deferred-compilation t
+	warning-suppress-log-types '((comp))
+	warning-suppress-types '((comp))))
 
 ;;; ..:: Package management ::..
 
@@ -1193,7 +1194,7 @@ expressions. If not inside the region, returns nil."
 
 (defun danylo/org-inside-block ()
   "Check if point is inside org-mode structure."
-  (danylo/search-region-delims "#\\+begin_export" "#\\+end_export")
+  (danylo/search-region-delims "#\\+begin_" "#\\+end_")
   (if danylo/begin t nil))
 
 (defun danylo/julia-inside-docstring ()
@@ -1785,10 +1786,11 @@ The remainder of the function is a carbon-copy from Flycheck."
 	(progn (insert "$$$$") (backward-char 2))
       (progn (insert "$$") (backward-char 1)))))
 
-(defun danylo/org-insert-link (&optional noinsert)
+(defun danylo/org-insert-link (&optional noinsert fill)
   "Prompt user for link name and description, then insert a
 link. If NOINSERT is t then only store the link as a string and
-return it, but do not print to buffer."
+return it, but do not print to buffer. If FILL is t then perform
+fill after inserting the link."
   (interactive)
   (let ((link (read-string "Reference: "))
 	(desc (if (and transient-mark-mode mark-active)
@@ -1803,8 +1805,9 @@ return it, but do not print to buffer."
 	link-text
       (progn
 	(insert link-text)
-	(setq new-pos (point))
-	(fill-region orig-pos new-pos)))))
+	(when fill
+	  (setq new-pos (point))
+	  (fill-region orig-pos new-pos))))))
 
 (defun danylo/org-eqref ()
   "Prompt user for link to an equation reference, then insert link."

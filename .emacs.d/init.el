@@ -88,6 +88,11 @@ directory."
 
 ;;; ..:: General helper functions ::..
 
+(use-package s
+  ;; https://github.com/magnars/s.el
+  ;; The long lost Emacs string manipulation library.
+  )
+
 (use-package all-the-icons
   ;; https://github.com/domtronn/all-the-icons.el
   ;; Pretty icons
@@ -1676,8 +1681,7 @@ The remainder of the function is a carbon-copy from Flycheck."
 	 (emacs-lisp-mode . company-mode)
 	 (comint-mode . company-mode)
 	 (LaTeX-mode . company-mode)
-	 (sh-mode . company-mode)
-	 (matlab-mode . company-mode))
+	 (sh-mode . company-mode))
   :bind (("S-<return>" . company-complete))
   :init
   (setq company-dabbrev-downcase 0
@@ -2699,49 +2703,6 @@ Calls itself until the docstring has completed printing."
 	   "# Returns\n"
 	   "- `bar`: description.")
    "\n\"\"\"" t))
-
-;;; ..:: MATLAB ::..
-
-(use-package s
-  ;; https://github.com/magnars/s.el
-  ;; The long lost Emacs string manipulation library.
-  )
-
-(use-package matlab
-  ;; https://github.com/dmalyuta/matlab-emacs
-  ;; MATLAB and Emacs integration
-  :ensure nil
-  :quelpa ((matlab :fetcher github
-		   :repo "dmalyuta/matlab-emacs"))
-  :init
-  (setq matlab-verify-on-save-flag nil
-	matlab-indent-function-body nil)
-  )
-
-(defun danylo/matlab-view-doc ()
-  "Look up the matlab help info and show in another buffer."
-  (interactive)
-  (let* ((word (doc-matlab-grab-current-word)))
-    (matlab-shell-describe-command word)))
-
-(use-package matlab-mode
-  ;; https://github.com/dmalyuta/matlab-mode
-  ;; An emacs matlab mode
-  :after company
-  :ensure nil
-  :quelpa ((matlab-mode :fetcher github
-			:repo "dmalyuta/matlab-mode"))
-  :bind (:map matlab-mode-map
-	      ("M-s" . matlab-shell)
-	      ("C-c h" . danylo/matlab-view-doc)
-	      ("C-c s" . matlab-jump-to-definition-of-word-at-cursor)
-	      :map matlab-shell-mode-map
-	      ("S-<return>" . matlab-shell-tab)
-	      ("C-c h" . danylo/matlab-view-doc))
-  :hook ((matlab-mode . (lambda () (setq-local company-backends
-					       '((company-files
-						  company-matlab
-						  company-dabbrev)))))))
 
 ;;; ..:: Lisp ::..
 

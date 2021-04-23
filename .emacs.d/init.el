@@ -575,7 +575,7 @@ Patched to use original **window** instead of buffer."
 	 ("C-c q" . helm-imenu)
 	 ("C-x C-f" . helm-find-files)
 	 :map company-mode-map
-	 ("H-s-q" . helm-company)
+	 ("H-s-<return>" . helm-company)
 	 :map helm-map
 	 ("TAB" . helm-execute-persistent-action))
   :init (setq helm-display-buffer-default-height
@@ -1467,7 +1467,7 @@ Default is 80"
 	      ("C-<right>" . nil)
 	      ("C-c t t" . vterm-copy-mode)
 	      ("C-c r" . rename-buffer)
-	      ("S-SPC" . vterm-send-tab)
+	      ("H-s-<return>" . vterm-send-tab)
 	      :map vterm-copy-mode-map
 	      ("C-c t t" . vterm-copy-mode))
   :hook ((vterm-mode-hook . (lambda ()
@@ -1657,7 +1657,7 @@ The remainder of the function is a carbon-copy from Flycheck."
 	 (LaTeX-mode . company-mode)
 	 (sh-mode . company-mode)
 	 (matlab-mode . company-mode))
-  :bind (("S-SPC" . company-complete))
+  :bind (("H-s-<return>" . company-complete))
   :init
   (setq company-dabbrev-downcase 0
 	company-async-timeout 10
@@ -2715,7 +2715,7 @@ Calls itself until the docstring has completed printing."
 	      ("C-c h" . danylo/matlab-view-doc)
 	      ("C-c s" . matlab-jump-to-definition-of-word-at-cursor)
 	      :map matlab-shell-mode-map
-	      ("S-SPC" . matlab-shell-tab)
+	      ("H-s-<return>" . matlab-shell-tab)
 	      ("C-c h" . danylo/matlab-view-doc))
   :hook ((matlab-mode . (lambda () (setq-local company-backends
 					       '((company-files

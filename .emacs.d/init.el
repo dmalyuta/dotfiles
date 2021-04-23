@@ -569,13 +569,12 @@ Patched to use original **window** instead of buffer."
   ;; Emacs incremental completion and selection narrowing framework
   :ensure t
   :after company
-  :bind (("M-x" . helm-M-x)
-	 ("M-i" . helm-swoop)
+  :bind (("M-i" . helm-swoop)
 	 ("C-x b" . helm-buffers-list)
 	 ("C-c q" . helm-imenu)
 	 ("C-x C-f" . helm-find-files)
 	 :map company-mode-map
-	 ("H-s-<return>" . helm-company)
+	 ("S-<return>" . helm-company)
 	 :map helm-map
 	 ("TAB" . helm-execute-persistent-action))
   :init (setq helm-display-buffer-default-height
@@ -724,10 +723,32 @@ height."
 
 ;; Show line numbers on the left
 (general-define-key
- "C-x n l" 'display-line-numbers-mode)
+ "C-x n l" 'danylo/toggle-display-lines-numbers)
+
+(defvar-local danylo/truncate-lines-state nil
+  "The state of truncate lines when display line numbers is
+toggled.")
+
+(defun danylo/toggle-display-lines-numbers ()
+  "Toggle the display of line numbers on the side. Line truncation
+is automatically turned on while the line numbers are displayed."
+  (interactive)
+  (let ((inhibit-message t))
+    (if (bound-and-true-p display-line-numbers-mode)
+	;; Turn off line number display
+	(progn
+	  (unless danylo/truncate-lines-state (toggle-truncate-lines 0))
+	  (display-line-numbers-mode 0))
+      ;; Turn on line number display
+      (progn
+	(setq danylo/truncate-lines-state
+	      (bound-and-true-p display-line-numbers-mode))
+	(toggle-truncate-lines 1)
+	(display-line-numbers-mode 1)))))
 
 (add-hook 'display-line-numbers-mode-hook
  	  (lambda ()
+	    (setq danylo/truncate-lines-state truncate-lines)
  	    ;; Line highlight face
 	    (set-face-attribute 'line-number-current-line nil
 				:foreground `,danylo/yellow
@@ -1467,7 +1488,7 @@ Default is 80"
 	      ("C-<right>" . nil)
 	      ("C-c t t" . vterm-copy-mode)
 	      ("C-c r" . rename-buffer)
-	      ("H-s-<return>" . vterm-send-tab)
+	      ("S-<return>" . vterm-send-tab)
 	      :map vterm-copy-mode-map
 	      ("C-c t t" . vterm-copy-mode))
   :hook ((vterm-mode-hook . (lambda ()
@@ -1657,7 +1678,7 @@ The remainder of the function is a carbon-copy from Flycheck."
 	 (LaTeX-mode . company-mode)
 	 (sh-mode . company-mode)
 	 (matlab-mode . company-mode))
-  :bind (("H-s-<return>" . company-complete))
+  :bind (("S-<return>" . company-complete))
   :init
   (setq company-dabbrev-downcase 0
 	company-async-timeout 10
@@ -2715,7 +2736,7 @@ Calls itself until the docstring has completed printing."
 	      ("C-c h" . danylo/matlab-view-doc)
 	      ("C-c s" . matlab-jump-to-definition-of-word-at-cursor)
 	      :map matlab-shell-mode-map
-	      ("H-s-<return>" . matlab-shell-tab)
+	      ("S-<return>" . matlab-shell-tab)
 	      ("C-c h" . danylo/matlab-view-doc))
   :hook ((matlab-mode . (lambda () (setq-local company-backends
 					       '((company-files

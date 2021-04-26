@@ -124,20 +124,27 @@
   `((t (:foreground ,danylo/green
 		    :weight bold
 		    :inherit default)))
-  "Face for class self."
+  "Face for importing a module."
+  :group 'danylo)
+
+(defface danylo/export-face
+  `((t (:foreground ,danylo/red
+		    :weight bold
+		    :inherit default)))
+  "Face for exporting a name."
   :group 'danylo)
 
 (defface danylo/bool-face
   `((t (:foreground ,danylo/orange
 		    :weight bold
 		    :inherit default)))
-  "Face for class self."
+  "Face for booleant."
   :group 'danylo)
 
 (defface danylo/control-face
   `((t (:foreground ,danylo/blue
 		    :inherit default)))
-  "Face for class self."
+  "Face for a control element (e.g. for)."
   :group 'danylo)
 
 ;;;###autoload
@@ -166,7 +173,10 @@
 		 )))
 	((eq major-mode 'julia-mode)
 	 (setq danylo/prog-highlight-keywords
-	       '(("^\\(using\\|include\\)" (1 '(face danylo/import-face) t))
+	       '(("^\s*\\(includet\\|include\\|using\\|import\\)"
+		  (1 '(face danylo/import-face) t))
+		 ("^\s*\\(export\\)"
+		  (1 '(face danylo/export-face) t))
 		 ("^\s*\\(#\s*\\(?:Arguments\\|Keywords\\|Returns\\|Throws\\)\\)$"
 		  (1 '(face danylo/python-docstring-heading-face) t))
 		 ("^[^#\n]*\s+\\(struct\\)\s+\\(.*?\\)$"
@@ -177,13 +187,22 @@
 		  (0 '(face danylo/class-other-face) t)
 		  (1 '(face danylo/class-keyword-face) t)
 		  (2 '(face danylo/class-name-face) t))
+		 ("^\\(end\\)\\(\s*#\s*struct\\)$"
+		  (1 '(face danylo/class-keyword-face) t)
+		  (2 '(face font-lock-comment-face invisible t) t))
 		 ("^\\(module\\)\s+\\(.*?\\)$"
 		  (1 '(face danylo/module-keyword-face) t)
 		  (2 '(face danylo/module-name-face) t))
+		 ("^\\(end\\)\\(\s*#\s*module\\)$"
+		  (1 '(face danylo/module-keyword-face) t)
+		  (2 '(face font-lock-comment-face invisible t) t))
 		 ("^\s*\\b\\(return\\|break\\|throw\\)\\b"
 		  (1 '(face danylo/return-face) t))
 		 ("^\s*\\(continue\\|pass\\)" (1 '(face danylo/continue-face) t))
 		 ("^\s*\\(function\\)\s+" (1 '(face danylo/function-face) t))
+		 ("^\s*\\(?:function.*\\)?\\(end\\)\\(\s*#\s*function\\)$"
+		  (1 '(face danylo/function-face) t)
+		  (2 '(face font-lock-comment-face invisible t) t))
 		 ("^\s*\\(macro\\)\s+" (1 '(face danylo/macro-face) t))
 		 ("\\(?:true\\|false\\)" (0 '(face danylo/bool-face) t))
 		 ("^\s*\\(?:if\\|for\\|while\\|elseif\\|else\\)\s+"

@@ -13,6 +13,7 @@
 ;;; Code:
 
 (require 'danylo-custom-variables)
+(require 'danylo-common-font-lock)
 
 (defcustom danylo/class-height 1.2
   "Class name font size."
@@ -26,124 +27,130 @@
 
 (defface danylo/python-docstring-heading-face
   `((t (:foreground ,danylo/yellow
-		    :weight normal
-		    :slant italic
-		    :inherit default)))
+                    :weight normal
+                    :slant italic
+                    :inherit default)))
   "Face for Python docstring headings for arguments, returns, etc."
   :group 'danylo)
 
 (defface danylo/class-keyword-face
   `((t (:foreground ,danylo/white
-		    :background ,danylo/blue
-		    :height ,danylo/class-height
-		    :weight bold
-		    :inherit default)))
+                    :background ,danylo/blue
+                    :height ,danylo/class-height
+                    :weight bold
+                    :inherit default)))
   "Face for class keyword."
   :group 'danylo)
 
 (defface danylo/class-other-face
   `((t (:height ,danylo/class-height
-		:inherit font-lock-keyword-face)))
+                :inherit font-lock-keyword-face)))
   "Face for other keywords in the class line."
   :group 'danylo)
 
 (defface danylo/class-name-face
   `((t (:foreground ,danylo/yellow
-		:height ,danylo/class-height
-	        :inherit default)))
+                    :height ,danylo/class-height
+                    :inherit default)))
   "Face for class name."
+  :group 'danylo)
+
+(defface danylo/class-post-face
+  `((t (:foreground ,danylo/green
+                    :height ,danylo/class-height)))
+  "Face for parts after class name."
   :group 'danylo)
 
 (defface danylo/module-keyword-face
   `((t (:foreground ,danylo/white
-		    :background ,danylo/red
-		    :height ,danylo/module-height
-		    :weight bold
-		    :inherit default)))
+                    :background ,danylo/red
+                    :height ,danylo/module-height
+                    :weight bold
+                    :inherit default)))
   "Face for module keyword."
   :group 'danylo)
 
 (defface danylo/module-name-face
   `((t (:foreground ,danylo/red
-		:height ,danylo/module-height
-	        :inherit default)))
+                    :height ,danylo/module-height
+                    :inherit default)))
   "Face for class name."
   :group 'danylo)
 
 (defface danylo/class-name-colon
   `((t (:height ,danylo/class-height
-	        :inherit default)))
+                :inherit default)))
   "Face for class name."
   :group 'danylo)
 
 (defface danylo/function-face
   `((t (:foreground ,danylo/white
-		    :background ,danylo/dark-blue
-		    :weight bold
-		    :inherit default)))
+                    :background ,danylo/dark-blue
+                    :weight bold
+                    :inherit default)))
   "Face for function keyword."
   :group 'danylo)
 
 (defface danylo/macro-face
   `((t (:foreground ,danylo/yellow
-		    :background ,danylo/dark-blue
-		    :slant italic
-		    :weight bold
-		    :inherit default)))
+                    :background ,danylo/dark-blue
+                    :slant italic
+                    :weight bold
+                    :inherit default)))
   "Face for function keyword."
   :group 'danylo)
 
 (defface danylo/return-face
   `((t (:foreground ,danylo/red
-		    :weight bold
-		    :inherit default)))
+                    :weight bold
+                    :inherit default)))
   "Face for return-type keyword."
   :group 'danylo)
 
 (defface danylo/continue-face
   `((t (:foreground ,danylo/blue
-		    :weight bold
-		    :inherit default)))
+                    :weight bold
+                    :inherit default)))
   "Face for continue-type keyword."
   :group 'danylo)
 
 (defface danylo/self-face
   `((t (:foreground ,danylo/green
-		    :weight normal
-		    :inherit default)))
+                    :weight normal
+                    :inherit default)))
   "Face for class self."
   :group 'danylo)
 
 (defface danylo/property-face
   `((t (:foreground ,danylo/faded-blue
-		    :inherit default)))
+                    :inherit default)))
   "Face for class self."
   :group 'danylo)
 
 (defface danylo/import-face
   `((t (:foreground ,danylo/green
-		    :weight bold
-		    :inherit default)))
+                    :weight bold
+                    :inherit default)))
   "Face for importing a module."
   :group 'danylo)
 
 (defface danylo/export-face
   `((t (:foreground ,danylo/red
-		    :weight bold
-		    :inherit default)))
+                    :weight bold
+                    :inherit default)))
   "Face for exporting a name."
   :group 'danylo)
 
 (defface danylo/bool-face
   `((t (:foreground ,danylo/orange
-		    :weight bold
-		    :inherit default)))
+                    :weight bold
+                    :inherit default)))
   "Face for booleant."
   :group 'danylo)
 
 (defface danylo/control-face
   `((t (:foreground ,danylo/blue
-		    :inherit default)))
+                    :inherit default)))
   "Face for a control element (e.g. for)."
   :group 'danylo)
 
@@ -152,63 +159,81 @@
   "Make the font-lock keywords for prog-font-lock-mode fontification."
   ;; ..:: Python ::..
   (cond ((eq major-mode 'python-mode)
-	 (setq danylo/prog-highlight-keywords
-	       '(("^\s*\\(Args\\|Returns\\|Raises\\):$"
-		  (0 '(face danylo/python-docstring-heading-face) t))
-		 ("^\\(class\\)\s+[^:]*\\(:\\)$"
-		  (0 '(face danylo/class-name-face) t)
-		  (1 '(face danylo/class-keyword-face) t)
-		  (2 '(face danylo/class-name-colon) t))
-		 ("self" (0 '(face danylo/self-face) t))
-		 ("^\s*\\(return\\|break\\|raise\\)" (1 '(face danylo/return-face) t))
-		 ("^\s*\\(continue\\|pass\\)" (1 '(face danylo/continue-face) t))
-		 ("^\s*\\(def\\)\s+" (1 '(face danylo/function-face) t))
-		 ("^\s*\\(@property\\)" (1 '(face danylo/property-face) t))
-		 ("^\s*\\(import\\|from\\)" (1 '(face danylo/import-face) t))
-		 ("^\s*\\(?:from\\).*\\(import\\)" (1 '(face danylo/import-face) t))
-		 ("\\(?:import\\).*\\(as\\)" (1 '(face danylo/import-face) t))
-		 ("\\(?:True\\|False\\)" (0 '(face danylo/bool-face) t))
-		 ("^\s*\\(?:if\\|for\\|while\\|elif\\|else\\)\s+"
-		  (0 '(face danylo/control-face) t))
-		 )))
-	((eq major-mode 'julia-mode)
-	 (setq danylo/prog-highlight-keywords
-	       '(("^\s*\\(includet\\|include\\|using\\|import\\)"
-		  (1 '(face danylo/import-face) t))
-		 ("^\s*\\(export\\)"
-		  (1 '(face danylo/export-face) t))
-		 ("^\s*\\(#\s*\\(?:Arguments\\|Keywords\\|Returns\\|Throws\\)\\)$"
-		  (1 '(face danylo/python-docstring-heading-face) t))
-		 ("^[^#\n]*\s+\\(struct\\)\s+\\(.*?\\)$"
-		  (0 '(face danylo/class-other-face) t)
-		  (1 '(face danylo/class-keyword-face) t)
-		  (2 '(face danylo/class-name-face) t))
-		 ("^\\(struct\\)\s+\\(.*?\\)$"
-		  (0 '(face danylo/class-other-face) t)
-		  (1 '(face danylo/class-keyword-face) t)
-		  (2 '(face danylo/class-name-face) t))
-		 ("^\\(end\\)\\(\s*#\s*struct\\)$"
-		  (1 '(face danylo/class-keyword-face) t)
-		  (2 '(face font-lock-comment-face invisible t) t))
-		 ("^\\(module\\)\s+\\(.*?\\)$"
-		  (1 '(face danylo/module-keyword-face) t)
-		  (2 '(face danylo/module-name-face) t))
-		 ("^\\(end\\)\\(\s*#\s*module\\)$"
-		  (1 '(face danylo/module-keyword-face) t)
-		  (2 '(face font-lock-comment-face invisible t) t))
-		 ("^\s*\\b\\(return\\|break\\|throw\\)\\b"
-		  (1 '(face danylo/return-face) t))
-		 ("^\s*\\(continue\\|pass\\)" (1 '(face danylo/continue-face) t))
-		 ("^\s*\\(function\\)\s+" (1 '(face danylo/function-face) t))
-		 ("^\s*\\(?:function.*\\)?\\(end\\)\\(\s*#\s*function\\)$"
-		  (1 '(face danylo/function-face) t)
-		  (2 '(face font-lock-comment-face invisible t) t))
-		 ("^\s*\\(macro\\)\s+" (1 '(face danylo/macro-face) t))
-		 ("\\(?:true\\|false\\)" (0 '(face danylo/bool-face) t))
-		 ("^\s*\\(?:if\\|for\\|while\\|elseif\\|else\\)\s+"
-		  (0 '(face danylo/control-face) t))
-		 )))
-	)
+         (setq danylo/prog-highlight-keywords
+               '(("^\s*\\(Args\\|Returns\\|Raises\\):$"
+                  (0 '(face danylo/python-docstring-heading-face) t))
+                 ("^\\(class\\)\s+[^:]*\\(:\\)$"
+                  (0 '(face danylo/class-name-face) t)
+                  (1 '(face danylo/class-keyword-face) t)
+                  (2 '(face danylo/class-name-colon) t))
+                 ("self" (0 '(face danylo/self-face) t))
+                 ("^\s*\\(return\\|break\\|raise\\)" (1 '(face danylo/return-face) t))
+                 ("^\s*\\(continue\\|pass\\)" (1 '(face danylo/continue-face) t))
+                 ("^\s*\\(def\\)\s+" (1 '(face danylo/function-face) t))
+                 ("^\s*\\(@property\\)" (1 '(face danylo/property-face) t))
+                 ("^\s*\\(import\\|from\\)" (1 '(face danylo/import-face) t))
+                 ("^\s*\\(?:from\\).*\\(import\\)" (1 '(face danylo/import-face) t))
+                 ("\\(?:import\\).*\\(as\\)" (1 '(face danylo/import-face) t))
+                 ("\\(?:True\\|False\\)" (0 '(face danylo/bool-face) t))
+                 ("^\s*\\(?:if\\|for\\|while\\|elif\\|else\\)\s+"
+                  (0 '(face danylo/control-face) t))
+                 )))
+        ((eq major-mode 'julia-mode)
+         (setq danylo/prog-highlight-keywords
+               '(("^\s*\\(includet\\|include\\|using\\|import\\)"
+                  (1 '(face danylo/import-face) t))
+                 ("^\s*\\(export\\)"
+                  (1 '(face danylo/export-face) t))
+                 ("^\s*\\(#\s*\\(?:Arguments\\|Keywords\\|Returns\\|Throws\\)\\)$"
+                  (1 '(face danylo/python-docstring-heading-face) t))
+                 ;; ("^[^#\n]*\s+\\(struct\\)\s+\\(.*?\\)\\(T<:\\)?"
+                 ;; ("^[^#\n]*\s+\\(struct\\)\s+\\([^\s{}]*?\\)\\({.*}\\)?$"
+                 ("^[^#\n]*\s+\\(struct\\)\s+\\([^\s{}]*?\\)$"
+                  (0 '(face danylo/class-other-face) t)
+                  (1 '(face danylo/class-keyword-face) t)
+                  (2 '(face danylo/class-name-face) t))
+                 ("^[^#\n]*\s+\\(struct\\)\s+\\([^\s{}]*?\\)\\({\\(?:[a-zA-Z0-9<:,\s]\\|\n\\)*?}\\)$"
+                  (0 '(face danylo/class-other-face) t)
+                  (1 '(face danylo/class-keyword-face) t)
+                  (2 '(face danylo/class-name-face) t)
+                  (3 '(face danylo/class-post-face) t))
+                 ("^[^#\n]*\s+\\(struct\\)\s+\\([^\s{}]*?\\)\\({\\(?:[a-zA-Z0-9<:,\s]\\|\n\\)*?}\\)\s*<:\n?\s*\\([a-zA-Z0-9]*\\)$"
+                  (0 '(face danylo/class-other-face) t)
+                  (1 '(face danylo/class-keyword-face) t)
+                  (2 '(face danylo/class-name-face) t)
+                  (3 '(face danylo/class-post-face) t)
+                  (4 '(face danylo/class-post-face) t))
+                 ("^[^#\n]*\s+\\(struct\\)\s+\\([^\s{}]*?\\)\s*<:\n?\s*\\([a-zA-Z0-9]*\\)$"
+                  (0 '(face danylo/class-other-face) t)
+                  (1 '(face danylo/class-keyword-face) t)
+                  (2 '(face danylo/class-name-face) t)
+                  (3 '(face danylo/class-post-face) t))
+                 ("^\\(struct\\)\s+\\(.*?\\)$"
+                  (0 '(face danylo/class-other-face) t)
+                  (1 '(face danylo/class-keyword-face) t)
+                  (2 '(face danylo/class-name-face) t))
+                 ("^\\(end\\)\\(\s*#\s*struct\\)$"
+                  (1 '(face danylo/class-keyword-face) t)
+                  (2 '(face font-lock-comment-face invisible t) t))
+                 ("^\\(module\\)\s+\\(.*?\\)$"
+                  (1 '(face danylo/module-keyword-face) t)
+                  (2 '(face danylo/module-name-face) t))
+                 ("^\\(end\\)\\(\s*#\s*module\\)$"
+                  (1 '(face danylo/module-keyword-face) t)
+                  (2 '(face font-lock-comment-face invisible t) t))
+                 ("^\s*\\b\\(return\\|break\\|throw\\)\\b"
+                  (1 '(face danylo/return-face) t))
+                 ("^\s*\\(continue\\|pass\\)" (1 '(face danylo/continue-face) t))
+                 ("^\s*\\(function\\)\s+" (1 '(face danylo/function-face) t))
+                 ("^\s*\\(?:function.*\\)?\\(end\\)\\(\s*#\s*function\\)$"
+                  (1 '(face danylo/function-face) t)
+                  (2 '(face font-lock-comment-face invisible t) t))
+                 ("^\s*\\(macro\\)\s+" (1 '(face danylo/macro-face) t))
+                 ("\\(?:true\\|false\\)" (0 '(face danylo/bool-face) t))
+                 ("^\s*\\(?:if\\|for\\|while\\|elseif\\|else\\)\s+"
+                  (0 '(face danylo/control-face) t))
+                 )))
+        )
   danylo/prog-highlight-keywords)
 
 ;;;###autoload
@@ -217,6 +242,9 @@
   (make-variable-buffer-local 'font-lock-extra-managed-props)
   (add-to-list 'font-lock-extra-managed-props 'invisible)
   (add-to-list 'font-lock-extra-managed-props 'display)
+  ;; Enable multiline highlight
+  (set (make-local-variable 'font-lock-multiline) t)
+  (add-hook 'font-lock-extend-region-functions 'danylo/font-lock-extend-region)
   ;; Add keywords
   (font-lock-add-keywords nil (danylo/make-prog-highlight-keywords))
   (font-lock-flush)

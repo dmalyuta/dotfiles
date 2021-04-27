@@ -1045,6 +1045,11 @@ when there is another buffer printing out information."
 
 ;;;; (end patch)
 
+(use-package danylo-common-font-lock
+  ;; Common code for custom fontification
+  :ensure nil
+  :load-path danylo/emacs-custom-lisp-dir)
+
 (use-package danylo-text-font-lock
   ;; Personal minor mode for text document highlighting
   :ensure nil

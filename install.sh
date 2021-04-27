@@ -62,6 +62,7 @@ mkdir -p ~/.emacs.d
 mkdir -p ~/.emacs.d/lisp
 ln -sf "$DIR"/.emacs.d/init.el ~/.emacs.d
 ln -sf "$DIR"/.emacs.d/lisp/danylo-custom-variables.el ~/.emacs.d/lisp
+ln -sf "$DIR"/.emacs.d/lisp/danylo-common-font-lock.el ~/.emacs.d/lisp
 ln -sf "$DIR"/.emacs.d/lisp/danylo-prog-font-lock.el ~/.emacs.d/lisp
 ln -sf "$DIR"/.emacs.d/lisp/danylo-text-font-lock.el ~/.emacs.d/lisp
 

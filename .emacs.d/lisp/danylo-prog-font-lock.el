@@ -186,23 +186,13 @@
                   (1 '(face danylo/export-face) t))
                  ("^\s*\\(#\s*\\(?:Arguments\\|Keywords\\|Returns\\|Throws\\)\\)$"
                   (1 '(face danylo/python-docstring-heading-face) t))
-                 ;; ("^[^#\n]*\s+\\(struct\\)\s+\\(.*?\\)\\(T<:\\)?"
-                 ;; ("^[^#\n]*\s+\\(struct\\)\s+\\([^\s{}]*?\\)\\({.*}\\)?$"
-                 ("^[^#\n]*\s+\\(struct\\)\s+\\([^\s{}]*?\\)$"
-                  (0 '(face danylo/class-other-face) t)
-                  (1 '(face danylo/class-keyword-face) t)
-                  (2 '(face danylo/class-name-face) t))
-                 ("^[^#\n]*\s+\\(struct\\)\s+\\([^\s{}]*?\\)\\({\\(?:[a-zA-Z0-9<:,\s]\\|\n\\)*?}\\)$"
-                  (0 '(face danylo/class-other-face) t)
-                  (1 '(face danylo/class-keyword-face) t)
-                  (2 '(face danylo/class-name-face) t)
-                  (3 '(face danylo/class-post-face) t))
-                 ("^[^#\n]*\s+\\(struct\\)\s+\\([^\s{}]*?\\)\\({\\(?:[a-zA-Z0-9<:,\s]\\|\n\\)*?}\\)\s*<:\n?\s*\\([a-zA-Z0-9]*\\)$"
-                  (0 '(face danylo/class-other-face) t)
-                  (1 '(face danylo/class-keyword-face) t)
-                  (2 '(face danylo/class-name-face) t)
-                  (3 '(face danylo/class-post-face) t)
-                  (4 '(face danylo/class-post-face) t))
+                 ("^[^#\n]*\s+\\(struct\\)\s+\\([^\s{}]*\\)\\({\\(?:[a-zA-Z0-9<:,\s]\\|\n\\)*?}\\)?\\(?:\s*<:\n?\s*\\)?\\([a-zA-Z0-9]*\\)?\\({\\([a-zA-Z0-9<:,\s]\\|\n\\)*?}\\)?$"
+                  (0 '(face danylo/class-other-face) t t)
+                  (1 '(face danylo/class-keyword-face) t t)
+                  (2 '(face danylo/class-name-face) t t)
+                  (3 '(face danylo/class-post-face) t t)
+                  (4 '(face danylo/class-post-face) t t)
+                  (5 '(face danylo/class-post-face) t t))
                  ("^[^#\n]*\s+\\(struct\\)\s+\\([^\s{}]*?\\)\s*<:\n?\s*\\([a-zA-Z0-9]*\\)$"
                   (0 '(face danylo/class-other-face) t)
                   (1 '(face danylo/class-keyword-face) t)

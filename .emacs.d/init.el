@@ -1321,6 +1321,13 @@ regions."
 (general-define-key
  "M-q" 'danylo/smart-fill)
 
+(use-package minimap
+  ;; https://github.com/dengste/minimap
+  ;; Sidebar showing a "mini-map" of a buffer
+  :init (setq minimap-width-fraction 0.1
+              minimap-minimum-width 15
+              minimap-hide-fringes t))
+
 ;;; ..:: Window management ::..
 
 ;;;; >> Movement across windows <<

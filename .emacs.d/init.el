@@ -1281,8 +1281,9 @@ expressions. If not inside the region, returns nil."
 (defun danylo/julia-inside-docstring ()
   "Check if point is inside julia-mode function docstring."
   (let* ((ppss (save-excursion (syntax-ppss)))
-         (in-triple-quote-string (and (not (nth 4 ppss)) (nth 8 ppss))))
-    (if in-triple-quote-string
+         (in-string (nth 3 ppss))
+         (in-triple-quote (and in-string (not (eq in-string ?\")))))
+    (if in-triple-quote
         (progn
           (danylo/search-region-delims "\"\"\"" "\"\"\"")
           (if danylo/begin t nil))
@@ -1328,6 +1329,46 @@ regions."
     (unless (danylo/fill)
       (fill-paragraph))
     ))
+
+(defun danylo/julia-docstring-fill-skip ()
+  "Return T if this block of text should not be filled. This occurs
+in the following cases:
+- It is a source code block;
+- It is the initial list of function call signatures at the top of the
+  docstring."
+  (let* ((current-line (buffer-substring
+                        (line-beginning-position) (line-end-position)))
+         (has-backticks (string-match-p "^\s*```" current-line))
+         (indent-this-line (current-indentation))
+         is-heading
+         (indent-last-line
+          ;; Undo narrowing by filladapt temporarily. See
+          ;; https://www.gnu.org/software/emacs/manual/html_node/eintr/save_002drestriction.html#:~:text=In%20Emacs%20Lisp%2C%20you%20can,narrowing%20that%20the%20code%20caused.
+          (save-restriction
+            (widen)
+            (save-excursion
+              (forward-line -1)
+              (current-indentation)
+              (setq is-heading
+                    (string-match-p
+                     "^\s*\"\"\""
+                     (buffer-substring
+                      (line-beginning-position)
+                      (line-end-position))))))))
+    (or has-backticks
+        (and is-heading
+             (eq indent-this-line
+                 (+ indent-last-line julia-indent-offset))))
+    ))
+
+(defun danylo/filladapt--fill-paragraph (orig-fun &rest args)
+  "Patch fill-adapt according to mode."
+  (cond ((derived-mode-p 'julia-mode)
+         (unless (danylo/julia-docstring-fill-skip)
+           (apply orig-fun args)))
+        (t (apply orig-fun args))))
+(advice-add 'filladapt--fill-paragraph :around
+            #'danylo/filladapt--fill-paragraph)
 
 (general-define-key
  "M-q" 'danylo/smart-fill)
@@ -2592,10 +2633,14 @@ lines according to the first line."
                          (add-to-list 'electric-pair-text-pairs '(?` . ?`))
                          ;; Do not fill source code blocks inside docstring
                          (make-variable-buffer-local 'filladapt-not-token-table)
-                         (add-to-list 'filladapt-not-token-table "`")
+                         (add-to-list 'filladapt-not-token-table "\"\"\"")
                          )))
   :bind (:map julia-mode-map
-              ("C-h ." . danylo/julia-help-at-point)))
+              ("C-h ." . danylo/julia-help-at-point)
+              ("C-c f b" . danylo/docstring-insert-bold)
+              ("C-c f i" . danylo/docstring-insert-italic)
+              ("C-c f c" . danylo/docstring-insert-literal)
+              ("C-c f e" . danylo/docstring-insert-equation)))
 
 (defun danylo/ignore-triple-backticks (orig-fun &rest args)
   "Patch the Julia syntax coloring so that triple back ticks are
@@ -2760,7 +2805,7 @@ Calls itself until the docstring has completed printing."
 
 (add-hook 'julia-mode-hook 'danylo/julia-imenu-hooks)
 
-;;;; Block comment
+;;;; Commenting and documentation
 
 (defun danylo/julia-block-comment ()
   "Julia block comment."
@@ -2783,6 +2828,62 @@ Calls itself until the docstring has completed printing."
            "# Returns\n"
            "- `bar`: description.")
    "\n\"\"\"" t))
+
+(defun danylo/docstring-insert-style (left right &optional display)
+  "Insert specified (e.gg, markdown) delimiters into a docstring."
+  (let (orig-pos indent-string-prefix)
+    (if (and transient-mark-mode mark-active)
+        (let ((text (delete-and-extract-region
+                     (region-beginning) (region-end))))
+          (if display
+              (progn
+                (setq indent-string-prefix
+                      (make-string (current-indentation) ?\s))
+                (insert (format "%s\n%s" left indent-string-prefix))
+                (insert text)
+                (setq orig-pos (point))
+                (insert (format "\n%s%s" indent-string-prefix right))
+                (goto-char orig-pos))
+            (progn
+              (insert (format "%s%s" left text))
+              (setq orig-pos (point))
+              (insert right)
+              (goto-char orig-pos))))
+      (if display
+          (progn
+            (setq indent-string-prefix
+                  (make-string (current-indentation) ?\s))
+            (insert (format "%s\n%s" left indent-string-prefix))
+            (setq orig-pos (point))
+            (insert (format "\n%s%s" indent-string-prefix right))
+            (goto-char orig-pos))
+        (progn
+          (insert (format "%s%s" left right))
+          (backward-char (length right)))))))
+
+(defalias 'danylo/docstring-insert-bold
+  (lambda () (interactive) (danylo/docstring-insert-style "**" "**"))
+  "Insert bold text delimiters.")
+
+(defalias 'danylo/docstring-insert-italic
+  (lambda () (interactive) (danylo/docstring-insert-style "*" "*"))
+  "Insert italic text delimiters.")
+
+(defalias 'danylo/docstring-insert-literal
+  (lambda ()
+    (interactive)
+    (if current-prefix-arg
+        (danylo/docstring-insert-style "```julia" "```" t)
+      (danylo/docstring-insert-style "`" "`")))
+  "Insert inline or display source code delimiters.")
+
+(defalias 'danylo/docstring-insert-equation
+  (lambda ()
+    (interactive)
+    (if current-prefix-arg
+        (danylo/docstring-insert-style "```math" "```" t)
+      (danylo/docstring-insert-style "``" "``")))
+  "Insert inline or display math delimiters.")
 
 ;;; ..:: Lisp ::..
 

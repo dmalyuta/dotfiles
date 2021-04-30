@@ -8,7 +8,7 @@
 (when (fboundp 'native-compile-async)
   (setq comp-deferred-compilation t
         warning-suppress-log-types '((comp))
-warning-suppress-types '((comp))))
+        warning-suppress-types '((comp))))
 
 ;;; ..:: Package management ::..
 
@@ -104,8 +104,8 @@ directory."
   (when (window-system)
     (setq all-the-icons-icon-alist
           (add-to-list 'all-the-icons-icon-alist
-               '("\\.m$" all-the-icons-fileicon "matlab"
-         :face all-the-icons-orange))))
+                       '("\\.m$" all-the-icons-fileicon "matlab"
+                         :face all-the-icons-orange))))
   )
 
 (defun danylo/fancy-icon (icon-lib icon-family icon &optional fg)
@@ -115,9 +115,9 @@ directory."
   (if (window-system)
       (propertize (funcall icon-lib icon)
                   'face `(:family ,(funcall icon-family)
-                  :height 0.95
-  :foreground ,fg)
-  'display '(raise -0.05))
+                                  :height 0.95
+                                  :foreground ,fg)
+                  'display '(raise -0.05))
     ""))
 
 (defun danylo/fa-icon (icon &optional fg)
@@ -142,8 +142,8 @@ directory."
       (setq danylo/fg~pos (cl-position :foreground danylo/face~props))
       (if danylo/fg~pos
           (setf (nth (1+ danylo/fg~pos) danylo/face~props) `,danylo/faded)
-  (setq danylo/face~props (append danylo/face~props
-                                `(:foreground ,danylo/faded))))
+        (setq danylo/face~props (append danylo/face~props
+                                        `(:foreground ,danylo/faded))))
       (put-text-property danylo/~i (1+ danylo/~i) 'face danylo/face~props str)
       (setq danylo/~i (1+ danylo/~i)))
     ;; Print the string to minibuffer
@@ -259,12 +259,12 @@ directory."
   :init
   (setq dashboard-banner-logo-title "Change the world, step by step"
         dashboard-startup-banner 'logo
-dashboard-items '((recents  . 5) (projects . 5) (bookmarks . 5))
-dashboard-center-content t
-dashboard-set-heading-icons t
-dashboard-set-file-icons t
-dashboard-set-footer nil
-)
+        dashboard-items '((recents  . 5) (projects . 5) (bookmarks . 5))
+        dashboard-center-content t
+        dashboard-set-heading-icons t
+        dashboard-set-file-icons t
+        dashboard-set-footer nil
+        )
   :config
   (dashboard-setup-startup-hook))
 
@@ -291,7 +291,7 @@ dashboard-set-footer nil
   (defvar danylo/text-increment)
   (setq danylo/current-font-size (face-attribute 'default :height)
         danylo/text-increment (- danylo/default-font-size
-                         danylo/current-font-size))
+                                 danylo/current-font-size))
   (require 'default-text-scale)
   (default-text-scale-increment danylo/text-increment)
   )
@@ -304,13 +304,13 @@ dashboard-set-footer nil
   ;;   C-M-- : zoom out
   :bind (("C-M--" . default-text-scale-decrease)
          ("C-M-=" . default-text-scale-increase)
- :map default-text-scale-mode-map
- ("C-M-0" . danylo/reset-font-size))
+         :map default-text-scale-mode-map
+         ("C-M-0" . danylo/reset-font-size))
   :init
   (add-hook 'after-init-hook
             (lambda ()
-      (setq danylo/default-font-size
-            (face-attribute 'default :height))))
+              (setq danylo/default-font-size
+                    (face-attribute 'default :height))))
   :config
   (default-text-scale-mode))
 
@@ -329,19 +329,19 @@ dashboard-set-footer nil
   "Turn off electric indent temporarily during a rapid-fire
 sequence of newlines."
   (if (char-equal char ?\n)
-    (if danylo/do-electric-indent
-        (progn
-  (run-with-timer
-   0.025 nil
-   (lambda ()
-     (setq danylo/do-electric-indent nil)
-     (run-with-idle-timer
-      0.05 nil
-      (lambda () (setq danylo/do-electric-indent t)))))
-  ;; Do indent (normal mode)
-  t)
-      ;; Don't indent (rapid fire mode)
-      'no-indent)
+      (if danylo/do-electric-indent
+          (progn
+            (run-with-timer
+             0.025 nil
+             (lambda ()
+               (setq danylo/do-electric-indent nil)
+               (run-with-idle-timer
+                0.05 nil
+                (lambda () (setq danylo/do-electric-indent t)))))
+            ;; Do indent (normal mode)
+            t)
+        ;; Don't indent (rapid fire mode)
+        'no-indent)
     ;; Let other functions decide
     nil))
 
@@ -455,12 +455,12 @@ Source: https://emacs.stackexchange.com/a/50834/13661"
 
 ;; Do not ask whether to kill active processes
 (add-hook 'after-init-hook
- (lambda ()
-   (require 'cl-lib)
-   (defadvice save-buffers-kill-emacs (around no-query-kill-emacs activate)
-     "Prevent \"Active processes exist\" query when quitting Emacs."
-     (cl-letf (((symbol-function #'process-list) (lambda ())))
-       ad-do-it))))
+          (lambda ()
+            (require 'cl-lib)
+            (defadvice save-buffers-kill-emacs (around no-query-kill-emacs activate)
+              "Prevent \"Active processes exist\" query when quitting Emacs."
+              (cl-letf (((symbol-function #'process-list) (lambda ())))
+                ad-do-it))))
 
 ;;;; Scrolling performance
 
@@ -500,18 +500,18 @@ Source: http://steve.yegge.googlepages.com/my-dot-emacs-file"
   (interactive "DNew directory: ")
   (let* ((name (buffer-name))
          (filename (buffer-file-name))
- (dir
-  (if (string-match dir "\\(?:/\\|\\\\)$")
-      (substring dir 0 -1) dir))
- (newname (concat dir "/" name)))
+         (dir
+          (if (string-match dir "\\(?:/\\|\\\\)$")
+              (substring dir 0 -1) dir))
+         (newname (concat dir "/" name)))
     (if (not filename)
         (message "Buffer '%s' is not visiting a file!" name)
       (progn
         (copy-file filename newname 1)
-(delete-file filename)
-(set-visited-file-name newname)
-(set-buffer-modified-p nil)
-t))))
+        (delete-file filename)
+        (set-visited-file-name newname)
+        (set-buffer-modified-p nil)
+        t))))
 
 ;;; ..:: Searching ::..
 
@@ -542,9 +542,9 @@ there. If not visible, open it but don't focus."
   :bind (("C-c t n" . danylo/neotree-jump))
   :init (setq neo-theme (if (display-graphic-p) 'icons 'arrow)
               neo-window-width danylo/side-window-width
-      neo-smart-open t
-      neo-show-hidden-files t
-      neo-autorefresh t)
+              neo-smart-open t
+              neo-show-hidden-files t
+              neo-autorefresh t)
   (add-hook 'after-init-hook (lambda () (require 'neotree))))
 
 ;;;; Imenu list: view the list of functions and classes in the file
@@ -563,17 +563,17 @@ there. If not visible, open it but don't focus."
   ;; Emacs plugin to show the current buffer's imenu entries
   :bind (:map prog-mode-map
               ("C-c t i" . danylo/imenu-list-jump)
-      :map org-mode-map
-      ("C-c t i" . danylo/imenu-list-jump)
-      :map imenu-list-major-mode-map
-      ("C-c t i" . danylo/imenu-list-jump))
+              :map org-mode-map
+              ("C-c t i" . danylo/imenu-list-jump)
+              :map imenu-list-major-mode-map
+              ("C-c t i" . danylo/imenu-list-jump))
   :init (setq imenu-list-size danylo/side-window-width
               imenu-list-position 'left
-      imenu-list-mode-line-format
-      '("%e" mode-line-front-space
-        (:propertize "%b" face mode-line-buffer-id) " "
-(:eval (buffer-name imenu-list--displayed-buffer)) " "
-mode-line-end-spaces))
+              imenu-list-mode-line-format
+              '("%e" mode-line-front-space
+                (:propertize "%b" face mode-line-buffer-id) " "
+                (:eval (buffer-name imenu-list--displayed-buffer)) " "
+                mode-line-end-spaces))
   (add-hook 'prog-mode-hook (lambda () (require 'imenu-list))))
 
 ;; Patches to imenu so as to navigate using the **window** that owns the
@@ -613,60 +613,60 @@ Patched to use original **window** instead of buffer."
   :after company
   :bind (("M-i" . helm-swoop)
          ("C-x b" . helm-buffers-list)
- ("C-c q" . helm-imenu)
- ("C-x C-f" . helm-find-files)
- ("C-h f" . helm-apropos)
- ("C-h v" . helm-apropos)
- ("C-h a" . helm-apropos)
- :map company-mode-map
- ("S-<return>" . helm-company)
- :map helm-map
- ("TAB" . helm-execute-persistent-action))
+         ("C-c q" . helm-imenu)
+         ("C-x C-f" . helm-find-files)
+         ("C-h f" . helm-apropos)
+         ("C-h v" . helm-apropos)
+         ("C-h a" . helm-apropos)
+         :map company-mode-map
+         ("S-<return>" . helm-company)
+         :map helm-map
+         ("TAB" . helm-execute-persistent-action))
   :init (setq helm-display-buffer-default-height
               danylo/num-completion-candidates
-      helm-mode-line-string ""
-      helm-comp-read-mode-line ""
-      helm-buffer-max-length 30
-      helm-buffers-truncate-lines nil
-      helm-buffer-details-flag nil
-      helm-source-buffer-not-found nil
-      helm-split-window-inside-p t
-      helm-move-to-line-cycle-in-source t
-      helm-echo-input-in-header-line nil
-      helm-display-header-line nil
-      helm-buffers-fuzzy-matching t
-      helm-ff-file-name-history-use-recentf t
-      helm-recentf-matching t
-      history-delete-duplicates t)
+              helm-mode-line-string ""
+              helm-comp-read-mode-line ""
+              helm-buffer-max-length 30
+              helm-buffers-truncate-lines nil
+              helm-buffer-details-flag nil
+              helm-source-buffer-not-found nil
+              helm-split-window-inside-p t
+              helm-move-to-line-cycle-in-source t
+              helm-echo-input-in-header-line nil
+              helm-display-header-line nil
+              helm-buffers-fuzzy-matching t
+              helm-ff-file-name-history-use-recentf t
+              helm-recentf-matching t
+              history-delete-duplicates t)
   (add-hook 'helm-find-files-after-init-hook
             (lambda ()
               (set-face-attribute 'helm-ff-directory nil
                                   :foreground `,danylo/yellow
-  :weight 'bold
-  :extend nil)
+                                  :weight 'bold
+                                  :extend nil)
               (set-face-attribute 'helm-candidate-number nil
-                          :foreground `,danylo/black
-  :background `,danylo/yellow)
-      (set-face-attribute 'helm-selection nil
-                          :extend nil)
-      (set-face-attribute 'helm-match nil
-                          :background `,danylo/orange
-  :foreground `,danylo/black
-  :weight 'normal
-  :inherit 'default)))
+                                  :foreground `,danylo/black
+                                  :background `,danylo/yellow)
+              (set-face-attribute 'helm-selection nil
+                                  :extend nil)
+              (set-face-attribute 'helm-match nil
+                                  :background `,danylo/orange
+                                  :foreground `,danylo/black
+                                  :weight 'normal
+                                  :inherit 'default)))
   :config
   (helm-mode 1)
   (setq helm-boring-buffer-regexp-list
         (append helm-boring-buffer-regexp-list
-        '("\\*lsp-" "\\*quelpa-" "\\*Flycheck" "\\*Help" "\\*Ilist"
-  "\\*dashboard\\*" "\\*xref\\*" "\\*toc\\*"
-  "\\*Compile-Log\\*" "\\*CPU-Profiler-Report.*\\*"
-  "\\*TeX Help\\*" "\\*Buffer List\\*" "\\*Julia" "\\*Python"
-  "magit.*:" "\\*Backtrace\\*" "\\*Process List\\*"
-  "\\*Async-" "\\*Native-" "\\*.*output\\*" "\\*helm"
-  "\\*eww\\*" "\\*timer-list\\*" "\\*Disabled Command\\*"
-  "\\*Man .*\\*"
-  ))))
+                '("\\*lsp-" "\\*quelpa-" "\\*Flycheck" "\\*Help" "\\*Ilist"
+                  "\\*dashboard\\*" "\\*xref\\*" "\\*toc\\*"
+                  "\\*Compile-Log\\*" "\\*CPU-Profiler-Report.*\\*"
+                  "\\*TeX Help\\*" "\\*Buffer List\\*" "\\*Julia" "\\*Python"
+                  "magit.*:" "\\*Backtrace\\*" "\\*Process List\\*"
+                  "\\*Async-" "\\*Native-" "\\*.*output\\*" "\\*helm"
+                  "\\*eww\\*" "\\*timer-list\\*" "\\*Disabled Command\\*"
+                  "\\*Man .*\\*"
+                  ))))
 
 (defun danylo/helm-swoop-split-window-function (buf &rest _args)
   "Show Helm Swoop at bottom of current window, with the correct
@@ -739,7 +739,7 @@ height."
   :ensure t
   :bind (("M-s" . avy-goto-word-1)
          ("M-g f" . avy-goto-line)
- ("C-'" . avy-isearch)))
+         ("C-'" . avy-isearch)))
 
 ;;; ..:: Theming and code aesthetics ::..
 
@@ -764,6 +764,12 @@ height."
   :config
   (solaire-global-mode +1))
 
+;;;; Region pulsing
+
+;; This setting makes the animation smoother
+(setq pulse-iterations 1
+      pulse-delay 0.2)
+
 ;;;; Line numbering
 
 ;; Show line numbers on the left
@@ -782,28 +788,28 @@ is automatically turned on while the line numbers are displayed."
     (if (bound-and-true-p display-line-numbers-mode)
         ;; Turn off line number display
         (progn
-  (unless danylo/truncate-lines-state
-    (toggle-truncate-lines 0))
-  (display-line-numbers-mode 0))
+          (unless danylo/truncate-lines-state
+            (toggle-truncate-lines 0))
+          (display-line-numbers-mode 0))
       ;; Turn on line number display
       (progn
         (setq-local danylo/truncate-lines-state truncate-lines)
-(let ((inhibit-message t))
-  (toggle-truncate-lines 1))
-(setq danylo/tmp nil)
-(display-line-numbers-mode 1)))))
+        (let ((inhibit-message t))
+          (toggle-truncate-lines 1))
+        (setq danylo/tmp nil)
+        (display-line-numbers-mode 1)))))
 
 (add-hook 'display-line-numbers-mode-hook
           (lambda ()
-     ;; Line highlight face
-     (set-face-attribute 'line-number-current-line nil
-                        :foreground `,danylo/yellow
-:height `,danylo/linum-height
-:weight 'normal
-:inherit 'default)
-    (set-face-attribute 'line-number nil
-                        :height `,danylo/linum-height
-:inherit 'default)))
+            ;; Line highlight face
+            (set-face-attribute 'line-number-current-line nil
+                                :foreground `,danylo/yellow
+                                :height `,danylo/linum-height
+                                :weight 'normal
+                                :inherit 'default)
+            (set-face-attribute 'line-number nil
+                                :height `,danylo/linum-height
+                                :inherit 'default)))
 
 ;;;; General Emacs theme
 
@@ -814,33 +820,33 @@ is automatically turned on while the line numbers are displayed."
   (load-theme 'doom-one t)
   (set-face-attribute 'region nil
                       :extend nil
-      :foreground `,danylo/yellow
-      :background `,danylo/dark-blue)
+                      :foreground `,danylo/yellow
+                      :background `,danylo/dark-blue)
   (set-face-attribute 'font-lock-string-face nil
                       :foreground `,danylo/green))
 
 (add-hook 'after-init-hook
           (lambda ()
-    (when (window-system)
-      ;; Default Emacs font
-      (set-face-attribute 'default nil
-                          :height `,danylo/font-default-height))))
+            (when (window-system)
+              ;; Default Emacs font
+              (set-face-attribute 'default nil
+                                  :height `,danylo/font-default-height))))
 
 ;; Speed up font-lock mode speed (can causes laggy scrolling)
 (setq-default font-lock-support-mode 'jit-lock-mode
               jit-lock-contextually 'syntax-driven
-      jit-lock-stealth-time 10
-      jit-lock-stealth-nice 0.5
-      jit-lock-chunk-size 1000
-      jit-lock-stealth-load 200
-      jit-lock-antiblink-grace most-positive-fixnum
-      ;; Below: jit-lock-defer-time "pauses" fontification while the
-      ;; user is typing, as long as the time between successive
-      ;; keystrokes is <jit-lock-defer-time. This is what makes typing
-      ;; smooth even with some heavy font locking (because the font
-      ;; locking will occur during "idle" times)!
-      jit-lock-defer-time `,danylo/fontify-delay
-      font-lock-maximum-decoration nil)
+              jit-lock-stealth-time 10
+              jit-lock-stealth-nice 0.5
+              jit-lock-chunk-size 1000
+              jit-lock-stealth-load 200
+              jit-lock-antiblink-grace most-positive-fixnum
+              ;; Below: jit-lock-defer-time "pauses" fontification while the
+              ;; user is typing, as long as the time between successive
+              ;; keystrokes is <jit-lock-defer-time. This is what makes typing
+              ;; smooth even with some heavy font locking (because the font
+              ;; locking will occur during "idle" times)!
+              jit-lock-defer-time `,danylo/fontify-delay
+              font-lock-maximum-decoration nil)
 
 ;;;; Tree-sitter
 
@@ -880,16 +886,16 @@ is automatically turned on while the line numbers are displayed."
   ;; A fancy and fast mode-line inspired by minimalism design.
   :init (setq doom-modeline-height 10
               doom-modeline-bar-width 2
-      doom-modeline-major-mode-icon nil
-      doom-modeline-icon nil
-      doom-modeline-buffer-state-icon nil
-      doom-modeline-buffer-file-name-style 'file-name
-      doom-modeline-buffer-encoding nil
-      doom-modeline-mu4e t
-      inhibit-compacting-font-caches t
-      find-file-visit-truename t
-      doom-modeline-project-detection 'project
-      doom-modeline-enable-word-count nil)
+              doom-modeline-major-mode-icon nil
+              doom-modeline-icon nil
+              doom-modeline-buffer-state-icon nil
+              doom-modeline-buffer-file-name-style 'file-name
+              doom-modeline-buffer-encoding nil
+              doom-modeline-mu4e t
+              inhibit-compacting-font-caches t
+              find-file-visit-truename t
+              doom-modeline-project-detection 'project
+              doom-modeline-enable-word-count nil)
   :config
   ;;;; Custom segment definitions
   (doom-modeline-def-segment danylo/matches
@@ -909,20 +915,20 @@ is automatically turned on while the line numbers are displayed."
        (doom-modeline-spc)
        (format "%s %s"
                (propertize
-        ;; Trick: to make the alignment correct, replace spaces with
-        ;; the icons, which lets Emacs know that the envelope icon
-        ;; takes up the column amount equivalent to that many spaces
-        "  "
-'face `(:inherit (doom-modeline-unread-number
-                  doom-modeline-warning))
-'display
-(propertize (danylo/fa-icon "envelope")
-            'face `(:family ,(all-the-icons-faicon-family)
-                    :inherit (doom-modeline-unread-number
-              doom-modeline-warning))))
-       (propertize `,(format "%s" mu4e-alert-mode-line)
-                   'face '(:inherit (doom-modeline-unread-number
-                     doom-modeline-warning))))
+                ;; Trick: to make the alignment correct, replace spaces with
+                ;; the icons, which lets Emacs know that the envelope icon
+                ;; takes up the column amount equivalent to that many spaces
+                "  "
+                'face `(:inherit (doom-modeline-unread-number
+                                  doom-modeline-warning))
+                'display
+                (propertize (danylo/fa-icon "envelope")
+                            'face `(:family ,(all-the-icons-faicon-family)
+                                            :inherit (doom-modeline-unread-number
+                                                      doom-modeline-warning))))
+               (propertize `,(format "%s" mu4e-alert-mode-line)
+                           'face '(:inherit (doom-modeline-unread-number
+                                             doom-modeline-warning))))
        (doom-modeline-spc))
       ))
   (doom-modeline-def-segment danylo/vcs
@@ -931,16 +937,16 @@ is automatically turned on while the line numbers are displayed."
       (when-let ((icon doom-modeline--vcs-icon)
                  (text doom-modeline--vcs-text))
         (concat
- (doom-modeline-spc)
- (concat
+         (doom-modeline-spc)
+         (concat
           (if active
               icon
             (doom-modeline-propertize-icon icon 'mode-line-inactive))
           (doom-modeline-spc))
- (if active
+         (if active
              text
            (propertize text 'face 'mode-line-inactive))
- (doom-modeline-spc)))))
+         (doom-modeline-spc)))))
   ;;;; Custom modeline definitions
   ;; Default mode line
   (doom-modeline-def-modeline 'danylo/mode-line
@@ -963,10 +969,10 @@ is automatically turned on while the line numbers are displayed."
     '(bar window-number window-number buffer-info-simple) '(danylo/mu4e))
   (add-hook 'after-init-hook
             (lambda ()
-      (dolist (bname '("*scratch*" "*Messages*"))
-        (if (buffer-live-p (get-buffer bname))
-    (with-current-buffer bname
-      (doom-modeline-set-modeline 'danylo/bare-modeline)))))))
+              (dolist (bname '("*scratch*" "*Messages*"))
+                (if (buffer-live-p (get-buffer bname))
+                    (with-current-buffer bname
+                      (doom-modeline-set-modeline 'danylo/bare-modeline)))))))
 
 ;; Activate the Doom modeline mode
 (add-hook 'after-init-hook (lambda () (doom-modeline-mode 1)))
@@ -983,7 +989,7 @@ is automatically turned on while the line numbers are displayed."
              (cons (length evil-mc-cursor-list)
                    (cond ((not (doom-modeline--active)) 'mode-line-inactive)
                          (evil-mc-frozen 'doom-modeline-bar)
- ('doom-modeline-panel))))
+                         ('doom-modeline-panel))))
             ((cons nil nil)))
     (when count
       (concat (propertize " mc:" 'face face)
@@ -998,24 +1004,24 @@ Patched for my own icons."
                  (state   (vc-state buffer-file-name backend)))
             (cond ((memq state '(edited added))
                    (propertize (danylo/octicon "git-compare") 'face
-               `(:family ,(all-the-icons-octicon-family)
-                        :inherit doom-modeline-warning)))
+                               `(:family ,(all-the-icons-octicon-family)
+                                         :inherit doom-modeline-warning)))
                   ((eq state 'needs-merge)
                    (propertize (danylo/octicon "git-merge") 'face
                                `(:family ,(all-the-icons-octicon-family)
-                        :inherit doom-modeline-warning)))
+                                         :inherit doom-modeline-warning)))
                   ((eq state 'needs-update)
                    (propertize (danylo/octicon "arrow-down") 'face
                                `(:family ,(all-the-icons-octicon-family)
-                        :inherit doom-modeline-warning)))
+                                         :inherit doom-modeline-warning)))
                   ((memq state '(removed conflict unregistered))
                    (propertize (danylo/octicon "alert") 'face
                                `(:family ,(all-the-icons-octicon-family)
-                        :inherit doom-modeline-warning)))
+                                         :inherit doom-modeline-warning)))
                   (t
                    (propertize (danylo/octicon "git-branch") 'face
-               `(:family ,(all-the-icons-octicon-family)
-                        :inherit doom-modeline-warning))))))))
+                               `(:family ,(all-the-icons-octicon-family)
+                                         :inherit doom-modeline-warning))))))))
 (advice-add 'doom-modeline-update-vcs-icon
             :around #'danylo/doom-modeline-update-vcs-icon)
 
@@ -1118,10 +1124,10 @@ when there is another buffer printing out information."
   :init
   (add-hook 'hl-todo-mode-hook
             (lambda ()
-      (set-face-attribute 'hl-todo nil
-                          :background `,danylo/yellow
-  :weight 'bold
-  :inherit 'default)))
+              (set-face-attribute 'hl-todo nil
+                                  :background `,danylo/yellow
+                                  :weight 'bold
+                                  :inherit 'default)))
   :config
   (global-hl-todo-mode)
   (add-to-list 'hl-todo-keyword-faces `("TODO" . ,danylo/black))
@@ -1139,11 +1145,11 @@ when there is another buffer printing out information."
   ;; Enhance the behavior of Emacs' Auto Fill mode
   :hook ((c-mode-common . (lambda ()
                             (when (featurep 'filladapt)
-      (c-setup-filladapt))))
+                              (c-setup-filladapt))))
          (python-mode . filladapt-mode)
- (julia-mode . filladapt-mode)
- (org-mode . filladapt-mode)
- (text-mode . filladapt-mode))
+         (julia-mode . filladapt-mode)
+         (org-mode . filladapt-mode)
+         (text-mode . filladapt-mode))
   :bind (("M-r" . 'fill-region)))
 
 (use-package so-long
@@ -1168,11 +1174,11 @@ NOSPACE, if t, means that there is no spacing added between delimiters."
   (if (region-active-p)
       (let* ((start (region-beginning))
              (end (region-end))
-     (regionp (buffer-substring start end)))
+             (regionp (buffer-substring start end)))
         (delete-region start end)
-(if nospace
-    (insert (format "%s%s%s" left regionp right))
-  (insert (format "%s %s %s" left regionp right))))
+        (if nospace
+            (insert (format "%s%s%s" left regionp right))
+          (insert (format "%s %s %s" left regionp right))))
     (if nospace
         (insert (format "%s%s%s" left msg right))
       (insert (format "%s %s %s" left msg right)))))
@@ -1256,16 +1262,16 @@ expressions. If not inside the region, returns nil."
   (save-excursion
     (let ((danylo/pre-first-begin (save-excursion (re-search-backward start-re nil t 1)))
           (danylo/pre-first-end (save-excursion (re-search-backward end-re nil t 1)))
-  (danylo/post-first-begin (save-excursion (re-search-forward start-re nil t 1)))
-  (danylo/post-first-end (save-excursion (re-search-forward end-re nil t 1))))
+          (danylo/post-first-begin (save-excursion (re-search-forward start-re nil t 1)))
+          (danylo/post-first-end (save-excursion (re-search-forward end-re nil t 1))))
       (when (and danylo/pre-first-begin danylo/post-first-end
                  (or (not danylo/pre-first-end)
-     (>= danylo/pre-first-begin danylo/pre-first-end))
- (or (not danylo/post-first-begin)
-     (>= danylo/post-first-begin danylo/post-first-end)))
+                     (>= danylo/pre-first-begin danylo/pre-first-end))
+                 (or (not danylo/post-first-begin)
+                     (>= danylo/post-first-begin danylo/post-first-end)))
         (setq danylo/begin danylo/pre-first-begin
-      danylo/end danylo/post-first-end)
-))))
+              danylo/end danylo/post-first-end)
+        ))))
 
 (defun danylo/org-inside-block ()
   "Check if point is inside org-mode structure."
@@ -1274,8 +1280,13 @@ expressions. If not inside the region, returns nil."
 
 (defun danylo/julia-inside-docstring ()
   "Check if point is inside julia-mode function docstring."
-  (danylo/search-region-delims "\"\"\"\n\s\\{4\\}" "\"\"\"")
-  (if danylo/begin t nil))
+  (let* ((ppss (save-excursion (syntax-ppss)))
+         (in-triple-quote-string (and (not (nth 4 ppss)) (nth 8 ppss))))
+    (if in-triple-quote-string
+        (progn
+          (danylo/search-region-delims "\"\"\"" "\"\"\"")
+          (if danylo/begin t nil))
+      nil)))
 
 (defun danylo/fill-region (delim-fun)
   "Fill an Org-mode block structure. The DELIM-FUN specifies which
@@ -1285,29 +1296,29 @@ function to use to get the region delimiters."
     (when (funcall delim-fun)
       (let* ((region-start (progn (goto-char danylo/begin)
                                   (forward-line)
-  (point)))
+                                  (point)))
              (region-end (progn (goto-char danylo/end)
-                        (forward-line 0)
-(1- (point)))))
+                                (forward-line 0)
+                                (1- (point)))))
         (pulse-momentary-highlight-region region-start region-end)
-(fill-region region-start region-end)
-;; Clear the fill-prefix so that does not mess with future indenting
-(if filladapt-mode (setq fill-prefix nil))))))
+        (fill-region region-start region-end)
+        ;; Clear the fill-prefix so that does not mess with future indenting
+        (if filladapt-mode (setq fill-prefix nil))))))
 
 (defun danylo/fill ()
   "Custom filling depending on mode and point location in special
 regions."
   (cond ((and (not (and transient-mark-mode mark-active))
               (derived-mode-p 'org-mode)
-      (danylo/org-inside-block))
+              (danylo/org-inside-block))
          (danylo/fill-region 'danylo/org-inside-block)
- t)
+         t)
         ((and (not (and transient-mark-mode mark-active))
-      (derived-mode-p 'julia-mode)
-      (danylo/julia-inside-docstring))
- (danylo/fill-region 'danylo/julia-inside-docstring)
- t)
-(t nil)))
+              (derived-mode-p 'julia-mode)
+              (danylo/julia-inside-docstring))
+         (danylo/fill-region 'danylo/julia-inside-docstring)
+         t)
+        (t nil)))
 
 (defun danylo/smart-fill ()
   "Smart select between regular filling and my own filling."
@@ -1373,11 +1384,11 @@ Show PROMPT string in the minibuffer."
            ;; Default column width
            default)
           ((not (string-match "\\`[1-9][0-9]*\\'" user-input))
-   ;; Bad input - ignore
-   nil)
-  (t
-   ;; Good input - record as an integer
-   (string-to-number user-input)))))
+           ;; Bad input - ignore
+           nil)
+          (t
+           ;; Good input - record as an integer
+           (string-to-number user-input)))))
 
 (defun danylo/split-main-window ()
   "Split the main window left/right/below/above the entire current
@@ -1387,23 +1398,23 @@ keys), and for the size of the resulting new window."
   (interactive)
   (let ((direction (progn
                      (message "direction up/down/left/right")
-     (read-event))))
+                     (read-event))))
     (when (member direction '(up down left right))
       (let* ((horizontal (member direction '(right left)))
              (default-size (if horizontal
-                       (/ (window-total-width) 2)
-       (/ (window-total-height) 2)))
-     (size (danylo/ask-for-integer
-            (if horizontal "width" "height") default-size)))
+                               (/ (window-total-width) 2)
+                             (/ (window-total-height) 2)))
+             (size (danylo/ask-for-integer
+                    (if horizontal "width" "height") default-size)))
         (let ((new-window (split-window (frame-root-window) nil direction)))
-  (save-excursion
-    (select-window new-window)
-    (enlarge-window (- size (if horizontal
-                                (window-width)
+          (save-excursion
+            (select-window new-window)
+            (enlarge-window (- size (if horizontal
+                                        (window-width)
                                       (window-height)))
-                    horizontal))
-  new-window)
-))))
+                            horizontal))
+          new-window)
+        ))))
 
 ;;;; >> Resizing windows <<
 
@@ -1428,9 +1439,9 @@ keys), and for the size of the resulting new window."
     ;; Change step increment and crete new timer
     (setq danylo/windsize-current-step danylo/windsize-big-step
           danylo/windsize-timer (run-with-idle-timer
-                         2.0 nil
- (lambda ()
-   (setq danylo/windsize-current-step 1)))))
+                                 2.0 nil
+                                 (lambda ()
+                                   (setq danylo/windsize-current-step 1)))))
   (windsize-resize dir danylo/windsize-current-step))
 
 (defun danylo/windsize-up-smart (&optional arg)
@@ -1481,8 +1492,8 @@ Default is 80"
   ;; Swap buffers between windows
   :bind (("S-M-<up>" . buf-move-up)
          ("S-M-<down>" . buf-move-down)
- ("S-M-<left>" . buf-move-left)
- ("S-M-<right>" . buf-move-right)))
+         ("S-M-<left>" . buf-move-left)
+         ("S-M-<right>" . buf-move-right)))
 
 ;; winner-mode, which lets you go back (C-c <left>) and forward (C-c <right>) in
 ;; window layout history
@@ -1528,7 +1539,7 @@ Default is 80"
   (if delete-this-window
       (progn
         (apply orig-fun args)
-(delete-window))
+        (delete-window))
     (apply orig-fun args)))
 (advice-add 'quit-window :around #'danylo/quit-and-kill-window)
 
@@ -1544,19 +1555,19 @@ Default is 80"
   ;; Emacs libvterm integration
   :bind (:map vterm-mode-map
               ("C-<up>" . nil)
-      ("C-<down>" . nil)
-      ("C-<left>" . nil)
-      ("C-<right>" . nil)
-      ("C-c t t" . vterm-copy-mode)
-      ("C-c r" . rename-buffer)
-      ("S-<return>" . vterm-send-tab)
-      :map vterm-copy-mode-map
-      ("C-c t t" . vterm-copy-mode))
+              ("C-<down>" . nil)
+              ("C-<left>" . nil)
+              ("C-<right>" . nil)
+              ("C-c t t" . vterm-copy-mode)
+              ("C-c r" . rename-buffer)
+              ("S-<return>" . vterm-send-tab)
+              :map vterm-copy-mode-map
+              ("C-c t t" . vterm-copy-mode))
   :hook ((vterm-mode-hook . (lambda ()
                               (goto-address-mode 1))))
   :init (setq vterm-always-compile-module t
               vterm-kill-buffer-on-exit t
-      vterm-max-scrollback 100000)
+              vterm-max-scrollback 100000)
   )
 
 (defun danylo/vterm (orig-fun &rest args)
@@ -1571,16 +1582,16 @@ to (vterm) with no argument will create a **new** vterm buffer."
       (setq danylo/vterm~buf-num 0)
       (mapc (lambda (buf)
               (let* ((this-buffer (buffer-name buf))
-             (existing-num
-      (string-match
-       (concat (regexp-quote vterm-buffer-name) "<\\([0-9]+\\)>")
-       this-buffer)))
-        (when existing-num
-  (setq existing-num (string-to-number
-                      (match-string 1 this-buffer)))
-  (when (>= existing-num danylo/vterm~buf-num)
-    (setq danylo/vterm~buf-num (1+ existing-num)))
-  )))
+                     (existing-num
+                      (string-match
+                       (concat (regexp-quote vterm-buffer-name) "<\\([0-9]+\\)>")
+                       this-buffer)))
+                (when existing-num
+                  (setq existing-num (string-to-number
+                                      (match-string 1 this-buffer)))
+                  (when (>= existing-num danylo/vterm~buf-num)
+                    (setq danylo/vterm~buf-num (1+ existing-num)))
+                  )))
             (buffer-list))
       (vterm danylo/vterm~buf-num)
       )))
@@ -1600,24 +1611,24 @@ to (vterm) with no argument will create a **new** vterm buffer."
   ;; A modern on-the-fly syntax checking extension
   :hook ((c-mode-common . flycheck-mode)
          (python-mode . flycheck-mode)
- (sh-mode . flycheck-mode)
- (julia-mode . flycheck-mode))
+         (sh-mode . flycheck-mode)
+         (julia-mode . flycheck-mode))
   :bind (("C-c f e" . flycheck-display-error-at-point)
          ("C-c f v" . flycheck-verify-setup)
- ("C-c f l" . danylo/flycheck-list-errors)
- :map flycheck-mode-map
- ("C-c ! l" . danylo/flycheck-list-errors))
+         ("C-c f l" . danylo/flycheck-list-errors)
+         :map flycheck-mode-map
+         ("C-c ! l" . danylo/flycheck-list-errors))
   :init
   (setq flycheck-enabled-checkers '(c/c++-gcc)
         flycheck-check-syntax-automatically '(mode-enabled save)
-flycheck-display-errors-delay 0.5
-flycheck-indication-mode 'left-fringe
-flycheck-highlighting-style `(conditional
-                              ,most-positive-fixnum
-      level-face (delimiters "" "")))
+        flycheck-display-errors-delay 0.5
+        flycheck-indication-mode 'left-fringe
+        flycheck-highlighting-style `(conditional
+                                      ,most-positive-fixnum
+                                      level-face (delimiters "" "")))
   (add-hook 'flycheck-mode-hook
             (lambda ()
-      )))
+              )))
 
 (with-eval-after-load "flycheck"
   ;; Update Flycheck fringe indicators
@@ -1666,16 +1677,16 @@ flycheck-highlighting-style `(conditional
   (let ((source (current-buffer)))
     (if (get-buffer-window flycheck-error-list-buffer)
         (progn
-  (pop-to-buffer flycheck-error-list-buffer)
-  (flycheck-error-list-set-source source))
+          (pop-to-buffer flycheck-error-list-buffer)
+          (flycheck-error-list-set-source source))
       (let ((this-window (selected-window))
             (new-window (split-window-vertically
-                 (* -1 (max 4 (min danylo/flycheck-error-list-size
-                   (/ (window-total-height) 2)))))))
+                         (* -1 (max 4 (min danylo/flycheck-error-list-size
+                                           (/ (window-total-height) 2)))))))
         (select-window new-window)
-(switch-to-buffer flycheck-error-list-buffer)
-(flycheck-error-list-set-source source)
-(select-window this-window)))))
+        (switch-to-buffer flycheck-error-list-buffer)
+        (flycheck-error-list-set-source source)
+        (select-window this-window)))))
 
 (defun danylo/flycheck-jump-in-buffer (orig-fun &rest args)
   "In BUFFER, jump to ERROR.
@@ -1689,9 +1700,9 @@ The remainder of the function is a carbon-copy from Flycheck."
       (progn
         ;; The patch: try first by going to last window
         (let ((current-window (selected-window)))
-  (danylo/switch-to-last-window)
-  (unless (eq (current-buffer) buffer)
-    (pop-to-buffer buffer 'other-window))))
+          (danylo/switch-to-last-window)
+          (unless (eq (current-buffer) buffer)
+            (pop-to-buffer buffer 'other-window))))
     (switch-to-buffer buffer))
   (let ((pos (flycheck-error-pos error)))
     (unless (eq (goto-char pos) (point))
@@ -1709,12 +1720,12 @@ The remainder of the function is a carbon-copy from Flycheck."
                   :url "https://raw.githubusercontent.com/emacsmirror/emacswiki.org/master/speck.el"))
   :bind (:map speck-mode-map
               ("C-c s w" . speck-popup-menu-at-point)
-      ("C-c s r" . speck-replace-next)
-      ("C-c s a" . speck-add-next))
+              ("C-c s r" . speck-replace-next)
+              ("C-c s a" . speck-add-next))
   :init
   (add-hook 'speck-mode-hook
             (lambda () (set-face-attribute 'speck-mouse nil
-                                   :background `,danylo/faded))))
+                                           :background `,danylo/faded))))
 
 (defun danylo/toggle-spellcheck ()
   "Turn on spell checking."
@@ -1735,18 +1746,18 @@ The remainder of the function is a carbon-copy from Flycheck."
   ;;  Modular in-buffer completion framework for Emacs
   :hook ((c-mode-common . company-mode)
          (emacs-lisp-mode . company-mode)
- (comint-mode . company-mode)
- (LaTeX-mode . company-mode)
- (sh-mode . company-mode))
+         (comint-mode . company-mode)
+         (LaTeX-mode . company-mode)
+         (sh-mode . company-mode))
   :bind (("S-<return>" . company-complete))
   :init
   (setq company-dabbrev-downcase 0
         company-async-timeout 10
-company-require-match 'never
-company-minimum-prefix-length 0
-company-auto-complete nil
-company-idle-delay nil
-company-auto-select-first-candidate nil)
+        company-require-match 'never
+        company-minimum-prefix-length 0
+        company-auto-complete nil
+        company-idle-delay nil
+        company-auto-select-first-candidate nil)
   )
 
 (use-package company-shell
@@ -1769,14 +1780,14 @@ company-auto-select-first-candidate nil)
   :init (setq projectile-enable-caching nil)
   :bind (:map projectile-mode-map
               ("C-c p" . projectile-command-map)
-      ("C-c p s g" . helm-projectile-ag))
+              ("C-c p s g" . helm-projectile-ag))
   :config
   (setq projectile-globally-ignored-directories
         (append '(".svn" ".git")
-        projectile-globally-ignored-directories)
-projectile-globally-ignored-files
-(append '(".DS_Store" ".gitignore")
-        projectile-globally-ignored-files))
+                projectile-globally-ignored-directories)
+        projectile-globally-ignored-files
+        (append '(".DS_Store" ".gitignore")
+                projectile-globally-ignored-files))
   (projectile-mode))
 
 ;;; ..:: Org ::..
@@ -1793,26 +1804,26 @@ projectile-globally-ignored-files
   :hook ((org-mode . danylo/org-mode-setup))
   :bind (:map org-mode-map
               ("M-." . org-open-at-point)
-      ("M-," . org-mark-ring-goto))
+              ("M-," . org-mark-ring-goto))
   :init
   (setq org-startup-folded nil
         ;;org-ellipsis "..." ;; " ▾"
         org-src-tab-acts-natively t
-org-fontify-quote-and-verse-blocks t
-org-src-preserve-indentation t
-;; LaTeX options
-org-startup-with-latex-preview nil
-;; minuted setup: https://emacs.stackexchange.com/a/27984/13661
-org-latex-listings 'minted
-org-latex-packages-alist '(("" "minted"))
-org-latex-pdf-process
-'("pdflatex -shell-escape -interaction nonstopmode -output-directory %o %f"
+        org-fontify-quote-and-verse-blocks t
+        org-src-preserve-indentation t
+        ;; LaTeX options
+        org-startup-with-latex-preview nil
+        ;; minuted setup: https://emacs.stackexchange.com/a/27984/13661
+        org-latex-listings 'minted
+        org-latex-packages-alist '(("" "minted"))
+        org-latex-pdf-process
+        '("pdflatex -shell-escape -interaction nonstopmode -output-directory %o %f"
           "pdflatex -shell-escape -interaction nonstopmode -output-directory %o %f")
-;; Jumping around headings
-org-goto-interface 'outline-path-completionp
-org-outline-path-complete-in-steps nil
-org-imenu-depth 6
-))
+        ;; Jumping around headings
+        org-goto-interface 'outline-path-completionp
+        org-outline-path-complete-in-steps nil
+        org-imenu-depth 6
+        ))
 
 (with-eval-after-load "org"
   (define-key org-mode-map [remap fill-paragraph] nil)
@@ -1825,7 +1836,7 @@ org-imenu-depth 6
   (setq org-format-latex-options (plist-put org-format-latex-options
                                             :scale `,danylo/latex-preview-scale)
         org-format-latex-options (plist-put org-format-latex-options
-                                    :foreground `,danylo/yellow))
+                                            :foreground `,danylo/yellow))
   ;; Open PDF with Evince
   ;; see: https://stackoverflow.com/a/9116029/4605946
   (setcdr (assoc "\\.pdf\\'" org-file-apps) "evince %s")
@@ -1860,9 +1871,9 @@ org-imenu-depth 6
   (if start
       (let ((regionp (buffer-substring start end)))
         (delete-region start end)
-(if current-prefix-arg
-    (insert (format "$$%s$$" regionp))
-  (insert (format "$%s$" regionp))))
+        (if current-prefix-arg
+            (insert (format "$$%s$$" regionp))
+          (insert (format "$%s$" regionp))))
     (if current-prefix-arg
         (progn (insert "$$$$") (backward-char 2))
       (progn (insert "$$") (backward-char 1)))))
@@ -1875,10 +1886,10 @@ fill after inserting the link."
   (interactive)
   (let ((link (read-string "Reference: "))
         (desc (if (and transient-mark-mode mark-active)
-          (delete-and-extract-region (region-beginning) (region-end))
-  (read-string "Description: ")))
-(orig-pos (point))
-new-pos link-text)
+                  (delete-and-extract-region (region-beginning) (region-end))
+                (read-string "Description: ")))
+        (orig-pos (point))
+        new-pos link-text)
     (when (string= "" desc)
       (setq desc link))
     (setq link-text (format "[[%s][%s]]" link desc))
@@ -1886,9 +1897,9 @@ new-pos link-text)
         link-text
       (progn
         (insert link-text)
-(when fill
-  (setq new-pos (point))
-  (fill-region orig-pos new-pos))))))
+        (when fill
+          (setq new-pos (point))
+          (fill-region orig-pos new-pos))))))
 
 (defun danylo/org-eqref ()
   "Prompt user for link to an equation reference, then insert link."
@@ -1904,58 +1915,58 @@ new-pos link-text)
   :load-path "/usr/local/share/emacs/site-lisp/mu4e"
   :bind (:map mu4e-headers-mode-map
               ("x" . (lambda () (interactive) (mu4e-mark-execute-all t)))
-      ("C-c C-u" . danylo/get-mail)
-      :map mu4e-view-mode-map
-      ("x" . (lambda () (interactive) (mu4e-mark-execute-all t)))
-      :map mu4e-compose-mode-map
-      ("C-c m s" . 'message-send)
-      ("C-c C-c" . nil)
-      ("C-c m a" . 'mail-add-attachment)
-      :map mu4e-main-mode-map
-      ("C-c C-u" . danylo/get-mail)
-      ("U" . danylo/get-mail))
+              ("C-c C-u" . danylo/get-mail)
+              :map mu4e-view-mode-map
+              ("x" . (lambda () (interactive) (mu4e-mark-execute-all t)))
+              :map mu4e-compose-mode-map
+              ("C-c m s" . 'message-send)
+              ("C-c C-c" . nil)
+              ("C-c m a" . 'mail-add-attachment)
+              :map mu4e-main-mode-map
+              ("C-c C-u" . danylo/get-mail)
+              ("U" . danylo/get-mail))
   :init
   (setq message-mail-user-agent t
         mail-user-agent 'mu4e-user-agent
-mu4e-completing-read-function 'completing-read ; Use 'helm' to select mailboxes
-message-kill-buffer-query nil
-mu4e-context-policy 'pick-first
-mu4e-compose-context-policy 'ask-if-none
-mu4e-confirm-quit nil
-mu4e-headers-skip-duplicates t
-mu4e-hide-index-messages t
-mu4e-view-show-addresses t
-mu4e-headers-include-related nil ; [W] to toggle
-mu4e-headers-show-threads nil
-mu4e-compose-signature-auto-include nil
-max-specpdl-size 5000 ; See djcbsoftware.nl/code/mu/mu4e/General.html
-mu4e-remove-func 'danylo/mu4e~headers-remove-handler
+        mu4e-completing-read-function 'completing-read ; Use 'helm' to select mailboxes
+        message-kill-buffer-query nil
+        mu4e-context-policy 'pick-first
+        mu4e-compose-context-policy 'ask-if-none
+        mu4e-confirm-quit nil
+        mu4e-headers-skip-duplicates t
+        mu4e-hide-index-messages t
+        mu4e-view-show-addresses t
+        mu4e-headers-include-related nil ; [W] to toggle
+        mu4e-headers-show-threads nil
+        mu4e-compose-signature-auto-include nil
+        max-specpdl-size 5000 ; See djcbsoftware.nl/code/mu/mu4e/General.html
+        mu4e-remove-func 'danylo/mu4e~headers-remove-handler
 
-;; <message HTML view>
-mu4e-view-prefer-html t
-mu4e-view-html-plaintext-ratio-heuristic most-positive-fixnum
-mu4e-html2text-command 'mu4e-shr2text
-shr-color-visible-luminance-min 60
-shr-color-visible-distance-min 5
-shr-use-colors nil
+        ;; <message HTML view>
+        mu4e-view-prefer-html t
+        mu4e-view-html-plaintext-ratio-heuristic most-positive-fixnum
+        mu4e-html2text-command 'mu4e-shr2text
+        shr-color-visible-luminance-min 60
+        shr-color-visible-distance-min 5
+        shr-use-colors nil
 
-;; <fix failed to find message error (github.com/djcb/mu/issues/1667)>
-mu4e-change-filenames-when-moving nil
-mu4e-index-cleanup t
-mu4e-index-lazy-check nil
+        ;; <fix failed to find message error (github.com/djcb/mu/issues/1667)>
+        mu4e-change-filenames-when-moving nil
+        mu4e-index-cleanup t
+        mu4e-index-lazy-check nil
 
-;; <split view settings>
-mu4e-headers-visible-lines 15
-mu4e-headers-visible-columns 50
-mu4e-split-view nil
+        ;; <split view settings>
+        mu4e-headers-visible-lines 15
+        mu4e-headers-visible-columns 50
+        mu4e-split-view nil
 
-;; <sending smtp settings>
-sendmail-program "/usr/bin/msmtp"
-send-mail-function 'smtpmail-send-it
-message-sendmail-f-is-evil t
-message-sendmail-extra-arguments '("--read-envelope-from")
-message-send-mail-function 'message-send-mail-with-sendmail
-message-kill-buffer-on-exit t)
+        ;; <sending smtp settings>
+        sendmail-program "/usr/bin/msmtp"
+        send-mail-function 'smtpmail-send-it
+        message-sendmail-f-is-evil t
+        message-sendmail-extra-arguments '("--read-envelope-from")
+        message-send-mail-function 'message-send-mail-with-sendmail
+        message-kill-buffer-on-exit t)
   (advice-add #'shr-colorize-region :around
               (defun shr-no-colourise-region (&rest ignore))))
 
@@ -1969,10 +1980,10 @@ message-kill-buffer-on-exit t)
   (let ((danylo/mu4e~is~active nil))
     (mapc (lambda (buf)
             (with-current-buffer buf
-      (when (and (danylo/is-mu4e-buffer buf)
-                 ;; Is the buffer visible in any frame?
-                 (get-buffer-window buf t))
-        (setq danylo/mu4e~is~active t))))
+              (when (and (danylo/is-mu4e-buffer buf)
+                         ;; Is the buffer visible in any frame?
+                         (get-buffer-window buf t))
+                (setq danylo/mu4e~is~active t))))
           (buffer-list))
     danylo/mu4e~is~active))
 
@@ -1984,9 +1995,9 @@ message-kill-buffer-on-exit t)
       (danylo/email-bg-refresh t)
       (if (and (danylo/mu-db-busy) (not (danylo/mu4e-active)))
           (danylo/print-in-minibuffer
-   (format "%s mu4e: database locked by another process"
-           (danylo/fa-icon "inbox")))
-  (mu4e)))))
+           (format "%s mu4e: database locked by another process"
+                   (danylo/fa-icon "inbox")))
+        (mu4e)))))
 
 (general-define-key
  "C-c m" 'danylo/launch-mu4e)
@@ -2022,10 +2033,10 @@ Patched for my own better error messages."
   (with-current-buffer buf
     (or (derived-mode-p 'mu4e-main-mode)
         (derived-mode-p 'mu4e-view-mode)
-(derived-mode-p 'mu4e-compose-mode)
-(derived-mode-p 'mu4e-headers-mode)
-(derived-mode-p 'mu4e-org-mode)
-(derived-mode-p 'mu4e-loading-mode))))
+        (derived-mode-p 'mu4e-compose-mode)
+        (derived-mode-p 'mu4e-headers-mode)
+        (derived-mode-p 'mu4e-org-mode)
+        (derived-mode-p 'mu4e-loading-mode))))
 
 (defun danylo/mu4e~error-wrapper (orig-fun &rest args)
   "A better mu4e error handler that prints the error as
@@ -2052,7 +2063,7 @@ non-attention grabbing faded output to minibuffer."
      ;; Check if this is a mu4e process
      (when (string-match-p
             (regexp-quote mu4e~proc-name)
-    (process-name proc))
+            (process-name proc))
        ;; Kill mu4e process
        (ignore-errors (signal-process proc 'SIGINT))))
    (process-list)))
@@ -2090,7 +2101,7 @@ when getting mail."
   ;; Setup a timer to update the email inbox in the background
   (run-with-timer danylo/email-refresh-period
                   danylo/email-refresh-period
-  'danylo/email-bg-refresh))
+                  'danylo/email-bg-refresh))
 
 (defun danylo/mu4e~headers-remove-handler (docid &optional skip-hook)
   "This is a patched version of mu4e~headers-remove-handler in
@@ -2114,22 +2125,22 @@ This version deletes backup files without asking."
   (interactive)
   (when (or (not (buffer-modified-p))
             (not message-kill-buffer-query)
-    (yes-or-no-p "Message modified; kill anyway? "))
+            (yes-or-no-p "Message modified; kill anyway? "))
     (let ((actions message-kill-actions)
           (draft-article message-draft-article)
-  (auto-save-file-name buffer-auto-save-file-name)
-  (file-name buffer-file-name)
-  (modified (buffer-modified-p)))
+          (auto-save-file-name buffer-auto-save-file-name)
+          (file-name buffer-file-name)
+          (modified (buffer-modified-p)))
       (setq buffer-file-name nil)
       (kill-buffer (current-buffer))
       (when (and (or (and auto-save-file-name
                           (file-exists-p auto-save-file-name))
                      (and file-name
-          (file-exists-p file-name))))
+                          (file-exists-p file-name))))
         (ignore-errors
-  (delete-file auto-save-file-name))
-(let ((message-draft-article draft-article))
-  (message-disassociate-draft)))
+          (delete-file auto-save-file-name))
+        (let ((message-draft-article draft-article))
+          (message-disassociate-draft)))
       (message-do-actions actions))))
 (advice-add 'message-kill-buffer :around #'danylo/message-kill-buffer)
 
@@ -2141,9 +2152,9 @@ This version deletes backup files without asking."
 ;; accumulate
 (add-hook 'mu4e-compose-mode-hook
           #'(lambda ()
-      (auto-save-mode -1)
-      (make-local-variable 'make-backup-files)
-      (setq make-backup-files nil)))
+              (auto-save-mode -1)
+              (make-local-variable 'make-backup-files)
+              (setq make-backup-files nil)))
 
 (use-package danylo-email
   ;; Personal mu4e context setup.
@@ -2158,16 +2169,16 @@ This version deletes backup files without asking."
     (unless (member mu4e-compose-type '(edit resend))
       (save-excursion
         (message-goto-body)
-;; Go to the first empty line in the message body, which must
-;; be the one right after the Org-mode headers
-(setq empty-line nil)
-(while (not empty-line)
-  (let ((num-chars (- (line-end-position)
-                      (line-beginning-position))))
-    (if (eq num-chars 0)
-        (setq empty-line t)
-(forward-line))))
-(insert (concat "\n\n" mu4e-compose-signature))))))
+        ;; Go to the first empty line in the message body, which must
+        ;; be the one right after the Org-mode headers
+        (setq empty-line nil)
+        (while (not empty-line)
+          (let ((num-chars (- (line-end-position)
+                              (line-beginning-position))))
+            (if (eq num-chars 0)
+                (setq empty-line t)
+              (forward-line))))
+        (insert (concat "\n\n" mu4e-compose-signature))))))
 (add-hook 'mu4e-compose-mode-hook 'danylo/insert-mu4e-signature)
 
 (use-package mu4e-alert
@@ -2188,8 +2199,8 @@ This version deletes backup files without asking."
 (with-eval-after-load "magit"
   (set-face-attribute 'magit-branch-current nil
                       :foreground `,danylo/blue
-      :box t
-      :weight 'bold))
+                      :box t
+                      :weight 'bold))
 
 ;;; ..:: Shell interaction ::..
 
@@ -2204,29 +2215,29 @@ This version deletes backup files without asking."
       (if in-place
           ;; Show shell in current window
           (switch-to-buffer shell-buffer-name)
-  ;; Show shell in another window
-  (if (get-buffer-window shell-buffer-name)
-    ;; The buffer is already displayed, switch to it
-    (pop-to-buffer shell-buffer-name)
-  ;; The buffer is hidden, show it
-  (let ((this-window (selected-window))
-        (new-window (split-window-vertically)))
-    (select-window new-window)
-    (switch-to-buffer shell-buffer-name)
-    (select-window this-window))))
+        ;; Show shell in another window
+        (if (get-buffer-window shell-buffer-name)
+            ;; The buffer is already displayed, switch to it
+            (pop-to-buffer shell-buffer-name)
+          ;; The buffer is hidden, show it
+          (let ((this-window (selected-window))
+                (new-window (split-window-vertically)))
+            (select-window new-window)
+            (switch-to-buffer shell-buffer-name)
+            (select-window this-window))))
     ;; The shell buffer does not exist
     (if in-place
         ;; Create shell in current window
         (progn
-  (let ((vterm-shell shell-type))
-    (vterm shell-buffer-name)))
+          (let ((vterm-shell shell-type))
+            (vterm shell-buffer-name)))
       ;; Create shell in new window
       (let ((this-window (selected-window))
             (new-window (split-window-vertically)))
         (select-window new-window)
-(let ((vterm-shell shell-type))
-  (vterm shell-buffer-name))
-(select-window this-window)))))
+        (let ((vterm-shell shell-type))
+          (vterm shell-buffer-name))
+        (select-window this-window)))))
 
 (defun danylo/shell-exec (shell-buffer-name command)
   "Run command in the shell.
@@ -2235,7 +2246,7 @@ If there is no shell open, prints a message to inform."
       ;; Send a run command for the current file
       (with-current-buffer shell-buffer-name
         (vterm-copy-mode -1)
-(vterm-send-string (format "%s\n" command)))
+        (vterm-send-string (format "%s\n" command)))
     (message "No shell open.")))
 
 (defun danylo/shell-get-point (shell-buffer-name)
@@ -2243,9 +2254,9 @@ If there is no shell open, prints a message to inform."
   (let ((current-point nil))
     (if (danylo/shell~check-open shell-buffer-name)
         (with-current-buffer shell-buffer-name
-  (vterm-copy-mode 1)
-  (setq current-point (point))
-  (vterm-copy-mode -1))
+          (vterm-copy-mode 1)
+          (setq current-point (point))
+          (vterm-copy-mode -1))
       (message "No shell open."))
     current-point))
 
@@ -2255,10 +2266,10 @@ If there is no shell open, prints a message to inform."
   (if (danylo/shell~check-open shell-buffer-name)
       (with-current-buffer shell-buffer-name
         (vterm-copy-mode 1)
-(let ((start (max start (point-min)))
-      (end (min end (point-max))))
-  (setq shell-content (buffer-substring start end)))
-(vterm-copy-mode -1))
+        (let ((start (max start (point-min)))
+              (end (min end (point-max))))
+          (setq shell-content (buffer-substring start end)))
+        (vterm-copy-mode -1))
     (message "No shell open."))
   shell-content)
 
@@ -2275,39 +2286,39 @@ If there is no shell open, prints a message to inform."
   (setq lsp-keymap-prefix "C-c l"
         ;; Turn off the annoying progress spinner
         lsp-progress-via-spinner nil
-;; Turn off LSP-mode imenu
-lsp-enable-imenu nil
-;; Optional: fine-tune lsp-idle-delay. This variable determines how
-;; often lsp-mode will refresh the highlights, lenses, links, etc
-;; while you type.
-lsp-idle-delay 0.5
-;; Use clangd instead
-;; https://www.reddit.com/r/cpp/comments/cafj21/ccls_clangd_and_cquery/
-;; lsp-disabled-clients '(ccls)
-;; lsp-clients-clangd-executable "clangd"
-;; Use company-capf for completion. Although company-lsp also
-;; supports caching lsp-mode’s company-capf does that by default. To
-;; achieve that uninstall company-lsp or put these lines in your
-;; config:
-lsp-prefer-capf t
-lsp-prefer-flymake nil
-;; Linting
-lsp-diagnostic-package :none
-;; Diagnostics turn off
-lsp-modeline-diagnostics-scope :none
-;; Other niceties
-lsp-signature-auto-activate nil
-lsp-signature-doc-lines 1
-lsp-eldoc-enable-hover nil ;; Show variable info on hover
-eldoc-idle-delay 0 ;; Delay before showing variable info on hover
-lsp-enable-semantic-highlighting t
-lsp-enable-snippet nil ;; Enable arguments completion
-lsp-headerline-breadcrumb-enable nil ;; Disable headerline breadcrumbs
-)
+        ;; Turn off LSP-mode imenu
+        lsp-enable-imenu nil
+        ;; Optional: fine-tune lsp-idle-delay. This variable determines how
+        ;; often lsp-mode will refresh the highlights, lenses, links, etc
+        ;; while you type.
+        lsp-idle-delay 0.5
+        ;; Use clangd instead
+        ;; https://www.reddit.com/r/cpp/comments/cafj21/ccls_clangd_and_cquery/
+        ;; lsp-disabled-clients '(ccls)
+        ;; lsp-clients-clangd-executable "clangd"
+        ;; Use company-capf for completion. Although company-lsp also
+        ;; supports caching lsp-mode’s company-capf does that by default. To
+        ;; achieve that uninstall company-lsp or put these lines in your
+        ;; config:
+        lsp-prefer-capf t
+        lsp-prefer-flymake nil
+        ;; Linting
+        lsp-diagnostic-package :none
+        ;; Diagnostics turn off
+        lsp-modeline-diagnostics-scope :none
+        ;; Other niceties
+        lsp-signature-auto-activate nil
+        lsp-signature-doc-lines 1
+        lsp-eldoc-enable-hover nil ;; Show variable info on hover
+        eldoc-idle-delay 0 ;; Delay before showing variable info on hover
+        lsp-enable-semantic-highlighting t
+        lsp-enable-snippet nil ;; Enable arguments completion
+        lsp-headerline-breadcrumb-enable nil ;; Disable headerline breadcrumbs
+        )
   :hook
   ((lsp-mode . (lambda ()
                  (setq company-minimum-prefix-length 1)
- (push 'company-capf company-backends))))
+                 (push 'company-capf company-backends))))
   )
 
 ;; Replace LSP spinner with a static gear (I like this better visually)
@@ -2321,11 +2332,11 @@ lsp-headerline-breadcrumb-enable nil ;; Disable headerline breadcrumbs
                   (boundp 'lsp-mode))
          ;; Snow process icon
          (setq mode-line-process
-       (propertize
-        "   " 'display
-(propertize (danylo/fa-icon "cogs") 'face
-            `(:family ,(all-the-icons-faicon-family)
-                 :inherit doom-modeline-warning)))))))
+               (propertize
+                "   " 'display
+                (propertize (danylo/fa-icon "cogs") 'face
+                            `(:family ,(all-the-icons-faicon-family)
+                                      :inherit doom-modeline-warning)))))))
    (buffer-list))
   (force-mode-line-update t))
 
@@ -2337,8 +2348,8 @@ lsp-headerline-breadcrumb-enable nil ;; Disable headerline breadcrumbs
      (lambda (buf)
        (with-current-buffer buf
          (when (and buffer-file-name
-            (boundp 'lsp-mode))
-   (setq mode-line-process ""))))
+                    (boundp 'lsp-mode))
+           (setq mode-line-process ""))))
      (buffer-list))
     (force-mode-line-update t)))
 (advice-add 'lsp--spinner-start :around #'danylo/lsp-gear-show)
@@ -2365,7 +2376,7 @@ relative file paths."
       ;; Open file by ourselves
       (progn
         (xref-push-marker-stack) ;; Add current marker to stack, so M-, works
-(danylo/ffap))
+        (danylo/ffap))
     ;; Call xref as originally intended
     (apply orig-fun args)))
 
@@ -2380,7 +2391,7 @@ relative file paths."
 find a definion."
   (condition-case nil
       (apply orig-fun args)
-      (user-error (helm-projectile-ag))))
+    (user-error (helm-projectile-ag))))
 (advice-add 'xref-find-definitions :around
             #'danylo/xref-find-definition-with-ag-fallback)
 
@@ -2427,7 +2438,7 @@ find a definion."
               ("RET" . 'newline-and-indent))
   :init (setq python-indent-guess-indent-offset t
               python-indent-guess-indent-offset-verbose nil
-      python-fill-docstring-style 'pep-257-nn))
+              python-fill-docstring-style 'pep-257-nn))
 
 ;;;; LSP
 
@@ -2447,11 +2458,11 @@ find a definion."
 ;; Configure Flycheck
 (add-hook 'python-mode-hook
           (lambda ()
-    (setq flycheck-enabled-checkers '(python-flake8))
-    (setq flycheck-disabled-checkers
-          '(python-mypy
-    python-pylint
-    python-pyright))))
+            (setq flycheck-enabled-checkers '(python-flake8))
+            (setq flycheck-disabled-checkers
+                  '(python-mypy
+                    python-pylint
+                    python-pyright))))
 
 (defun danylo/lsp-eldoc-toggle-hover ()
   "Toggle variable info"
@@ -2466,8 +2477,8 @@ find a definion."
   "Display variable info"
   (message "%s %s"
            (danylo/fa-icon "info" `,danylo/yellow)
-   (propertize string 'face
-               `(:foreground ,danylo/yellow))))
+           (propertize string 'face
+                       `(:foreground ,danylo/yellow))))
 
 (defun danylo/lsp-display-variable-info ()
   (interactive)
@@ -2478,10 +2489,10 @@ find a definion."
          (lsp--text-document-position-params)
          (-lambda ((hover &as &Hover? :range? :contents))
            (when hover
-     (danylo/lsp-variable-info-message
-      (and contents (lsp--render-on-hover-content
-                     contents
-     lsp-eldoc-render-all)))))
+             (danylo/lsp-variable-info-message
+              (and contents (lsp--render-on-hover-content
+                             contents
+                             lsp-eldoc-render-all)))))
          :error-handler #'ignore
          :mode 'tick
          :cancel-token :eldoc-hover))))
@@ -2502,7 +2513,7 @@ find a definion."
 (defun danylo/python-imenu-hooks ()
   (setq imenu-generic-expression
         '(("Function" "^[[:blank:]]*def \\(.*\\).*(.*$" 1)
-  ("Class" "^class \\(.*\\).*:$" 1)))
+          ("Class" "^class \\(.*\\).*:$" 1)))
   (setq imenu-create-index-function 'danylo/python-imenu)
   ;; Rescan the buffer as contents are added
   (setq imenu-auto-rescan t)
@@ -2538,14 +2549,14 @@ lines according to the first line."
   (if (use-region-p)
       (let* ((selection (buffer-substring start end))
              (starting-spaces (progn (string-match "^\s+" selection)
-                             (match-end 0)))
-     (starting-space-replace-regexp
-      `,(format "^\s\\{%d\\}" starting-spaces))
-     ;; Remove the initial spaces
-     (trimmed-selection (replace-regexp-in-string
-                         starting-space-replace-regexp "" selection))
-     ;; Remove any trailing newlines
-     (trimmed-selection (replace-regexp-in-string "\n$" "" trimmed-selection)))
+                                     (match-end 0)))
+             (starting-space-replace-regexp
+              `,(format "^\s\\{%d\\}" starting-spaces))
+             ;; Remove the initial spaces
+             (trimmed-selection (replace-regexp-in-string
+                                 starting-space-replace-regexp "" selection))
+             ;; Remove any trailing newlines
+             (trimmed-selection (replace-regexp-in-string "\n$" "" trimmed-selection)))
         trimmed-selection)
     ;; No region active
     (message "No region selected.")
@@ -2577,11 +2588,24 @@ lines according to the first line."
   ;; Major mode for the julia programming language
   :hook ((julia-mode . yas-minor-mode)
          (julia-mode . (lambda ()
-                 (make-variable-buffer-local 'electric-pair-text-pairs)
- (add-to-list 'electric-pair-text-pairs '(?` . ?`))
- )))
+                         (make-variable-buffer-local 'electric-pair-text-pairs)
+                         (add-to-list 'electric-pair-text-pairs '(?` . ?`))
+                         ;; Do not fill source code blocks inside docstring
+                         (make-variable-buffer-local 'filladapt-not-token-table)
+                         (add-to-list 'filladapt-not-token-table "`")
+                         )))
   :bind (:map julia-mode-map
               ("C-h ." . danylo/julia-help-at-point)))
+
+(defun danylo/ignore-triple-backticks (orig-fun &rest args)
+  "Patch the Julia syntax coloring so that triple back ticks are
+ignored and not treated as strings. I use them as srouce code
+blocks."
+  (let* ((ppss (save-excursion (syntax-ppss (match-beginning 0))))
+         (string-open (and (not (nth 4 ppss)) (nth 8 ppss))))
+    (unless (or (eq (char-before) ?`) (eq (char-after string-open) ?`))
+      (apply orig-fun args))))
+(advice-add 'julia-syntax-stringify :around #'danylo/ignore-triple-backticks)
 
 (use-package lsp-julia
   ;; https://github.com/non-Jedi/lsp-julia
@@ -2602,8 +2626,8 @@ lines according to the first line."
   :ensure nil
   :quelpa ((julia-staticlint :fetcher github
                              :repo "dmalyuta/julia-staticlint"
-     :files (:defaults "julia_staticlint_server.jl"
-                       "julia_staticlint_client.jl")))
+                             :files (:defaults "julia_staticlint_server.jl"
+                                               "julia_staticlint_client.jl")))
   :hook ((julia-mode . julia-staticlint-activate))
   :config
   (julia-staticlint-init))
@@ -2672,39 +2696,39 @@ lines according to the first line."
 Calls itself until the docstring has completed printing."
   (let* (;; Get end point, removing the final "julia> " prompt
          (end-point (danylo/shell-get-point danylo/julia-buffer-name))
- ;; Get docstring printed thus far
- (julia-help-docstring
-  (danylo/shell-get-content danylo/julia-buffer-name
-                            start-point end-point))
- ;; Check if the document printout finished
- (julia-help-docstring-end
-  (string-match "^julia>\s$" julia-help-docstring)))
+         ;; Get docstring printed thus far
+         (julia-help-docstring
+          (danylo/shell-get-content danylo/julia-buffer-name
+                                    start-point end-point))
+         ;; Check if the document printout finished
+         (julia-help-docstring-end
+          (string-match "^julia>\s$" julia-help-docstring)))
     (if julia-help-docstring-end
         ;; Show help buffer
         (progn
-  (let ((this-window (selected-window))
-        (julia-help-existing-window
- (get-buffer-window danylo/julia-help-buffer-name)))
-    (when julia-help-existing-window
-      (select-window julia-help-existing-window)
-      (kill-buffer-and-window)
-      (select-window this-window)))
-  (let ((this-window (selected-window))
-        (new-window (split-window-vertically)))
-    (select-window new-window)
-    (setq julia-help-buf
-          (get-buffer-create danylo/julia-help-buffer-name))
-    (switch-to-buffer julia-help-buf)
-    (insert "[Press q to quit]\n\n")
-    (insert (substring julia-help-docstring 0 julia-help-docstring-end))
-    (special-mode)
-    (danylo-julia-help-mode)
-    (goto-char (point-min))
-    ;; Go back to original window
-    (select-window this-window)
-    ;; Return to help window. Quitting will return cursor to original
-    ;; window
-    (select-window new-window)))
+          (let ((this-window (selected-window))
+                (julia-help-existing-window
+                 (get-buffer-window danylo/julia-help-buffer-name)))
+            (when julia-help-existing-window
+              (select-window julia-help-existing-window)
+              (kill-buffer-and-window)
+              (select-window this-window)))
+          (let ((this-window (selected-window))
+                (new-window (split-window-vertically)))
+            (select-window new-window)
+            (setq julia-help-buf
+                  (get-buffer-create danylo/julia-help-buffer-name))
+            (switch-to-buffer julia-help-buf)
+            (insert "[Press q to quit]\n\n")
+            (insert (substring julia-help-docstring 0 julia-help-docstring-end))
+            (special-mode)
+            (danylo-julia-help-mode)
+            (goto-char (point-min))
+            ;; Go back to original window
+            (select-window this-window)
+            ;; Return to help window. Quitting will return cursor to original
+            ;; window
+            (select-window new-window)))
       ;; Run again in a little while
       (run-with-timer julia-docstring-refresh-rate nil
                       'danylo/julia-show-help-docstring start-point))))
@@ -2728,8 +2752,8 @@ Calls itself until the docstring has completed printing."
 (defun danylo/julia-imenu-hooks ()
   (setq imenu-generic-expression
         '(("Function" "^[[:blank:]]*function \\(.*\\).*(.*$" 1)
-  ("Struct" "^[^#]*\s+struct\s+\\(.*?\\)$" 1)
-  ("Struct" "^struct\s+\\(.*?\\)$" 1)))
+          ("Struct" "^[^#]*\s+struct\s+\\(.*?\\)$" 1)
+          ("Struct" "^struct\s+\\(.*?\\)$" 1)))
   (setq imenu-create-index-function 'danylo/julia-imenu)
   ;; Rescan the buffer as contents are added
   (setq imenu-auto-rescan t))
@@ -2750,14 +2774,14 @@ Calls itself until the docstring has completed printing."
    "\"\"\""
    (concat "\n"
            "    Signature\n"
-   "\n"
-   "Description.\n"
-   "\n"
-   "# Arguments\n"
-   "- `foo`: description."
-   "\n\n"
-   "# Returns\n"
-   "- `bar`: description.")
+           "\n"
+           "Description.\n"
+           "\n"
+           "# Arguments\n"
+           "- `foo`: description."
+           "\n\n"
+           "# Returns\n"
+           "- `bar`: description.")
    "\n\"\"\"" t))
 
 ;;; ..:: Lisp ::..

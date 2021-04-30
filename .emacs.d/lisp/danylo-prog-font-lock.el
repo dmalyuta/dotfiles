@@ -181,7 +181,7 @@
         ((eq major-mode 'julia-mode)
          (setq danylo/prog-highlight-keywords
                '(("^\s*\\(includet\\|include\\|using\\|import\\)"
-                  (1 '(face danylo/import-face) t))
+                  (1 '(face danylo/import-face) nil t))
                  ("^\s*\\(export\\)"
                   (1 '(face danylo/export-face) t))
                  ("^\s*\\(#\s*\\(?:Arguments\\|Keywords\\|Returns\\|Throws\\)\\)$"
@@ -206,22 +206,25 @@
                   (1 '(face danylo/class-keyword-face) t)
                   (2 '(face font-lock-comment-face invisible t) t))
                  ("^\\(module\\)\s+\\(.*?\\)$"
-                  (1 '(face danylo/module-keyword-face) t)
-                  (2 '(face danylo/module-name-face) t))
+                  (1 '(face danylo/module-keyword-face) nil t)
+                  (2 '(face danylo/module-name-face) nil t))
                  ("^\\(end\\)\\(\s*#\s*module\\)$"
-                  (1 '(face danylo/module-keyword-face) t)
-                  (2 '(face font-lock-comment-face invisible t) t))
-                 ("^\s*\\b\\(return\\|break\\|throw\\)\\b"
-                  (1 '(face danylo/return-face) t))
-                 ("^\s*\\(continue\\|pass\\)" (1 '(face danylo/continue-face) t))
-                 ("^\s*\\(function\\)\s+" (1 '(face danylo/function-face) t))
+                  (1 '(face danylo/module-keyword-face) nil t)
+                  (2 '(face font-lock-comment-face invisible t) nil t))
+                 ("^\s*\\b\\(return\\|break\\|throw\\)\\b[\n\s(]"
+                  (1 '(face danylo/return-face) nil t))
+                 ("^\s*\\(continue\\|pass\\)" (1 '(face danylo/continue-face) nil t))
+                 ("^\s*\\(function\\)\s+" (1 '(face danylo/function-face) nil t))
                  ("^\s*\\(?:function.*\\)?\\(end\\)\\(\s*#\s*function\\)$"
-                  (1 '(face danylo/function-face) t)
+                  (1 '(face danylo/function-face) nil t)
+                  (2 '(face font-lock-comment-face invisible t) nil t))
+                 ("^\s*\\(macro\\)\s+" (1 '(face danylo/macro-face) nil t))
+                 ("^\\(end\\)\\(\s*#\s*macro\\)$"
+                  (1 '(face danylo/macro-face) t)
                   (2 '(face font-lock-comment-face invisible t) t))
-                 ("^\s*\\(macro\\)\s+" (1 '(face danylo/macro-face) t))
-                 ("\\(?:true\\|false\\)" (0 '(face danylo/bool-face) t))
+                 ("\\(?:true\\|false\\)" (0 '(face danylo/bool-face) nil t))
                  ("^\s*\\(?:if\\|for\\|while\\|elseif\\|else\\)\s+"
-                  (0 '(face danylo/control-face) t))
+                  (0 '(face danylo/control-face) nil t))
                  )))
         )
   danylo/prog-highlight-keywords)

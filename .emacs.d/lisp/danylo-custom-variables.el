@@ -137,6 +137,36 @@ called (manually or automatically)."
 (defconst danylo/faded-blue "#31495d")
 (defconst danylo/green      "#98be65")
 
+(defface danylo/imenu-function-face
+  `((t (:foreground ,danylo/blue :weight bold :inherit default)))
+  "Face for functions in Imenu."
+  :group 'danylo)
+
+(defface danylo/imenu-const-face
+  `((t (:foreground ,danylo/white :weight bold :inherit default)))
+  "Face for constant variables in Imenu."
+  :group 'danylo)
+
+(defface danylo/imenu-macro-face
+  `((t (:foreground ,danylo/red :weight bold :inherit default)))
+  "Face for macros in Imenu."
+  :group 'danylo)
+
+(defface danylo/imenu-class-face
+  `((t (:foreground ,danylo/green :weight bold :inherit default)))
+  "Face for classes and structs in Imenu."
+  :group 'danylo)
+
+(defface danylo/imenu-import-face
+  `((t (:foreground ,danylo/yellow :weight bold :inherit default)))
+  "Face for import statements in Imenu."
+  :group 'danylo)
+
+(defface danylo/imenu-export-face
+  `((t (:foreground ,danylo/orange :weight bold :inherit default)))
+  "Face for export statements in Imenu."
+  :group 'danylo)
+
 ;;;; Fringe objects
 
 ;; Flycheck fringe indicator, from Spacemacs

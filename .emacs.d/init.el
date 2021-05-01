@@ -547,6 +547,42 @@ there. If not visible, open it but don't focus."
               neo-autorefresh t)
   (add-hook 'after-init-hook (lambda () (require 'neotree))))
 
+;;;; Imenu
+
+;; Add line numbers to the matched results
+
+(defun danylo/match-string-no-properties-with-linum (orig-fun &rest args)
+  "Same as match-string-no-properties except that it appends the
+line number to the string."
+  (declare (side-effect-free t))
+  (let* ((num (nth 0 args))
+         (match-start-pos (match-beginning num))
+         (total-num-lines (int-to-string
+                           (length
+                            (int-to-string
+                             (count-lines (point-min) (point-max))))))
+         (fmt `,(concat "%-" total-num-lines "d %s"))
+         output)
+    (if match-start-pos
+        (setq
+         output
+         (format fmt
+                 (line-number-at-pos match-start-pos)
+                 (buffer-substring-no-properties
+                  match-start-pos (match-end num))))
+      output)))
+
+(defun danylo/imenu-show-linum (orig-fun &rest args)
+  "Match imenu to show line numbers with the matched results."
+  (let (out)
+    (advice-add 'match-string-no-properties :around
+                #'danylo/match-string-no-properties-with-linum)
+    (setq out (apply orig-fun args))
+    (advice-remove 'match-string-no-properties
+                   #'danylo/match-string-no-properties-with-linum)
+    out))
+(advice-add 'imenu--generic-function :around #'danylo/imenu-show-linum)
+
 ;;;; Imenu list: view the list of functions and classes in the file
 
 (defvar danylo/imenu-list--displayed-window nil
@@ -590,7 +626,7 @@ Patched to use original **window** instead of buffer."
     (imenu entry)
     (run-hooks 'imenu-list-after-jump-hook)
     (imenu-list--show-current-entry)))
-(advice-add 'imenu-list-goto-entry :around #'danylo/imenu-list-goto-entry)
+(advice-add 'imenu-list-ret-dwim :around #'danylo/imenu-list-goto-entry)
 
 (defun danylo/imenu-list-display-entry (orig-fun &rest args)
   "Display in original buffer the entry under point.
@@ -602,7 +638,7 @@ Patched to use original **window** instead of buffer."
       (imenu entry)
       (run-hooks 'imenu-list-after-jump-hook)
       (imenu-list--show-current-entry))))
-(advice-add 'imenu-list-display-entry :around #'danylo/imenu-list-display-entry)
+(advice-add 'imenu-list-display-dwim :around #'danylo/imenu-list-display-entry)
 
 ;;;; Helm: search everything sledgehammer
 
@@ -638,6 +674,14 @@ Patched to use original **window** instead of buffer."
               helm-ff-file-name-history-use-recentf t
               helm-recentf-matching t
               history-delete-duplicates t)
+  (setq helm-imenu-type-faces
+        '(("^\\(f(x)\\)$" . danylo/imenu-function-face)
+          ("^\\(struct\\)$" . danylo/imenu-class-face)
+          ("^\\(@\\)$" . danylo/imenu-macro-face)
+          ("^\\(import\\|using\\|include\\)$" . danylo/imenu-import-face)
+          ("^\\(export\\)$" . danylo/imenu-export-face)
+          ("^\\(const\\)$" . danylo/imenu-const-face))
+        helm-imenu-delimiter " ")
   (add-hook 'helm-find-files-after-init-hook
             (lambda ()
               (set-face-attribute 'helm-ff-directory nil
@@ -2796,9 +2840,16 @@ Calls itself until the docstring has completed printing."
 
 (defun danylo/julia-imenu-hooks ()
   (setq imenu-generic-expression
-        '(("Function" "^[[:blank:]]*function \\(.*\\).*(.*$" 1)
-          ("Struct" "^[^#]*\s+struct\s+\\(.*?\\)$" 1)
-          ("Struct" "^struct\s+\\(.*?\\)$" 1)))
+        '(("f(x)" "^[[:blank:]]*function \\(.*\\).*(.*$" 1)
+          ("@" "^[[:blank:]]*macro \\(.*\\).*(.*$" 1)
+          ("struct" "^[^#]*\s+struct\s+\\(.*?\\)$" 1)
+          ("struct" "^struct\s+\\(.*?\\)$" 1)
+          ("import" "^\s*import\s+\\([a-zA-Z\\.,:\s]*\\)$" 1)
+          ("include" "^\s*include\s*(\"\\([a-zA-Z/\\.,:\s]*\\)\")$" 1)
+          ("using" "^\s*using\s+\\([a-zA-Z\\.,:\s]*\\)$" 1)
+          ("export" "^\s*export\s+\\([a-zA-Z\\.,:!@\s]*\\)$" 1)
+          ("const" "^\s*const\s+\\(.*?\\)\s*=.*$" 1)
+          ))
   (setq imenu-create-index-function 'danylo/julia-imenu)
   ;; Rescan the buffer as contents are added
   (setq imenu-auto-rescan t))
@@ -2815,19 +2866,32 @@ Calls itself until the docstring has completed printing."
 (defun danylo/julia-function-docstring ()
   "Julia block comment."
   (interactive)
-  (danylo/section-msg
-   "\"\"\""
-   (concat "\n"
-           "    Signature\n"
-           "\n"
-           "Description.\n"
-           "\n"
-           "# Arguments\n"
-           "- `foo`: description."
-           "\n\n"
-           "# Returns\n"
-           "- `bar`: description.")
-   "\n\"\"\"" t))
+  (let ((docstring '("\"\"\""
+                     "    Signature"
+                     ""
+                     "Description."
+                     ""
+                     "# Arguments"
+                     "- `foo`: description."
+                     "\n"
+                     "# Returns"
+                     "- `bar`: description."
+                     "\"\"\""))
+        (indent-string-prefix (make-string (current-indentation) ?\s))
+        (first t)
+        prefix-newline)
+    (save-excursion
+      (mapc (lambda (line-string)
+              (setq prefix-newline (if first "" "\n"))
+              (setq prefix-indent (if first "" indent-string-prefix))
+              (insert (format "%s%s%s"
+                              prefix-newline
+                              prefix-indent
+                              line-string))
+              (setq first nil))
+            docstring))
+    (re-search-forward "Signature" nil nil 1)
+    ))
 
 (defun danylo/docstring-insert-style (left right &optional display)
   "Insert specified (e.gg, markdown) delimiters into a docstring."

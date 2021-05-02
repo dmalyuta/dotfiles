@@ -598,17 +598,22 @@ line number to the string."
   (danylo/side-window-jump 'imenu-list imenu-list-buffer-name))
 
 (defun danylo/imenu-update (&rest args)
-  "Update Imenu list every time cursor moves to a different window,
-to reflect the current window's content."
+  "Update Imenu list to reflect the current window's content."
   (when (and (get-buffer-window imenu-list-buffer-name t)
              (not (string= (format "%s" (current-buffer)) imenu-list-buffer-name)))
     (run-with-idle-timer 0.03 nil 'imenu-list-update-safe)))
 
-;; Update Imenu automatically when using the following functions to switch
-;; between buffers
+;; Update Imenu automatically after the following functions
 (mapc (lambda (func)
         (advice-add func :after #'danylo/imenu-update))
-      '(windmove-do-window-select other-window))
+      '(windmove-do-window-select
+        other-window switch-to-buffer
+        delete-window
+        quit-window
+        save-buffer
+        delete-frame
+        select-window))
+(add-hook 'find-file-hook 'danylo/imenu-update)
 
 (use-package imenu-list
   ;; https://github.com/bmag/imenu-list
@@ -817,9 +822,16 @@ height."
   ;; https://github.com/abo-abo/avy
   ;; Jump to things in Emacs tree-style
   :ensure t
-  :bind (("M-s" . avy-goto-word-1)
+  :bind (("M-s" . danylo/avy-goto)
          ("M-g f" . avy-goto-line)
          ("C-'" . avy-isearch)))
+
+(defun danylo/avy-goto ()
+  "Smart avy command which senses C-u to pop the mark."
+  (interactive)
+  (if current-prefix-arg
+      (avy-pop-mark)
+    (avy-goto-word-1 (read-char "char: " t))))
 
 ;;; ..:: Theming and code aesthetics ::..
 
@@ -1219,7 +1231,8 @@ when there is another buffer printing out information."
   :bind ((:map prog-mode-map
                ("C-." . highlight-symbol-at-point)))
   :init (setq highlight-symbol-idle-delay 0.5
-              highlight-symbol-highlight-single-occurrence nil))
+              highlight-symbol-highlight-single-occurrence nil
+              highlight-symbol-colors '(danylo/highlight-symbol-face)))
 
 (use-package rainbow-mode
   ;; https://github.com/emacsmirror/rainbow-mode
@@ -1269,7 +1282,8 @@ NOSPACE, if t, means that there is no spacing added between delimiters."
           (insert (format "%s %s %s" left regionp right))))
     (if nospace
         (insert (format "%s%s%s" left msg right))
-      (insert (format "%s %s %s" left msg right)))))
+      (insert (format "%s %s %s" left msg right))))
+  (goto-char (- (point) (+ (length right) (if nospace 0 1)))))
 
 (defun danylo/code-section ()
   "Section delimiters for comment."
@@ -2721,7 +2735,8 @@ lines according to the first line."
                          (add-to-list 'electric-pair-text-pairs '(?` . ?`))
                          ;; Do not fill source code blocks inside docstring
                          (make-variable-buffer-local 'filladapt-not-token-table)
-                         (add-to-list 'filladapt-not-token-table "\"\"\"")
+                         (add-to-list 'filladapt-not-token-table "^$")
+                         (add-to-list 'filladapt-not-token-table ".*\"\"\"$")
                          )))
   :bind (:map julia-mode-map
               ("C-h ." . danylo/julia-help-at-point)
@@ -2902,7 +2917,7 @@ Calls itself until the docstring has completed printing."
 (defun danylo/julia-block-comment ()
   "Julia block comment."
   (interactive)
-  (danylo/section-msg "#=\n" "" "=#" t))
+  (danylo/section-msg "#=" "" "\n=#" t))
 
 (defun danylo/julia-function-docstring ()
   "Julia block comment."

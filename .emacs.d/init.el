@@ -235,6 +235,9 @@ directory."
 (global-set-key (kbd "M-n") 'forward-paragraph)
 (global-set-key (kbd "M-p") 'backward-paragraph)
 
+;; Move cursor to top/middle/bottom
+(global-set-key (kbd "C-;") 'move-to-window-line-top-bottom)
+
 ;; Show column number
 (setq-default column-number-mode t)
 
@@ -597,15 +600,15 @@ line number to the string."
 (defun danylo/imenu-update (&rest args)
   "Update Imenu list every time cursor moves to a different window,
 to reflect the current window's content."
-  (when (get-buffer-window imenu-list-buffer-name t)
-    (run-with-idle-timer 0.5 nil 'imenu-list-update)))
+  (when (and (get-buffer-window imenu-list-buffer-name t)
+             (not (string= (format "%s" (current-buffer)) imenu-list-buffer-name)))
+    (run-with-idle-timer 0.03 nil 'imenu-list-update-safe)))
 
 ;; Update Imenu automatically when using the following functions to switch
 ;; between buffers
 (mapc (lambda (func)
         (advice-add func :after #'danylo/imenu-update))
-      '(windmove-do-window-select
-        other-window))
+      '(windmove-do-window-select other-window))
 
 (use-package imenu-list
   ;; https://github.com/bmag/imenu-list
@@ -654,6 +657,12 @@ Patched to use original **window** instead of buffer."
       (imenu-list--show-current-entry))))
 (advice-add 'imenu-list-display-dwim :around #'danylo/imenu-list-display-entry)
 
+(defun danylo/imenu-quit-go-back ()
+  "Go back to the most recent window after quitting Imenu."
+  (if danylo/imenu-list--displayed-window
+      (select-window danylo/imenu-list--displayed-window)))
+(advice-add 'imenu-list-quit-window :after #'danylo/imenu-quit-go-back)
+
 ;;;; Helm: search everything sledgehammer
 
 (use-package helm
@@ -693,7 +702,8 @@ Patched to use original **window** instead of buffer."
           ("^\\(@\s*\\)\s*$" . danylo/imenu-macro-face)
           ("^\\(import\\|using\\|include\\)\s*$" . danylo/imenu-import-face)
           ("^\\(export\\)\s*$" . danylo/imenu-export-face)
-          ("^\\(const\\)\s*$" . danylo/imenu-const-face))
+          ("^\\(const\\)\s*$" . danylo/imenu-const-face)
+          ("^\\(§\\)\s*$" . danylo/imenu-section-face))
         helm-imenu-delimiter " ")
   (add-hook 'helm-find-files-after-init-hook
             (lambda ()
@@ -2856,11 +2866,6 @@ Calls itself until the docstring has completed printing."
 
 ;;;; Imenu setup
 
-(defun danylo/julia-imenu ()
-  (let ((python-imenu (imenu--generic-function
-                       imenu-generic-expression)))
-    (append python-imenu)))
-
 (defun danylo/julia-imenu-hooks ()
   (setq imenu-generic-expression
         '(("f(x)   " "^[[:blank:]]*function \\(.*\\).*(.*$" 1)
@@ -2872,8 +2877,10 @@ Calls itself until the docstring has completed printing."
           ("using  " "^\s*using\s+\\([a-zA-Z\\.,:\s]*\\)$" 1)
           ("export " "^\s*export\s+\\([a-zA-Z\\.,:!@\s]*\\)$" 1)
           ("const  " "^\s*const\s+\\(.*?\\)\s*=.*$" 1)
+          ("§      " "^\s*[#]+\s+\\.\\.::\s+\\(.*\\)\s+::\\.\\.\s*$" 1)
           ))
-  (setq imenu-create-index-function 'danylo/julia-imenu)
+  (setq imenu-create-index-function
+        (lambda () (imenu--generic-function imenu-generic-expression)))
   ;; Rescan the buffer as contents are added
   (setq imenu-auto-rescan t))
 
@@ -2978,6 +2985,18 @@ Calls itself until the docstring has completed printing."
 (add-hook 'emacs-lisp-mode-hook
           (lambda ()
             (eldoc-mode -1)))
+
+;;;; Imenu setup
+
+(defun danylo/lisp-imenu-hooks ()
+  (add-to-list 'imenu-generic-expression
+               '("§" "^[;]+\s+\\.\\.::\s+\\(.*\\)\s+::\\.\\." 1))
+  (setq imenu-create-index-function
+        (lambda () (imenu--generic-function imenu-generic-expression)))
+  ;; Rescan the buffer as contents are added
+  (setq imenu-auto-rescan t))
+
+(add-hook 'emacs-lisp-mode-hook 'danylo/lisp-imenu-hooks)
 
 ;;; ..:: LaTeX ::..
 

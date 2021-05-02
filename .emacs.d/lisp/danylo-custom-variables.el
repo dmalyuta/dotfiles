@@ -137,6 +137,11 @@ called (manually or automatically)."
 (defconst danylo/faded-blue "#31495d")
 (defconst danylo/green      "#98be65")
 
+(defface danylo/imenu-section-face
+  `((t (:foreground ,danylo/green :weight bold :inherit default)))
+  "Face for sections in Imenu."
+  :group 'danylo)
+
 (defface danylo/imenu-function-face
   `((t (:foreground ,danylo/blue :weight bold :inherit default)))
   "Face for functions in Imenu."

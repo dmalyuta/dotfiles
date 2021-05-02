@@ -147,6 +147,11 @@ called (manually or automatically)."
   "Face for functions in Imenu."
   :group 'danylo)
 
+(defface danylo/imenu-var-face
+  `((t (:foreground ,danylo/orange :weight bold :inherit default)))
+  "Face for functions in Imenu."
+  :group 'danylo)
+
 (defface danylo/imenu-const-face
   `((t (:foreground ,danylo/white :weight bold :inherit default)))
   "Face for constant variables in Imenu."

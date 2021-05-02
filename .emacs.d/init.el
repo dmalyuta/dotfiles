@@ -685,6 +685,7 @@ Patched to use original **window** instead of buffer."
               helm-mode-line-string ""
               helm-comp-read-mode-line ""
               helm-buffer-max-length 30
+              helm-candidate-number-limit 200
               helm-buffers-truncate-lines nil
               helm-buffer-details-flag nil
               helm-source-buffer-not-found nil
@@ -698,12 +699,14 @@ Patched to use original **window** instead of buffer."
               history-delete-duplicates t)
   (setq helm-imenu-type-faces
         '(("^\\(f(x)\\)\s*$" . danylo/imenu-function-face)
+          ("^\\(var\\)\s*$" . danylo/imenu-var-face)
           ("^\\(struct\\|class\\)\s*$" . danylo/imenu-class-face)
           ("^\\(@\s*\\)\s*$" . danylo/imenu-macro-face)
           ("^\\(import\\|using\\|include\\)\s*$" . danylo/imenu-import-face)
           ("^\\(export\\)\s*$" . danylo/imenu-export-face)
           ("^\\(const\\)\s*$" . danylo/imenu-const-face)
-          ("^\\(§\\)\s*$" . danylo/imenu-section-face))
+          ("^\\(§\\)\s*$" . danylo/imenu-section-face)
+          ("^\\(pkg\\)\s*$" . danylo/imenu-import-face))
         helm-imenu-delimiter " ")
   (add-hook 'helm-find-files-after-init-hook
             (lambda ()
@@ -1209,6 +1212,14 @@ when there is another buffer printing out information."
   (global-hl-todo-mode)
   (add-to-list 'hl-todo-keyword-faces `("TODO" . ,danylo/black))
   (add-to-list 'hl-todo-keyword-faces `("FIXME" . ,danylo/black)))
+
+(use-package highlight-symbol
+  ;; https://github.com/nschum/highlight-symbol.el
+  ;; automatic and manual symbol highlighting
+  :bind ((:map prog-mode-map
+               ("C-." . highlight-symbol-at-point)))
+  :init (setq highlight-symbol-idle-delay 0.5
+              highlight-symbol-highlight-single-occurrence nil))
 
 (use-package rainbow-mode
   ;; https://github.com/emacsmirror/rainbow-mode
@@ -2987,10 +2998,14 @@ Calls itself until the docstring has completed printing."
             (eldoc-mode -1)))
 
 ;;;; Imenu setup
-
+(message "%s" imenu-generic-expression)
 (defun danylo/lisp-imenu-hooks ()
-  (add-to-list 'imenu-generic-expression
-               '("§" "^[;]+\s+\\.\\.::\s+\\(.*\\)\s+::\\.\\." 1))
+  (setq imenu-generic-expression
+        '(("var " "^\s*(\\(def\\(?:c\\(?:onst\\(?:ant\\)?\\|ustom\\)\\|ine-symbol-macro\\|parameter\\)\\)\s+\\(\\(?:\\sw\\|\\s_\\|\\\\.\\)+\\)" 2)
+          ("var " "^\s*(defvar\\(?:-local\\)?\s+\\(\\(?:\\sw\\|\\s_\\|\\.\\)+\\)" 1)
+          ("f(x)" "^(defun\s+\\([a-zA-Z/\\-]*?\\)\s+(.*$" 1)
+          ("pkg " "^\s*(use-package\s*\\([a-zA-Z\\-]*\\)$" 1)
+          ("§   " "^[;]+\s+\\.\\.::\s+\\(.*\\)\s+::\\.\\." 1)))
   (setq imenu-create-index-function
         (lambda () (imenu--generic-function imenu-generic-expression)))
   ;; Rescan the buffer as contents are added

@@ -2895,6 +2895,7 @@ Calls itself until the docstring has completed printing."
 (defun danylo/julia-imenu-hooks ()
   (setq imenu-generic-expression
         '(("f(x)   " "^[[:blank:]]*function \\(.*\\).*(.*$" 1)
+          ("f(x)   " "^\\([a-zA-Z0-9_!]*?\\)\s*(.*?).*=.*$" 1)
           ("@      " "^[[:blank:]]*macro \\(.*\\).*(.*$" 1)
           ("struct " "^[^#]*\s+struct\s+\\(.*?\\)$" 1)
           ("struct " "^struct\s+\\(.*?\\)$" 1)

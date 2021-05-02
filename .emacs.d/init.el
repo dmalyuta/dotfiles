@@ -594,6 +594,19 @@ line number to the string."
   (setq danylo/imenu-list--displayed-window (selected-window))
   (danylo/side-window-jump 'imenu-list imenu-list-buffer-name))
 
+(defun danylo/imenu-update (&rest args)
+  "Update Imenu list every time cursor moves to a different window,
+to reflect the current window's content."
+  (when (get-buffer-window imenu-list-buffer-name t)
+    (run-with-idle-timer 0.5 nil 'imenu-list-update)))
+
+;; Update Imenu automatically when using the following functions to switch
+;; between buffers
+(mapc (lambda (func)
+        (advice-add func :after #'danylo/imenu-update))
+      '(windmove-do-window-select
+        other-window))
+
 (use-package imenu-list
   ;; https://github.com/bmag/imenu-list
   ;; Emacs plugin to show the current buffer's imenu entries
@@ -602,7 +615,8 @@ line number to the string."
               :map org-mode-map
               ("C-c t i" . danylo/imenu-list-jump)
               :map imenu-list-major-mode-map
-              ("C-c t i" . danylo/imenu-list-jump))
+              ("C-c t i" . danylo/imenu-list-jump)
+              ("DEL" . danylo/imenu-list-jump))
   :init (setq imenu-list-size danylo/side-window-width
               imenu-list-position 'left
               imenu-list-mode-line-format
@@ -658,8 +672,7 @@ Patched to use original **window** instead of buffer."
          ("S-<return>" . helm-company)
          :map helm-map
          ("TAB" . helm-execute-persistent-action))
-  :init (setq helm-display-buffer-default-height
-              danylo/num-completion-candidates
+  :init (setq helm-display-buffer-default-height danylo/num-completion-candidates
               helm-mode-line-string ""
               helm-comp-read-mode-line ""
               helm-buffer-max-length 30
@@ -675,12 +688,12 @@ Patched to use original **window** instead of buffer."
               helm-recentf-matching t
               history-delete-duplicates t)
   (setq helm-imenu-type-faces
-        '(("^\\(f(x)\\)$" . danylo/imenu-function-face)
-          ("^\\(struct\\)$" . danylo/imenu-class-face)
-          ("^\\(@\\)$" . danylo/imenu-macro-face)
-          ("^\\(import\\|using\\|include\\)$" . danylo/imenu-import-face)
-          ("^\\(export\\)$" . danylo/imenu-export-face)
-          ("^\\(const\\)$" . danylo/imenu-const-face))
+        '(("^\\(f(x)\\)\s*$" . danylo/imenu-function-face)
+          ("^\\(struct\\|class\\)\s*$" . danylo/imenu-class-face)
+          ("^\\(@\s*\\)\s*$" . danylo/imenu-macro-face)
+          ("^\\(import\\|using\\|include\\)\s*$" . danylo/imenu-import-face)
+          ("^\\(export\\)\s*$" . danylo/imenu-export-face)
+          ("^\\(const\\)\s*$" . danylo/imenu-const-face))
         helm-imenu-delimiter " ")
   (add-hook 'helm-find-files-after-init-hook
             (lambda ()
@@ -711,6 +724,16 @@ Patched to use original **window** instead of buffer."
                   "\\*eww\\*" "\\*timer-list\\*" "\\*Disabled Command\\*"
                   "\\*Man .*\\*"
                   ))))
+
+(defun danylo/set-helm-window-height (orig-fun &rest args)
+  "Make the Helm window taller."
+  (let ((helm-display-buffer-default-height (/ (window-total-height) 2)))
+    (apply orig-fun args)))
+
+;; Make Helm window taller for the following Helm functions
+(mapc (lambda (func)
+        (advice-add func :around #'danylo/set-helm-window-height))
+      '(helm-imenu helm-imenu-in-all-buffers))
 
 (defun danylo/helm-swoop-split-window-function (buf &rest _args)
   "Show Helm Swoop at bottom of current window, with the correct
@@ -2597,8 +2620,8 @@ find a definion."
 
 (defun danylo/python-imenu-hooks ()
   (setq imenu-generic-expression
-        '(("Function" "^[[:blank:]]*def \\(.*\\).*(.*$" 1)
-          ("Class" "^class \\(.*\\).*:$" 1)))
+        '(("f(x) " "^[[:blank:]]*def \\(.*\\).*(.*$" 1)
+          ("class" "^class \\(.*\\).*:$" 1)))
   (setq imenu-create-index-function 'danylo/python-imenu)
   ;; Rescan the buffer as contents are added
   (setq imenu-auto-rescan t)
@@ -2840,15 +2863,15 @@ Calls itself until the docstring has completed printing."
 
 (defun danylo/julia-imenu-hooks ()
   (setq imenu-generic-expression
-        '(("f(x)" "^[[:blank:]]*function \\(.*\\).*(.*$" 1)
-          ("@" "^[[:blank:]]*macro \\(.*\\).*(.*$" 1)
-          ("struct" "^[^#]*\s+struct\s+\\(.*?\\)$" 1)
-          ("struct" "^struct\s+\\(.*?\\)$" 1)
-          ("import" "^\s*import\s+\\([a-zA-Z\\.,:\s]*\\)$" 1)
+        '(("f(x)   " "^[[:blank:]]*function \\(.*\\).*(.*$" 1)
+          ("@      " "^[[:blank:]]*macro \\(.*\\).*(.*$" 1)
+          ("struct " "^[^#]*\s+struct\s+\\(.*?\\)$" 1)
+          ("struct " "^struct\s+\\(.*?\\)$" 1)
+          ("import " "^\s*import\s+\\([a-zA-Z\\.,:\s]*\\)$" 1)
           ("include" "^\s*include\s*(\"\\([a-zA-Z/\\.,:\s]*\\)\")$" 1)
-          ("using" "^\s*using\s+\\([a-zA-Z\\.,:\s]*\\)$" 1)
-          ("export" "^\s*export\s+\\([a-zA-Z\\.,:!@\s]*\\)$" 1)
-          ("const" "^\s*const\s+\\(.*?\\)\s*=.*$" 1)
+          ("using  " "^\s*using\s+\\([a-zA-Z\\.,:\s]*\\)$" 1)
+          ("export " "^\s*export\s+\\([a-zA-Z\\.,:!@\s]*\\)$" 1)
+          ("const  " "^\s*const\s+\\(.*?\\)\s*=.*$" 1)
           ))
   (setq imenu-create-index-function 'danylo/julia-imenu)
   ;; Rescan the buffer as contents are added

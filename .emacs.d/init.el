@@ -622,18 +622,11 @@ line number to the string."
     "Update Imenu list to reflect the current window's content."
     (when (and (get-buffer-window imenu-list-buffer-name t)
                (not (string= (format "%s" (current-buffer)) imenu-list-buffer-name)))
-      (run-with-idle-timer 0.03 nil 'imenu-list-update)))
+      (with-current-buffer (current-buffer)
+        (imenu-list-update t))))
 
-  ;; Update Imenu automatically after the following functions
-  (mapc (lambda (func)
-          (advice-add func :after #'danylo/imenu-update))
-        '(windmove-do-window-select
-          other-window
-          delete-window
-          quit-window
-          save-buffer
-          delete-frame))
-  (add-hook 'find-file-hook 'danylo/imenu-update))
+  ;; Update Imenu automatically when window layout state changes
+  (add-hook 'window-state-change-hook 'danylo/imenu-update))
 
 ;; Patches to imenu so as to navigate using the **window** that owns the
 ;; current Imenu, not the buffer. This way handles multiple windows showing the
@@ -741,7 +734,7 @@ Patched to use original **window** instead of buffer."
                   "magit.*:" "\\*Backtrace\\*" "\\*Process List\\*"
                   "\\*Async-" "\\*Native-" "\\*.*output\\*" "\\*helm"
                   "\\*eww\\*" "\\*timer-list\\*" "\\*Disabled Command\\*"
-                  "\\*Man .*\\*"
+                  "\\*Man .*\\*" "\\*wclock\\*"
                   ))))
 
 (defun danylo/set-helm-window-height (orig-fun &rest args)
@@ -2896,7 +2889,7 @@ Calls itself until the docstring has completed printing."
 (defun danylo/julia-imenu-hooks ()
   (setq imenu-generic-expression
         '(("f(x)   " "^[[:blank:]]*function \\(.*\\).*(.*$" 1)
-          ("f(x)   " "^\\([a-zA-Z0-9_!]*?\\)\s*(.*?).*=.*$" 1)
+          ("f(x)   " "^\\([a-zA-Z0-9_\\.!]*?\\)\s*(.*?).*=.*$" 1)
           ("@      " "^[[:blank:]]*macro \\(.*\\).*(.*$" 1)
           ("struct " "^[^#]*\s+struct\s+\\(.*?\\)$" 1)
           ("struct " "^struct\s+\\(.*?\\)$" 1)

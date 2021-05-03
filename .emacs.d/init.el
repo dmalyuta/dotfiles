@@ -620,7 +620,6 @@ line number to the string."
 
   (defun danylo/imenu-update (&rest args)
     "Update Imenu list to reflect the current window's content."
-    (interactive)
     (when (and (get-buffer-window imenu-list-buffer-name t)
                (not (string= (format "%s" (current-buffer)) imenu-list-buffer-name)))
       (run-with-idle-timer 0.03 nil 'imenu-list-update)))

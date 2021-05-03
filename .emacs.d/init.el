@@ -620,20 +620,20 @@ line number to the string."
 
   (defun danylo/imenu-update (&rest args)
     "Update Imenu list to reflect the current window's content."
+    (interactive)
     (when (and (get-buffer-window imenu-list-buffer-name t)
                (not (string= (format "%s" (current-buffer)) imenu-list-buffer-name)))
-      (run-with-idle-timer 0.03 nil 'imenu-list-update-safe)))
+      (run-with-idle-timer 0.03 nil 'imenu-list-update)))
 
   ;; Update Imenu automatically after the following functions
   (mapc (lambda (func)
           (advice-add func :after #'danylo/imenu-update))
         '(windmove-do-window-select
-          other-window switch-to-buffer
+          other-window
           delete-window
           quit-window
           save-buffer
-          delete-frame
-          select-window))
+          delete-frame))
   (add-hook 'find-file-hook 'danylo/imenu-update))
 
 ;; Patches to imenu so as to navigate using the **window** that owns the

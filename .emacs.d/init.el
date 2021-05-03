@@ -588,36 +588,10 @@ line number to the string."
 
 ;;;; Imenu list: view the list of functions and classes in the file
 
-(defvar danylo/imenu-list--displayed-window nil
-  "The **window** who owns the saved imenu entries.")
-
-(defun danylo/imenu-list-jump ()
-  "Smart open imenu-list side window."
-  (interactive)
-  (setq danylo/imenu-list--displayed-window (selected-window))
-  (danylo/side-window-jump 'imenu-list imenu-list-buffer-name))
-
-(defun danylo/imenu-update (&rest args)
-  "Update Imenu list to reflect the current window's content."
-  (when (and (get-buffer-window imenu-list-buffer-name t)
-             (not (string= (format "%s" (current-buffer)) imenu-list-buffer-name)))
-    (run-with-idle-timer 0.03 nil 'imenu-list-update-safe)))
-
-;; Update Imenu automatically after the following functions
-(mapc (lambda (func)
-        (advice-add func :after #'danylo/imenu-update))
-      '(windmove-do-window-select
-        other-window switch-to-buffer
-        delete-window
-        quit-window
-        save-buffer
-        delete-frame
-        select-window))
-(add-hook 'find-file-hook 'danylo/imenu-update)
-
 (use-package imenu-list
   ;; https://github.com/bmag/imenu-list
   ;; Emacs plugin to show the current buffer's imenu entries
+  :after (org)
   :bind (:map prog-mode-map
               ("C-c t i" . danylo/imenu-list-jump)
               :map org-mode-map
@@ -632,7 +606,35 @@ line number to the string."
                 (:propertize "%b" face mode-line-buffer-id) " "
                 (:eval (buffer-name imenu-list--displayed-buffer)) " "
                 mode-line-end-spaces))
-  (add-hook 'prog-mode-hook (lambda () (require 'imenu-list))))
+  (require 'imenu-list))
+
+(defvar danylo/imenu-list--displayed-window nil
+  "The **window** who owns the saved imenu entries.")
+
+(with-eval-after-load "imenu-list"
+  (defun danylo/imenu-list-jump ()
+    "Smart open imenu-list side window."
+    (interactive)
+    (setq danylo/imenu-list--displayed-window (selected-window))
+    (danylo/side-window-jump 'imenu-list imenu-list-buffer-name))
+
+  (defun danylo/imenu-update (&rest args)
+    "Update Imenu list to reflect the current window's content."
+    (when (and (get-buffer-window imenu-list-buffer-name t)
+               (not (string= (format "%s" (current-buffer)) imenu-list-buffer-name)))
+      (run-with-idle-timer 0.03 nil 'imenu-list-update-safe)))
+
+  ;; Update Imenu automatically after the following functions
+  (mapc (lambda (func)
+          (advice-add func :after #'danylo/imenu-update))
+        '(windmove-do-window-select
+          other-window switch-to-buffer
+          delete-window
+          quit-window
+          save-buffer
+          delete-frame
+          select-window))
+  (add-hook 'find-file-hook 'danylo/imenu-update))
 
 ;; Patches to imenu so as to navigate using the **window** that owns the
 ;; current Imenu, not the buffer. This way handles multiple windows showing the

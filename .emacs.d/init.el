@@ -626,6 +626,16 @@ line number to the string."
         (imenu-list-update t))))
 
   ;; Update Imenu automatically when window layout state changes
+  (mapc (lambda (func)
+          (advice-add func :after #'danylo/imenu-update))
+        '(;; windmove-do-window-select
+          ;; other-window switch-to-buffer
+          ;; delete-window
+          ;; quit-window
+          save-buffer
+          ;; delete-frame
+          ;; select-window
+          ))
   (add-hook 'window-state-change-hook 'danylo/imenu-update))
 
 ;; Patches to imenu so as to navigate using the **window** that owns the

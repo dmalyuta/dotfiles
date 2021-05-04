@@ -73,7 +73,7 @@
   :type 'string
   :group 'danylo)
 
-(defcustom danylo/latex-preview-scale 1.3
+(defcustom danylo/latex-preview-scale 1.1
   "Size of the latex preview in Org mode."
   :type 'float
   :group 'danylo)

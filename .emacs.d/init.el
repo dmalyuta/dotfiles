@@ -1983,7 +1983,9 @@ The remainder of the function is a carbon-copy from Flycheck."
   (setq org-format-latex-options (plist-put org-format-latex-options
                                             :scale `,danylo/latex-preview-scale)
         org-format-latex-options (plist-put org-format-latex-options
-                                            :foreground `,danylo/yellow))
+                                            :foreground `,danylo/yellow)
+        org-format-latex-options (plist-put org-format-latex-options
+                                            :background "#282c34"))
   ;; Open PDF with Evince
   ;; see: https://stackoverflow.com/a/9116029/4605946
   (setcdr (assoc "\\.pdf\\'" org-file-apps) "evince %s")

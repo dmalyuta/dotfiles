@@ -57,6 +57,9 @@ sudo ln -sf "$DIR"/.peripherals/70-synaptics.conf /usr/share/X11/xorg.conf.d
 cp -r "$DIR"/.jupyter ~
 ln -sf "$DIR"/.config/flake8 ~/.config
 
+# Julia
+ln -sf "$DIR"/.config/startup.jl ~/.julia/config
+
 # Emacs
 mkdir -p ~/.emacs.d
 mkdir -p ~/.emacs.d/lisp

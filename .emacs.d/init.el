@@ -178,6 +178,58 @@ directory."
   :config
   (setq use-package-always-ensure danylo/use-package-always-ensure))
 
+;;; ..:: Debugging ::..
+
+(defconst danylo/core-minor-modes
+  '(tooltip-mode
+    global-eldoc-mode
+    electric-indent-mode
+    mouse-wheel-mode
+    tool-bar-mode
+    menu-bar-mode
+    file-name-shadow-mode
+    global-font-lock-mode
+    font-lock-mode
+    blink-cursor-mode
+    auto-composition-mode
+    auto-encryption-mode
+    auto-compression-mode
+    line-number-mode
+    transient-mark-mode)
+  "Core Emacs minor modes that are used when I run Emacs with
+`emacs -Q`.")
+
+(defvar danylo/mode-list-cache '()
+  "Cache of my active minor modes.")
+
+(defun danylo/disable-my-minor-modes ()
+  "Dsiable all non-standard minor modes."
+  (interactive)
+  (mapc
+   (lambda (mode-symbol)
+     (condition-case nil
+         (when (and (symbolp mode-symbol)
+                    (symbol-value mode-symbol)
+                    (not (member mode-symbol danylo/core-minor-modes)))
+           (add-to-list 'danylo/mode-list-cache mode-symbol)
+           (message "Disabling: %s" mode-symbol)
+           (funcall mode-symbol -1)
+           )
+       (error nil)))
+   minor-mode-list))
+
+(defun danylo/enable-my-minor-modes ()
+  "Re-enable my non-standard minor modes "
+  (interactive)
+  (let ((remaining-modes '()))
+    (mapc
+     (lambda (mode-symbol)
+       (progn
+         (message "Enabling: %s" mode-symbol)
+         (funcall mode-symbol +1)))
+     danylo/mode-list-cache)
+    (setq danylo/mode-list-cache remaining-modes)))
+
 ;;; ..:: Garbage collection ::..
 
 ;; 100MB of garbage collection space once running
@@ -2936,7 +2988,7 @@ Calls itself until the docstring has completed printing."
                      ""
                      "# Arguments"
                      "- `foo`: description."
-                     "\n"
+                     ""
                      "# Returns"
                      "- `bar`: description."
                      "\"\"\""))

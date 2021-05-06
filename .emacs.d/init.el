@@ -1119,10 +1119,19 @@ is automatically turned on while the line numbers are displayed."
              text
            (propertize text 'face 'mode-line-inactive))
          (doom-modeline-spc)))))
+  (doom-modeline-def-segment danylo/turbo
+    "Displays if turbo mode is on (low latency editing)."
+    (if danylo/turbo-on
+        (format
+         "%s"
+         (propertize
+          (danylo/fa-icon "rocket")
+          'face `(:family ,(all-the-icons-faicon-family))))
+      ""))
   ;;;; Custom modeline definitions
   ;; Default mode line
   (doom-modeline-def-modeline 'main
-    '(bar window-number danylo/matches buffer-info remote-host buffer-position selection-info)
+    '(bar window-number danylo/matches buffer-info remote-host buffer-position selection-info danylo/turbo)
     '(danylo/mu4e input-method debug lsp major-mode danylo/vcs process))
   ;; Helm mode line
   (doom-modeline-def-modeline 'helm

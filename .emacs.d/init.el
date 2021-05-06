@@ -1122,11 +1122,10 @@ is automatically turned on while the line numbers are displayed."
   (doom-modeline-def-segment danylo/turbo
     "Displays if turbo mode is on (low latency editing)."
     (if danylo/turbo-on
-        (format
-         "%s"
-         (propertize
-          (danylo/fa-icon "rocket")
-          'face `(:family ,(all-the-icons-faicon-family))))
+        (propertize
+         (danylo/fa-icon "rocket")
+         'face `(:family ,(all-the-icons-faicon-family)
+                         :foreground ,(if (doom-modeline--active) danylo/green)))
       ""))
   ;;;; Custom modeline definitions
   ;; Default mode line
@@ -1767,8 +1766,13 @@ Default is 80"
 
 ;;;; >> Buffer menu <<
 
+(use-package bufler
+  ;; https://github.com/alphapapa/bufler.el
+  ;; Group buffers into workspaces with programmable rules
+  )
+
 (general-define-key
- "C-x C-b" 'buffer-menu)
+ "C-x C-b" 'bufler)
 
 ;; Move cursor to minibuffer (useful if lost focus, due to mouse click)
 

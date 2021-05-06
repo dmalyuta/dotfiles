@@ -209,6 +209,7 @@ directory."
     rainbow-delimiters-mode
     projectile-mode
     window-numbering-mode
+    doom-modeline-mode
     global-hl-todo-mode
     hl-todo-mode
     shell-dirtrack-mode
@@ -1140,8 +1141,8 @@ is automatically turned on while the line numbers are displayed."
   (add-hook 'after-init-hook 'doom-modeline-mode)
   (add-hook 'doom-modeline-mode-hook
             (lambda ()
-              (when (bound-and-true-p doom-modeline-mode)
-                (danylo/doom-modeline-set-special))
+              (let ((doom-modeline-on (bound-and-true-p doom-modeline-mode)))
+                (when doom-modeline-on (danylo/doom-modeline-set-special)))
               (force-mode-line-update t)))
   )
 

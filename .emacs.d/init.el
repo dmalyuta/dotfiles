@@ -216,7 +216,9 @@ directory."
     recentf-mode
     electric-pair-mode
     helm-mode
-    google-this-mode)
+    google-this-mode
+    danylo-text-font-lock-mode
+    danylo-prog-font-lock-mode)
   "Emacs minor modes that I whitelist for being performant enough.")
 
 (defvar danylo/mode-list-cache '()
@@ -1118,14 +1120,9 @@ is automatically turned on while the line numbers are displayed."
          (doom-modeline-spc)))))
   ;;;; Custom modeline definitions
   ;; Default mode line
-  (doom-modeline-def-modeline 'danylo/mode-line
+  (doom-modeline-def-modeline 'main
     '(bar window-number danylo/matches buffer-info remote-host buffer-position selection-info)
     '(danylo/mu4e input-method debug lsp major-mode danylo/vcs process))
-  (add-hook 'doom-modeline-mode-hook
-            (lambda ()
-              (doom-modeline-set-modeline 'danylo/mode-line 'default)
-              (when (bound-and-true-p doom-modeline-mode)
-                (doom-modeline-set-modeline 'danylo/mode-line))))
   ;; Helm mode line
   (doom-modeline-def-modeline 'helm
     '(bar window-number helm-buffer-id helm-number helm-follow helm-prefix-argument) '())
@@ -1139,18 +1136,21 @@ is automatically turned on while the line numbers are displayed."
   ;; Messages and scratch buffer mode line
   (doom-modeline-def-modeline 'danylo/bare-modeline
     '(bar window-number window-number buffer-info-simple) '(danylo/mu4e))
-  (add-hook 'after-init-hook
+  ;;;; Set modeline
+  (add-hook 'after-init-hook 'doom-modeline-mode)
+  (add-hook 'doom-modeline-mode-hook
             (lambda ()
-              (dolist (bname '("*scratch*" "*Messages*"))
-                (if (buffer-live-p (get-buffer bname))
-                    (with-current-buffer bname
-                      (doom-modeline-set-modeline 'danylo/bare-modeline)))))))
+              (when (bound-and-true-p doom-modeline-mode)
+                (danylo/doom-modeline-set-special))
+              (force-mode-line-update t)))
+  )
 
-;; Activate the Doom modeline mode
-(add-hook 'after-init-hook
-          (lambda ()
-            (doom-modeline-mode 1)
-            (doom-modeline-set-modeline 'danylo/mode-line t)))
+(defun danylo/doom-modeline-set-special ()
+  "Set the doom modeline for special buffers."
+  (dolist (bname '("*Messages*"))
+    (if (buffer-live-p (get-buffer bname))
+        (with-current-buffer bname
+          (doom-modeline-set-modeline 'danylo/bare-modeline)))))
 
 (defun danylo/doom-modeline-multiple-cursors ()
   "Show the number of multiple cursors."
@@ -1582,6 +1582,7 @@ in the following cases:
       (danylo/disable-my-minor-modes)
       (danylo/print-in-minibuffer
        (format "%s Turbo ON" (danylo/fa-icon "rocket")))))
+  (force-mode-line-update t)
   (setq danylo/turbo-on (not danylo/turbo-on)))
 
 (general-define-key

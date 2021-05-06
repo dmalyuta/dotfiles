@@ -199,6 +199,26 @@ directory."
   "Core Emacs minor modes that are used when I run Emacs with
 `emacs -Q`.")
 
+(defconst danylo/whitelist-minor-modes
+  '(solaire-global-mode
+    solaire-mode
+    global-so-long-mode
+    default-text-scale-mode
+    rainbow-mode
+    filladapt-mode
+    rainbow-delimiters-mode
+    projectile-mode
+    window-numbering-mode
+    global-hl-todo-mode
+    hl-todo-mode
+    shell-dirtrack-mode
+    gcmh-mode
+    recentf-mode
+    electric-pair-mode
+    helm-mode
+    google-this-mode)
+  "Emacs minor modes that I whitelist for being performant enough.")
+
 (defvar danylo/mode-list-cache '()
   "Cache of my active minor modes.")
 
@@ -210,11 +230,12 @@ directory."
      (condition-case nil
          (when (and (symbolp mode-symbol)
                     (symbol-value mode-symbol)
-                    (not (member mode-symbol danylo/core-minor-modes)))
+                    (functionp mode-symbol)
+                    (not (member mode-symbol danylo/core-minor-modes))
+                    (not (member mode-symbol danylo/whitelist-minor-modes)))
            (add-to-list 'danylo/mode-list-cache mode-symbol)
            (message "Disabling: %s" mode-symbol)
-           (funcall mode-symbol -1)
-           )
+           (ignore-errors (funcall mode-symbol -1)))
        (error nil)))
    minor-mode-list))
 
@@ -226,7 +247,7 @@ directory."
      (lambda (mode-symbol)
        (progn
          (message "Enabling: %s" mode-symbol)
-         (funcall mode-symbol +1)))
+         (ignore-errors (funcall mode-symbol +1))))
      danylo/mode-list-cache)
     (setq danylo/mode-list-cache remaining-modes)))
 
@@ -807,7 +828,7 @@ Patched to use original **window** instead of buffer."
 ;; Make Helm window taller for the following Helm functions
 (mapc (lambda (func)
         (advice-add func :around #'danylo/set-helm-window-height))
-      '(helm-imenu helm-imenu-in-all-buffers))
+      '(helm-imenu helm-imenu-in-all-buffers helm-buffers-list))
 
 (defun danylo/helm-swoop-split-window-function (buf &rest _args)
   "Show Helm Swoop at bottom of current window, with the correct
@@ -1101,7 +1122,10 @@ is automatically turned on while the line numbers are displayed."
     '(bar window-number danylo/matches buffer-info remote-host buffer-position selection-info)
     '(danylo/mu4e input-method debug lsp major-mode danylo/vcs process))
   (add-hook 'doom-modeline-mode-hook
-            (lambda () (doom-modeline-set-modeline 'danylo/mode-line 'default)))
+            (lambda ()
+              (doom-modeline-set-modeline 'danylo/mode-line 'default)
+              (when (bound-and-true-p doom-modeline-mode)
+                (doom-modeline-set-modeline 'danylo/mode-line))))
   ;; Helm mode line
   (doom-modeline-def-modeline 'helm
     '(bar window-number helm-buffer-id helm-number helm-follow helm-prefix-argument) '())
@@ -1123,7 +1147,10 @@ is automatically turned on while the line numbers are displayed."
                       (doom-modeline-set-modeline 'danylo/bare-modeline)))))))
 
 ;; Activate the Doom modeline mode
-(add-hook 'after-init-hook (lambda () (doom-modeline-mode 1)))
+(add-hook 'after-init-hook
+          (lambda ()
+            (doom-modeline-mode 1)
+            (doom-modeline-set-modeline 'danylo/mode-line t)))
 
 (defun danylo/doom-modeline-multiple-cursors ()
   "Show the number of multiple cursors."
@@ -1537,6 +1564,28 @@ in the following cases:
   :init (setq minimap-width-fraction 0.1
               minimap-minimum-width 15
               minimap-hide-fringes t))
+
+;;;; Turbo mode for minimal-latency editing
+
+(defvar danylo/turbo-on nil
+  "State variable indicating if turbo editing mode is on.")
+
+(defun danylo/turbo-toggle ()
+  "Toggle turning off all heavy minor modes, for fast typing."
+  (interactive)
+  (if danylo/turbo-on
+      (progn
+        (danylo/enable-my-minor-modes)
+        (danylo/print-in-minibuffer
+         (format "%s Turbo OFF" (danylo/fa-icon "rocket"))))
+    (progn
+      (danylo/disable-my-minor-modes)
+      (danylo/print-in-minibuffer
+       (format "%s Turbo ON" (danylo/fa-icon "rocket")))))
+  (setq danylo/turbo-on (not danylo/turbo-on)))
+
+(general-define-key
+ "C-c e t" 'danylo/turbo-toggle)
 
 ;;; ..:: Window management ::..
 

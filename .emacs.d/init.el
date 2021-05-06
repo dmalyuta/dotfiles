@@ -820,7 +820,7 @@ Patched to use original **window** instead of buffer."
                   "magit.*:" "\\*Backtrace\\*" "\\*Process List\\*"
                   "\\*Async-" "\\*Native-" "\\*.*output\\*" "\\*helm"
                   "\\*eww\\*" "\\*timer-list\\*" "\\*Disabled Command\\*"
-                  "\\*Man .*\\*" "\\*wclock\\*"
+                  "\\*Man .*\\*" "\\*wclock\\*" "\\*Warnings\\*" "\\*Bufler\\*"
                   ))))
 
 (defun danylo/set-helm-window-height (orig-fun &rest args)
@@ -1769,7 +1769,14 @@ Default is 80"
 (use-package bufler
   ;; https://github.com/alphapapa/bufler.el
   ;; Group buffers into workspaces with programmable rules
-  )
+  :init
+  (setq bufler-filter-buffer-modes
+        (append bufler-filter-buffer-modes
+                '(imenu-list-major-mode flycheck-error-list-mode))
+        bufler-filter-buffer-name-regexps
+        (append bufler-filter-buffer-name-regexps
+                `(,(rx "*Help*")
+                  ,(rx "*Buffer List*")))))
 
 (general-define-key
  "C-x C-b" 'bufler)

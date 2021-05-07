@@ -1769,7 +1769,8 @@ Default is 80"
 (use-package bufler
   ;; https://github.com/alphapapa/bufler.el
   ;; Group buffers into workspaces with programmable rules
-  :init
+  :config
+  (require 'bufler)
   (setq bufler-filter-buffer-modes
         (append bufler-filter-buffer-modes
                 '(imenu-list-major-mode flycheck-error-list-mode))
@@ -1778,8 +1779,16 @@ Default is 80"
                 `(,(rx "*Help*")
                   ,(rx "*Buffer List*")))))
 
+(defun danylo/buffer-list ()
+  "Run Bufler nominally, or the vanilla buffer-list if prefixed
+with C-u."
+  (interactive)
+  (if current-prefix-arg
+      (ibuffer)
+    (bufler)))
+
 (general-define-key
- "C-x C-b" 'bufler)
+ "C-x C-b" 'danylo/buffer-list)
 
 ;; Move cursor to minibuffer (useful if lost focus, due to mouse click)
 

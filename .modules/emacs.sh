@@ -99,9 +99,10 @@ if [ $? -ne 0 ]; then
     # Install Julia language server
     cat << EOF | julia
 using Pkg
-Pkg.add(PackageSpec(url="https://github.com/julia-vscode/LanguageServer.jl", rev="3b1f69d"))
-Pkg.add(PackageSpec(url="https://github.com/julia-vscode/StaticLint.jl", rev="2d948da"))
-Pkg.add(PackageSpec(url="https://github.com/julia-vscode/SymbolServer.jl", rev="d1979b5"))
+Pkg.add(PackageSpec(url="https://github.com/julia-vscode/LanguageServer.jl", rev="52dd52a"))
+Pkg.add(PackageSpec(url="https://github.com/julia-vscode/StaticLint.jl", rev="3a8b7b1"))
+Pkg.add(PackageSpec(url="https://github.com/julia-vscode/SymbolServer.jl", rev="ddf242b"))
+Pkg.add(PackageSpec(url="https://github.com/julia-vscode/CSTParser.jl", ref="8d84e02"))
 EOF
 fi
 

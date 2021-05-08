@@ -200,9 +200,7 @@ directory."
 `emacs -Q`.")
 
 (defconst danylo/whitelist-minor-modes
-  '(solaire-global-mode
-    solaire-mode
-    global-so-long-mode
+  '(global-so-long-mode
     default-text-scale-mode
     rainbow-mode
     filladapt-mode
@@ -757,7 +755,7 @@ Patched to use original **window** instead of buffer."
   :after company
   :bind (("M-i" . helm-swoop)
          ("C-x b" . helm-buffers-list)
-         ("C-c q" . helm-imenu)
+         ("C-c q" . danylo/helm-imenu)
          ("C-x C-f" . helm-find-files)
          ("C-h f" . helm-apropos)
          ("C-h v" . helm-apropos)
@@ -844,6 +842,13 @@ height."
       (split-window-vertically danylo/helm-swoop-height)))
   (other-window 1)
   (switch-to-buffer buf))
+
+(defun danylo/helm-imenu ()
+  "Search in all alike buffers when prefixed with C-u"
+  (interactive)
+  (if current-prefix-arg
+      (helm-imenu-in-all-buffers)
+    (helm-imenu)))
 
 (use-package helm-swoop
   ;; https://github.com/emacsorphanage/helm-swoop
@@ -932,9 +937,72 @@ height."
 (use-package solaire-mode
   ;; https://github.com/hlissner/emacs-solaire-mode
   ;; Distinguish file-visiting buffers with slightly different background
-  :hook ((change-major-mode . turn-on-solaire-mode))
+  ;;
+  ;; Turns out that solaire-mode can cause significant slowdown, see
+  ;; https://github.com/hlissner/doom-emacs/issues/2217#issuecomment-792222313
+  ;;
+  ;; My workaround is to turn off solaire-mode whenever the buffer is displayed
+  ;; in >1 window
   :config
-  (solaire-global-mode +1))
+  (solaire-global-mode -1))
+
+(defun danylo/toggle-solaire (state)
+  "Turn Solaire mode on or off, only if STATE is opposite of what
+it is currently. Return T if solaire mode had to actually be
+turned on or off."
+  (let ((this-buffer (current-buffer))
+        (need-changing (not (eq state (bound-and-true-p solaire-mode)))))
+    (when need-changing
+      (if state
+          (solaire-mode +1)
+        (solaire-mode -1)))
+    need-changing))
+
+(defun danylo/buffer-shown-in-multiple-windows ()
+  "Return T if the current buffer is displayed in >1 window, and
+NIL otherwise."
+  (let ((this-buffer (current-buffer))
+        (occur-count 0))
+    (mapc
+     ;; Loop through windows in all frames
+     (lambda (fr)
+       (mapc
+        (lambda (win)
+          (when (eq (window-buffer win) this-buffer)
+            ;; Found occurence of this buffer
+            (setq occur-count (1+ occur-count))))
+        (window-list fr)))
+     (frame-list))
+    ;; Return T if and only if more than 1 occurences in visible windows
+    (> occur-count 1)))
+
+(defun danylo/smart-toggle-solaire ()
+  "Turn off Solaire mode when the buffer is being shown in >1
+window."
+  ;; Go through each buffer and turn on Solaire mode if and only if:
+  ;;  - It is a file-visiting buffer
+  ;;  - The buffer is current visible
+  ;;  - The buffer is not shown in more than one window
+  (when (buffer-file-name)
+    (let ((solaire-changed nil))
+      (mapc (lambda (buf)
+              (with-current-buffer buf
+                (when (buffer-file-name)
+                  (if (danylo/buffer-shown-in-multiple-windows)
+                      ;; Turn off solaire mode
+                      (setq solaire-changed
+                            (or solaire-changed
+                                (danylo/toggle-solaire nil)))
+                    ;; Turn on solaire mode
+                    (setq solaire-changed
+                          (or solaire-changed
+                              (danylo/toggle-solaire t)))))))
+            (buffer-list))
+      ;; Redisplay to get rid of solaire mode post-change artifacts
+      (when solaire-changed
+        (redisplay)
+        (redraw-display)))))
+(add-hook 'window-configuration-change-hook 'danylo/smart-toggle-solaire)
 
 ;;;; Region pulsing
 
@@ -3033,7 +3101,7 @@ Calls itself until the docstring has completed printing."
 (defun danylo/julia-imenu-hooks ()
   (setq imenu-generic-expression
         '(("f(x)   " "^[[:blank:]]*function \\(.*\\).*(.*$" 1)
-          ("f(x)   " "^\\([a-zA-Z0-9_\\.!]*?\\)\s*(.*?).*=.*$" 1)
+          ("f(x)   " "^\\([a-zA-Z0-9_\\.!]*?\\)\s*(.*?\\(?:).*=.*\\|,\\|{\\)$" 1)
           ("@      " "^[[:blank:]]*macro \\(.*\\).*(.*$" 1)
           ("struct " "^[^#]*\s+struct\s+\\(.*?\\)$" 1)
           ("struct " "^struct\s+\\(.*?\\)$" 1)
@@ -3157,8 +3225,8 @@ Calls itself until the docstring has completed printing."
   (setq imenu-generic-expression
         '(("var " "^\s*(\\(def\\(?:c\\(?:onst\\(?:ant\\)?\\|ustom\\)\\|ine-symbol-macro\\|parameter\\)\\)\s+\\(\\(?:\\sw\\|\\s_\\|\\\\.\\)+\\)" 2)
           ("var " "^\s*(defvar\\(?:-local\\)?\s+\\(\\(?:\\sw\\|\\s_\\|\\.\\)+\\)" 1)
-          ("f(x)" "^(defun\s+\\([a-zA-Z/\\-]*?\\)\s+(.*$" 1)
-          ("pkg " "^\s*(use-package\s*\\([a-zA-Z\\-]*\\)$" 1)
+          ("f(x)" "^(defun\s+\\([a-zA-Z0-9/\\-]*?\\)\s+(.*$" 1)
+          ("pkg " "^\s*(use-package\s*\\([a-zA-Z0-9\\-]*\\)$" 1)
           ("§   " "^[;]+\s+\\.\\.::\s+\\(.*\\)\s+::\\.\\." 1)))
   (setq imenu-create-index-function
         (lambda () (imenu--generic-function imenu-generic-expression)))

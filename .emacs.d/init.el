@@ -944,7 +944,7 @@ height."
   ;; My workaround is to turn off solaire-mode whenever the buffer is displayed
   ;; in >1 window
   :config
-  (solaire-global-mode -1))
+  (solaire-global-mode +1))
 
 (defun danylo/toggle-solaire (state)
   "Turn Solaire mode on or off, only if STATE is opposite of what
@@ -991,16 +991,15 @@ window."
                   (if (danylo/buffer-shown-in-multiple-windows)
                       ;; Turn off solaire mode
                       (setq solaire-changed
-                            (or solaire-changed
-                                (danylo/toggle-solaire nil)))
+                            (or (danylo/toggle-solaire nil)
+                                solaire-changed))
                     ;; Turn on solaire mode
                     (setq solaire-changed
-                          (or solaire-changed
-                              (danylo/toggle-solaire t)))))))
+                          (or (danylo/toggle-solaire t)
+                              solaire-changed))))))
             (buffer-list))
       ;; Redisplay to get rid of solaire mode post-change artifacts
       (when solaire-changed
-        (redisplay)
         (redraw-display)))))
 (add-hook 'window-configuration-change-hook 'danylo/smart-toggle-solaire)
 

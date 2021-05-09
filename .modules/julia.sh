@@ -22,7 +22,7 @@ echo 'using Pkg; Pkg.status()' | julia --startup-file=no | \
     grep IJulia > /dev/null 2>&1
 if [ $? -ne 0 ]; then
 
-    cat << EOF | julia
+    cat << EOF | julia --startup-file=no
 using Pkg
 Pkg.add("IJulia")
 Pkg.add("OhMyREPL")

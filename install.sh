@@ -58,6 +58,7 @@ cp -r "$DIR"/.jupyter ~
 ln -sf "$DIR"/.config/flake8 ~/.config
 
 # Julia
+mkdir -p ~/.julia/config
 ln -sf "$DIR"/.config/startup.jl ~/.julia/config
 
 # Emacs

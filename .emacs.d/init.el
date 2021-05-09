@@ -819,6 +819,7 @@ Patched to use original **window** instead of buffer."
                   "\\*Async-" "\\*Native-" "\\*.*output\\*" "\\*helm"
                   "\\*eww\\*" "\\*timer-list\\*" "\\*Disabled Command\\*"
                   "\\*Man .*\\*" "\\*wclock\\*" "\\*Warnings\\*" "\\*Bufler\\*"
+                  "\\*Ibuffer\\*" "\\*Flymake.*\\*" "\\*EGLOT.*\\*"
                   ))))
 
 (defun danylo/set-helm-window-height (orig-fun &rest args)
@@ -983,24 +984,23 @@ window."
   ;;  - It is a file-visiting buffer
   ;;  - The buffer is current visible
   ;;  - The buffer is not shown in more than one window
-  (when (buffer-file-name)
-    (let ((solaire-changed nil))
-      (mapc (lambda (buf)
-              (with-current-buffer buf
-                (when (buffer-file-name)
-                  (if (danylo/buffer-shown-in-multiple-windows)
-                      ;; Turn off solaire mode
-                      (setq solaire-changed
-                            (or (danylo/toggle-solaire nil)
-                                solaire-changed))
-                    ;; Turn on solaire mode
+  (let ((solaire-changed nil))
+    (mapc (lambda (buf)
+            (with-current-buffer buf
+              (when (buffer-file-name)
+                (if (danylo/buffer-shown-in-multiple-windows)
+                    ;; Turn off solaire mode
                     (setq solaire-changed
-                          (or (danylo/toggle-solaire t)
-                              solaire-changed))))))
-            (buffer-list))
-      ;; Redisplay to get rid of solaire mode post-change artifacts
-      (when solaire-changed
-        (redraw-display)))))
+                          (or (danylo/toggle-solaire nil)
+                              solaire-changed))
+                  ;; Turn on solaire mode
+                  (setq solaire-changed
+                        (or (danylo/toggle-solaire t)
+                            solaire-changed))))))
+          (buffer-list))
+    ;; Redisplay to get rid of solaire mode post-change artifacts
+    (when solaire-changed
+      (redraw-display))))
 (add-hook 'window-configuration-change-hook 'danylo/smart-toggle-solaire)
 
 ;;;; Region pulsing
@@ -1968,6 +1968,7 @@ to (vterm) with no argument will create a **new** vterm buffer."
   (setq flycheck-enabled-checkers '(c/c++-gcc)
         flycheck-check-syntax-automatically '(mode-enabled save)
         flycheck-display-errors-delay 0.5
+        flycheck-checker-error-threshold 400
         flycheck-indication-mode 'left-fringe
         flycheck-highlighting-style `(conditional
                                       ,most-positive-fixnum
@@ -2007,6 +2008,17 @@ to (vterm) with no argument will create a **new** vterm buffer."
   (set-face-attribute 'flycheck-error nil :underline `,danylo/red)
   (set-face-attribute 'flycheck-warning nil :underline `,danylo/yellow)
   (set-face-attribute 'flycheck-info nil :underline `,danylo/green))
+
+(with-eval-after-load "flymake"
+  ;; Update Flymake fringe indicators
+  ;; Make it look like Flycheck
+  (setq flymake-error-bitmap '(danylo/flycheck-fringe-indicator flycheck-fringe-error)
+        flymake-warning-bitmap '(danylo/flycheck-fringe-indicator flycheck-fringe-warning)
+        flymake-note-bitmap '(danylo/flycheck-fringe-indicator flycheck-fringe-info))
+  ;; Update faces
+  (set-face-attribute 'flymake-error nil :underline `,danylo/red)
+  (set-face-attribute 'flymake-warning nil :underline `,danylo/yellow)
+  (set-face-attribute 'flymake-note nil :underline `,danylo/green))
 
 (defun danylo/flycheck-list-errors ()
   "Open the list of errors in the current buffer."
@@ -2091,6 +2103,7 @@ The remainder of the function is a carbon-copy from Flycheck."
   ;; https://github.com/company-mode/company-mode
   ;;  Modular in-buffer completion framework for Emacs
   :hook ((c-mode-common . company-mode)
+         (julia-mode . company-mode)
          (emacs-lisp-mode . company-mode)
          (comint-mode . company-mode)
          (LaTeX-mode . company-mode)
@@ -2669,6 +2682,11 @@ If there is no shell open, prints a message to inform."
                  (push 'company-capf company-backends))))
   )
 
+(use-package eglot
+  ;; https://github.com/joaotavora/eglot
+  ;; A client for Language Server Protocol servers
+  )
+
 ;; Replace LSP spinner with a static gear (I like this better visually)
 
 (defun danylo/lsp-gear-show (orig-fun &rest args)
@@ -2676,17 +2694,17 @@ If there is no shell open, prints a message to inform."
   (mapc
    (lambda (buf)
      (with-current-buffer buf
-       (when (and buffer-file-name
-                  (boundp 'lsp-mode))
+       (when (and buffer-file-name (bound-and-true-p lsp-mode))
          ;; Snow process icon
          (setq mode-line-process
                (propertize
                 "   " 'display
                 (propertize (danylo/fa-icon "cogs") 'face
                             `(:family ,(all-the-icons-faicon-family)
-                                      :inherit doom-modeline-warning)))))))
+                                      :inherit mode-line-inactive)))))))
    (buffer-list))
-  (force-mode-line-update t))
+  (force-mode-line-update t)
+  (redraw-display))
 
 (defun danylo/lsp-gear-hide (orig-fun &rest args)
   "Hide the gear icon."
@@ -2699,7 +2717,9 @@ If there is no shell open, prints a message to inform."
                     (boundp 'lsp-mode))
            (setq mode-line-process ""))))
      (buffer-list))
-    (force-mode-line-update t)))
+    (force-mode-line-update t)
+    (redraw-display)))
+
 (advice-add 'lsp--spinner-start :around #'danylo/lsp-gear-show)
 (advice-add 'lsp--spinner-stop :around #'danylo/lsp-gear-hide)
 
@@ -2960,18 +2980,31 @@ blocks."
       (apply orig-fun args))))
 (advice-add 'julia-syntax-stringify :around #'danylo/ignore-triple-backticks)
 
-(use-package lsp-julia
-  ;; https://github.com/non-Jedi/lsp-julia
-  ;; Julia support for lsp-mode using LanguageServer.jl
-  :after lsp-mode
-  :ensure nil
-  :quelpa ((lsp-julia :fetcher github
-                      :repo "non-Jedi/lsp-julia"))
-  :hook ((julia-mode . (lambda () (require 'lsp-julia) (lsp))))
-  :init (setq lsp-julia-package-dir nil
-              lsp-julia-default-environment "~/.julia/environments/v1.5")
+(use-package eglot-jl
+  ;; https://github.com/non-Jedi/eglot-jl
+  ;; Wrapper for using Julia LanguageServer.jl with emacs eglot
+  :hook ((julia-mode
+          . (lambda ()
+              (setenv "JULIA_NUM_THREADS" "2")
+              (setq eglot-ignored-server-capabilites
+                    (append eglot-ignored-server-capabilites
+                            '(:hoverProvider :signatureHelpProvider)))
+              (eglot-ensure))))
+  :init
+  (setq eglot-jl-language-server-project "~/.julia/environments/v1.6"
+        eglot-connect-timeout 300)
+  (add-to-list 'eglot-stay-out-of 'imenu)
+  ;; Disable Flymake, see
+  ;; https://github.com/joaotavora/eglot/issues/123#issuecomment-444104870
+  (add-hook 'eglot--managed-mode-hook (lambda () (flymake-mode -1)))
   :config
-  (require 'lsp-julia))
+  (eglot-jl-init))
+
+(defun danylo/eglot-flymake-backend (orig-fun &rest args)
+  "Turn off Flymake diagnostics when using Julia."
+  (unless (derived-mode-p 'julia-mode)
+    (apply orig-fun args)))
+(advice-add 'eglot-flymake-backend :around #'danylo/eglot-flymake-backend)
 
 (use-package julia-staticlint
   ;; https://github.com/dmalyuta/julia-staticlint
@@ -3100,7 +3133,7 @@ Calls itself until the docstring has completed printing."
 (defun danylo/julia-imenu-hooks ()
   (setq imenu-generic-expression
         '(("f(x)   " "^[[:blank:]]*function \\(.*\\).*(.*$" 1)
-          ("f(x)   " "^\\([a-zA-Z0-9_\\.!]*?\\)\s*(.*?\\(?:).*=.*\\|,\\|{\\)$" 1)
+          ("f(x)   " "^\\([a-zA-Z0-9_\\.!]+?\\)\s*(.*?\\(?:).*=.*\\|,\\|{\\)$" 1)
           ("@      " "^[[:blank:]]*macro \\(.*\\).*(.*$" 1)
           ("struct " "^[^#]*\s+struct\s+\\(.*?\\)$" 1)
           ("struct " "^struct\s+\\(.*?\\)$" 1)

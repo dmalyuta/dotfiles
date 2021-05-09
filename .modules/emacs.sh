@@ -101,8 +101,9 @@ if [ $? -ne 0 ]; then
 using Pkg
 Pkg.add(PackageSpec(url="https://github.com/julia-vscode/LanguageServer.jl", rev="52dd52a"))
 Pkg.add(PackageSpec(url="https://github.com/julia-vscode/StaticLint.jl", rev="3a8b7b1"))
-Pkg.add(PackageSpec(url="https://github.com/julia-vscode/SymbolServer.jl", rev="ddf242b"))
-Pkg.add(PackageSpec(url="https://github.com/julia-vscode/CSTParser.jl", ref="8d84e02"))
+Pkg.add("SymbolServer")
+Pkg.add("CSTParser")
+
 EOF
 fi
 

@@ -2916,7 +2916,7 @@ lines according to the first line."
   (interactive "r")
   (if (use-region-p)
       (let* ((selection (buffer-substring start end))
-             (starting-spaces (progn (string-match "^\s+" selection)
+             (starting-spaces (progn (string-match "^\s*" selection)
                                      (match-end 0)))
              (starting-space-replace-regexp
               `,(format "^\s\\{%d\\}" starting-spaces))

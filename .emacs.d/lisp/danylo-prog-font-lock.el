@@ -202,7 +202,7 @@
                   (0 '(face danylo/class-other-face) t)
                   (1 '(face danylo/class-keyword-face) t)
                   (2 '(face danylo/class-name-face) t))
-                 ("^\\(end\\)\\(\s*#\s*struct\\)$"
+                 ("^.*\\(end\\)\\(\s*#\s*struct\\)$"
                   (1 '(face danylo/class-keyword-face) t)
                   (2 '(face font-lock-comment-face invisible t) t))
                  ("^\\(module\\)\s+\\(.*?\\)$"
@@ -215,11 +215,11 @@
                   (1 '(face danylo/return-face) nil t))
                  ("^\s*\\(continue\\|pass\\)" (1 '(face danylo/continue-face) nil t))
                  ("^\s*\\(function\\)\s+" (1 '(face danylo/function-face) nil t))
-                 ("^\s*\\(?:function.*\\)?\\(end\\)\\(\s*#\s*function\\)$"
+                 ("^.*\\(end\\)\\(\s*#\s*function\\)$"
                   (1 '(face danylo/function-face) nil t)
                   (2 '(face font-lock-comment-face invisible t) nil t))
                  ("^\s*\\(macro\\)\s+" (1 '(face danylo/macro-face) nil t))
-                 ("^\\(end\\)\\(\s*#\s*macro\\)$"
+                 ("^.*\\(end\\)\\(\s*#\s*macro\\)$"
                   (1 '(face danylo/macro-face) t)
                   (2 '(face font-lock-comment-face invisible t) t))
                  ("\\(?:true\\|false\\)" (0 '(face danylo/bool-face) nil t))

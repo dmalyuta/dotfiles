@@ -544,6 +544,29 @@ Source: https://emacs.stackexchange.com/a/50834/13661"
 (setq fast-but-imprecise-scrolling t
       scroll-conservatively 0)
 
+;;;; Scrolling behaviour
+
+(setq scroll-error-top-bottom t
+      scroll-preserve-screen-position 'always)
+
+(defun danylo/window-half-height ()
+  "Get half the window height"
+  (max 1 (/ (1- (window-height (selected-window))) 2)))
+
+(defun danylo/scroll-up-half ()
+  "Scroll up by half a window's height"
+  (interactive)
+  (scroll-up (danylo/window-half-height)))
+
+(defun danylo/scroll-down-half ()
+  "Scroll down by half a window's height"
+  (interactive)
+  (scroll-down (danylo/window-half-height)))
+
+(general-define-key
+ "C-v" 'danylo/scroll-up-half
+ "M-v" 'danylo/scroll-down-half)
+
 ;;;; eval-buffer default directory fix
 
 (defun danylo/eval-buffer-maintain-dir (orig-fun &rest args)
@@ -820,6 +843,7 @@ Patched to use original **window** instead of buffer."
                   "\\*eww\\*" "\\*timer-list\\*" "\\*Disabled Command\\*"
                   "\\*Man .*\\*" "\\*wclock\\*" "\\*Warnings\\*" "\\*Bufler\\*"
                   "\\*Ibuffer\\*" "\\*Flymake.*\\*" "\\*EGLOT.*\\*"
+                  "\\*pyright.*\\*"
                   ))))
 
 (defun danylo/set-helm-window-height (orig-fun &rest args)
@@ -3156,7 +3180,16 @@ Calls itself until the docstring has completed printing."
 (defun danylo/julia-block-comment ()
   "Julia block comment."
   (interactive)
-  (danylo/section-msg "#=" "" "\n=#" t))
+  (danylo/section-msg "#= " "" " =#" t))
+
+(defun danylo/julia-function-docstring-short ()
+  "A short Julia function docstring."
+  (interactive)
+  (if current-prefix-arg
+      ;; Inline version
+      (danylo/section-msg "\"\"\" " "" " \"\"\"" t)
+    ;; Multiline version
+    (danylo/section-msg "\"\"\"\n" "" "\n\"\"\"" t)))
 
 (defun danylo/julia-function-docstring ()
   "Julia block comment."

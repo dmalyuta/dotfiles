@@ -123,6 +123,11 @@ called (manually or automatically)."
   :type 'integer
   :group 'danylo)
 
+(defcustom danylo/scroll-fast-frac 0.1
+  "Fraction of window's height to fast scroll up/down by."
+  :type 'float
+  :group 'danylo)
+
 ;;;; Faces
 
 ;; Colors taken from doom-one theme

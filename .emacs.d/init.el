@@ -549,23 +549,34 @@ Source: https://emacs.stackexchange.com/a/50834/13661"
 (setq scroll-error-top-bottom t
       scroll-preserve-screen-position 'always)
 
-(defun danylo/window-half-height ()
-  "Get half the window height"
-  (max 1 (/ (1- (window-height (selected-window))) 2)))
+(defun danylo/window-height-fraction (&optional frac)
+  "Get FRAC of the full window height, default is 0.5."
+  (let ((frac (if frac frac 0.5)))
+    (max 1 (round (* (1- (window-height (selected-window))) frac)))))
 
-(defun danylo/scroll-up-half ()
-  "Scroll up by half a window's height"
-  (interactive)
-  (scroll-up (danylo/window-half-height)))
+(defun danylo/scroll-up-frac (&optional frac)
+  "Scroll up by FRAC of window's height, default is 0.5."
+  (let ((frac (if frac frac 0.5)))
+    (scroll-up (danylo/window-height-fraction frac))))
 
-(defun danylo/scroll-down-half ()
-  "Scroll down by half a window's height"
+(defun danylo/scroll-down-frac (&optional frac)
+  "Scroll down by FRAC of window's height, default is 0.5."
+  (let ((frac (if frac frac 0.5)))
+    (scroll-down (danylo/window-height-fraction frac))))
+
+(defun danylo/fast-scroll-up ()
+  "Scroll up in big steps."
   (interactive)
-  (scroll-down (danylo/window-half-height)))
+  (danylo/scroll-up-frac danylo/scroll-fast-frac))
+
+(defun danylo/fast-scroll-down ()
+  "Scroll down in big steps."
+  (interactive)
+  (danylo/scroll-down-frac danylo/scroll-fast-frac))
 
 (general-define-key
- "C-v" 'danylo/scroll-up-half
- "M-v" 'danylo/scroll-down-half)
+ "C-v" 'danylo/fast-scroll-up
+ "M-v" 'danylo/fast-scroll-down)
 
 ;;;; eval-buffer default directory fix
 

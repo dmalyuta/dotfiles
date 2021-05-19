@@ -123,7 +123,7 @@ called (manually or automatically)."
   :type 'integer
   :group 'danylo)
 
-(defcustom danylo/scroll-fast-frac 0.1
+(defcustom danylo/scroll-fast-frac 0.15
   "Fraction of window's height to fast scroll up/down by."
   :type 'float
   :group 'danylo)

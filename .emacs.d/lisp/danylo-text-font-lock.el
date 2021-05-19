@@ -116,41 +116,41 @@
     (add-to-list
      'danylo/text-highlight-keywords
      `("\\(\\\\\\)\\(cite.?\\)\\({\\)\\(?:.\\|\n\\)*?\\(}\\)"
-       (0 '(face danylo/latex-face-ref invisible nil) t)
-       (1 '(face danylo/latex-face-ref invisible t) t)
+       (0 '(face danylo/latex-face-ref invisible nil) nil t)
+       (1 '(face danylo/latex-face-ref invisible t) nil t)
        (2 '(face danylo/latex-face-ref-prefix display
                  '(raise ,danylo/ref-prefix-raise)) t)
-       (3 '(face danylo/latex-face-ref display "[") t)
-       (4 '(face danylo/latex-face-ref display "]") t)))
+       (3 '(face danylo/latex-face-ref display "[") nil t)
+       (4 '(face danylo/latex-face-ref display "]") nil t)))
     (add-to-list
      'danylo/text-highlight-keywords
      `("\\(\\\\\\)\\(cite.?\\)\\(\\[\\)\\(?:.\\|\n\\)*?\\(\\]\\)\\({\\)\\(?:.\\|\n\\)*?\\(}\\)"
-       (0 '(face danylo/latex-face-ref invisible nil) t)
-       (1 '(face danylo/latex-face-ref invisible t) t)
+       (0 '(face danylo/latex-face-ref invisible nil) nil t)
+       (1 '(face danylo/latex-face-ref invisible t) nil t)
        (2 '(face danylo/latex-face-ref-prefix display
                  '(raise ,danylo/ref-prefix-raise)) t)
-       (3 '(face danylo/latex-face-ref display "(") t)
-       (4 '(face danylo/latex-face-ref display ")") t)
-       (5 '(face danylo/latex-face-ref display "[") t)
-       (6 '(face danylo/latex-face-ref display "]") t)))
+       (3 '(face danylo/latex-face-ref display "(") nil t)
+       (4 '(face danylo/latex-face-ref display ")") nil t)
+       (5 '(face danylo/latex-face-ref display "[") nil t)
+       (6 '(face danylo/latex-face-ref display "]") nil t)))
     ;; >> Labels <<
     (add-to-list
      'danylo/text-highlight-keywords
-     `("\\(\\\\label{\\)\\(?:[^}]*\\)\\(}\\)"
-       (0 '(face danylo/latex-face-ref invisible nil) t)
-       (1 '(face danylo/latex-face-ref display "<") t)
-       (2 '(face danylo/latex-face-ref display ">") t)))
+     `("\\(\\\\[a-zA-Z^\n]*label{\\)\\(?:[^}\n]*\\)\\(}\\)"
+       (0 '(face danylo/latex-face-ref invisible nil) t t)
+       (1 '(face danylo/latex-face-ref display "<") t t)
+       (2 '(face danylo/latex-face-ref display ">") t t)))
     ;; >> \[...]ref{[...]} <<
     (add-to-list
      'danylo/text-highlight-keywords
      `("\\(\\\\\\)\\([^{}\\\t\r\n\s]*?\\)\\(ref\\)\\({\\)\\(?:.\\|\n\\)*?\\(}\\)"
-       (0 '(face danylo/latex-face-ref invisible nil) t)
+       (0 '(face danylo/latex-face-ref invisible nil) nil t)
        (1 '(face danylo/latex-face-ref-prefix invisible t) t)
        (2 '(face danylo/latex-face-ref-prefix display
                  '(raise ,danylo/ref-prefix-raise)) t)
        (3 '(face danylo/latex-face-ref-prefix invisible t) t)
-       (4 '(face danylo/latex-face-ref display "(") t)
-       (5 '(face danylo/latex-face-ref display ")") t))))
+       (4 '(face danylo/latex-face-ref display "(") nil t)
+       (5 '(face danylo/latex-face-ref display ")") nil t))))
   ;; ..:: Math ::..
   ;; >> Delimiters <<
   (mapcar
@@ -158,7 +158,7 @@
      (add-to-list
       'danylo/text-highlight-keywords
       `(,(format "\\(?:%s\\)" arg)
-        (0 '(face danylo/latex-face-equation-delim invisible nil) t))))
+        (0 '(face danylo/latex-face-equation-delim invisible nil) nil t))))
    `("\\$\\(?:\\$\\)?"
      ,(concat "\\\\\\(?:begin\\|end\\){\\(?:equation\\|align\\|alignat"
               "\\|gather\\|multline\\|subequations\\|optimization\\)[\\*]?}")))
@@ -184,7 +184,7 @@
     (add-to-list
      'danylo/text-highlight-keywords
      `("\\\\\\(?:begin\\|end\\){\\(?:itemize\\|enumerate\\)}"
-       (0 '(face danylo/latex-face-item invisible nil) t)))
+       (0 '(face danylo/latex-face-item invisible nil) nil t)))
     (add-to-list
      'danylo/text-highlight-keywords
      '("\\(\\\\item\\) " 1 '(face danylo/latex-face-item display "●"))))
@@ -233,11 +233,11 @@
     (add-to-list
      'danylo/text-highlight-keywords
      `("\\(\\\\if[a-zA-Z]*\\)\\(?:[\s\r\n]?\\)"
-       (1 '(face danylo/latex-boolean) t)))
+       (1 '(face danylo/latex-boolean) nil t)))
     (add-to-list
      'danylo/text-highlight-keywords
      `("\\(\\\\fi\\|\\\\else\\)\\(?:[\s\r\n]\\{1\\}\\)"
-       (1 '(face danylo/latex-boolean) t))))
+       (1 '(face danylo/latex-boolean) nil t))))
   danylo/text-highlight-keywords)
 
 ;;;###autoload

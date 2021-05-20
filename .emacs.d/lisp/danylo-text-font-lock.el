@@ -169,7 +169,7 @@
       'danylo/text-highlight-keywords
       `(,(format "\\(?:%s\\)\\(\\(?:.\\|\n\\)*?\\)\\(?:%s\\)"
                  (car arg) (cdr arg))
-        (1 '(face danylo/latex-face-equation-main invisible nil) t))))
+        (1 '(face danylo/latex-face-equation-main invisible nil) nil t))))
    '(("\\$" . "\\$")
      ("\\$\\$" . "\\$\\$")
      ("\\\\begin{equation[\\*]?}" . "\\\\end{equation[\\*]?}")

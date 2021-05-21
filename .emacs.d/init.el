@@ -2723,6 +2723,7 @@ If there is no shell open, prints a message to inform."
   :init (setq eglot-connect-timeout 300
               eglot-autoreconnect nil
               eglot-autoshutdown t)
+  :config
   (add-to-list 'eglot-stay-out-of 'imenu)
   )
 

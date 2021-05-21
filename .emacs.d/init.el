@@ -2720,6 +2720,10 @@ If there is no shell open, prints a message to inform."
 (use-package eglot
   ;; https://github.com/joaotavora/eglot
   ;; A client for Language Server Protocol servers
+  :init (setq eglot-connect-timeout 300
+              eglot-autoreconnect nil
+              eglot-autoshutdown t)
+  (add-to-list 'eglot-stay-out-of 'imenu)
   )
 
 ;; Replace LSP spinner with a static gear (I like this better visually)
@@ -3026,9 +3030,7 @@ blocks."
                             '(:hoverProvider :signatureHelpProvider)))
               (eglot-ensure))))
   :init
-  (setq eglot-jl-language-server-project "~/.julia/environments/v1.6"
-        eglot-connect-timeout 300)
-  (add-to-list 'eglot-stay-out-of 'imenu)
+  (setq eglot-jl-language-server-project "~/.julia/environments/v1.6")
   ;; Disable Flymake, see
   ;; https://github.com/joaotavora/eglot/issues/123#issuecomment-444104870
   (add-hook 'eglot--managed-mode-hook (lambda () (flymake-mode -1)))

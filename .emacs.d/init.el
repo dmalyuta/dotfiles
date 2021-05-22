@@ -898,6 +898,8 @@ height."
 (use-package helm-ag
   ;; https://github.com/emacsorphanage/helm-ag
   ;; The silver searcher with helm interface
+  ;;
+  ;; Use C-c C-e to batch-edit the search results
   :init (setq helm-ag-insert-at-point 'symbol))
 
 (use-package helm-company

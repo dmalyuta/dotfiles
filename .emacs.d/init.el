@@ -1870,6 +1870,8 @@ Default is 80"
 
 ;;;; >> Buffer menu <<
 
+(setq-default ibuffer-default-sorting-mode 'major-mode)
+
 (use-package bufler
   ;; https://github.com/alphapapa/bufler.el
   ;; Group buffers into workspaces with programmable rules
@@ -1888,8 +1890,8 @@ Default is 80"
 with C-u."
   (interactive)
   (if current-prefix-arg
-      (ibuffer)
-    (bufler)))
+      (bufler)
+    (ibuffer)))
 
 (general-define-key
  "C-x C-b" 'danylo/buffer-list)
@@ -3351,6 +3353,7 @@ LaTeX document."
                          (LaTeX-add-environments "equation*")
                          (LaTeX-add-environments "tikzpicture")
                          (LaTeX-add-environments "pgfonlayer")
+                         (LaTeX-add-environments "subequations")
                          ;; Line-breaking math
                          (add-to-list 'fill-nobreak-predicate 'texmathp)
                          ;; Helm for candidate completion

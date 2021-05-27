@@ -3354,6 +3354,7 @@ LaTeX document."
                          (LaTeX-add-environments "tikzpicture")
                          (LaTeX-add-environments "pgfonlayer")
                          (LaTeX-add-environments "subequations")
+                         (LaTeX-add-environments "align")
                          ;; Line-breaking math
                          (add-to-list 'fill-nobreak-predicate 'texmathp)
                          ;; Helm for candidate completion

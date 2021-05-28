@@ -3462,8 +3462,10 @@ Patched so that any new file by default is guessed as being its own master."
   :after company
   :hook ((LaTeX-mode
           . (lambda ()
-              (add-to-list 'company-backends 'company-reftex-labels)
-              (add-to-list 'company-backends 'company-reftex-citations))))
+              (setq company-backends
+                    (append
+                     '(company-reftex-labels company-reftex-citations)
+                     company-backends)))))
   )
 
 ;;; ..:: Gnuplot ::..

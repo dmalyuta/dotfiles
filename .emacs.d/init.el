@@ -544,6 +544,25 @@ Source: https://emacs.stackexchange.com/a/50834/13661"
 (setq fast-but-imprecise-scrolling t
       scroll-conservatively 0)
 
+(use-package fast-scroll
+  ;; https://github.com/ahungry/fast-scroll
+  ;; Ensure scrolling remains fast
+  :init (setq fast-scroll-throttle 0.05)
+  :config
+  (fast-scroll-config)
+  (fast-scroll-mode 1))
+
+(with-eval-after-load "fast-scroll"
+  (add-hook 'fast-scroll-start-hook
+            (lambda ()
+              (doom-modeline-mode 1)))
+  (add-hook 'fast-scroll-end-hook
+            (lambda ()
+              ;; "Hack" to make sure that fontification refreshes
+              (save-excursion
+                (font-lock-fontify-region (window-start) (window-end)))
+              )))
+
 ;;;; Scrolling behaviour
 
 (setq scroll-error-top-bottom t
@@ -557,12 +576,12 @@ Source: https://emacs.stackexchange.com/a/50834/13661"
 (defun danylo/scroll-up-frac (&optional frac)
   "Scroll up by FRAC of window's height, default is 0.5."
   (let ((frac (if frac frac 0.5)))
-    (scroll-up (danylo/window-height-fraction frac))))
+    (scroll-up-command (danylo/window-height-fraction frac))))
 
 (defun danylo/scroll-down-frac (&optional frac)
   "Scroll down by FRAC of window's height, default is 0.5."
   (let ((frac (if frac frac 0.5)))
-    (scroll-down (danylo/window-height-fraction frac))))
+    (scroll-down-command (danylo/window-height-fraction frac))))
 
 (defun danylo/fast-scroll-up ()
   "Scroll up in big steps."

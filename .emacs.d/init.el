@@ -3478,14 +3478,11 @@ Patched so that any new file by default is guessed as being its own master."
 (use-package company-reftex
   ;; https://github.com/TheBB/company-reftex
   ;; RefTeX backends for company-mode
-  :after company
-  :hook ((LaTeX-mode
-          . (lambda ()
-              (setq company-backends
-                    (append
-                     '(company-reftex-labels company-reftex-citations)
-                     company-backends)))))
-  )
+  :after (company tex)
+  :init (setq company-backends
+              (append
+               '(company-reftex-labels company-reftex-citations)
+               company-backends)))
 
 ;;; ..:: Gnuplot ::..
 

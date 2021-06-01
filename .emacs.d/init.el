@@ -312,6 +312,42 @@ directory."
 ;; Move cursor to top/middle/bottom
 (global-set-key (kbd "C-;") 'move-to-window-line-top-bottom)
 
+;;;; Smart move cursor in large steps
+
+(defvar danylo/cursor-current-step 1
+  "The step amount by which to move cursor.")
+
+(defvar danylo/cursor-timer nil
+  "Timer object for cursor motion amount resetting.")
+
+(defun danylo/cursor-smart-move (dir &optional arg)
+  (interactive "P")
+  (when arg
+    ;; Cancel existing timer
+    (when danylo/cursor-timer
+      (cancel-timer danylo/cursor-timer))
+    ;; Change step increment and create new timer
+    (setq danylo/cursor-current-step danylo/cursor-big-step
+          danylo/cursor-timer (run-with-idle-timer
+                               0.5 nil
+                               (lambda ()
+                                 (setq danylo/cursor-current-step 1)))))
+  (if (eq dir 'up)
+      (previous-line danylo/cursor-current-step)
+    (next-line danylo/cursor-current-step)))
+
+(defun danylo/cursor-up-smart (&optional arg)
+  (interactive "P")
+  (danylo/cursor-smart-move 'up arg))
+
+(defun danylo/cursor-down-smart (&optional arg)
+  (interactive "P")
+  (danylo/cursor-smart-move 'down arg))
+
+(general-define-key
+ "C-p" 'danylo/cursor-up-smart
+ "C-n" 'danylo/cursor-down-smart)
+
 ;; Show column number
 (setq-default column-number-mode t)
 
@@ -427,6 +463,11 @@ sequence of newlines."
 ;; Make region selection faster
 ;; https://emacs.stackexchange.com/a/61764/13661
 (setq select-active-regions nil)
+
+(use-package expand-region
+  ;; https://github.com/magnars/expand-region.el
+  ;; Increase selected region by semantic units
+  :bind ("C-=" . er/expand-region))
 
 ;; Turn off Abbrev mode
 (setq-default abbrev-mode nil)
@@ -718,10 +759,12 @@ line number to the string."
 (use-package imenu-list
   ;; https://github.com/bmag/imenu-list
   ;; Emacs plugin to show the current buffer's imenu entries
-  :after (org)
+  :after (org tex)
   :bind (:map prog-mode-map
               ("C-c t i" . danylo/imenu-list-jump)
               :map org-mode-map
+              ("C-c t i" . danylo/imenu-list-jump)
+              :map LaTeX-mode-map
               ("C-c t i" . danylo/imenu-list-jump)
               :map imenu-list-major-mode-map
               ("C-c t i" . danylo/imenu-list-jump)
@@ -1115,8 +1158,8 @@ is automatically turned on while the line numbers are displayed."
   (load-theme 'doom-one t)
   (set-face-attribute 'region nil
                       :extend nil
-                      :foreground `,danylo/yellow
-                      :background `,danylo/dark-blue)
+                      :foreground `,danylo/black
+                      :background `,danylo/yellow)
   (set-face-attribute 'font-lock-string-face nil
                       :foreground `,danylo/green))
 
@@ -1817,7 +1860,7 @@ keys), and for the size of the resulting new window."
     ;; Cancel existing timer
     (when danylo/windsize-timer
       (cancel-timer danylo/windsize-timer))
-    ;; Change step increment and crete new timer
+    ;; Change step increment and create new timer
     (setq danylo/windsize-current-step danylo/windsize-big-step
           danylo/windsize-timer (run-with-idle-timer
                                  2.0 nil
@@ -2197,7 +2240,7 @@ The remainder of the function is a carbon-copy from Flycheck."
   :init (setq projectile-enable-caching nil)
   :bind (:map projectile-mode-map
               ("C-c p" . projectile-command-map)
-              ("C-c p s g" . helm-projectile-ag))
+              ("C-c p s g" . danylo/helm-projectile-ag-grep))
   :config
   (setq projectile-globally-ignored-directories
         (append '(".svn" ".git")
@@ -2206,6 +2249,14 @@ The remainder of the function is a carbon-copy from Flycheck."
         (append '(".DS_Store" ".gitignore")
                 projectile-globally-ignored-files))
   (projectile-mode))
+
+(defun danylo/helm-projectile-ag-grep ()
+  "Normally use Ag, and if C-u provided use Grep, to search a
+project."
+  (interactive)
+  (if current-prefix-arg
+      (helm-projectile-grep)
+    (helm-projectile-ag)))
 
 ;;; ..:: Org ::..
 
@@ -3322,7 +3373,6 @@ Calls itself until the docstring has completed printing."
             (eldoc-mode -1)))
 
 ;;;; Imenu setup
-(message "%s" imenu-generic-expression)
 (defun danylo/lisp-imenu-hooks ()
   (setq imenu-generic-expression
         '(("var " "^\s*(\\(def\\(?:c\\(?:onst\\(?:ant\\)?\\|ustom\\)\\|ine-symbol-macro\\|parameter\\)\\)\s+\\(\\(?:\\sw\\|\\s_\\|\\\\.\\)+\\)" 2)
@@ -3478,11 +3528,24 @@ Patched so that any new file by default is guessed as being its own master."
 (use-package company-reftex
   ;; https://github.com/TheBB/company-reftex
   ;; RefTeX backends for company-mode
-  :after (company tex)
-  :init (setq company-backends
-              (append
-               '(company-reftex-labels company-reftex-citations)
-               company-backends)))
+  :after company
+  :hook ((LaTeX-mode
+          . (lambda ()
+              (setq company-backends
+                    (append
+                     '(company-reftex-labels company-reftex-citations)
+                     company-backends))))))
+
+;;;; Imenu setup
+(defun danylo/tex-imenu-hooks ()
+  (setq imenu-generic-expression
+        '(("§   " "^[%]+\s+\\.\\.::\s+\\(.*\\)\s+::\\.\\." 1)))
+  (setq imenu-create-index-function
+        (lambda () (imenu--generic-function imenu-generic-expression)))
+  ;; Rescan the buffer as contents are added
+  (setq imenu-auto-rescan t))
+
+(add-hook 'LaTeX-mode-hook 'danylo/tex-imenu-hooks)
 
 ;;; ..:: Gnuplot ::..
 

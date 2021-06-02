@@ -884,7 +884,8 @@ Patched to use original **window** instead of buffer."
           ("^\\(import\\|using\\|include\\)\s*$" . danylo/imenu-import-face)
           ("^\\(export\\)\s*$" . danylo/imenu-export-face)
           ("^\\(const\\)\s*$" . danylo/imenu-const-face)
-          ("^\\(§\\)\s*$" . danylo/imenu-section-face)
+          ("^\\([§]+\\)\s*$" . danylo/imenu-section-face)
+          ("^\\(::\\)\s*$" . danylo/imenu-section-face)
           ("^\\(pkg\\)\s*$" . danylo/imenu-import-face))
         helm-imenu-delimiter " ")
   (add-hook 'helm-find-files-after-init-hook
@@ -927,7 +928,8 @@ Patched to use original **window** instead of buffer."
 ;; Make Helm window taller for the following Helm functions
 (mapc (lambda (func)
         (advice-add func :around #'danylo/set-helm-window-height))
-      '(helm-imenu helm-imenu-in-all-buffers helm-buffers-list))
+      '(helm-imenu helm-imenu-in-all-buffers helm-buffers-list
+                   helm-projectile-ag helm-projectile-grep))
 
 (defun danylo/helm-swoop-split-window-function (buf &rest _args)
   "Show Helm Swoop at bottom of current window, with the correct
@@ -3539,7 +3541,11 @@ Patched so that any new file by default is guessed as being its own master."
 ;;;; Imenu setup
 (defun danylo/tex-imenu-hooks ()
   (setq imenu-generic-expression
-        '(("§   " "^[%]+\s+\\.\\.::\s+\\(.*\\)\s+::\\.\\." 1)))
+        '(("::  " "^[%]+\s+\\.\\.::\s+\\(.*\\)\s+::\\.\\." 1)
+          ("§   " "^\\\\section{\\(.*\\)}" 1)
+          ("§§  " "^\\\\subsection{\\(.*\\)}" 1)
+          ("§§§ " "^\\\\subsubsection{\\(.*\\)}" 1)
+          ))
   (setq imenu-create-index-function
         (lambda () (imenu--generic-function imenu-generic-expression)))
   ;; Rescan the buffer as contents are added

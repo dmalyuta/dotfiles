@@ -759,7 +759,7 @@ line number to the string."
 (use-package imenu-list
   ;; https://github.com/bmag/imenu-list
   ;; Emacs plugin to show the current buffer's imenu entries
-  :after (org tex)
+  :after (org latex)
   :bind (:map prog-mode-map
               ("C-c t i" . danylo/imenu-list-jump)
               :map org-mode-map
@@ -3514,7 +3514,7 @@ Patched so that any new file by default is guessed as being its own master."
 (use-package company-auctex
   ;; https://github.com/alexeyr/company-auctex
   ;; company-mode autocompletion for auctex
-  :after company
+  :after (company latex)
   :hook ((LaTeX-mode . (lambda ()
                          ;; Make completion case sensitive
                          (setq company-dabbrev-downcase nil))))
@@ -3530,7 +3530,7 @@ Patched so that any new file by default is guessed as being its own master."
 (use-package company-reftex
   ;; https://github.com/TheBB/company-reftex
   ;; RefTeX backends for company-mode
-  :after company
+  :after (company tex)
   :hook ((LaTeX-mode
           . (lambda ()
               (setq company-backends
@@ -3541,10 +3541,10 @@ Patched so that any new file by default is guessed as being its own master."
 ;;;; Imenu setup
 (defun danylo/tex-imenu-hooks ()
   (setq imenu-generic-expression
-        '(("::  " "^[%]+\s+\\.\\.::\s+\\(.*\\)\s+::\\.\\." 1)
-          ("§   " "^\\\\section{\\(.*\\)}" 1)
-          ("§§  " "^\\\\subsection{\\(.*\\)}" 1)
-          ("§§§ " "^\\\\subsubsection{\\(.*\\)}" 1)
+        '(("::  " "^\s*[%]+\s+\\.\\.::\s+\\(.*\\)\s+::\\.\\." 1)
+          ("§§§ " "^\s*\\\\subsubsection{\\(.*\\)}" 1)
+          ("§§  " "^\s*\\\\subsection{\\(.*\\)}" 1)
+          ("§   " "^\s*\\\\section{\\(.*\\)}" 1)
           ))
   (setq imenu-create-index-function
         (lambda () (imenu--generic-function imenu-generic-expression)))

@@ -192,19 +192,19 @@
   (cond ((eq major-mode 'latex-mode)
          (add-to-list
           'danylo/text-highlight-keywords
-          '("^\\(\\\\section[\\*]?{\\)\\(?:.\\|\n\\)*?\\(}\\)$"
+          '("^\s*\\(\\\\section[\\*]?{\\)\\(?:.\\|\n\\)*?\\(}\\)$"
             (0 '(face danylo/face-section) t)
             (1 '(face danylo/face-section display "§ ") t)
             (2 '(face danylo/face-section invisible t) t)))
          (add-to-list
           'danylo/text-highlight-keywords
-          '("^\\(\\\\subsection[\\*]?{\\)\\(?:.\\|\n\\)*?\\(}\\)$"
+          '("^\s*\\(\\\\subsection[\\*]?{\\)\\(?:.\\|\n\\)*?\\(}\\)$"
             (0 '(face danylo/face-subsection) t)
             (1 '(face danylo/face-subsection display "§§ ") t)
             (2 '(face danylo/face-subsection invisible t) t)))
          (add-to-list
           'danylo/text-highlight-keywords
-          '("^\\(\\\\subsubsection[\\*]?{\\)\\(?:.\\|\n\\)*?\\(}\\)$"
+          '("^\s*\\(\\\\subsubsection[\\*]?{\\)\\(?:.\\|\n\\)*?\\(}\\)$"
             (0 '(face danylo/face-subsubsection) t)
             (1 '(face danylo/face-subsubsection display "§§§ ") t)
             (2 '(face danylo/face-subsubsection invisible t) t))))

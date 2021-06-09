@@ -583,7 +583,8 @@ Source: https://emacs.stackexchange.com/a/50834/13661"
 ;;;; Scrolling performance
 
 (setq fast-but-imprecise-scrolling t
-      scroll-conservatively 0)
+      scroll-conservatively 0
+      line-move-visual t)
 
 (use-package fast-scroll
   ;; https://github.com/ahungry/fast-scroll
@@ -759,12 +760,10 @@ line number to the string."
 (use-package imenu-list
   ;; https://github.com/bmag/imenu-list
   ;; Emacs plugin to show the current buffer's imenu entries
-  :after (org latex)
+  :after org
   :bind (:map prog-mode-map
               ("C-c t i" . danylo/imenu-list-jump)
               :map org-mode-map
-              ("C-c t i" . danylo/imenu-list-jump)
-              :map LaTeX-mode-map
               ("C-c t i" . danylo/imenu-list-jump)
               :map imenu-list-major-mode-map
               ("C-c t i" . danylo/imenu-list-jump)

@@ -464,6 +464,50 @@ sequence of newlines."
 ;; https://emacs.stackexchange.com/a/61764/13661
 (setq select-active-regions nil)
 
+;; Turn off the transient mark model for highlighting region
+(setq transient-mark-mode t)
+
+(use-package highlight
+  ;; https://www.emacswiki.org/emacs/HighlightLibrary
+  ;; Provides commands to highlight text
+  )
+
+(defvar-local danylo/highlight-timer nil
+  "Timer object for region highlighting function.")
+
+(defun danylo/highlight-region (orig-fun &rest args)
+  "A throttled (jit lock-style) replacement for Emacs' built-in
+active region highlighting. By throttling the highlighting, we
+are able to maintain fast cursor speed as the highlithing does
+not have to update when the cursor is moving quickly."
+  (let ((window (nth 0 args)))
+    (if (not (and (region-active-p)
+                  (or highlight-nonselected-windows
+                      (eq window (selected-window))
+                      (and (window-minibuffer-p)
+                           (eq window (minibuffer-selected-window))))))
+        (when danylo/highlight-timer
+          (cancel-timer danylo/highlight-timer)
+          (setq danylo/highlight-timer nil)
+          (hlt-unhighlight-region (point-min) (point-max)))
+      (unless danylo/highlight-timer
+        (setq
+         danylo/highlight-timer
+         (run-with-idle-timer
+          0.02 t
+          (lambda (window)
+            (let* ((pt (window-point window))
+                   (mark (mark))
+                   (start (min pt mark))
+                   (end   (max pt mark)))
+              (hlt-unhighlight-region (point-min) (point-max))
+              (hlt-highlight-region start end 'region)
+              ))
+          window)))
+      ))
+  )
+(advice-add 'redisplay--update-region-highlight :around 'danylo/highlight-region)
+
 (use-package expand-region
   ;; https://github.com/magnars/expand-region.el
   ;; Increase selected region by semantic units

@@ -64,17 +64,23 @@ sudo apt-get -y install clangd-9
 sudo update-alternatives --install /usr/bin/clangd clangd /usr/bin/clangd-9 100
 
 if not_installed ccls; then
-    sudo apt-get -y install libtinfo5
+    sudo apt-get -y install libtinfo5 \
+         clang \
+         libclang-10-dev \
+         bear
+
     ( cd /tmp && \
 	  rm -rf ccls && \
 	  git clone --depth=1 --recursive https://github.com/MaskRay/ccls && \
 	  cd ccls && \
-	  wget -c4 http://releases.llvm.org/8.0.0/clang+llvm-8.0.0-x86_64-linux-gnu-ubuntu-18.04.tar.xz && \
-	  tar xf clang+llvm-8.0.0-x86_64-linux-gnu-ubuntu-18.04.tar.xz && \
-	  cmake -H. -BRelease -DCMAKE_BUILD_TYPE=Release \
-		-DCMAKE_PREFIX_PATH=/tmp/ccls/clang+llvm-8.0.0-x86_64-linux-gnu-ubuntu-18.04 && \
+          cmake -H. -BRelease -DCMAKE_BUILD_TYPE=Release \
+                -DCMAKE_PREFIX_PATH=/usr/lib/llvm-10 \
+                -DLLVM_INCLUDE_DIR=/usr/lib/llvm-10/include \
+                -DLLVM_BUILD_INCLUDE_DIR=/usr/include/llvm-10/ && \
 	  cmake --build Release && \
-	  cmake --build Release --target install )
+          cd Release && \
+          sudo make install)
+	  # cmake --build Release --target install
 fi
 
 # >> Python <<

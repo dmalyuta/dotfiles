@@ -489,7 +489,9 @@ not have to update when the cursor is moving quickly."
         (when danylo/highlight-timer
           (cancel-timer danylo/highlight-timer)
           (setq danylo/highlight-timer nil)
-          (hlt-unhighlight-region (point-min) (point-max)))
+          (let ((rol (window-parameter window 'internal-region-overlay)))
+            (funcall redisplay-unhighlight-region-function rol))
+          )
       (unless danylo/highlight-timer
         (setq
          danylo/highlight-timer
@@ -499,13 +501,15 @@ not have to update when the cursor is moving quickly."
             (let* ((pt (window-point window))
                    (mark (mark))
                    (start (min pt mark))
-                   (end   (max pt mark)))
-              (hlt-unhighlight-region (point-min) (point-max))
-              (hlt-highlight-region start end 'region)
-              ))
+                   (end   (max pt mark))
+                   (rol (window-parameter window 'internal-region-overlay))
+                   (new (funcall redisplay-highlight-region-function
+                                 start end window rol)))
+              (unless (equal new rol)
+                (set-window-parameter window 'internal-region-overlay
+                                      new))))
           window)))
-      ))
-  )
+      )))
 (advice-add 'redisplay--update-region-highlight :around 'danylo/highlight-region)
 
 (use-package expand-region

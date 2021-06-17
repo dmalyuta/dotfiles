@@ -478,6 +478,18 @@ sequence of newlines."
 (defvar-local danylo/highlight-timer nil
   "Timer object for region highlighting function.")
 
+(defun danylo/highlight-region-low-level (window)
+  "Low-level region highlight function."
+  (let* ((pt (window-point window))
+         (mark (mark))
+         (start (min pt mark))
+         (end   (max pt mark))
+         (rol (window-parameter window 'internal-region-overlay))
+         (new (funcall redisplay-highlight-region-function
+                       start end window rol)))
+    (unless (equal new rol)
+      (set-window-parameter window 'internal-region-overlay new))))
+
 (defun danylo/highlight-region (orig-fun &rest args)
   "A throttled (jit lock-style) replacement for Emacs' built-in
 active region highlighting. By throttling the highlighting, we
@@ -496,22 +508,11 @@ not have to update when the cursor is moving quickly."
             (funcall redisplay-unhighlight-region-function rol))
           )
       (unless danylo/highlight-timer
+        (danylo/highlight-region-low-level window) ;; Immediate highlight once
         (setq
          danylo/highlight-timer
          (run-with-idle-timer
-          0.02 t
-          (lambda (window)
-            (let* ((pt (window-point window))
-                   (mark (mark))
-                   (start (min pt mark))
-                   (end   (max pt mark))
-                   (rol (window-parameter window 'internal-region-overlay))
-                   (new (funcall redisplay-highlight-region-function
-                                 start end window rol)))
-              (unless (equal new rol)
-                (set-window-parameter window 'internal-region-overlay
-                                      new))))
-          window)))
+          0.02 t 'danylo/highlight-region-low-level window)))
       )))
 (advice-add 'redisplay--update-region-highlight :around 'danylo/highlight-region)
 

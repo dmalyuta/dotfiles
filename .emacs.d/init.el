@@ -130,25 +130,28 @@ directory."
   (danylo/fancy-icon 'all-the-icons-octicon 'all-the-icons-octicon-family
                      icon fg))
 
-(defun danylo/print-in-minibuffer (str)
+(defun danylo/print-in-minibuffer (str &optional ifempty)
   "Echo STR in the minibuffer."
   (with-selected-window (minibuffer-window)
-    (setq cursor-type nil)
-    ;; Loop through the string and replace the foreground color of each
-    ;; character to a faded color
-    (setq danylo/~i 0)
-    (while (< danylo/~i (length str))
-      (setq danylo/face~props (get-text-property danylo/~i 'face str))
-      (setq danylo/fg~pos (cl-position :foreground danylo/face~props))
-      (if danylo/fg~pos
-          (setf (nth (1+ danylo/fg~pos) danylo/face~props) `,danylo/faded)
-        (setq danylo/face~props (append danylo/face~props
-                                        `(:foreground ,danylo/faded))))
-      (put-text-property danylo/~i (1+ danylo/~i) 'face danylo/face~props str)
-      (setq danylo/~i (1+ danylo/~i)))
-    ;; Print the string to minibuffer
-    (message "%s" str)
-    (setq cursor-type t)))
+    (when (or (not ifempty)
+              ;; Check that the minibuffer does not have text already
+              (not (current-message)))
+      (setq cursor-type nil)
+      ;; Loop through the string and replace the foreground color of each
+      ;; character to a faded color
+      (setq danylo/~i 0)
+      (while (< danylo/~i (length str))
+        (setq danylo/face~props (get-text-property danylo/~i 'face str))
+        (setq danylo/fg~pos (cl-position :foreground danylo/face~props))
+        (if danylo/fg~pos
+            (setf (nth (1+ danylo/fg~pos) danylo/face~props) `,danylo/faded)
+          (setq danylo/face~props (append danylo/face~props
+                                          `(:foreground ,danylo/faded))))
+        (put-text-property danylo/~i (1+ danylo/~i) 'face danylo/face~props str)
+        (setq danylo/~i (1+ danylo/~i)))
+      ;; Print the string to minibuffer
+      (message "%s" str)
+      (setq cursor-type t))))
 
 (use-package ts
   ;; https://github.com/alphapapa/ts.el
@@ -262,9 +265,9 @@ directory."
   "Garbage collection message."
   (when (and danylo/gc-collect-print
              (not (active-minibuffer-window)))
-    (let ((message-log-max nil))
+    (let ();;((message-log-max nil))
       ;; Print "<TRASH_ICON> GC"
-      (danylo/print-in-minibuffer (format "%s GC" (danylo/fa-icon "trash")))
+      (danylo/print-in-minibuffer (format "%s GC" (danylo/fa-icon "trash")) t)
       )))
 
 (add-hook 'post-gc-hook (lambda () (danylo/gc-message)))
@@ -2269,6 +2272,18 @@ The remainder of the function is a carbon-copy from Flycheck."
         company-auto-select-first-candidate nil)
   )
 
+(defun danylo/company--continue (orig-fun &rest args)
+  "A patch so that company does not auto-trigger after completing
+a candidate. This means user has to hit the completion key again
+for continuing completion. This gets around a bug where
+company-point is nil, which causes the error `Wrong type
+argument: number-or-marker-p, nil'."
+  (when (company-call-backend 'no-cache company-prefix)
+    ;; Don't complete existing candidates, fetch new ones.
+    (setq company-candidates-cache nil))
+  (company-cancel 'unique))
+(advice-add 'company--continue :around #'danylo/company--continue)
+
 (use-package company-shell
   ;; https://github.com/Alexander-Miller/company-shell
   ;; company mode completion backends for your shell functions
@@ -2831,7 +2846,7 @@ If there is no shell open, prints a message to inform."
         lsp-eldoc-enable-hover nil ;; Show variable info on hover
         eldoc-idle-delay 0 ;; Delay before showing variable info on hover
         lsp-enable-semantic-highlighting t
-        lsp-enable-snippet nil ;; Enable arguments completion
+        lsp-enable-snippet t ;; Enable arguments completion
         lsp-headerline-breadcrumb-enable nil ;; Disable headerline breadcrumbs
         )
   :hook
@@ -2949,7 +2964,8 @@ find a definion."
   ;; https://github.com/MaskRay/emacs-ccls
   ;; Emacs client for ccls, a C/C++ language server
   :after lsp-mode
-  :hook ((c-mode-common . lsp))
+  :hook ((c-mode-common . lsp)
+         (c-mode-common . yas-minor-mode))
   :init
   (setq ccls-executable "ccls" ; Must be on PATH: assume /usr/local/bin/ccls
         ))

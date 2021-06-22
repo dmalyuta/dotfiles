@@ -983,7 +983,8 @@ Patched to use original **window** instead of buffer."
 (mapc (lambda (func)
         (advice-add func :around #'danylo/set-helm-window-height))
       '(helm-imenu helm-imenu-in-all-buffers helm-buffers-list
-                   helm-projectile-ag helm-projectile-grep))
+                   helm-projectile-ag helm-projectile-grep
+                   helm-find-files))
 
 (defun danylo/helm-swoop-split-window-function (buf &rest _args)
   "Show Helm Swoop at bottom of current window, with the correct

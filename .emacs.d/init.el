@@ -504,8 +504,11 @@ not have to update when the cursor is moving quickly."
         (when danylo/highlight-timer
           (cancel-timer danylo/highlight-timer)
           (setq danylo/highlight-timer nil)
-          (let ((rol (window-parameter window 'internal-region-overlay)))
-            (funcall redisplay-unhighlight-region-function rol))
+          (run-with-timer
+           0.02 nil
+           (lambda (window)
+             (let ((rol (window-parameter window 'internal-region-overlay)))
+               (funcall redisplay-unhighlight-region-function rol))) window)
           )
       (unless danylo/highlight-timer
         (danylo/highlight-region-low-level window) ;; Immediate highlight once
@@ -1087,6 +1090,11 @@ height."
 (setq show-paren-delay `,danylo/fontify-delay)
 (show-paren-mode 1)
 
+(defun danylo/solaire-mode-inactive-buffer ()
+  "Return t if the current buffer should not have solaire mode
+active. Basically, any non-file-visiting buffer."
+  (not (buffer-file-name (buffer-base-buffer))))
+
 (use-package solaire-mode
   ;; https://github.com/hlissner/emacs-solaire-mode
   ;; Distinguish file-visiting buffers with slightly different background
@@ -1096,6 +1104,12 @@ height."
   ;;
   ;; My workaround is to turn off solaire-mode whenever the buffer is displayed
   ;; in >1 window
+  :ensure nil
+  :quelpa ((solaire-mode :fetcher github
+                         :repo "hlissner/emacs-solaire-mode"
+                         :commit "2298fd8"))
+  :init (setq solaire-mode-themes-to-face-swap '("doom-one")
+              solaire-mode-real-buffer-fn #'danylo/solaire-mode-inactive-buffer)
   :config
   (solaire-global-mode +1))
 
@@ -1207,6 +1221,11 @@ is automatically turned on while the line numbers are displayed."
 (use-package doom-themes
   ;; https://github.com/hlissner/emacs-doom-themes
   ;; An opinionated pack of modern color-themes
+  :ensure nil
+  :quelpa ((doom-themes :fetcher github
+                        :repo "hlissner/emacs-doom-themes"
+                        :commit "b2c0ea0"
+                        :files (:defaults "themes")))
   :config
   (load-theme 'doom-one t)
   (set-face-attribute 'region nil

@@ -1166,7 +1166,9 @@ window."
           (buffer-list))
     ;; Redisplay to get rid of solaire mode post-change artifacts
     (when solaire-changed
-      (redraw-display))))
+      (redraw-display))
+    ;; Maintain the right minibuffer color
+    (solaire-mode-fix-minibuffer)))
 (add-hook 'window-configuration-change-hook 'danylo/smart-toggle-solaire)
 
 ;;;; Region pulsing

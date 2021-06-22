@@ -265,7 +265,7 @@ directory."
   "Garbage collection message."
   (when (and danylo/gc-collect-print
              (not (active-minibuffer-window)))
-    (let ();;((message-log-max nil))
+    (let ((message-log-max nil))
       ;; Print "<TRASH_ICON> GC"
       (danylo/print-in-minibuffer (format "%s GC" (danylo/fa-icon "trash")) t)
       )))

@@ -496,22 +496,14 @@ active region highlighting. By throttling the highlighting, we
 are able to maintain fast cursor speed as the highlithing does
 not have to update when the cursor is moving quickly."
   (let ((window (nth 0 args)))
-    (if (not (and (region-active-p)
-                  (or highlight-nonselected-windows
-                      (eq window (selected-window))
-                      (and (window-minibuffer-p)
-                           (eq window (minibuffer-selected-window))))))
-        (when danylo/highlight-timer
-          (cancel-timer danylo/highlight-timer)
+    (if (not (and (region-active-p) (eq window (selected-window))))
+        (progn
+          (when danylo/highlight-timer
+            (cancel-timer danylo/highlight-timer))
           (setq danylo/highlight-timer nil)
-          (run-with-timer
-           0.02 nil
-           (lambda (window)
-             (let ((rol (window-parameter window 'internal-region-overlay)))
-               (funcall redisplay-unhighlight-region-function rol))) window)
-          )
+          (let ((rol (window-parameter window 'internal-region-overlay)))
+            (funcall redisplay-unhighlight-region-function rol)))
       (unless danylo/highlight-timer
-        (danylo/highlight-region-low-level window) ;; Immediate highlight once
         (setq
          danylo/highlight-timer
          (run-with-idle-timer

@@ -1106,6 +1106,19 @@ active. Basically, any non-file-visiting buffer."
   :config
   (solaire-global-mode +1))
 
+;;;; (start patch) Turn off solaire-mode in the minibuffer
+
+(defun danylo/solaire-mode-fix-minibuffer (orig-fun &rest args)
+  "No minibuffer fix, I want solaire OFF in the minibuffer.")
+(advice-add 'solaire-mode-fix-minibuffer :around #'danylo/solaire-mode-fix-minibuffer)
+
+(defun danylo/minibuffer-no-solaire (orig-fun &rest args)
+  "Do not turn on solaire in the minibuffer"
+  (unless (minibufferp) (apply orig-fun args)))
+(advice-add 'turn-on-solaire-mode :around #'danylo/minibuffer-no-solaire)
+
+;;;; (end patch)
+
 (defun danylo/toggle-solaire (state)
   "Turn Solaire mode on or off, only if STATE is opposite of what
 it is currently. Return T if solaire mode had to actually be
@@ -1159,9 +1172,7 @@ window."
           (buffer-list))
     ;; Redisplay to get rid of solaire mode post-change artifacts
     (when solaire-changed
-      (redraw-display))
-    ;; Maintain the right minibuffer color
-    (solaire-mode-fix-minibuffer)))
+      (redraw-display))))
 (add-hook 'window-configuration-change-hook 'danylo/smart-toggle-solaire)
 
 ;;;; Region pulsing
@@ -1442,7 +1453,7 @@ Patched for my own icons."
 (advice-add 'doom-modeline-update-vcs-icon
             :around #'danylo/doom-modeline-update-vcs-icon)
 
-;;;; (start) Patch so that doom-modeline maintains highlight focus on active buffer
+;;;; (start patch) Patch so that doom-modeline maintains highlight focus on active buffer
 
 (defun danylo/internal--after-save-selected-window (orig-fun &rest args)
   "Patch to remove select-window modification in ansi-term redisplay."

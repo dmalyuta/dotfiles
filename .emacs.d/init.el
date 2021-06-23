@@ -504,6 +504,7 @@ not have to update when the cursor is moving quickly."
           (let ((rol (window-parameter window 'internal-region-overlay)))
             (funcall redisplay-unhighlight-region-function rol)))
       (unless danylo/highlight-timer
+        (danylo/highlight-region-low-level window)
         (setq
          danylo/highlight-timer
          (run-with-idle-timer

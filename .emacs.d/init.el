@@ -759,12 +759,14 @@ there. If not visible, open it but don't focus."
   ;; https://github.com/jaypei/emacs-neotree
   ;; A emacs tree plugin like NerdTree for Vim.
   :after (all-the-icons)
-  :bind (("C-c t n" . danylo/neotree-jump))
+  :bind (("C-c t n" . danylo/neotree-jump)
+         :map neotree-mode-map
+         ("C-c r" . neotree-change-root))
   :init (setq neo-theme (if (display-graphic-p) 'icons 'arrow)
               neo-window-width danylo/side-window-width
               neo-smart-open t
               neo-show-hidden-files t
-              neo-autorefresh t)
+              neo-autorefresh nil)
   (add-hook 'after-init-hook (lambda () (require 'neotree))))
 
 ;;;; Imenu
@@ -2874,7 +2876,11 @@ If there is no shell open, prints a message to inform."
         eldoc-idle-delay 0 ;; Delay before showing variable info on hover
         lsp-enable-semantic-highlighting t
         lsp-enable-snippet t ;; Enable arguments completion
+        lsp-enable-on-type-formatting nil ;; Do not auto-reformat code
         lsp-headerline-breadcrumb-enable nil ;; Disable headerline breadcrumbs
+        ;; Disabled LSP clients
+        ;; C++: use clangd
+        lsp-disabled-clients '(ccls)
         )
   :hook
   ((lsp-mode . (lambda ()
@@ -2908,8 +2914,7 @@ If there is no shell open, prints a message to inform."
                             `(:family ,(all-the-icons-faicon-family)
                                       :inherit mode-line-inactive)))))))
    (buffer-list))
-  (force-mode-line-update t)
-  (redraw-display))
+  (force-mode-line-update t))
 
 (defun danylo/lsp-gear-hide (orig-fun &rest args)
   "Hide the gear icon."
@@ -2922,8 +2927,7 @@ If there is no shell open, prints a message to inform."
                     (boundp 'lsp-mode))
            (setq mode-line-process ""))))
      (buffer-list))
-    (force-mode-line-update t)
-    (redraw-display)))
+    (force-mode-line-update t)))
 
 (advice-add 'lsp--spinner-start :around #'danylo/lsp-gear-show)
 (advice-add 'lsp--spinner-stop :around #'danylo/lsp-gear-hide)
@@ -2970,7 +2974,6 @@ find a definion."
 
 ;;; ..:: C/C++ ::..
 
-;;;; Code editing
 (add-hook 'c-mode-common-hook (lambda () (setq c-auto-newline nil)))
 
 (use-package modern-cpp-font-lock
@@ -2987,15 +2990,62 @@ find a definion."
   :init
   (setq srefactor-ui-menu-show-help nil))
 
-(use-package ccls
-  ;; https://github.com/MaskRay/emacs-ccls
-  ;; Emacs client for ccls, a C/C++ language server
-  :after lsp-mode
+(use-package cc-mode
+  ;; Emacs C-style language mode
+  :ensure nil
+  :defines (lsp-clients-clangd-args)
   :hook ((c-mode-common . lsp)
          (c-mode-common . yas-minor-mode))
+  :custom
+  (c-offsets-alist '((inline-open           . 0)
+                     (brace-list-open       . 0)
+                     (inextern-lang         . 0)
+                     (statement-case-open   . 4)
+                     (access-label          . -)
+                     (case-label            . 0)
+                     (member-init-intro     . +)
+                     (topmost-intro         . 0)
+                     (inlambda              . 0) ;; better indentation for lambda
+                     (innamespace           . 0) ;; no indentation after namespace
+                     (arglist-cont-nonempty . +)))
   :init
-  (setq ccls-executable "ccls" ; Must be on PATH: assume /usr/local/bin/ccls
-        ))
+  (setq c-basic-offset 2)
+  ;; (remove-hook 'c-mode-common-hook 'semantic-mode)
+  ;; (remove-hook 'c-mode-common-hook 'semantic)
+  :config
+  ;; Configure clangd for C++
+  (with-eval-after-load 'lsp-mode
+    (setq lsp-clients-clangd-args
+          '("-j=2"
+            "--background-index"
+            "--clang-tidy"
+            "--completion-style=bundled"
+            "--pch-storage=memory"
+            "--header-insertion=never"
+            "--suggest-missing-includes")))
+  )
+
+(defun danylo/semantic-remove-hooks ()
+  "Remove some offending functions that make completion fail with
+Semantic."
+  (remove-hook 'completion-at-point-functions
+               'semantic-analyze-completion-at-point-function)
+  (remove-hook 'completion-at-point-functions
+               'semantic-analyze-notc-completion-at-point-function)
+  (remove-hook 'completion-at-point-functions
+               'semantic-analyze-nolongprefix-completion-at-point-function))
+
+(add-hook 'semantic-mode-hook #'danylo/semantic-remove-hooks)
+
+;;;; Debugging
+
+(add-hook 'gud-mode-hook
+          (lambda ()
+            (dolist (m (list gud-mode-map gdb-inferior-io-mode-map))
+              (define-key m (kbd "C-<up>") 'nil)
+              (define-key m (kbd "C-<down>") 'nil)
+              (define-key m (kbd "C-S-<up>") 'nil)
+              (define-key m (kbd "C-S-<down>") 'nil))))
 
 ;;; ..:: Python ::..
 

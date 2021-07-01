@@ -85,3 +85,10 @@ if not_installed peek; then
     sudo apt-get update
     sudo apt-get -y install peek
 fi
+
+# ..:: Command line ::..
+
+if not_installed fzf; then
+    git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
+    ~/.fzf/install --all
+fi

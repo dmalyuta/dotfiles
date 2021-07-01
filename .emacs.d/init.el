@@ -1267,27 +1267,6 @@ is automatically turned on while the line numbers are displayed."
               jit-lock-defer-time `,danylo/fontify-delay
               font-lock-maximum-decoration nil)
 
-;;;; Tree-sitter
-
-(defun danylo/start-tree-sitter ()
-  "Start the tree-sitter minor mode."
-  (require 'tree-sitter-langs)
-  (tree-sitter-mode)
-  (tree-sitter-hl-mode))
-
-(use-package tree-sitter
-  ;; https://github.com/ubolonton/emacs-tree-sitter
-  ;; Tree-sitter in Emacs
-  )
-
-(use-package tree-sitter-langs
-  ;; https://github.com/ubolonton/tree-sitter-langs
-  ;; Language bundle for Emacs's tree-sitter package
-  :no-require t
-  :after tree-sitter
-  :hook ((python-mode . danylo/start-tree-sitter)
-         (julia-mode . danylo/start-tree-sitter)))
-
 ;;;; Font lock debug tools
 
 (use-package highlight-refontification

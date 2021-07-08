@@ -2268,7 +2268,9 @@ The remainder of the function is a carbon-copy from Flycheck."
          (emacs-lisp-mode . company-mode)
          (comint-mode . company-mode)
          (LaTeX-mode . company-mode)
-         (sh-mode . company-mode))
+         (sh-mode . company-mode)
+         (css-mode . company-mode)
+         (html-mode . company-mode))
   :bind (("S-<return>" . company-complete))
   :init
   (setq company-dabbrev-downcase 0
@@ -3721,3 +3723,15 @@ Patched so that any new file by default is guessed as being its own master."
   ;; An elisp library for working with xml, esxml and sxml.
   ;; **Loading this just because unpackaged needs it**
   )
+
+;;; ..:: HTML/CSS ::..
+
+(use-package company-web
+  ;; https://github.com/osv/company-web
+  ;; Emacs company backend for html, jade, slim
+  :hook ((html-mode
+          . (lambda ()
+              (setq company-backends
+                    (append '(company-web-html) company-backends)))))
+  :config
+  (require 'company-web-html))

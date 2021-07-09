@@ -761,7 +761,9 @@ there. If not visible, open it but don't focus."
   :after (all-the-icons)
   :bind (("C-c t n" . danylo/neotree-jump)
          :map neotree-mode-map
-         ("C-c r" . neotree-change-root))
+         ("C-c n c" . neotree-change-root)
+         ("C-c n p" . neotree-copy-node)
+         ("C-c n r" . neotree-rename-node))
   :init (setq neo-theme (if (display-graphic-p) 'icons 'arrow)
               neo-window-width danylo/side-window-width
               neo-smart-open t
@@ -2975,6 +2977,8 @@ find a definion."
   ;; Emacs C-style language mode
   :ensure nil
   :defines (lsp-clients-clangd-args)
+  :bind (:map c-mode-base-map
+              ("C-c f o" . ff-find-other-file))
   :hook ((c-mode-common . lsp)
          (c-mode-common . yas-minor-mode))
   :custom

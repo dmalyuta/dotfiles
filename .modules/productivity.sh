@@ -68,7 +68,7 @@ fi
 if [[ ! -d ~/.config/inkscape/extensions/textext ]]; then
     sudo apt-get -y install gir1.2-gtksource-3.0
     wget -4 https://github.com/textext/textext/releases/download/1.3.0/TexText-Linux-1.3.0.tar.gz -P /tmp/
-    tar -zxvf /tmp/TexText-Linux-1.3.0.tar.gz ./textext-1.3.0 -C /tmp
+    (cd /tmp/ && tar -zxvf /tmp/TexText-Linux-1.3.0.tar.gz ./textext-1.3.0)
     ( cd /tmp/textext-1.3.0/ && python3 setup.py )
 fi
 

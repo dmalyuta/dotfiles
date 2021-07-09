@@ -89,7 +89,7 @@ if not_installed pyright; then
     sudo apt-get -y install curl
 
     curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -
-    sudo apt-get -y install nodejs npm
+    sudo apt-get -y install nodejs
     sudo npm install -g pyright
 
     pip install git+https://github.com/predictive-analytics-lab/data-science-types
@@ -148,7 +148,7 @@ if not_installed mu; then
     sudo apt-get -y install libgmime-3.0-dev libxapian-dev
 
     wget -4 https://github.com/djcb/mu/releases/download/1.4.15/mu-1.4.15.tar.xz -P /tmp/
-    tar -zxvf /tmp/mu-1.4.15.tar.xz -C /tmp
+    tar -xvf /tmp/mu-1.4.15.tar.xz -C /tmp
     ( cd /tmp/mu-1.4.15/ && ./configure && make && sudo make install )
 fi
 

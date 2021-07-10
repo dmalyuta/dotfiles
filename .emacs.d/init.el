@@ -2315,7 +2315,20 @@ argument: number-or-marker-p, nil'."
   ;; https://github.com/bbatsov/projectile
   ;; Project interaction library offering tools to operate on a project level
   :init (setq projectile-enable-caching nil
-              projectile-indexing-method 'alien)
+              projectile-indexing-method 'alien
+              projectile-generic-command
+              (let ((cmd "find . -type f "))
+                ;; Add all the directories that will be ignored
+                (mapc (lambda (s)
+                        (setq cmd (concat cmd "! -ipath '" s "' ")))
+                      '("*/.ccls-cache*"
+                        "*/.clangd*"
+                        "*/.git*"
+                        "*/build/*"))
+                (setq cmd (concat cmd "-print0"))
+                cmd))
+
+
   :bind (:map projectile-mode-map
               ("C-c p" . projectile-command-map)
               ("C-c p s g" . danylo/helm-projectile-ag-grep))

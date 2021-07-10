@@ -763,6 +763,7 @@ there. If not visible, open it but don't focus."
          :map neotree-mode-map
          ("C-c n c" . neotree-change-root)
          ("C-c n p" . neotree-copy-node)
+         ("C-c n d" . neotree-delete-node)
          ("C-c n r" . neotree-rename-node))
   :init (setq neo-theme (if (display-graphic-p) 'icons 'arrow)
               neo-window-width danylo/side-window-width
@@ -2313,7 +2314,8 @@ argument: number-or-marker-p, nil'."
 (use-package projectile
   ;; https://github.com/bbatsov/projectile
   ;; Project interaction library offering tools to operate on a project level
-  :init (setq projectile-enable-caching nil)
+  :init (setq projectile-enable-caching nil
+              projectile-indexing-method 'alien)
   :bind (:map projectile-mode-map
               ("C-c p" . projectile-command-map)
               ("C-c p s g" . danylo/helm-projectile-ag-grep))

@@ -1290,7 +1290,7 @@ is automatically turned on while the line numbers are displayed."
               doom-modeline-major-mode-icon nil
               doom-modeline-icon nil
               doom-modeline-buffer-state-icon nil
-              doom-modeline-buffer-file-name-style 'file-name
+              doom-modeline-buffer-file-name-style 'truncate-upto-root
               doom-modeline-buffer-encoding nil
               doom-modeline-mu4e t
               inhibit-compacting-font-caches t
@@ -2876,6 +2876,7 @@ If there is no shell open, prints a message to inform."
         lsp-enable-snippet t ;; Enable arguments completion
         lsp-enable-on-type-formatting nil ;; Do not auto-reformat code
         lsp-headerline-breadcrumb-enable nil ;; Disable headerline breadcrumbs
+        lsp-enable-symbol-highlighting nil ;; Do not highlight symbols on hover
         ;; Disabled LSP clients
         ;; C++: use clangd
         lsp-disabled-clients '(ccls)
@@ -3037,6 +3038,14 @@ Semantic."
 
 (add-hook 'semantic-mode-hook #'danylo/semantic-remove-hooks)
 
+(use-package srefactor
+  ;; https://github.com/tuhdo/semantic-refactor
+  ;; Semantic Refactor is a refactoring tool based on Semantic parser framework
+  :bind (:map c-mode-base-map
+              ("C-c s r" . srefactor-refactor-at-point))
+  :config
+  (require 'srefactor))
+
 ;;;; Debugging
 
 (add-hook 'gud-mode-hook
@@ -3046,6 +3055,24 @@ Semantic."
               (define-key m (kbd "C-<down>") 'nil)
               (define-key m (kbd "C-S-<up>") 'nil)
               (define-key m (kbd "C-S-<down>") 'nil))))
+
+(defvar all-gud-modes '(gud-mode comint-mode gdb-locals-mode
+  gdb-frames-mode gdb-breakpoints-mode)
+  "A list of modes when using gdb")
+
+(defun kill-all-gud-buffers ()
+  "Kill all gud buffers including Debugger, Locals, Frames, Breakpoints.
+Do this after `q` in Debugger buffer."
+  (interactive)
+  (save-excursion
+        (let ((count 0))
+          (dolist (buffer (buffer-list))
+                (set-buffer buffer)
+                (when (member major-mode all-gud-modes)
+                  (setq count (1+ count))
+                  (kill-buffer buffer)
+                  (delete-other-windows))) ;; fix the remaining two windows issue
+          (message "Killed %i buffer(s)." count))))
 
 ;;; ..:: Python ::..
 

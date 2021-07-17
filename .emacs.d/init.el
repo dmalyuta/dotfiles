@@ -367,6 +367,15 @@ directory."
     ))
 (advice-add 'save-buffer :around #'danylo/save-buffer)
 
+;;;; Minibuffer yes/no query confirm with enter
+(fset 'yes-or-no-p 'y-or-n-p)
+(defun danylo/y-or-n-p-with-return (orig-func &rest args)
+  "Confirm 'yes' query in minibuffer using RET."
+  (let ((query-replace-map (copy-keymap query-replace-map)))
+    (define-key query-replace-map (kbd "RET") 'act)
+    (apply orig-func args)))
+(advice-add 'y-or-n-p :around #'danylo/y-or-n-p-with-return)
+
 ;; Better start screen
 (use-package dashboard
   ;; https://github.com/emacs-dashboard/emacs-dashboard
@@ -1075,14 +1084,20 @@ height."
 
 ;;; ..:: Theming and code aesthetics ::..
 
-;; Auto-create matching closing parentheses
-(electric-pair-mode 1)
-
 (use-package rainbow-delimiters
   ;; https://github.com/Fanael/rainbow-delimiters
   ;; Highlights delimiters such as parentheses, brackets or braces
   ;; according to their depth.
   :hook ((prog-mode . rainbow-delimiters-mode)))
+
+(use-package smartparens
+  ;; https://github.com/Fuco1/smartparens
+  ;; Minor mode for Emacs that deals with parens pairs and tries to be smart about it.
+  :init (setq sp-highlight-pair-overlay nil)
+  :config
+  (require 'smartparens-config)
+  (smartparens-global-mode t)
+  (electric-pair-mode 0))
 
 ;;;;  Highlight matching parentheses
 
@@ -2272,8 +2287,7 @@ The remainder of the function is a carbon-copy from Flycheck."
          (comint-mode . company-mode)
          (LaTeX-mode . company-mode)
          (sh-mode . company-mode)
-         (css-mode . company-mode)
-         (html-mode . company-mode))
+         (web-mode . company-mode))
   :bind (("S-<return>" . company-complete))
   :init
   (setq company-dabbrev-downcase 0
@@ -3750,7 +3764,12 @@ Patched so that any new file by default is guessed as being its own master."
          ("\\.markdown\\'" . markdown-mode))
   :init (setq markdown-command "multimarkdown")
   (add-hook 'markdown-mode-hook
-            (lambda () (filladapt-mode -1))))
+            (lambda ()
+              (filladapt-mode -1)
+              (setq-local markdown-enable-math t)))
+  (sp-local-pair 'markdown-mode "%" "%")
+  (sp-local-pair 'markdown-mode "$" "$" :insert "C-c f e")
+  (sp-local-pair 'markdown-mode "$$" "$$" :insert "C-c f d e"))
 
 ;;; ..:: Bash ::..
 
@@ -3775,9 +3794,26 @@ Patched so that any new file by default is guessed as being its own master."
 (use-package company-web
   ;; https://github.com/osv/company-web
   ;; Emacs company backend for html, jade, slim
-  :hook ((html-mode
+  :hook ((web-mode
           . (lambda ()
               (setq company-backends
                     (append '(company-web-html) company-backends)))))
   :config
   (require 'company-web-html))
+
+(use-package web-mode
+  ;; https://github.com/fxbois/web-mode
+  ;; Web template editing mode for emacs
+  :ensure nil
+  :quelpa ((web-mode :fetcher github
+                     :repo "fxbois/web-mode"
+                     :commit "3ff506a"))
+  :init
+  (add-to-list 'auto-mode-alist '("\\.html?\\'" . web-mode))
+  (add-to-list 'auto-mode-alist '("\\.[s]css?\\'" . web-mode))
+  (setq web-mode-markup-indent-offset 2
+        web-mode-css-indent-offset 2
+        web-mode-code-indent-offset 2)
+  (sp-local-pair 'web-mode "%" "%")
+  :config
+  (require 'web-mode))

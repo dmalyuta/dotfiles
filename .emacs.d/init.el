@@ -358,13 +358,14 @@ directory."
 
 (defun danylo/save-buffer (orig-fun &rest args)
   "Pretty print save buffer, preserver height of minibuffer."
-  (let ((message-truncate-lines t)
-        (this-file-name (file-name-nondirectory (buffer-file-name))))
-    (let ((inhibit-message t))
-      (apply orig-fun args))
-    (danylo/print-in-minibuffer
-     (format "%s Saved %s" (danylo/fa-icon "database") this-file-name))
-    ))
+  (save-excursion
+    (let ((message-truncate-lines t)
+          (this-file-name (file-name-nondirectory (buffer-file-name))))
+      (let ((inhibit-message t))
+        (apply orig-fun args))
+      (danylo/print-in-minibuffer
+       (format "%s Saved %s" (danylo/fa-icon "database") this-file-name))
+      )))
 (advice-add 'save-buffer :around #'danylo/save-buffer)
 
 ;;;; Minibuffer yes/no query confirm with enter
@@ -3788,9 +3789,9 @@ Patched so that any new file by default is guessed as being its own master."
   (setq poly-lock-allow-background-adjustment nil)
   :config
   (define-innermode poly-markdown-latex-innermode
-    :mode 'text-mode
-    :head-matcher "^{%\s*latex\s+.*\s*%}\n"
-    :tail-matcher "^{%\s*endlatex\s*%}\n"
+    :mode 'LaTeX-mode
+    :head-matcher "^{% latex .* %}\n"
+    :tail-matcher "^{% endlatex *%}\n"
     :head-mode 'host
     :tail-mode 'host)
   (define-innermode poly-markdown-code-innermode

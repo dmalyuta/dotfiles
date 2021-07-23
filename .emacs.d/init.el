@@ -447,6 +447,8 @@ directory."
 ;; https://emacs.stackexchange.com/questions/28736/emacs-pointcursor-movement-lag
 (setq auto-window-vscroll nil)
 
+(electric-pair-mode 1)
+
 ;;;; Better electric indentation
 
 (defvar-local danylo/do-electric-indent t)
@@ -489,15 +491,16 @@ sequence of newlines."
 
 (defun danylo/highlight-region-low-level (window)
   "Low-level region highlight function."
-  (let* ((pt (window-point window))
-         (mark (mark))
-         (start (min pt mark))
-         (end   (max pt mark))
-         (rol (window-parameter window 'internal-region-overlay))
-         (new (funcall redisplay-highlight-region-function
-                       start end window rol)))
-    (unless (equal new rol)
-      (set-window-parameter window 'internal-region-overlay new))))
+  (when (and (window-live-p window) (mark))
+    (let* ((pt (window-point window))
+           (mark (mark))
+           (start (min pt mark))
+           (end   (max pt mark))
+           (rol (window-parameter window 'internal-region-overlay))
+           (new (funcall redisplay-highlight-region-function
+                         start end window rol)))
+      (unless (equal new rol)
+        (set-window-parameter window 'internal-region-overlay new)))))
 
 (defun danylo/highlight-region (orig-fun &rest args)
   "A throttled (jit lock-style) replacement for Emacs' built-in
@@ -636,31 +639,6 @@ Source: https://emacs.stackexchange.com/a/50834/13661"
               "Prevent \"Active processes exist\" query when quitting Emacs."
               (cl-letf (((symbol-function #'process-list) (lambda ())))
                 ad-do-it))))
-
-;;;; Scrolling performance
-
-(setq fast-but-imprecise-scrolling t
-      scroll-conservatively 0
-      line-move-visual t)
-
-(use-package fast-scroll
-  ;; https://github.com/ahungry/fast-scroll
-  ;; Ensure scrolling remains fast
-  :init (setq fast-scroll-throttle 0.05)
-  :config
-  (fast-scroll-config)
-  (fast-scroll-mode 1))
-
-(with-eval-after-load "fast-scroll"
-  (add-hook 'fast-scroll-start-hook
-            (lambda ()
-              (doom-modeline-mode 1)))
-  (add-hook 'fast-scroll-end-hook
-            (lambda ()
-              ;; "Hack" to make sure that fontification refreshes
-              (save-excursion
-                (font-lock-fontify-region (window-start) (window-end)))
-              )))
 
 ;;;; Scrolling behaviour
 
@@ -1089,15 +1067,6 @@ height."
   ;; Highlights delimiters such as parentheses, brackets or braces
   ;; according to their depth.
   :hook ((prog-mode . rainbow-delimiters-mode)))
-
-(use-package smartparens
-  ;; https://github.com/Fuco1/smartparens
-  ;; Minor mode for Emacs that deals with parens pairs and tries to be smart about it.
-  :init (setq sp-highlight-pair-overlay nil)
-  :config
-  (require 'smartparens-config)
-  (smartparens-global-mode t)
-  (electric-pair-mode 0))
 
 ;;;;  Highlight matching parentheses
 
@@ -3756,20 +3725,84 @@ Patched so that any new file by default is guessed as being its own master."
 
 ;;; ..:: Markdown ::..
 
+(defun danylo/insert-liquid (&optional tag is-block markup)
+  "Insert a Liquid tag or block."
+  (interactive)
+  ;; Get Liquid tag or block definition
+  (let* ((liquid-type (if current-prefix-arg "Block" "Tag"))
+         (liquid-tag (if tag
+                         tag
+                       (read-string (format "%s: " liquid-type))))
+         liquid-markup)
+    (when (or is-block current-prefix-arg)
+      (setq liquid-markup (if is-block markup (read-string "Markup: "))))
+    ;; Print the Liquid tag or block
+    (if (or tag current-prefix-arg)
+        (progn
+          (insert (format "{%% %s %s %%}\n\n{%% end%s %%}"
+                          liquid-tag liquid-markup liquid-tag))
+          (forward-line -1))
+      (progn
+        (insert (format "{%% %s %%}" liquid-tag))
+        (re-search-backward "{% " nil t)
+        (re-search-forward (format "{%% %s" liquid-tag) nil t)))
+    )
+  )
+
+(defun danylo/insert-code ()
+  "Insert a Liquid code block."
+  (interactive)
+  (let* ((language-name (read-string "Language: "))
+         (liquid-markup (format "%s linenos" language-name)))
+    (danylo/insert-liquid "highlight" t liquid-markup)
+    ))
+
+(defun danylo/insert-latex-math-mode ()
+  "Insert latex math mode environment."
+  (interactive)
+  (danylo/insert-liquid "latexmm" t ""))
+
 (use-package markdown-mode
   ;; https://github.com/jrblevin/markdown-mode
   ;; Markdown editing major mode
   :mode (("README\\.md\\'" . gfm-mode)
          ("\\.md\\'" . markdown-mode)
          ("\\.markdown\\'" . markdown-mode))
+  :bind (:map markdown-mode-map
+              ("C-c f e" . danylo/org-emphasize-equation)
+              ("C-c i l" . danylo/insert-liquid)
+              ("C-c i c" . danylo/insert-code)
+              ("C-c i m m" . danylo/insert-latex-math-mode))
   :init (setq markdown-command "multimarkdown")
   (add-hook 'markdown-mode-hook
             (lambda ()
               (filladapt-mode -1)
-              (setq-local markdown-enable-math t)))
-  (sp-local-pair 'markdown-mode "%" "%")
-  (sp-local-pair 'markdown-mode "$" "$" :insert "C-c f e")
-  (sp-local-pair 'markdown-mode "$$" "$$" :insert "C-c f d e"))
+              (setq-local markdown-enable-math t))))
+
+(use-package poly-markdown
+  ;; https://github.com/polymode/polymode
+  ;; Framework for Multiple Major Modes in Emacs
+  :ensure t
+  :init
+  (add-to-list 'auto-mode-alist '("\\.md" . poly-markdown-mode))
+  (setq poly-lock-allow-background-adjustment nil)
+  :config
+  (define-innermode poly-markdown-latex-innermode
+    :mode 'text-mode
+    :head-matcher "^{%\s*latex\s+.*\s*%}\n"
+    :tail-matcher "^{%\s*endlatex\s*%}\n"
+    :head-mode 'host
+    :tail-mode 'host)
+  (define-innermode poly-markdown-code-innermode
+    :mode 'text-mode
+    :head-matcher "^{%\s*highlight.*%}\n"
+    :tail-matcher "^{%\s*endhighlight\s*%}\n"
+    :head-mode 'host
+    :tail-mode 'host)
+  (define-polymode poly-markdown-mode
+    :hostmode 'poly-markdown-hostmode
+    :innermodes '(poly-markdown-latex-innermode
+                  poly-markdown-code-innermode)))
 
 ;;; ..:: Bash ::..
 
@@ -3814,6 +3847,5 @@ Patched so that any new file by default is guessed as being its own master."
   (setq web-mode-markup-indent-offset 2
         web-mode-css-indent-offset 2
         web-mode-code-indent-offset 2)
-  (sp-local-pair 'web-mode "%" "%")
   :config
   (require 'web-mode))

@@ -448,7 +448,29 @@ directory."
 ;; https://emacs.stackexchange.com/questions/28736/emacs-pointcursor-movement-lag
 (setq auto-window-vscroll nil)
 
+;;;; Parentheses pairing
+
 (electric-pair-mode 1)
+
+(defvar-local danylo/electric-pair-timer nil
+  "Timer object for electric pair insertion.")
+
+(defun danylo/electric-pair-post-self-insert-function (orig-fun &rest args)
+  "Throttled electric-pair-post-self-insert-function. Basically,
+turn off electric-pair-mode if the user is flooding the input
+with characters."
+  (unless danylo/electric-pair-timer
+    (apply orig-fun args)
+    (electric-pair-mode 0)
+    (setq danylo/electric-pair-timer
+          (run-with-idle-timer
+           0.02 nil
+           (lambda ()
+             (setq danylo/electric-pair-timer nil)
+             (electric-pair-mode 1)
+             )))))
+(advice-add 'electric-pair-post-self-insert-function
+            :around #'danylo/electric-pair-post-self-insert-function)
 
 ;;;; Better electric indentation
 
@@ -3773,7 +3795,9 @@ Patched so that any new file by default is guessed as being its own master."
               ("C-c f e" . danylo/org-emphasize-equation)
               ("C-c i l" . danylo/insert-liquid)
               ("C-c i c" . danylo/insert-code)
-              ("C-c i m m" . danylo/insert-latex-math-mode))
+              ("C-c i m m" . danylo/insert-latex-math-mode)
+              :map LaTeX-mode-map
+              ("C-c i l" . danylo/insert-liquid))
   :init (setq markdown-command "multimarkdown")
   (add-hook 'markdown-mode-hook
             (lambda ()

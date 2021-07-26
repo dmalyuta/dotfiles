@@ -3788,6 +3788,7 @@ Patched so that any new file by default is guessed as being its own master."
 (use-package markdown-mode
   ;; https://github.com/jrblevin/markdown-mode
   ;; Markdown editing major mode
+  :after (latex)
   :mode (("README\\.md\\'" . gfm-mode)
          ("\\.md\\'" . markdown-mode)
          ("\\.markdown\\'" . markdown-mode))
@@ -3802,6 +3803,7 @@ Patched so that any new file by default is guessed as being its own master."
   (add-hook 'markdown-mode-hook
             (lambda ()
               (filladapt-mode -1)
+              (eldoc-mode -1)
               (setq-local markdown-enable-math t))))
 
 (use-package poly-markdown
@@ -3869,6 +3871,7 @@ Patched so that any new file by default is guessed as being its own master."
   :init
   (add-to-list 'auto-mode-alist '("\\.html?\\'" . web-mode))
   (add-to-list 'auto-mode-alist '("\\.[s]css?\\'" . web-mode))
+  (add-to-list 'auto-mode-alist '("\\.js?\\'" . web-mode))
   (setq web-mode-markup-indent-offset 2
         web-mode-css-indent-offset 2
         web-mode-code-indent-offset 2)

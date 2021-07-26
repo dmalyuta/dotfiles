@@ -1,5 +1,6 @@
 using OhMyREPL
 using BenchmarkTools
+using Pkg
 
 enable_autocomplete_brackets(false)
 
@@ -21,3 +22,10 @@ Base.collect(t::Union{Type, DataType, Union{}}) = __startup__collect(t, [])
 __startup__collect(t::Type, list) = t<:Union{} ? push!(list, t) :
     __startup__collect(t.b, push!(list, t.a))
 __startup__collect(t::Union{DataType,Core.TypeofBottom}, list) = push!(list, t)
+
+# Activate package if REPL started in a package folder.
+if isfile("Project.toml") && isfile("Manifest.toml")
+    Pkg.activate(".")
+elseif isfile("../Project.toml") && isfile("../Manifest.toml")
+    Pkg.activate("..")
+end

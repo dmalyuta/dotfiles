@@ -461,14 +461,15 @@ turn off electric-pair-mode if the user is flooding the input
 with characters."
   (unless danylo/electric-pair-timer
     (apply orig-fun args)
-    (electric-pair-mode 0)
-    (setq danylo/electric-pair-timer
-          (run-with-idle-timer
-           0.02 nil
-           (lambda ()
-             (setq danylo/electric-pair-timer nil)
-             (electric-pair-mode 1)
-             )))))
+    (unless (region-active-p)
+      (electric-pair-mode 0)
+      (setq danylo/electric-pair-timer
+            (run-with-idle-timer
+             0.02 nil
+             (lambda ()
+               (setq danylo/electric-pair-timer nil)
+               (electric-pair-mode 1)
+               ))))))
 (advice-add 'electric-pair-post-self-insert-function
             :around #'danylo/electric-pair-post-self-insert-function)
 

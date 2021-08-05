@@ -2980,7 +2980,11 @@ find a definion."
 
 ;;; ..:: C/C++ ::..
 
-(add-hook 'c-mode-common-hook (lambda () (setq c-auto-newline nil)))
+(add-hook 'c-mode-common-hook
+          (lambda ()
+            (setq c-auto-newline nil)
+            (c-set-offset 'arglist-cont 'c-lineup-arglist)
+            (c-set-offset 'arglist-cont-nonempty 'c-lineup-arglist)))
 
 (use-package modern-cpp-font-lock
   ;; https://github.com/ludwigpacifici/modern-cpp-font-lock

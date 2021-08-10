@@ -3000,12 +3000,19 @@ find a definion."
   :init
   (setq srefactor-ui-menu-show-help nil))
 
+(defun danylo/cpp-uniform-initialization ()
+  "Insert uniform initilization { <cursor> } into source."
+  (interactive)
+  (insert "{  }")
+  (backward-char 2))
+
 (use-package cc-mode
   ;; Emacs C-style language mode
   :ensure nil
   :defines (lsp-clients-clangd-args)
   :bind (:map c-mode-base-map
-              ("C-c f o" . ff-find-other-file))
+              ("C-c f o" . ff-find-other-file)
+              ("C-c {" . danylo/cpp-uniform-initialization))
   :hook ((c-mode-common . lsp)
          (c-mode-common . yas-minor-mode))
   :custom

@@ -1,3 +1,4 @@
 .jupyter/migrated
-.emacs.d/**/*.elc
 .jupyter/lab/
+.emacs.d/**/*.elc
+.emacs.d/**/.yas-compiled-snippets*

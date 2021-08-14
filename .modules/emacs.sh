@@ -41,16 +41,16 @@ if not_installed emacs; then
     sudo apt-get -y install libjansson4 libjansson-dev
 
     rm -rf /tmp/emacs/
-    git clone --branch pgtk-nativecomp --depth 1 https://github.com/flatwhatson/emacs \
+    git clone --branch master --depth 1 git://git.savannah.gnu.org/emacs.git \
 	/tmp/emacs
     ( cd /tmp/emacs/ && \
-	  git checkout pgtk-nativecomp && \
+	  git checkout master && \
 	  export CC=/usr/bin/gcc-10 CXX=/usr/bin/gcc-10 && \
 	  ./autogen.sh && \
 	  # run `./configure --help > /tmp/emacs_configure_help.txt` to print
 	  # out a file of configuration options
-          ./configure --without-gpm --with-xwidgets --with-mailutils \
-           --with-native-compilation --with-pgtk --with-json \
+          ./configure --without-gpm --with-mailutils --with-native-compilation \
+           --with-json --with-x-toolkit=gtk3 --with-xwidgets \
            CFLAGS="-O3 -mtune=native -march=native -fomit-frame-pointer" && \
 	   make NATIVE_FULL_AOT=1 -j2 && \
 	   sudo make install )

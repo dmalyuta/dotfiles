@@ -138,20 +138,6 @@ fi
 
 sudo apt-get -y install shellcheck
 
-# ..:: Mail ::..
-
-# >> Mu4e <<
-# https://www.djcbsoftware.nl/code/mu/mu4e/Installation.html
-
-if not_installed mu; then
-    # Dependencies
-    sudo apt-get -y install libgmime-3.0-dev libxapian-dev
-
-    wget -4 https://github.com/djcb/mu/releases/download/1.4.15/mu-1.4.15.tar.xz -P /tmp/
-    tar -xvf /tmp/mu-1.4.15.tar.xz -C /tmp
-    ( cd /tmp/mu-1.4.15/ && ./configure && make && sudo make install )
-fi
-
 # ..:: Other ::..
 
 # Fonts

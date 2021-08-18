@@ -107,17 +107,6 @@ in a while."
   :type 'integer
   :group 'danylo)
 
-(defcustom danylo/email-refresh-period `,(* 3 60)
-  "How often (in seconds) to get new mail."
-  :type 'integer
-  :group 'danylo)
-
-(defcustom danylo/get-mail-min-interval 5
-  "How often (in seconds) the inbox refresh command can be
-called (manually or automatically)."
-  :type 'integer
-  :group 'danylo)
-
 (defcustom danylo/windsize-big-step 3
   "Step amount for the large-step mode of window resizing."
   :type 'integer

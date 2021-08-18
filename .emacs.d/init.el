@@ -1300,7 +1300,6 @@ is automatically turned on while the line numbers are displayed."
               doom-modeline-buffer-state-icon nil
               doom-modeline-buffer-file-name-style 'truncate-upto-root
               doom-modeline-buffer-encoding nil
-              doom-modeline-mu4e t
               inhibit-compacting-font-caches t
               find-file-visit-truename t
               doom-modeline-project-detection 'project
@@ -1311,35 +1310,6 @@ is automatically turned on while the line numbers are displayed."
     "Show the number of active cursors in the buffer from `multiple-cursors'."
     (let ((meta (concat (danylo/doom-modeline-multiple-cursors))))
       meta))
-  (doom-modeline-def-segment danylo/mu4e
-    "Show notifications of any unread emails in `mu4e'."
-    (when (and doom-modeline-mu4e
-               (doom-modeline--active)
-               (not doom-modeline--limited-width-p)
-               (bound-and-true-p mu4e-alert-mode-line)
-               (numberp mu4e-alert-mode-line)
-               ;; don't display if the unread mails count is zero
-               (> mu4e-alert-mode-line 0))
-      (concat
-       (doom-modeline-spc)
-       (format "%s %s"
-               (propertize
-                ;; Trick: to make the alignment correct, replace spaces with
-                ;; the icons, which lets Emacs know that the envelope icon
-                ;; takes up the column amount equivalent to that many spaces
-                "  "
-                'face `(:inherit (doom-modeline-unread-number
-                                  doom-modeline-warning))
-                'display
-                (propertize (danylo/fa-icon "envelope")
-                            'face `(:family ,(all-the-icons-faicon-family)
-                                            :inherit (doom-modeline-unread-number
-                                                      doom-modeline-warning))))
-               (propertize `,(format "%s" mu4e-alert-mode-line)
-                           'face '(:inherit (doom-modeline-unread-number
-                                             doom-modeline-warning))))
-       (doom-modeline-spc))
-      ))
   (doom-modeline-def-segment danylo/vcs
     "Displays the current branch, colored based on its state."
     (let ((active (doom-modeline--active)))
@@ -1368,20 +1338,20 @@ is automatically turned on while the line numbers are displayed."
   ;; Default mode line
   (doom-modeline-def-modeline 'main
     '(bar window-number danylo/matches buffer-info remote-host buffer-position selection-info danylo/turbo)
-    '(danylo/mu4e input-method debug lsp major-mode danylo/vcs process))
+    '(input-method debug lsp major-mode danylo/vcs process))
   ;; Helm mode line
   (doom-modeline-def-modeline 'helm
     '(bar window-number helm-buffer-id helm-number helm-follow helm-prefix-argument) '())
   ;; Dashboard mode line
   (doom-modeline-def-modeline 'dashboard
-    '(bar window-number window-number buffer-default-directory-simple) '(danylo/mu4e))
+    '(bar window-number window-number buffer-default-directory-simple) '())
   ;; Magit
   (doom-modeline-def-modeline 'vcs
     '(bar window-number danylo/matches buffer-info buffer-position selection-info)
-    '(danylo/mu4e gnus github debug minor-modes buffer-encoding major-mode process))
+    '(gnus github debug minor-modes buffer-encoding major-mode process))
   ;; Messages and scratch buffer mode line
   (doom-modeline-def-modeline 'danylo/bare-modeline
-    '(bar window-number window-number buffer-info-simple) '(danylo/mu4e))
+    '(bar window-number window-number buffer-info-simple) '())
   ;;;; Set modeline
   (add-hook 'after-init-hook 'doom-modeline-mode)
   (add-hook 'doom-modeline-mode-hook
@@ -2473,287 +2443,6 @@ fill after inserting the link."
   "Prompt user for link to an equation reference, then insert link."
   (interactive)
   (insert (format "(%s)" (danylo/org-insert-link t))))
-
-;;; ..:: Email ::..
-
-(use-package mu4e
-  ;; https://github.com/djcb/mu
-  ;; maildir indexer/searcher + emacs mail client + guile bindings
-  :ensure nil
-  :load-path "/usr/local/share/emacs/site-lisp/mu4e"
-  :bind (:map mu4e-headers-mode-map
-              ("x" . (lambda () (interactive) (mu4e-mark-execute-all t)))
-              ("C-c C-u" . danylo/get-mail)
-              :map mu4e-view-mode-map
-              ("x" . (lambda () (interactive) (mu4e-mark-execute-all t)))
-              :map mu4e-compose-mode-map
-              ("C-c m s" . 'message-send)
-              ("C-c C-c" . nil)
-              ("C-c m a" . 'mail-add-attachment)
-              :map mu4e-main-mode-map
-              ("C-c C-u" . danylo/get-mail)
-              ("U" . danylo/get-mail))
-  :init
-  (setq message-mail-user-agent t
-        mail-user-agent 'mu4e-user-agent
-        mu4e-completing-read-function 'completing-read ; Use 'helm' to select mailboxes
-        message-kill-buffer-query nil
-        mu4e-context-policy 'pick-first
-        mu4e-compose-context-policy 'ask-if-none
-        mu4e-confirm-quit nil
-        mu4e-headers-skip-duplicates t
-        mu4e-hide-index-messages t
-        mu4e-view-show-addresses t
-        mu4e-headers-include-related nil ; [W] to toggle
-        mu4e-headers-show-threads nil
-        mu4e-compose-signature-auto-include nil
-        max-specpdl-size 5000 ; See djcbsoftware.nl/code/mu/mu4e/General.html
-        mu4e-remove-func 'danylo/mu4e~headers-remove-handler
-
-        ;; <message HTML view>
-        mu4e-view-prefer-html t
-        mu4e-view-html-plaintext-ratio-heuristic most-positive-fixnum
-        mu4e-html2text-command 'mu4e-shr2text
-        shr-color-visible-luminance-min 60
-        shr-color-visible-distance-min 5
-        shr-use-colors nil
-
-        ;; <fix failed to find message error (github.com/djcb/mu/issues/1667)>
-        mu4e-change-filenames-when-moving nil
-        mu4e-index-cleanup t
-        mu4e-index-lazy-check nil
-
-        ;; <split view settings>
-        mu4e-headers-visible-lines 15
-        mu4e-headers-visible-columns 50
-        mu4e-split-view nil
-
-        ;; <sending smtp settings>
-        sendmail-program "/usr/bin/msmtp"
-        send-mail-function 'smtpmail-send-it
-        message-sendmail-f-is-evil t
-        message-sendmail-extra-arguments '("--read-envelope-from")
-        message-send-mail-function 'message-send-mail-with-sendmail
-        message-kill-buffer-on-exit t)
-  (advice-add #'shr-colorize-region :around
-              (defun shr-no-colourise-region (&rest ignore))))
-
-(defun danylo/mu-db-busy ()
-  "Return t if the mu database is busy, otherwise nil."
-  (eq (call-process-region
-       nil nil "pgrep" nil nil nil "mu") 0))
-
-(defun danylo/mu4e-active ()
-  "Return t if a mu4e buffer is current visible, otherwise nil."
-  (let ((danylo/mu4e~is~active nil))
-    (mapc (lambda (buf)
-            (with-current-buffer buf
-              (when (and (danylo/is-mu4e-buffer buf)
-                         ;; Is the buffer visible in any frame?
-                         (get-buffer-window buf t))
-                (setq danylo/mu4e~is~active t))))
-          (buffer-list))
-    danylo/mu4e~is~active))
-
-(defun danylo/launch-mu4e (arg)
-  "Launch mu4e, or quit it if preceded by C-u"
-  (interactive "P")
-  (if arg (mu4e-quit)
-    (progn
-      (danylo/email-bg-refresh t)
-      (if (and (danylo/mu-db-busy) (not (danylo/mu4e-active)))
-          (danylo/print-in-minibuffer
-           (format "%s mu4e: database locked by another process"
-                   (danylo/fa-icon "inbox")))
-        (mu4e)))))
-
-(general-define-key
- "C-c m" 'danylo/launch-mu4e)
-
-(defvar danylo/got-mail nil
-  "Indicator that mailbox has been updated")
-
-(defun danylo/get-mail (&optional arg)
-  "Get new email silently."
-  (interactive "P")
-  (unless danylo/got-mail
-    (mu4e-update-mail-and-index t)
-    (mu4e-alert-enable-mode-line-display)
-    (danylo/print-in-minibuffer
-     (format "%s Refreshed inbox" (danylo/fa-icon "inbox")))
-    (setq danylo/got-mail t)
-    (run-with-timer danylo/get-mail-min-interval nil
-                    (lambda () (setq danylo/got-mail nil)))))
-
-(defun danylo/mu4e-error-handler (orig-fun &rest args)
-  "Handler function for showing an error.
-Patched for my own better error messages."
-  (let ((errcode (nth 0 args))
-        (errmsg (nth 1 args)))
-    (cl-case errcode
-      (1 (danylo/print-in-minibuffer "mu4e database locked"))
-      (4 (user-error "No matches for this search query."))
-      (t (error "Error %d: %s" errcode errmsg)))))
-(advice-add 'mu4e-error-handler :around #'danylo/mu4e-error-handler)
-
-(defun danylo/is-mu4e-buffer (buf)
-  "Return t if the buffer is a mu4e buffer, otherwise false."
-  (with-current-buffer buf
-    (or (derived-mode-p 'mu4e-main-mode)
-        (derived-mode-p 'mu4e-view-mode)
-        (derived-mode-p 'mu4e-compose-mode)
-        (derived-mode-p 'mu4e-headers-mode)
-        (derived-mode-p 'mu4e-org-mode)
-        (derived-mode-p 'mu4e-loading-mode))))
-
-(defun danylo/mu4e~error-wrapper (orig-fun &rest args)
-  "A better mu4e error handler that prints the error as
-non-attention grabbing faded output to minibuffer."
-  (condition-case err
-      (progn
-        (apply orig-fun args))
-    (error
-     ;; Some error occured, print what it is
-     (danylo/print-in-minibuffer
-      (format "%s mu4e: %s" (danylo/fa-icon "inbox")
-              (error-message-string err))))
-    ))
-(advice-add 'mu4e-error :around #'danylo/mu4e~error-wrapper)
-(advice-add 'mu4e~proc-sentinel :around #'danylo/mu4e~error-wrapper)
-(advice-add 'mu4e~main-menu :around #'danylo/mu4e~error-wrapper)
-(advice-add 'mu4e~main-queue-size :around #'danylo/mu4e~error-wrapper)
-(advice-add 'mu4e-view-scroll-up-or-next :around #'danylo/mu4e~error-wrapper)
-
-(defun danylo/kill-mu4e ()
-  "Kill any running mu4e process."
-  (mapc
-   (lambda (proc)
-     ;; Check if this is a mu4e process
-     (when (string-match-p
-            (regexp-quote mu4e~proc-name)
-            (process-name proc))
-       ;; Kill mu4e process
-       (ignore-errors (signal-process proc 'SIGINT))))
-   (process-list)))
-
-(defun danylo/email-bg-refresh (&optional stay)
-  "Refresh the inbox in the background. This function does nothing
-if a mu4e is currently visible in any frame. I judge that it is
-dangerous then to kill the mu4e process, as it might be used by
-something important that the user is currently doing.
-
-If STAY is not nil, then do not kill the mu4e process created
-when getting mail."
-  (interactive)
-  ;; If inactive, proceed to refreshing the email
-  (unless (danylo/mu4e-active)
-    ;; Delete every mu4e buffer ("clean up")
-    (mapc (lambda (buf)
-            (when (danylo/is-mu4e-buffer buf) (kill-buffer buf)))
-          (buffer-list))
-    ;; Kill mu4e silently if this Emacs instance owns the process
-    (danylo/kill-mu4e)
-    ;; Get new mail, if no mu4e process is currently running
-    (unless (danylo/mu-db-busy)
-      (danylo/get-mail))
-    ;; Clean up by killing the mu4e process that got created
-    (unless stay
-      (run-with-timer danylo/get-mail-min-interval nil
-                      (lambda () (danylo/kill-mu4e))))
-    ))
-
-(with-eval-after-load "mu4e"
-  ;; Disable message sending with C-c C-s (make it more complicated to
-  ;; not send messages by accident)
-  (define-key mu4e-compose-mode-map (kbd "C-c C-s") 'nil)
-  ;; Setup a timer to update the email inbox in the background
-  (run-with-timer danylo/email-refresh-period
-                  danylo/email-refresh-period
-                  'danylo/email-bg-refresh))
-
-(defun danylo/mu4e~headers-remove-handler (docid &optional skip-hook)
-  "This is a patched version of mu4e~headers-remove-handler in
-mu4e-headers.el. The original function throws an error after
-sending a message that was previously a draft, because it tries
-to delete the window that held the message editing bufer. This
-function does not delete the window, which has the additional
-benefit of preserving window layout."
-  (when (buffer-live-p (mu4e-get-headers-buffer))
-    (mu4e~headers-remove-header docid t))
-  ;; if we were viewing this message, close it now.
-  (when (and (mu4e~headers-view-this-message-p docid)
-             (buffer-live-p (mu4e-get-view-buffer)))
-    (kill-buffer (mu4e-get-view-buffer)))
-  (unless skip-hook
-    (run-hooks 'mu4e-message-changed-hook)))
-
-(defun danylo/message-kill-buffer (orig-fun &rest args)
-  "Patched message-kill-buffer from gnus/message.el.gz.
-This version deletes backup files without asking."
-  (interactive)
-  (when (or (not (buffer-modified-p))
-            (not message-kill-buffer-query)
-            (yes-or-no-p "Message modified; kill anyway? "))
-    (let ((actions message-kill-actions)
-          (draft-article message-draft-article)
-          (auto-save-file-name buffer-auto-save-file-name)
-          (file-name buffer-file-name)
-          (modified (buffer-modified-p)))
-      (setq buffer-file-name nil)
-      (kill-buffer (current-buffer))
-      (when (and (or (and auto-save-file-name
-                          (file-exists-p auto-save-file-name))
-                     (and file-name
-                          (file-exists-p file-name))))
-        (ignore-errors
-          (delete-file auto-save-file-name))
-        (let ((message-draft-article draft-article))
-          (message-disassociate-draft)))
-      (message-do-actions actions))))
-(advice-add 'message-kill-buffer :around #'danylo/message-kill-buffer)
-
-(with-eval-after-load "mu4e"
-  (set-face-attribute 'mu4e-unread-face nil :foreground `,danylo/yellow)
-  (set-face-attribute 'mu4e-header-highlight-face nil :underline nil))
-
-;; Do not back up email while writing it, which makes drafts
-;; accumulate
-(add-hook 'mu4e-compose-mode-hook
-          #'(lambda ()
-              (auto-save-mode -1)
-              (make-local-variable 'make-backup-files)
-              (setq make-backup-files nil)))
-
-(use-package danylo-email
-  ;; Personal mu4e context setup.
-  :ensure nil
-  :load-path danylo/emacs-custom-lisp-dir)
-
-;;;; Signature before message history
-
-(defun danylo/insert-mu4e-signature ()
-  "Insert the email signature."
-  (when (stringp mu4e-compose-signature)
-    (unless (member mu4e-compose-type '(edit resend))
-      (save-excursion
-        (message-goto-body)
-        ;; Go to the first empty line in the message body, which must
-        ;; be the one right after the Org-mode headers
-        (setq empty-line nil)
-        (while (not empty-line)
-          (let ((num-chars (- (line-end-position)
-                              (line-beginning-position))))
-            (if (eq num-chars 0)
-                (setq empty-line t)
-              (forward-line))))
-        (insert (concat "\n\n" mu4e-compose-signature))))))
-(add-hook 'mu4e-compose-mode-hook 'danylo/insert-mu4e-signature)
-
-(use-package mu4e-alert
-  ;; https://github.com/iqbalansari/mu4e-alert
-  ;; Desktop notifications and modeline display for mu4e
-  :init
-  (add-hook 'after-init-hook #'mu4e-alert-enable-mode-line-display))
 
 ;;; ..:: Git ::..
 

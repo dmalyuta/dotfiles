@@ -166,7 +166,7 @@
                   (0 '(face danylo/class-name-face) t)
                   (1 '(face danylo/class-keyword-face) t)
                   (2 '(face danylo/class-name-colon) t))
-                 ("self" (0 '(face danylo/self-face) t))
+                 ("\\(self\\)[\s,\\.)]" (1 '(face danylo/self-face) t))
                  ("^\s*\\(return\\|break\\|raise\\)" (1 '(face danylo/return-face) t))
                  ("^\s*\\(continue\\|pass\\)" (1 '(face danylo/continue-face) t))
                  ("^\s*\\(def\\)\s+" (1 '(face danylo/function-face) t))

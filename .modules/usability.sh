@@ -69,6 +69,14 @@ if [ ! -d ~/.local/share/gnome-shell/extensions/arcmenu@arcmenu.com ]; then
 	  "$DIR"/.config/dconf/arcmenu.dconf
 fi
 
+# Focus window without "Window is ready" notification
+EXTDIR="$HOME/.local/share/gnome-shell/extensions/focus-my-window@varianto25.com"
+if [ ! -d "$EXTDIR" ]; then
+    mkdir -p "$EXTDIR"
+    git clone https://github.com/v-dimitrov/gnome-shell-extension-stealmyfocus /tmp/stealfocus
+    mv /tmp/stealfocus/* "$EXTDIR"
+fi
+
 # >> Now update the Gnome configuration <<
 
 # Restart the Gnome shell, to make sure everything is up-to-date
@@ -87,7 +95,8 @@ gsettings set org.gnome.desktop.interface cursor-size 22
 # Enable the extensions
 gnome-extensions disable ubuntu-dock@ubuntu.com
 gsettings set org.gnome.shell enabled-extensions \
-	  "['dash-to-panel@jderose9.github.com', 'arcmenu@arcmenu.com']"
+	  "['dash-to-panel@jderose9.github.com', 'arcmenu@arcmenu.com', \
+            'focus-my-window@varianto25.com']"
 
 # Use Alt as window action key (e.g. to drag window around)
 gsettings set org.gnome.desktop.wm.preferences mouse-button-modifier '<Alt>'

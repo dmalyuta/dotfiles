@@ -2872,7 +2872,8 @@ Do this after `q` in Debugger buffer."
 (defun danylo/python-imenu-hooks ()
   (setq imenu-generic-expression
         '(("f(x) " "^[[:blank:]]*def \\(.*\\).*(.*$" 1)
-          ("class" "^class \\(.*\\).*:$" 1)))
+          ("class" "^class \\(.*\\).*:$" 1)
+          ("§    " "^\s*[#]+\s+\\.\\.::\s+\\(.*\\)\s+::\\.\\.\s*$" 1)))
   (setq imenu-create-index-function 'danylo/python-imenu)
   ;; Rescan the buffer as contents are added
   (setq imenu-auto-rescan t)

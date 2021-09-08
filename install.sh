@@ -56,6 +56,8 @@ sudo ln -sf "$DIR"/.peripherals/70-synaptics.conf /usr/share/X11/xorg.conf.d
 # Python
 cp -r "$DIR"/.jupyter ~
 ln -sf "$DIR"/.config/flake8 ~/.config
+ln -sf "$DIR"/.ipython/profile_default/startup/fzf_backward_search.py \
+   ~/.ipython/profile_default/startup
 
 # Julia
 mkdir -p ~/.julia/config

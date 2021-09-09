@@ -10,6 +10,11 @@
         warning-suppress-log-types '((comp))
         warning-suppress-types '((comp))))
 
+;; Suppress general warnings
+(setq warning-suppress-types
+      (append warning-suppress-types
+              '((server) (comp))))
+
 ;;; ..:: Package management ::..
 
 (require 'package)

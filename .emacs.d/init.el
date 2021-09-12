@@ -2933,10 +2933,13 @@ lines according to the first line."
   (interactive "r")
   (let ((command (danylo/smart-select-region start end)))
     (when command
-      (setq command (format "%s\n" command))
-      (danylo/shell-exec danylo/python-buffer-name "%autoindent\n")
-      (danylo/shell-exec danylo/python-buffer-name command)
-      (danylo/shell-exec danylo/python-buffer-name "%autoindent\n")
+      (let ((tmp  (car kill-ring)))
+        (kill-new command t)
+        (danylo/shell-exec danylo/python-buffer-name "%paste")
+        ;; Wait a little before restoring the kill ring, so that Ipython has a
+        ;; change to copy over the text
+        (run-with-timer 0.1 nil (lambda (tmp) (kill-new tmp t)) tmp)
+        )
       )))
 
 (defun danylo/python-config ()

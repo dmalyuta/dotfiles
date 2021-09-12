@@ -173,7 +173,7 @@
                  ("^\s*\\(@property\\)" (1 '(face danylo/property-face) t))
                  ("^\s*\\(import\\|from\\)" (1 '(face danylo/import-face) t))
                  ("^\s*\\(?:from\\).*\\(import\\)" (1 '(face danylo/import-face) t))
-                 ("\\(?:import\\).*\\(as\\)" (1 '(face danylo/import-face) t))
+                 ("\\(?:import\\).*\s+\\(as\\)\s+" (1 '(face danylo/import-face) t))
                  ("\\(?:True\\|False\\)" (0 '(face danylo/bool-face) nil))
                  ("^\s*\\(?:if\\|for\\|while\\|elif\\|else\\)[\s:]+"
                   (0 '(face danylo/control-face) t))

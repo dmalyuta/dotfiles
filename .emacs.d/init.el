@@ -466,7 +466,8 @@ turn off electric-pair-mode if the user is flooding the input
 with characters."
   (unless danylo/electric-pair-timer
     (apply orig-fun args)
-    (unless (region-active-p)
+    (unless (or (region-active-p)
+                (bound-and-true-p multiple-cursors-mode))
       (electric-pair-mode 0)
       (setq danylo/electric-pair-timer
             (run-with-idle-timer

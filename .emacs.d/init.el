@@ -2928,18 +2928,43 @@ lines according to the first line."
     (message "No region selected.")
     nil))
 
+(defconst python-paste-refresh-rate 0.1
+  "How often to check IPython REPL if %paste has finished.")
+
 (defun danylo/python-shell-run-region (start end)
   "Run highlighted selection in file."
   (interactive "r")
   (let ((command (danylo/smart-select-region start end)))
     (when command
-      (let ((tmp  (car kill-ring)))
+      (let ((kill-ring-top  (car kill-ring))
+            (start-point (danylo/shell-get-point
+                          danylo/python-buffer-name)))
         (kill-new command t)
         (danylo/shell-exec danylo/python-buffer-name "%paste")
-        ;; Wait a little before restoring the kill ring, so that Ipython has a
-        ;; change to copy over the text
-        (run-with-timer 0.1 nil (lambda (tmp) (kill-new tmp t)) tmp)
+        ;; Wait until Ipython has copied over the text
+        (run-with-timer
+         python-paste-refresh-rate nil
+         'danylo/python-restore-kill-ring-after-paste
+         kill-ring-top start-point)
         )
+      )))
+
+(defun danylo/python-restore-kill-ring-after-paste (kill-ring-top start-point)
+  "Restore the kill ring top item after %paste in IPython."
+  (let* ((end-point (danylo/shell-get-point
+                     danylo/python-buffer-name))
+         (ipython-pasted-text
+          (danylo/shell-get-content danylo/python-buffer-name
+                                    start-point end-point))
+         (ipython-paste-end
+          (string-match "^## -- End pasted text --$"
+                        ipython-pasted-text)))
+    (if ipython-paste-end
+        (kill-new kill-ring-top t)
+      (run-with-timer
+       python-paste-refresh-rate nil
+       'danylo/python-restore-kill-ring-after-paste
+       kill-ring-top start-point)
       )))
 
 (defun danylo/python-config ()

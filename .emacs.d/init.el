@@ -1472,6 +1472,17 @@ when there is another buffer printing out information."
 ;; Use spaces instead of tabs
 (setq-default indent-tabs-mode nil)
 
+;; Disable secondary selection
+;; (https://www.reddit.com/r/emacs/comments/3c61zl/abolish_the_secondary_selection_quick_and_easy/)
+;; Also see how to unhighlight a secondary selection:
+;;  https://stackoverflow.com/a/54665784
+;;  Basically, do (delete-overlay mouse-secondary-overlay)
+(global-unset-key (kbd "<M-drag-mouse-1>")) ;; was mouse-set-secondary
+(global-unset-key (kbd "<M-down-mouse-1>")) ;; was mouse-drag-secondary
+(global-unset-key (kbd "<M-mouse-1>"))	    ;; was mouse-start-secondary
+(global-unset-key (kbd "<M-mouse-2>"))	    ;; was mouse-yank-secondary
+(global-unset-key (kbd "<M-mouse-3>"))	    ;; was mouse-secondary-save-then-kill
+
 ;; Commenting keybindings
 (general-define-key
  "C-x C-;" 'comment-dwim

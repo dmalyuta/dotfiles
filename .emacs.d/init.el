@@ -2946,6 +2946,7 @@ lines according to the first line."
   "Run highlighted selection in file."
   (interactive "r")
   (let ((command (danylo/smart-select-region start end)))
+    (deactivate-mark)
     (when command
       (let ((kill-ring-top  (car kill-ring))
             (start-point (danylo/shell-get-point

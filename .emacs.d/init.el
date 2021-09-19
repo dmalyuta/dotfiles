@@ -2697,15 +2697,6 @@ find a definion."
   ;; C++ font-lock for Emacs
   :hook ((c++-mode . modern-c++-font-lock-mode)))
 
-(use-package srefactor
-  ;; https://github.com/tuhdo/semantic-refactor
-  ;; C/C++ refactoring tool based on Semantic parser framework
-  :bind (:map c-mode-base-map
-              ("M-RET" . srefactor-refactor-at-point))
-  :hook ((c-mode-common . semantic-mode))
-  :init
-  (setq srefactor-ui-menu-show-help nil))
-
 (use-package yasnippet
   ;; https://github.com/joaotavora/yasnippet
   ;; A template system for Emacs
@@ -2765,9 +2756,12 @@ Semantic."
 
 (use-package srefactor
   ;; https://github.com/tuhdo/semantic-refactor
-  ;; Semantic Refactor is a refactoring tool based on Semantic parser framework
+  ;; C/C++ refactoring tool based on Semantic parser framework
   :bind (:map c-mode-base-map
-              ("C-c s r" . srefactor-refactor-at-point))
+              ("M-RET" . srefactor-refactor-at-point))
+  :hook ((c-mode-common . semantic-mode))
+  :init
+  (setq srefactor-ui-menu-show-help nil)
   :config
   (require 'srefactor))
 

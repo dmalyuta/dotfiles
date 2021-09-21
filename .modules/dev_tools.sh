@@ -14,6 +14,11 @@ if [ "$GIT_VERSION" -lt 2 ]; then
     sudo apt-get -y install git
 fi
 
+# Git GUI
+sudo apt-get -y install gitg
+
+# ..:: Misc ::..
+
 sudo apt-get -y install gitk \
      build-essential \
      libgoogle-glog-dev \
@@ -23,15 +28,29 @@ sudo apt-get -y install gitk \
      silversearcher-ag \
      screen \
      tmux \
-     htop \
      sshpass \
      tree \
      bash-completion \
      meld
 
+# ..:: System resource monitoring ::..
+
+sudo apt-get -y install htop
+
+if not_installed btm; then
+    ( cd /tmp &&
+      curl -LO https://github.com/ClementTsang/bottom/releases/download/0.6.4/bottom_0.6.4_amd64.deb &&
+      sudo dpkg -i bottom_0.6.4_amd64.deb )
+fi
+
+if not_installed zenith; then
+    wget -4 https://github.com/bvaisvil/zenith/releases/download/0.12.0/zenith_0.12.0-1_amd64.deb -P /tmp/
+    ( cd /tmp && sudo dpkg -i zenith_0.12.0-1_amd64.deb )
+fi
+
 # >> Git GUI <<
 
-sudo apt-get -y install gitg
+
 
 # ..:: CMake ::..
 

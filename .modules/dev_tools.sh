@@ -48,10 +48,6 @@ if not_installed zenith; then
     ( cd /tmp && sudo dpkg -i zenith_0.12.0-1_amd64.deb )
 fi
 
-# >> Git GUI <<
-
-
-
 # ..:: CMake ::..
 
 if not_installed cmake; then

@@ -31,7 +31,8 @@ sudo apt-get -y install gitk \
      sshpass \
      tree \
      bash-completion \
-     meld
+     meld \
+     kcachegrind
 
 # ..:: System resource monitoring ::..
 

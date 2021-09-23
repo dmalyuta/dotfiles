@@ -37,6 +37,10 @@ if ! (conda info --envs | grep -q $PYENV_NAME); then
     pip install black
 fi
 
+# ..:: Other tools ::..
+
+sudo apt-get -y install pyprof2calltree
+
 # ..:: Jupyter notebooks ::..
 
 sudo apt-get -y install jupyter-notebook

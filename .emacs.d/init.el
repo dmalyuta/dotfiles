@@ -2808,7 +2808,9 @@ Do this after `q` in Debugger buffer."
               ("RET" . 'newline-and-indent))
   :init (setq python-indent-guess-indent-offset t
               python-indent-guess-indent-offset-verbose nil
-              python-fill-docstring-style 'pep-257-nn))
+              python-fill-docstring-style 'pep-257-nn)
+  (remove-hook 'python-mode-hook 'semantic-mode)
+  (remove-hook 'python-mode-hook 'semantic))
 
 ;;;; LSP
 

@@ -35,6 +35,7 @@ if ! (conda info --envs | grep -q $PYENV_NAME); then
     pip install pandas
     pip install pytest
     pip install black
+    pip install pyfzf
 fi
 
 # ..:: Other tools ::..

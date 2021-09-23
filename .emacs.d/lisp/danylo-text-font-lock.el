@@ -51,6 +51,7 @@
 
 (defface danylo/latex-face-item
   `((t (:foreground ,danylo/red
+                    :height 1.0
                     :inherit default)))
   "Face for LaTeX list item."
   :group 'danylo)
@@ -187,7 +188,7 @@
        (0 '(face danylo/latex-face-item invisible nil) nil t)))
     (add-to-list
      'danylo/text-highlight-keywords
-     '("\\(\\\\item\\) " 1 '(face danylo/latex-face-item display "●"))))
+     '("\\(\\\\item\\) " 1 '(face danylo/latex-face-item display "*"))))
   ;; ..:: Sections ::..
   (cond ((eq major-mode 'latex-mode)
          (add-to-list

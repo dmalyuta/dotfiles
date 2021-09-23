@@ -1539,6 +1539,7 @@ when there is another buffer printing out information."
   :config
   (global-hl-todo-mode)
   (add-to-list 'hl-todo-keyword-faces `("TODO" . ,danylo/black))
+  (add-to-list 'hl-todo-keyword-faces `("DONE" . ,danylo/black))
   (add-to-list 'hl-todo-keyword-faces `("FIXME" . ,danylo/black)))
 
 (use-package highlight-symbol
@@ -2752,6 +2753,9 @@ Semantic."
   (remove-hook 'completion-at-point-functions
                'semantic-analyze-nolongprefix-completion-at-point-function))
 
+;; Note to self: look at `semantic-idle-scheduler-setup-timers' function for
+;; the functions that run on an idle timer basis to parse files, when using
+;; Semantic mode
 (add-hook 'semantic-mode-hook #'danylo/semantic-remove-hooks)
 
 (use-package srefactor
@@ -2887,7 +2891,8 @@ Do this after `q` in Debugger buffer."
         '(("f(x) " "^[[:blank:]]*def \\(.*\\).*(.*$" 1)
           ("class" "^class \\(.*\\).*:$" 1)
           ("§    " "^\s*[#]+\s+\\.\\.::\s+\\(.*\\)\s+::\\.\\.\s*$" 1)))
-  (setq imenu-create-index-function 'danylo/python-imenu)
+  ;; (setq imenu-create-index-function 'danylo/python-imenu)
+  (setq imenu-create-index-function 'python-imenu-create-index)
   ;; Rescan the buffer as contents are added
   (setq imenu-auto-rescan t)
   )

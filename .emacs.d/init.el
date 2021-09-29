@@ -986,7 +986,7 @@ Patched to use original **window** instead of buffer."
                   "\\*eww\\*" "\\*timer-list\\*" "\\*Disabled Command\\*"
                   "\\*Man .*\\*" "\\*wclock\\*" "\\*Warnings\\*" "\\*Bufler\\*"
                   "\\*Ibuffer\\*" "\\*Flymake.*\\*" "\\*EGLOT.*\\*"
-                  "\\*pyright.*\\*"
+                  "\\*pyright.*\\*" "\\*YASnippet.*\\*"
                   ))))
 
 (defun danylo/set-helm-window-height (orig-fun &rest args)

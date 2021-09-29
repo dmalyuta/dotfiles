@@ -2805,6 +2805,7 @@ Do this after `q` in Debugger buffer."
   ;; Emacs built-in
   ;; Python editing major mode
   :ensure nil
+  :hook ((python-mode . yas-minor-mode))
   :bind (:map python-mode-map
               ;; Make indentation automatic, especially ensures correct
               ;; indentation in docstrings (see

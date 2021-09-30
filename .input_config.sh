@@ -3,6 +3,14 @@
 #
 # Input device configuration (mouse, touchpad, keyboard, tablet, etc).
 #
+# To keep activated in the background, you can set up a cron job as follows:
+#
+#   $ crontab -e
+#
+# and then at the bottom of the file, add (3 minute interval repeats):
+#
+#   */3 *   * * *    source ~/.input_config.sh
+#
 # ----------------------------------------------------------------------
 
 ERRF=/tmp/input_config_errors

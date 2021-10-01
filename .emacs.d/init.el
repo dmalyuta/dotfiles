@@ -2268,7 +2268,8 @@ The remainder of the function is a carbon-copy from Flycheck."
          (comint-mode . company-mode)
          (LaTeX-mode . company-mode)
          (sh-mode . company-mode)
-         (web-mode . company-mode))
+         (web-mode . company-mode)
+         (graphviz-dot-mode . company-mode))
   :bind (("S-<return>" . company-complete))
   :init
   (setq company-dabbrev-downcase 0
@@ -3628,3 +3629,12 @@ Patched so that any new file by default is guessed as being its own master."
         web-mode-code-indent-offset 2)
   :config
   (require 'web-mode))
+
+;;; ..:: Graphviz ::..
+
+(use-package graphviz-dot-mode
+  ;; https://github.com/ppareit/graphviz-dot-mode
+  ;; Emacs mode for the DOT language, used by graphviz.
+  :ensure t
+  :config
+  (setq graphviz-dot-indent-width 4))

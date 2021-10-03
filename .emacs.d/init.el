@@ -13,7 +13,9 @@
 ;; Suppress general warnings
 (setq warning-suppress-types
       (append warning-suppress-types
-              '((server) (comp))))
+              '(((flycheck syntax-checker))
+                (server)
+                (comp))))
 
 ;;; ..:: Package management ::..
 

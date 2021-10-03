@@ -36,12 +36,12 @@ if ! (conda info --envs | grep -q $PYENV_NAME); then
     echo "conda activate py397" >> ~/.bashrc
 
     # Install some Python modules
-    pip install flake8
+    pip install flake8 pdbpp
     pip install scipy numpy nptyping
     pip install pandas pytest black pyfzf
     pip install vtk==9.0.3
     pip install mayavi
-    pip install pyqt5
+    pip install PySide2
 
     # Add virtualenv to Jupyter
     # https://gist.github.com/swedishmike/902fb27d627313c31a95e31c44e302ac

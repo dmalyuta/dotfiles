@@ -61,7 +61,8 @@ fi
 # Traditional menu
 if [ ! -d ~/.local/share/gnome-shell/extensions/arcmenu@arcmenu.com ]; then
     rm -rf /tmp/arcmenu
-    git clone https://gitlab.com/arcmenu/ArcMenu.git /tmp/arcmenu
+    git clone --single-branch --branch 'gnome-3.36/3.38' \
+        https://gitlab.com/arcmenu/ArcMenu.git /tmp/arcmenu
     (cd /tmp/arcmenu && make install)
 
     # Link to my own settings

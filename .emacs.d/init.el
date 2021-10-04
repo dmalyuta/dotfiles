@@ -1094,6 +1094,9 @@ height."
 
 ;;; ..:: Theming and code aesthetics ::..
 
+;; Set frame title
+(setq frame-title-format '("GNU Emacs " emacs-version))
+
 (use-package rainbow-delimiters
   ;; https://github.com/Fanael/rainbow-delimiters
   ;; Highlights delimiters such as parentheses, brackets or braces

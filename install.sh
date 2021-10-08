@@ -63,16 +63,6 @@ ln -sf "$DIR"/.ipython/profile_default/startup/fzf_history.py \
 mkdir -p ~/.julia/config
 ln -sf "$DIR"/.config/startup.jl ~/.julia/config
 
-# Emacs
-mkdir -p ~/.emacs.d
-mkdir -p ~/.emacs.d/lisp
-ln -sf "$DIR"/.emacs.d/init.el ~/.emacs.d
-ln -sf "$DIR"/.emacs.d/lisp/danylo-custom-variables.el ~/.emacs.d/lisp
-ln -sf "$DIR"/.emacs.d/lisp/danylo-common-font-lock.el ~/.emacs.d/lisp
-ln -sf "$DIR"/.emacs.d/lisp/danylo-prog-font-lock.el ~/.emacs.d/lisp
-ln -sf "$DIR"/.emacs.d/lisp/danylo-text-font-lock.el ~/.emacs.d/lisp
-ln -sf "$DIR"/.emacs.d/lisp/snippets ~/.emacs.d/lisp/
-
 # ..:: Install modules ::..
 
 source .modules/functions.sh
@@ -82,6 +72,7 @@ source .modules/python.sh
 source .modules/julia.sh
 source .modules/productivity.sh
 source .modules/emacs.sh
+source .modules/vscode.sh
 
 # ..:: Cleanup ::..
 

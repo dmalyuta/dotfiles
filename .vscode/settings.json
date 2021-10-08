@@ -3,17 +3,15 @@
     "editor.cursorStyle": "block",
     "editor.cursorBlinking": "solid",
     "workbench.colorTheme": "Solarized Dark",
-    "workbench.colorCustomizations": {
-        "editorCursor.foreground": "#8c9600",
-        "terminalCursor.foreground": "#eeff00"
-    },
     "workbench.editor.untitled.hint": "hidden",
-    "sync.gist": "ea422d0d655e299f9791fc8dc274c9f1",
-    "sync.autoUpload": true,
-    "sync.autoDownload": true,
-    "sync.quietSync": true,
     "editor.occurrencesHighlight": false,
     "editor.renderWhitespace": "none",
     "editor.wordWrap": "wordWrapColumn",
-    "files.eol": "\n"
+    "files.eol": "\n",
+    "editor.rulers": [80],
+    "workbench.colorCustomizations": {
+        "editorCursor.foreground": "#8c9600",
+        "terminalCursor.foreground": "#eeff00",
+        "editorRuler.foreground": "#797979"
+    }
 }

@@ -13,5 +13,6 @@
         "editorCursor.foreground": "#8c9600",
         "terminalCursor.foreground": "#eeff00",
         "editorRuler.foreground": "#797979"
-    }
+    },
+    "git.confirmSync": false
 }

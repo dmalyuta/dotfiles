@@ -1,7 +1,11 @@
 denco.confluence-markup
+dendron.dendron
+dendron.dendron-markdown-shortcuts
+dendron.dendron-paste-image
 ms-python.python
 ms-python.vscode-pylance
 ms-toolsai.jupyter
 ms-toolsai.jupyter-keymap
 ms-toolsai.jupyter-renderers
+redhat.vscode-yaml
 stkb.rewrap

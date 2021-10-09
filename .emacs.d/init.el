@@ -4,18 +4,19 @@
 ;; No garbage collection at startup
 (setq gc-cons-threshold most-positive-fixnum)
 
+;; Suppress general warnings
+(setq warning-suppress-types
+      '(((flycheck syntax-checker))
+        (server)
+        (comp)))
+
 ;; Native compilation settings
 (when (fboundp 'native-compile-async)
   (setq comp-deferred-compilation t
-        warning-suppress-log-types '((comp))
-        warning-suppress-types '((comp))))
-
-;; Suppress general warnings
-(setq warning-suppress-types
+        warning-suppress-log-types '((comp)))
+  (setq warning-suppress-types
       (append warning-suppress-types
-              '(((flycheck syntax-checker))
-                (server)
-                (comp))))
+              '((comp)))))
 
 ;;; ..:: Package management ::..
 

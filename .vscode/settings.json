@@ -14,5 +14,10 @@
         "terminalCursor.foreground": "#eeff00",
         "editorRuler.foreground": "#797979"
     },
-    "git.confirmSync": false
+    "git.confirmSync": false,
+    "outline.showVariables": false,
+    "workbench.editor.wrapTabs": true,
+    "breadcrumbs.showVariables": false,
+    "redhat.telemetry.enabled": false,
+    "window.zoomLevel": 1
 }

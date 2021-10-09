@@ -1,7 +1,7 @@
 // Place your key bindings in this file to override the defaultsauto[]
 [
     {
-        "key": "ctrl+alt+a",
+        "key": "alt+v a",
         "command": "workbench.action.toggleActivityBarVisibility"
     },
     {
@@ -37,11 +37,23 @@
         "command": "workbench.action.splitEditorRight"
     },
     {
-        "key": "ctrl+alt+p",
+        "key": "alt+v p",
         "command": "workbench.action.togglePanel"
     },
     {
         "key": "ctrl+j",
         "command": "-workbench.action.togglePanel"
+    },
+    {
+        "key": "alt+v b",
+        "command": "workbench.action.toggleSidebarVisibility"
+    },
+    {
+        "key": "ctrl+b",
+        "command": "-workbench.action.toggleSidebarVisibility"
+    },
+    {
+        "key": "alt+v m",
+        "command": "editor.action.toggleMinimap"
     }
 ]

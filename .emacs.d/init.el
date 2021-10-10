@@ -2600,7 +2600,7 @@ If there is no shell open, prints a message to inform."
         lsp-enable-symbol-highlighting nil ;; Do not highlight symbols on hover
         ;; Disabled LSP clients
         ;; C++: use clangd
-        lsp-disabled-clients '(ccls)
+        lsp-disabled-clients '(ccls (python-mode . pyls))
         )
   :hook
   ((lsp-mode . (lambda ()
@@ -2830,7 +2830,9 @@ Do this after `q` in Debugger buffer."
 (use-package lsp-pyright
   ;; https://github.com/emacs-lsp/lsp-pyright
   ;; lsp-mode client leveraging Pyright language server
-  :hook ((python-mode . (lambda () (require 'lsp-pyright) (lsp))))
+  :hook ((python-mode . (lambda ()
+                          (require 'lsp-pyright)
+                          (lsp))))
   :init
   (setq
    ;; Do not print "analyzing... Done" in the minibuffer

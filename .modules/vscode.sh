@@ -25,6 +25,7 @@ fi
 mkdir -p ~/.vscode
 ln -sf "$DIR"/.vscode/settings.json ~/.config/Code/User
 ln -sf "$DIR"/.vscode/keybindings.json ~/.config/Code/User
+ln -sf "$DIR"/.vscode/snippets ~/.config/Code/User
 
 # ..:: Install extensions ::..
 

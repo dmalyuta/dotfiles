@@ -2,7 +2,7 @@
     "workbench.editor.enablePreview": false,
     "editor.cursorStyle": "block",
     "editor.cursorBlinking": "solid",
-    "workbench.colorTheme": "Solarized Dark",
+    "workbench.colorTheme": "Night Owl (No Italics)",
     "workbench.editor.untitled.hint": "hidden",
     "editor.occurrencesHighlight": false,
     "editor.renderWhitespace": "none",
@@ -24,5 +24,13 @@
     "security.workspace.trust.startupPrompt": "never",
     "workbench.startupEditor": "none",
     "window.titleBarStyle": "custom",
-    "editor.minimap.enabled": false
+    "telemetry.telemetryLevel": "off",
+    "bracket-pair-colorizer-2.showHorizontalScopeLine": false,
+    "bracket-pair-colorizer-2.showVerticalScopeLine": false,
+    "files.trimTrailingWhitespace": true,
+    "metaGo.decoration.characters": "a,s,d,f,g,h,j,k,l",
+    "metaGo.decoration.additionalSingleCharCodeCharacters": "A,S,D,F,G,H,J,K,L",
+    "window.zoomLevel": -1,
+    "jupyter.interactiveWindowMode": "perFile",
+    "jupyter.askForKernelRestart": false
 }

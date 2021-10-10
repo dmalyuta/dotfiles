@@ -21,20 +21,12 @@
         "command": "workbench.action.navigateDown"
     },
     {
-        "key": "ctrl+x 0",
-        "command": "workbench.action.closeEditorsInGroup"
-    },
-    {
         "key": "ctrl+k w",
         "command": "-workbench.action.closeEditorsInGroup"
     },
     {
-        "key": "ctrl+x -",
+        "key": "alt+w -",
         "command": "workbench.action.splitEditorDown"
-    },
-    {
-        "key": "ctrl+x shift+\\",
-        "command": "workbench.action.splitEditorRight"
     },
     {
         "key": "alt+v p",
@@ -57,24 +49,16 @@
         "command": "editor.action.toggleMinimap"
     },
     {
-        "key": "ctrl+x 0",
-        "command": "workbench.action.closeActiveEditor"
-    },
-    {
         "key": "ctrl+w",
         "command": "-workbench.action.closeActiveEditor"
     },
     {
-        "key": "ctrl+w",
+        "key": "ctrl+x",
         "command": "editor.action.clipboardCutAction"
     },
     {
         "key": "ctrl+x",
         "command": "-editor.action.clipboardCutAction"
-    },
-    {
-        "key": "alt+w",
-        "command": "editor.action.clipboardCopyAction"
     },
     {
         "key": "ctrl+c",
@@ -107,5 +91,84 @@
         "key": "alt+up",
         "command": "-editor.action.moveLinesUpAction",
         "when": "editorTextFocus && !editorReadonly"
+    },
+    {
+        "key": "f6",
+        "command": "workbench.action.debug.run",
+        "when": "debuggersAvailable && debugState != 'initializing'"
+    },
+    {
+        "key": "ctrl+f5",
+        "command": "-workbench.action.debug.run",
+        "when": "debuggersAvailable && debugState != 'initializing'"
+    },
+    {
+        "key": "alt+backspace",
+        "command": "deleteWordPartLeft"
+    },
+    {
+        "key": "alt+delete",
+        "command": "deleteWordPartRight"
+    },
+    {
+        "key": "ctrl+w",
+        "command": "-workbench.action.terminal.killEditor",
+        "when": "terminalEditorFocus && terminalFocus && terminalProcessSupported && resourceScheme == 'vscode-terminal'"
+    },
+    {
+        "key": "ctrl+w",
+        "command": "-workbench.action.closeGroup",
+        "when": "activeEditorGroupEmpty && multipleEditorGroups"
+    },
+    {
+        "key": "ctrl+w",
+        "command": "workbench.action.closeActiveEditor"
+    },
+    {
+        "key": "alt+;",
+        "command": "-metaGo.goto",
+        "when": "editorTextFocus"
+    },
+    {
+        "key": "alt+end",
+        "command": "-metaGo.spaceBlockMoveDown",
+        "when": "editorTextFocus"
+    },
+    {
+        "key": "alt+home",
+        "command": "-metaGo.spaceBlockMoveUp",
+        "when": "editorTextFocus"
+    },
+    {
+        "key": "alt+w",
+        "command": "-toggleSearchEditorWholeWord",
+        "when": "inSearchEditor && searchInputBoxFocus"
+    },
+    {
+        "key": "alt+w",
+        "command": "-workbench.action.terminal.toggleFindWholeWord",
+        "when": "terminalFindFocused && terminalProcessSupported || terminalFocus && terminalProcessSupported"
+    },
+    {
+        "key": "alt+w",
+        "command": "-toggleSearchWholeWord",
+        "when": "searchViewletFocus"
+    },
+    {
+        "key": "alt+w",
+        "command": "-toggleFindWholeWord",
+        "when": "editorFocus"
+    },
+    {
+        "key": "alt+w shift+\\",
+        "command": "workbench.action.splitEditorRight"
+    },
+    {
+        "key": "alt+/",
+        "command": "-metaGo.gotoSmart"
+    },
+    {
+        "key": "alt+/",
+        "command": "metaGo.gotoSmart"
     }
 ]

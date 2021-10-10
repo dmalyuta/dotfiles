@@ -1,7 +1,9 @@
+CoenraadS.bracket-pair-colorizer-2
 denco.confluence-markup
 dendron.dendron
 dendron.dendron-markdown-shortcuts
 dendron.dendron-paste-image
+KevinRose.vsc-python-indent
 ms-python.python
 ms-python.vscode-pylance
 ms-toolsai.jupyter

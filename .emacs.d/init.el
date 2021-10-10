@@ -2710,7 +2710,8 @@ find a definion."
   ;; A template system for Emacs
   :init
   (setq yas-snippet-dirs `(,(danylo/make-path "lisp/snippets")))
-  )
+  :config
+  (yas-reload-all))
 
 (use-package cc-mode
   ;; Emacs C-style language mode

@@ -8,7 +8,9 @@
     "editor.renderWhitespace": "none",
     "editor.wordWrap": "wordWrapColumn",
     "files.eol": "\n",
-    "editor.rulers": [80],
+    "editor.rulers": [
+        80
+    ],
     "workbench.colorCustomizations": {
         "editorCursor.foreground": "#8c9600",
         "terminalCursor.foreground": "#eeff00",
@@ -19,5 +21,8 @@
     "workbench.editor.wrapTabs": true,
     "breadcrumbs.showVariables": false,
     "redhat.telemetry.enabled": false,
-    "window.zoomLevel": 1
+    "security.workspace.trust.startupPrompt": "never",
+    "workbench.startupEditor": "none",
+    "window.titleBarStyle": "custom",
+    "editor.minimap.enabled": false
 }

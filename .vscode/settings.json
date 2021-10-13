@@ -9,7 +9,7 @@
     "editor.wordWrap": "wordWrapColumn",
     "files.eol": "\n",
     "editor.rulers": [
-        80
+        100
     ],
     "workbench.colorCustomizations": {
         "editorCursor.foreground": "#8c9600",
@@ -32,5 +32,13 @@
     "metaGo.decoration.additionalSingleCharCodeCharacters": "A,S,D,F,G,H,J,K,L",
     "window.zoomLevel": -1,
     "jupyter.interactiveWindowMode": "perFile",
-    "jupyter.askForKernelRestart": false
+    "jupyter.askForKernelRestart": false,
+    "http.proxyStrictSSL": false,
+    "todohighlight.isEnable": true,
+    "todohighlight.keywordsPattern": "TODO",
+    "center-editor-window.threeStateToggle": true,
+    "center-editor-window.offset": 5,
+    "workbench.iconTheme": "vscode-icons",
+    "editor.wordWrapColumn": 100,
+    "security.workspace.trust.untrustedFiles": "open"
 }

@@ -1,4 +1,5 @@
 alefragnani.Bookmarks
+buenon.scratchpads
 CoenraadS.bracket-pair-colorizer-2
 denco.confluence-markup
 dendron.dendron
@@ -8,6 +9,7 @@ eamodio.gitlens
 hbenl.vscode-test-explorer
 heptio.jsonnet
 jacobdufault.fuzzy-search
+jgclark.vscode-todo-highlight
 kaiwood.center-editor-window
 kbysiec.vscode-search-everywhere
 KevinRose.vsc-python-indent
@@ -31,6 +33,5 @@ stkb.rewrap
 TomRijndorp.find-it-faster
 tootone.org-mode
 vscode-icons-team.vscode-icons
-wayou.vscode-todo-highlight
 wmaurer.vscode-jumpy
 zxh404.vscode-proto3

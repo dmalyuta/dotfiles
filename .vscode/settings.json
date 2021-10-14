@@ -29,16 +29,38 @@
     "bracket-pair-colorizer-2.showVerticalScopeLine": false,
     "files.trimTrailingWhitespace": true,
     "metaGo.decoration.characters": "a,s,d,f,g,h,j,k,l",
-    "metaGo.decoration.additionalSingleCharCodeCharacters": "A,S,D,F,G,H,J,K,L",
+    "metaGo.decoration.additionalSingleCharCodeCharacters": "F,J",
     "window.zoomLevel": -1,
     "jupyter.interactiveWindowMode": "perFile",
     "jupyter.askForKernelRestart": false,
     "http.proxyStrictSSL": false,
     "todohighlight.isEnable": true,
-    "todohighlight.keywordsPattern": "TODO",
     "center-editor-window.threeStateToggle": true,
     "center-editor-window.offset": 5,
     "workbench.iconTheme": "vscode-icons",
     "editor.wordWrapColumn": 100,
-    "security.workspace.trust.untrustedFiles": "open"
+    "security.workspace.trust.untrustedFiles": "open",
+    "todohighlight.keywords": [
+        {
+            "text": "TODO",
+            "color": "white",
+            "backgroundColor": "#16c60cff",
+            "before": {
+			    "contentText": "✅"
+			},
+        },
+        {
+            "text": "WARN",
+            "color": "black",
+            "backgroundColor": "yellow",
+            "before": {
+			    "contentText": "⚠️"
+			},
+        }
+    ],
+    "todohighlight.defaultStyle": {
+        "color": "black",
+        "border": "1px solid black",
+        "borderRadius": "5px"
+    },
 }

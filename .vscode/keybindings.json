@@ -168,7 +168,7 @@
         "command": "-metaGo.gotoSmart"
     },
     {
-        "key": "alt+/",
+        "key": "alt+s",
         "command": "metaGo.gotoSmart"
     },
     {

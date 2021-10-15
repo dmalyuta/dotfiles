@@ -10,6 +10,7 @@ hbenl.vscode-test-explorer
 heptio.jsonnet
 hoovercj.vscode-settings-cycler
 jacobdufault.fuzzy-search
+James-Yu.latex-workshop
 jgclark.vscode-todo-highlight
 kaiwood.center-editor-window
 kbysiec.vscode-search-everywhere

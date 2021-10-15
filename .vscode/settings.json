@@ -30,7 +30,6 @@
     "files.trimTrailingWhitespace": true,
     "metaGo.decoration.characters": "a,s,d,f,g,h,j,k,l",
     "metaGo.decoration.additionalSingleCharCodeCharacters": "F,J",
-    "window.zoomLevel": -1,
     "jupyter.interactiveWindowMode": "perFile",
     "jupyter.askForKernelRestart": false,
     "http.proxyStrictSSL": false,
@@ -78,6 +77,7 @@
     "settings.cycle": [
     {
         "id": "zenModeExtras",
+        "overrideWorkspaceSettings": true,
         "values": [
                 {
                     "editor.lineNumbers": "off",
@@ -95,4 +95,5 @@
     "editor.lineNumbers": "on",
     "editor.folding": true,
     "editor.guides.indentation": true,
+    "latex-workshop.view.pdf.viewer": "tab",
 }

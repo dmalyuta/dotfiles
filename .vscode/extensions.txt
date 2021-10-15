@@ -8,6 +8,7 @@ dendron.dendron-paste-image
 eamodio.gitlens
 hbenl.vscode-test-explorer
 heptio.jsonnet
+hoovercj.vscode-settings-cycler
 jacobdufault.fuzzy-search
 jgclark.vscode-todo-highlight
 kaiwood.center-editor-window
@@ -27,6 +28,7 @@ ms-vscode.powershell
 ms-vscode.test-adapter-converter
 nwbjjbb.repeat-paste
 redhat.vscode-yaml
+ryuta46.multi-command
 sdras.night-owl
 Shan.code-settings-sync
 stkb.rewrap

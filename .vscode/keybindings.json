@@ -196,5 +196,10 @@
     {
         "key": "ctrl+alt+f12",
         "command": "editor.action.revealDeclaration"
+    },
+    {
+        "key": "ctrl+k z",
+        "command": "extension.multiCommand.execute" ,
+        "args": { "command": "multiCommand.betterZenMode" },
     }
 ]

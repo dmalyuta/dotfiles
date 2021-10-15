@@ -34,33 +34,65 @@
     "jupyter.interactiveWindowMode": "perFile",
     "jupyter.askForKernelRestart": false,
     "http.proxyStrictSSL": false,
-    "todohighlight.isEnable": true,
     "center-editor-window.threeStateToggle": true,
     "center-editor-window.offset": 5,
     "workbench.iconTheme": "vscode-icons",
     "editor.wordWrapColumn": 100,
     "security.workspace.trust.untrustedFiles": "open",
+
+    /// ToDo highlighting
+    "todohighlight.isEnable": true,
     "todohighlight.keywords": [
         {
             "text": "TODO",
-            "color": "white",
-            "backgroundColor": "#16c60cff",
-            "before": {
-			    "contentText": "✅"
-			},
+            "color": "#16c60cff",
+            "fontWeight": "bold"
         },
         {
             "text": "WARN",
-            "color": "black",
-            "backgroundColor": "yellow",
-            "before": {
-			    "contentText": "⚠️"
-			},
+            "color": "yellow",
+            "fontWeight": "bold"
         }
     ],
     "todohighlight.defaultStyle": {
-        "color": "black",
-        "border": "1px solid black",
-        "borderRadius": "5px"
+        "backgroundColor": "rgba(0,0,0,0)"
     },
+
+    /// Zen mode (minimalist layout)
+    "zenMode.fullScreen": false,
+    "zenMode.centerLayout": false,
+    "zenMode.hideTabs": false,
+    // multiCommand
+    "multiCommand.commands": [
+        {
+            "command": "multiCommand.betterZenMode",
+            "sequence": [
+            "workbench.action.toggleZenMode",
+            "editor.action.toggleMinimap",
+            "settings.cycle.zenModeExtras",
+            ]
+        },
+    ],
+
+    // Settings cycle
+    "settings.cycle": [
+    {
+        "id": "zenModeExtras",
+        "values": [
+                {
+                    "editor.lineNumbers": "off",
+                    "editor.folding": false,
+                    "editor.guides.indentation": false,
+                },
+                {
+                    "editor.lineNumbers": "on",
+                    "editor.folding": true,
+                    "editor.guides.indentation": true,
+                }
+            ]
+        }
+    ],
+    "editor.lineNumbers": "on",
+    "editor.folding": true,
+    "editor.guides.indentation": true,
 }

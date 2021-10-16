@@ -1,6 +1,7 @@
 {
     /// Appearance
     "window.titleBarStyle": "custom",
+    "window.zoomLevel": -1,
     "workbench.colorTheme": "Night Owl (No Italics)",
     "workbench.colorCustomizations": {
         "editorCursor.foreground": "#8c9600",
@@ -22,6 +23,7 @@
     "breadcrumbs.showVariables": false,
 
     /// General editing
+    "security.workspace.trust.enabled": false,
     "security.workspace.trust.startupPrompt": "never",
     "security.workspace.trust.untrustedFiles": "open",
     "workbench.editor.enablePreview": false,
@@ -100,11 +102,35 @@
         }
     ],
 
+    /// Language: plain text
+    "[plaintext]": {
+        // Plain text-specific customizations of the general config
+        "editor.rulers": [ 80 ],
+        "editor.wordWrapColumn": 80,
+    },
+
     /// Language: LaTeX
     "latex-workshop.view.pdf.viewer": "tab",
+    "latex-workshop.view.pdf.backgroundColor": "#011627ff",
+    "latex-workshop.intellisense.includegraphics.preview.pdf.enabled": true,
+    "latex-workshop.view.pdf.hand": true,
+    "latex-workshop.view.pdf.invert": 0,
+    "latex-workshop.view.pdf.zoom": "page-width",
+    "latex-workshop.latex.autoBuild.run": "never",
+    "[latex]": {
+        // LaTeX-specific customizations of the general config
+        "editor.rulers": [ 80 ],
+        "editor.wordWrapColumn": 80,
+    },
 
     /// Language: Python
     "jupyter.interactiveWindowMode": "perFile",
     "jupyter.askForKernelRestart": false,
-    "window.zoomLevel": -1,
+
+    /// Language: Julia
+    "terminal.integrated.commandsToSkipShell": [
+        "language-julia.interrupt"
+    ],
+    "julia.symbolCacheDownload": true,
+    "julia.enableTelemetry": false,
 }

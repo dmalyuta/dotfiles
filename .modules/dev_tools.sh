@@ -34,6 +34,13 @@ sudo apt-get -y install gitk \
      meld \
      kcachegrind
 
+if not_installed batcat; then
+    sudo apt-get -y install -o Dpkg::Options::=--force-overwrite bat ripgrep
+
+    # Make the command for bat to be 'bat', not 'batcat'
+    sudo dpkg-divert --package batcat --add --rename --divert /usr/bin/bat /usr/bin/batcat
+fi
+
 # ..:: System resource monitoring ::..
 
 sudo apt-get -y install htop

@@ -1,43 +1,50 @@
 {
-    "workbench.editor.enablePreview": false,
-    "editor.cursorStyle": "block",
-    "editor.cursorBlinking": "solid",
+    /// Appearance
+    "window.titleBarStyle": "custom",
     "workbench.colorTheme": "Night Owl (No Italics)",
-    "workbench.editor.untitled.hint": "hidden",
-    "editor.occurrencesHighlight": false,
-    "editor.renderWhitespace": "none",
-    "editor.wordWrap": "wordWrapColumn",
-    "files.eol": "\n",
-    "editor.rulers": [
-        100
-    ],
     "workbench.colorCustomizations": {
         "editorCursor.foreground": "#8c9600",
         "terminalCursor.foreground": "#eeff00",
-        "editorRuler.foreground": "#797979"
+        "editorRuler.foreground": "#797979",
+        "diffEditor.insertedTextBorder": "#00000000",
+        "diffEditor.removedTextBorder": "#00000000",
+        "diffEditor.insertedTextBackground": "#2a413855",
+        "diffEditor.removedTextBackground": "#572d3655",
     },
-    "git.confirmSync": false,
-    "outline.showVariables": false,
-    "workbench.editor.wrapTabs": true,
-    "breadcrumbs.showVariables": false,
-    "redhat.telemetry.enabled": false,
-    "security.workspace.trust.startupPrompt": "never",
+    "workbench.iconTheme": "vscode-icons",
     "workbench.startupEditor": "none",
-    "window.titleBarStyle": "custom",
-    "telemetry.telemetryLevel": "off",
+    "workbench.editor.wrapTabs": true,
+    "editor.cursorStyle": "block",
+    "editor.cursorBlinking": "solid",
+    "editor.occurrencesHighlight": false,
+    "editor.renderWhitespace": "none",
+    "outline.showVariables": false,
+    "breadcrumbs.showVariables": false,
+
+    /// General editing
+    "security.workspace.trust.startupPrompt": "never",
+    "security.workspace.trust.untrustedFiles": "open",
+    "workbench.editor.enablePreview": false,
+    "workbench.editor.untitled.hint": "hidden",
+    "editor.wordWrap": "wordWrapColumn",
+    "files.eol": "\n",
+    "editor.rulers": [ 100 ],
+    "editor.wordWrapColumn": 100,
+    "center-editor-window.threeStateToggle": true,
+    "center-editor-window.offset": 5,
     "bracket-pair-colorizer-2.showHorizontalScopeLine": false,
     "bracket-pair-colorizer-2.showVerticalScopeLine": false,
     "files.trimTrailingWhitespace": true,
     "metaGo.decoration.characters": "a,s,d,f,g,h,j,k,l",
     "metaGo.decoration.additionalSingleCharCodeCharacters": "F,J",
-    "jupyter.interactiveWindowMode": "perFile",
-    "jupyter.askForKernelRestart": false,
+
+    /// Online
+    "telemetry.telemetryLevel": "off",
     "http.proxyStrictSSL": false,
-    "center-editor-window.threeStateToggle": true,
-    "center-editor-window.offset": 5,
-    "workbench.iconTheme": "vscode-icons",
-    "editor.wordWrapColumn": 100,
-    "security.workspace.trust.untrustedFiles": "open",
+    "redhat.telemetry.enabled": false,
+
+    /// Git
+    "git.confirmSync": false,
 
     /// ToDo highlighting
     "todohighlight.isEnable": true,
@@ -73,7 +80,7 @@
         },
     ],
 
-    // Settings cycle
+    /// Settings cycle
     "settings.cycle": [
     {
         "id": "zenModeExtras",
@@ -92,8 +99,12 @@
             ]
         }
     ],
-    "editor.lineNumbers": "on",
-    "editor.folding": true,
-    "editor.guides.indentation": true,
+
+    /// Language: LaTeX
     "latex-workshop.view.pdf.viewer": "tab",
+
+    /// Language: Python
+    "jupyter.interactiveWindowMode": "perFile",
+    "jupyter.askForKernelRestart": false,
+    "window.zoomLevel": -1,
 }

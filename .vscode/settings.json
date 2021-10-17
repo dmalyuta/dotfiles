@@ -1,7 +1,7 @@
 {
     /// Appearance
-    "window.titleBarStyle": "custom",
     "window.zoomLevel": -1,
+    "window.titleBarStyle": "custom",
     "workbench.colorTheme": "Night Owl (No Italics)",
     "workbench.colorCustomizations": {
         "editorCursor.foreground": "#8c9600",

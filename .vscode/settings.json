@@ -70,7 +70,8 @@
     "zenMode.fullScreen": false,
     "zenMode.centerLayout": false,
     "zenMode.hideTabs": false,
-    // multiCommand
+
+    /// Multi-commands
     "multiCommand.commands": [
         {
             "command": "multiCommand.betterZenMode",
@@ -78,6 +79,13 @@
             "workbench.action.toggleZenMode",
             "editor.action.toggleMinimap",
             "settings.cycle.zenModeExtras",
+            ]
+        },
+        {
+            "command": "multiCommand.deleteLeftRight",
+            "sequence": [
+            "deleteLeft",
+            "deleteRight",
             ]
         },
     ],

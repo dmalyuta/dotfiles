@@ -1,14 +1,15 @@
-# See https://stackoverflow.com/questions/34119866/setting-up-and-using-meld-as-your-git-difftool-and-mergetool
+# Git defaults configuration
+[core]
+    editor = code --wait
 [diff]
-    tool = meld
+    tool = vscode
 [difftool]
     prompt = false
-[difftool "meld"]
-    cmd = meld "$LOCAL" "$REMOTE"
+[difftool "vscode"]
+    cmd = code --wait --diff "$LOCAL" "$REMOTE"
 [merge]
-    tool = meld
-[mergetool "meld"]
+    tool = vscode
+[mergetool "vscode"]
     # Choose one of these 2 lines (not both!) explained below.
-    cmd = meld "$LOCAL" "$MERGED" "$REMOTE" --output "$MERGED"
-    cmd = meld "$LOCAL" "$BASE" "$REMOTE" --output "$MERGED"
+    cmd = code --wait "$MERGED"
 

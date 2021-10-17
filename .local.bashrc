@@ -64,9 +64,6 @@ if [ -f ~/.bin/colorizer/Library/colorizer.sh ]; then
     export PS1="${tmp}\n$ "
 fi
 
-# Use emacsclient for Git
-export GIT_EDITOR="`which emacsclient` -t -s git"
-
 # Use emacs as terminal editor
 export EDITOR="emacs -nw"
 

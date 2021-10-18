@@ -19,6 +19,9 @@
     "editor.cursorBlinking": "solid",
     "editor.occurrencesHighlight": false,
     "editor.renderWhitespace": "none",
+    "editor.lineNumbers": "on",
+    "editor.folding": true,
+    "editor.guides.indentation": true,
     "outline.showVariables": false,
     "breadcrumbs.showVariables": false,
 

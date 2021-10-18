@@ -65,7 +65,12 @@ if [ -f ~/.bin/colorizer/Library/colorizer.sh ]; then
 fi
 
 # Use emacs as terminal editor
+# See the different between VISUAL vs. EDITOR:
+#  https://unix.stackexchange.com/questions/4859/visual-vs-editor-what-s-the-difference
 export EDITOR="emacs -nw"
+
+# Use VSCode as visual editor
+export VISUAL="code --wait"
 
 # Synaptics touchpad config
 if [ -f ~/.input_config.sh ]; then

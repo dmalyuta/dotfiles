@@ -23,6 +23,8 @@
     "editor.lineNumbers": "on",
     "editor.folding": true,
     "editor.guides.indentation": true,
+    "editor.minimap.enabled": true,
+    "workbench.activityBar.visible": true,
     "outline.showVariables": false,
     "breadcrumbs.showVariables": false,
 
@@ -90,6 +92,13 @@
             "sequence": [
             "deleteLeft",
             "deleteRight",
+            ]
+        },
+        {
+            "command": "multiCommand.selectionRegionExitWithCopy",
+            "sequence": [
+            "editor.action.clipboardCopyAction",
+            "sticky-selection.exitStickySelectionMode",
             ]
         },
     ],

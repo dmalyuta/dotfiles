@@ -263,5 +263,10 @@
     {
         "key": "alt+w t",
         "command": "workbench.action.createTerminalEditor"
+    },
+    {
+        "key": "ctrl+space",
+        "command": "multiCommand.selectionRegionExitWithCopy",
+        "when": "inStickySelectionMode"
     }
 ]

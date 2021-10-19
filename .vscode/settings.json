@@ -5,6 +5,7 @@
     "workbench.colorTheme": "Night Owl (No Italics)",
     "workbench.colorCustomizations": {
         "editorCursor.foreground": "#8c9600",
+        "editor.selectionBackground": "#ecbe7b44",
         "terminalCursor.foreground": "#eeff00",
         "editorRuler.foreground": "#797979",
         "diffEditor.insertedTextBorder": "#00000000",
@@ -116,6 +117,13 @@
     /// Language: plain text
     "[plaintext]": {
         // Plain text-specific customizations of the general config
+        "editor.rulers": [ 80 ],
+        "editor.wordWrapColumn": 80,
+    },
+
+    /// Language: Markdown
+    "[markdown]": {
+        // Markdown-specific customizations of the general config
         "editor.rulers": [ 80 ],
         "editor.wordWrapColumn": 80,
     },

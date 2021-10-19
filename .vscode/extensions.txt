@@ -1,13 +1,14 @@
 adam-bender.commit-message-editor
 alefragnani.Bookmarks
 buenon.scratchpads
+cbuelter.vscode-toggle-max-editor 
 CoenraadS.bracket-pair-colorizer-2
 denco.confluence-markup
 dendron.dendron
 dendron.dendron-markdown-shortcuts
-dendron.dendron-paste-image
+dendron.dendron-paste-image       
 eamodio.gitlens
-hbenl.vscode-test-explorer
+hbenl.vscode-test-explorer        
 heptio.jsonnet
 hoovercj.vscode-settings-cycler
 jacobdufault.fuzzy-search
@@ -17,6 +18,7 @@ julialang.language-julia
 kaiwood.center-editor-window
 kbysiec.vscode-search-everywhere
 KevinRose.vsc-python-indent
+mattn.Lisp
 metaseed.metago
 metaseed.MetaJump
 metaseed.MetaWord
@@ -35,7 +37,6 @@ nwbjjbb.repeat-paste
 redhat.vscode-yaml
 ryuta46.multi-command
 sdras.night-owl
-Shan.code-settings-sync
 stkb.rewrap
 TomRijndorp.find-it-faster
 tootone.org-mode

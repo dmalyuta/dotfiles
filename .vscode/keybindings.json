@@ -255,5 +255,13 @@
     {
         "key": "alt+delete",
         "command": "multiCommand.deleteLeftRight"
+    },
+    {
+        "key": "alt+v t",
+        "command": "togglemaxeditor.toggleMaximizeEditor"
+    },
+    {
+        "key": "alt+w t",
+        "command": "workbench.action.createTerminalEditor"
     }
 ]

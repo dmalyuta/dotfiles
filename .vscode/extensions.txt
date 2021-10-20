@@ -42,4 +42,5 @@ TomRijndorp.find-it-faster
 tootone.org-mode
 vscode-icons-team.vscode-icons
 wmaurer.vscode-jumpy
+zhuangtongfa.material-theme
 zxh404.vscode-proto3

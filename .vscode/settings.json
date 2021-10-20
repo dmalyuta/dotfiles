@@ -37,6 +37,7 @@
     "files.eol": "\n",
     "editor.rulers": [ 100 ],
     "editor.wordWrapColumn": 100,
+    "editor.stickyTabStops": true,
     "center-editor-window.threeStateToggle": true,
     "center-editor-window.offset": 5,
     "bracket-pair-colorizer-2.showHorizontalScopeLine": false,
@@ -91,14 +92,7 @@
             "deleteLeft",
             "deleteRight",
             ]
-        },
-        {
-            "command": "multiCommand.selectionRegionExitWithCopy",
-            "sequence": [
-            "editor.action.clipboardCopyAction",
-            "sticky-selection.exitStickySelectionMode",
-            ]
-        },
+        }
     ],
 
     /// Language: plain text

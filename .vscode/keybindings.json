@@ -200,7 +200,7 @@
     {
         "key": "ctrl+k z",
         "command": "extension.multiCommand.execute" ,
-        "args": { "command": "multiCommand.betterZenMode" },
+        "args": { "command": "multiCommand.betterZenMode" }
     },
     {
         "key": "ctrl+shift+l b",
@@ -263,10 +263,5 @@
     {
         "key": "alt+w t",
         "command": "workbench.action.createTerminalEditor"
-    },
-    {
-        "key": "ctrl+space",
-        "command": "multiCommand.selectionRegionExitWithCopy",
-        "when": "inStickySelectionMode"
     }
 ]

@@ -37,7 +37,7 @@
         "command": "-workbench.action.togglePanel"
     },
     {
-        "key": "alt+v b",
+        "key": "alt+v s",
         "command": "workbench.action.toggleSidebarVisibility"
     },
     {
@@ -263,5 +263,17 @@
     {
         "key": "alt+w t",
         "command": "workbench.action.createTerminalEditor"
+    },
+    {
+        "key": "alt+v t",
+        "command": "workbench.action.toggleTabsVisibility"
+    },
+    {
+        "key": "ctrl+meta+w",
+        "command": "-workbench.action.toggleTabsVisibility"
+    },
+    {
+        "key": "alt+v b",
+        "command": "workbench.action.toggleStatusbarVisibility"
     }
 ]

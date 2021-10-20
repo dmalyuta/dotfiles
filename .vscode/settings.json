@@ -2,7 +2,7 @@
     /// Appearance
     "window.zoomLevel": -1,
     "window.titleBarStyle": "custom",
-    "workbench.colorTheme": "Night Owl (No Italics)",
+    "workbench.colorTheme": "One Dark Pro Darker",
     "workbench.colorCustomizations": {
         "editorCursor.foreground": "#8c9600",
         "editor.selectionBackground": "#ecbe7b44",
@@ -26,6 +26,7 @@
     "workbench.activityBar.visible": true,
     "outline.showVariables": false,
     "breadcrumbs.showVariables": false,
+    "editor.minimap.enabled": false,
 
     /// General editing
     "security.workspace.trust.enabled": false,
@@ -133,4 +134,5 @@
     ],
     "julia.symbolCacheDownload": true,
     "julia.enableTelemetry": false,
+    "workbench.editor.showTabs": false,
 }

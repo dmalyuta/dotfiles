@@ -23,7 +23,6 @@
     "editor.lineNumbers": "on",
     "editor.folding": true,
     "editor.guides.indentation": true,
-    "editor.minimap.enabled": true,
     "workbench.activityBar.visible": true,
     "outline.showVariables": false,
     "breadcrumbs.showVariables": false,
@@ -34,7 +33,7 @@
     "security.workspace.trust.untrustedFiles": "open",
     "workbench.editor.enablePreview": false,
     "workbench.editor.untitled.hint": "hidden",
-    "editor.wordWrap": "wordWrapColumn",
+    "editor.wordWrap": "on",
     "files.eol": "\n",
     "editor.rulers": [ 100 ],
     "editor.wordWrapColumn": 100,
@@ -45,6 +44,7 @@
     "files.trimTrailingWhitespace": true,
     "metaGo.decoration.characters": "a,s,d,f,g,h,j,k,l",
     "metaGo.decoration.additionalSingleCharCodeCharacters": "F,J",
+    "metaGo.jumper.enableRippleSupportForSequentialTargetCharsCommand": true,
 
     /// Online
     "telemetry.telemetryLevel": "off",

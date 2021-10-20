@@ -83,8 +83,6 @@
             "command": "multiCommand.betterZenMode",
             "sequence": [
             "workbench.action.toggleZenMode",
-            "editor.action.toggleMinimap",
-            "settings.cycle.zenModeExtras",
             ]
         },
         {
@@ -101,26 +99,6 @@
             "sticky-selection.exitStickySelectionMode",
             ]
         },
-    ],
-
-    /// Settings cycle
-    "settings.cycle": [
-    {
-        "id": "zenModeExtras",
-        "overrideWorkspaceSettings": true,
-        "values": [
-                {
-                    "editor.lineNumbers": "off",
-                    "editor.folding": false,
-                    "editor.guides.indentation": false,
-                },
-                {
-                    "editor.lineNumbers": "on",
-                    "editor.folding": true,
-                    "editor.guides.indentation": true,
-                }
-            ]
-        }
     ],
 
     /// Language: plain text

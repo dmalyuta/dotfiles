@@ -257,7 +257,7 @@
         "command": "multiCommand.deleteLeftRight"
     },
     {
-        "key": "alt+v t",
+        "key": "alt+v f",
         "command": "togglemaxeditor.toggleMaximizeEditor"
     },
     {
@@ -275,5 +275,13 @@
     {
         "key": "alt+v b",
         "command": "workbench.action.toggleStatusbarVisibility"
+    },
+    {
+        "key": "alt+k alt+p",
+        "command": "workbench.action.showAllEditorsByMostRecentlyUsed"
+    },
+    {
+        "key": "ctrl+shift+b",
+        "command": "editor.action.selectToBracket"
     }
 ]

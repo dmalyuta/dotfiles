@@ -283,5 +283,9 @@
     {
         "key": "ctrl+shift+b",
         "command": "editor.action.selectToBracket"
+    },
+    {
+        "key": "alt+v q",
+        "command": "workbench.action.toggleMenuBar"
     }
 ]

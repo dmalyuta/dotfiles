@@ -26,6 +26,7 @@
     "workbench.activityBar.visible": true,
     "outline.showVariables": false,
     "breadcrumbs.showVariables": false,
+    "window.customMenuBarAltFocus": false,
 
     /// General editing
     "security.workspace.trust.enabled": false,

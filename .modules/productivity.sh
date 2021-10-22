@@ -4,25 +4,6 @@
 #
 # Author: Danylo Malyuta, 2020.
 
-# ..:: LaTeX ::..
-
-sudo apt-get -y install texlive-full
-
-# ..:: LibreOffice ::..
-
-if ! (sudo ls -1 /etc/apt/sources.list.d/ | grep -q "libreoffice"); then
-    sudo add-apt-repository -y ppa:libreoffice/ppa
-fi
-
-if not_installed libreoffice || ! (libreoffice --version | grep -Eq ".*7.*"); then
-    sudo apt-get -y purge libreoffice*
-    sudo apt-get -y clean
-    sudo apt-get -y autoremove
-    sudo apt-get -y update
-    sudo apt-get -y dist-upgrade
-    sudo apt-get -y install libreoffice
-fi
-
 # ..:: Brave Browser ::..
 
 # Remove Firefox
@@ -42,6 +23,33 @@ if not_installed brave-browser; then
 	sudo tee /etc/apt/sources.list.d/brave-browser-release.list
     sudo apt-get -y update
     sudo apt-get -y install brave-browser
+fi
+
+# ..:: LaTeX ::..
+
+sudo apt-get -y install texlive-full
+
+# ..:: LibreOffice ::..
+
+if ! (sudo ls -1 /etc/apt/sources.list.d/ | grep -q "libreoffice"); then
+    sudo add-apt-repository -y ppa:libreoffice/ppa
+fi
+
+if not_installed libreoffice || ! (libreoffice --version | grep -Eq ".*7.*"); then
+    sudo apt-get -y purge libreoffice*
+    sudo apt-get -y clean
+    sudo apt-get -y autoremove
+    sudo apt-get -y update
+    sudo apt-get -y dist-upgrade
+    sudo apt-get -y install libreoffice
+fi
+
+# ..:: Zettlr (note taking in markdown) ::..
+
+if not_installed Zettlr; then
+    wget -4 https://github.com/Zettlr/Zettlr/releases/download/v2.0.1/Zettlr-2.0.1-amd64.deb \
+        -P /tmp/
+    ( cd /tmp/ && sudo apt-get -y install ./Zettlr-2.0.1-amd64.deb )
 fi
 
 # ..:: Enpass password manager ::..

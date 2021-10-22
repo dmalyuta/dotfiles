@@ -23,6 +23,18 @@ alias killgrep='~/.bin/killgrep.sh'
 # Open file or URL in default application
 alias easyopen='xdg-open'
 
+# Open logseq easily
+alias logseq="logseq.AppImage"
+notebook() {
+    # Open logseq without blocking the terminal
+    logseq > /dev/null 2>&1 &
+}
+notebookd() {
+    # Open logseq and close the terminal
+    notebook
+    exit
+}
+
 # Restart networking
 alias restart-network='sudo systemctl restart NetworkManager.service'
 

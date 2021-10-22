@@ -287,5 +287,13 @@
     {
         "key": "alt+v q",
         "command": "workbench.action.toggleMenuBar"
+    },
+    {
+        "key": "alt+v f",
+        "command": "workbench.action.toggleMaximizedPanel"
+    },
+    {
+        "key": "ctrl+alt+w",
+        "command": "workbench.action.closeEditorsInGroup"
     }
 ]

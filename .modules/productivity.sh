@@ -52,6 +52,14 @@ if not_installed Zettlr; then
     ( cd /tmp/ && sudo apt-get -y install ./Zettlr-2.0.1-amd64.deb )
 fi
 
+# ..:: Logseq (note taking in markdown) ::..
+
+if [[ ! -f ~/.local/bin/logseq.AppImage ]]; then
+    wget -4 https://github.com/logseq/logseq/releases/download/0.4.4/logseq-linux-x64-0.4.4.AppImage \
+        -O ~/.local/bin/logseq.AppImage
+    sudo chmod +x ~/.local/bin/logseq.AppImage
+fi
+
 # ..:: Enpass password manager ::..
 
 if [[ ! -d /opt/enpass ]]; then

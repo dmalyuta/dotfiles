@@ -108,3 +108,6 @@ vterm_prompt_end(){
     fi
 }
 PS1=$PS1'\[$(vterm_prompt_end)\]'
+
+# Make logseq executable
+export PATH="$PATH:$HOME/.local/bin/"

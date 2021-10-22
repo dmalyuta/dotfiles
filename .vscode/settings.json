@@ -26,12 +26,9 @@
     "workbench.activityBar.visible": true,
     "outline.showVariables": false,
     "breadcrumbs.showVariables": false,
-<<<<<<< HEAD
     "window.customMenuBarAltFocus": false,
-=======
     "window.menuBarVisibility": "hidden",
     "workbench.editor.showTabs": false,
->>>>>>> c9d2423a025f2508dbe9add0e83606d9d42159c5
 
     /// General editing
     "security.workspace.trust.enabled": false,
@@ -139,4 +136,5 @@
     ],
     "julia.symbolCacheDownload": true,
     "julia.enableTelemetry": false,
+    "diffEditor.ignoreTrimWhitespace": false,
 }

@@ -26,6 +26,8 @@
     "workbench.activityBar.visible": true,
     "outline.showVariables": false,
     "breadcrumbs.showVariables": false,
+    "window.menuBarVisibility": "hidden",
+    "workbench.editor.showTabs": false,
 
     /// General editing
     "security.workspace.trust.enabled": false,
@@ -133,5 +135,4 @@
     ],
     "julia.symbolCacheDownload": true,
     "julia.enableTelemetry": false,
-    "workbench.editor.showTabs": false,
 }

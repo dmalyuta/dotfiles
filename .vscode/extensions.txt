@@ -1,4 +1,5 @@
 adam-bender.commit-message-editor
+albert.TabOut
 alefragnani.Bookmarks
 buenon.scratchpads
 cbuelter.vscode-toggle-max-editor
@@ -36,7 +37,6 @@ ms-vscode.test-adapter-converter
 nemesv.copy-file-name
 nwbjjbb.repeat-paste
 redhat.vscode-yaml
-riswu.vscode-sticky-selection
 ryuta46.multi-command
 sdras.night-owl
 sleistner.vscode-fileutils

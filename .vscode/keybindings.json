@@ -319,5 +319,49 @@
     {
         "key": "ctrl+shift+w",
         "command": "-workbench.action.closeWindow"
+    },
+    {
+        "key": "ctrl+shift+d",
+        "command": "editor.action.addSelectionToPreviousFindMatch"
+    },
+    {
+        "key": "alt+f",
+        "command": "editorScroll",
+        "args": {
+            "to": "down",
+            "by": "line",
+            "revealCursor": true,
+            "value": 10
+        }
+    },
+    {
+        "key": "alt+b",
+        "command": "editorScroll",
+        "args": {
+            "to": "up",
+            "by": "line",
+            "revealCursor": true,
+            "value": 10
+        }
+    },
+    {
+        "key": "alt+a",
+        "command": "cursorHome",
+        "when": "textInputFocus"
+    },
+    {
+        "key": "home",
+        "command": "-cursorHome",
+        "when": "textInputFocus"
+    },
+    {
+        "key": "alt+e",
+        "command": "cursorEnd",
+        "when": "textInputFocus"
+    },
+    {
+        "key": "end",
+        "command": "-cursorEnd",
+        "when": "textInputFocus"
     }
 ]

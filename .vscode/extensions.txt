@@ -5,9 +5,7 @@ buenon.scratchpads
 cbuelter.vscode-toggle-max-editor
 CoenraadS.bracket-pair-colorizer-2
 denco.confluence-markup
-dendron.dendron
 dendron.dendron-markdown-shortcuts
-dendron.dendron-paste-image
 eamodio.gitlens
 hbenl.vscode-test-explorer
 heptio.jsonnet

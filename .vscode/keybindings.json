@@ -363,5 +363,13 @@
         "key": "end",
         "command": "-cursorEnd",
         "when": "textInputFocus"
+    },
+    {
+        "key": "ctrl+q",
+        "command": "workbench.action.quickOpenView"
+    },
+    {
+        "key": "ctrl+q",
+        "command": "-workbench.action.quit"
     }
 ]

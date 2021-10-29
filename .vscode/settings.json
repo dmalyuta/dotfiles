@@ -120,6 +120,7 @@
     "latex-workshop.intellisense.includegraphics.preview.pdf.enabled": true,
     "latex-workshop.view.pdf.hand": true,
     "latex-workshop.view.pdf.invert": 0,
+    "latex-workshop.view.pdf.invertMode.enabled": "never",
     "latex-workshop.view.pdf.zoom": "page-width",
     "latex-workshop.latex.autoBuild.run": "never",
     "[latex]": {

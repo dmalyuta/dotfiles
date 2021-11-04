@@ -1,6 +1,7 @@
 adam-bender.commit-message-editor
 albert.TabOut
 alefragnani.Bookmarks
+alefragnani.project-manager
 buenon.scratchpads
 cbuelter.vscode-toggle-max-editor
 CoenraadS.bracket-pair-colorizer-2
@@ -10,6 +11,8 @@ eamodio.gitlens
 hbenl.vscode-test-explorer
 heptio.jsonnet
 hoovercj.vscode-settings-cycler
+iocave.customize-ui
+iocave.monkey-patch
 jacobdufault.fuzzy-search
 James-Yu.latex-workshop
 jgclark.vscode-todo-highlight

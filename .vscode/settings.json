@@ -3,6 +3,7 @@
     "window.zoomLevel": -1,
     "window.titleBarStyle": "custom",
     "workbench.colorTheme": "One Dark Pro Darker",
+    "editor.renderLineHighlight": "gutter",
     "workbench.colorCustomizations": {
         "editorCursor.foreground": "#8c9600",
         "editor.selectionBackground": "#ecbe7b44",
@@ -13,6 +14,9 @@
         "diffEditor.removedTextBorder": "#00000000",
         "diffEditor.insertedTextBackground": "#2a413855",
         "diffEditor.removedTextBackground": "#572d3655",
+        "titleBar.activeForeground":"#d6b600",
+        "editor.lineHighlightBackground": "#373c44ff",
+        "editorLineNumber.activeForeground": "#ffffff88",
     },
     "workbench.iconTheme": "vscode-icons",
     "workbench.startupEditor": "none",
@@ -24,11 +28,13 @@
     "editor.lineNumbers": "on",
     "editor.folding": true,
     "editor.guides.indentation": true,
-    "workbench.activityBar.visible": true,
     "outline.showVariables": false,
     "breadcrumbs.showVariables": false,
     "window.customMenuBarAltFocus": false,
     "window.menuBarVisibility": "hidden",
+    "customizeUI.activityBar": "bottom",
+    "workbench.editor.showTabs": false,
+    "editor.minimap.enabled": false,
 
     /// General editing
     "security.workspace.trust.enabled": false,
@@ -36,7 +42,7 @@
     "security.workspace.trust.untrustedFiles": "open",
     "workbench.editor.enablePreview": false,
     "workbench.editor.untitled.hint": "hidden",
-    "editor.wordWrap": "on",
+    "editor.wordWrap": "off",
     "files.eol": "\n",
     "editor.rulers": [ 100 ],
     "editor.wordWrapColumn": 100,
@@ -50,6 +56,7 @@
     "metaGo.decoration.additionalSingleCharCodeCharacters": "F,J",
     "metaGo.jumper.enableRippleSupportForSequentialTargetCharsCommand": false,
     "explorer.confirmDelete": false,
+    "bookmarks.saveBookmarksInProject": true,
 
     /// Online
     "telemetry.telemetryLevel": "off",
@@ -139,5 +146,4 @@
     ],
     "julia.symbolCacheDownload": true,
     "julia.enableTelemetry": false,
-    "workbench.editor.showTabs": false,
 }

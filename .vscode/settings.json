@@ -14,7 +14,7 @@
         "diffEditor.removedTextBorder": "#00000000",
         "diffEditor.insertedTextBackground": "#2a413855",
         "diffEditor.removedTextBackground": "#572d3655",
-        "titleBar.activeForeground":"#d6b600",
+        "titleBar.activeForeground":"#e2c08dff",
         "editor.lineHighlightBackground": "#373c44ff",
         "editorLineNumber.activeForeground": "#ffffff88",
     },

@@ -427,11 +427,11 @@
         "command": "bookmarks.toggleLabeled"
     },
     {
-        "key": "ctrl+shift+b v",
+        "key": "ctrl+shift+b f",
         "command": "bookmarks.list"
     },
     {
-        "key": "ctrl+shift+b shift+v",
+        "key": "ctrl+shift+b a",
         "command": "bookmarks.listFromAllFiles"
     }
 ]

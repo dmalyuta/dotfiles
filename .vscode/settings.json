@@ -64,6 +64,9 @@
     "http.proxyStrictSSL": false,
     "redhat.telemetry.enabled": false,
 
+    /// Terminal
+    "terminal.integrated.defaultProfile.linux": "bash",
+
     /// Git
     "git.confirmSync": false,
     "diffEditor.ignoreTrimWhitespace": false,

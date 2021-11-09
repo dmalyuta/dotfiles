@@ -55,6 +55,7 @@ fi
 # ..:: Logseq (note taking in markdown) ::..
 
 if [[ ! -f ~/.local/bin/logseq.AppImage ]]; then
+    mkdir -p ~/.local/bin/
     wget -4 https://github.com/logseq/logseq/releases/download/0.4.4/logseq-linux-x64-0.4.4.AppImage \
         -O ~/.local/bin/logseq.AppImage
     sudo chmod +x ~/.local/bin/logseq.AppImage

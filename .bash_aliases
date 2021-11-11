@@ -23,6 +23,9 @@ alias killgrep='~/.bin/killgrep.sh'
 # Open file or URL in default application
 alias easyopen='xdg-open'
 
+# Open browser
+alias browser='brave-browser'
+
 # Open logseq easily
 alias logseq="logseq.AppImage"
 notebook() {
@@ -211,8 +214,8 @@ pdfinterleave() {
 # You can clear these by doing:
 # $ gsettings set org.gnome.settings-daemon.plugins.media-keys custom-keybindings []
 
-# Shortcut Ctrl+Alt+F for Firefox
-python ~/.bin/set_customshortcut.py 'launch-brave' 'brave-browser' '<Ctrl><Alt>B'
+# Shortcut Ctrl+Alt+B for web browser
+python ~/.bin/set_customshortcut.py 'launch-browser' 'brave-browser' '<Ctrl><Alt>B'
 
 # Shortcut Shift+Ctrl+Alt+N for screen color inverse
 python ~/.bin/set_customshortcut.py 'invert-color' 'xcalib -invert -alter' '<Shift><Ctrl><Alt>N'

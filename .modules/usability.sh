@@ -135,8 +135,7 @@ sudo apt-get -y install xcalib \
      gnome-tweak-tool \
      pdftk \
      unrar \
-     xdotool \
-     xbindkeys
+     xdotool
 
 # Increase inotify to make sure Evince updates on PDF update
 # Source: https://superuser.com/a/1387905/512940

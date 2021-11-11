@@ -19,8 +19,3 @@ fi
 if [ -d ~/.bin ]; then
     PATH="${HOME}/.bin:$PATH"
 fi
-
-# Custom key bindings
-if ! pgrep xbindkeys > /dev/null; then
-    xbindkeys
-fi

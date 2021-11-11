@@ -24,7 +24,9 @@ alias killgrep='~/.bin/killgrep.sh'
 alias easyopen='xdg-open'
 
 # Open browser
-alias browser='brave-browser'
+if [ ! -f ~/.local/bin/browser ]; then
+    ln -sf /usr/bin/brave-browser ~/.local/bin/browser
+fi
 
 # Open logseq easily
 alias logseq="logseq.AppImage"
@@ -215,7 +217,7 @@ pdfinterleave() {
 # $ gsettings set org.gnome.settings-daemon.plugins.media-keys custom-keybindings []
 
 # Shortcut Ctrl+Alt+B for web browser
-python ~/.bin/set_customshortcut.py 'launch-browser' 'brave-browser' '<Ctrl><Alt>B'
+python ~/.bin/set_customshortcut.py 'launch-browser' 'browser' '<Ctrl><Alt>B'
 
 # Shortcut Shift+Ctrl+Alt+N for screen color inverse
 python ~/.bin/set_customshortcut.py 'invert-color' 'xcalib -invert -alter' '<Shift><Ctrl><Alt>N'

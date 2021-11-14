@@ -44,19 +44,11 @@ if not_installed libreoffice || ! (libreoffice --version | grep -Eq ".*7.*"); th
     sudo apt-get -y install libreoffice
 fi
 
-# ..:: Zettlr (note taking in markdown) ::..
-
-if not_installed Zettlr; then
-    wget -4 https://github.com/Zettlr/Zettlr/releases/download/v2.0.1/Zettlr-2.0.1-amd64.deb \
-        -P /tmp/
-    ( cd /tmp/ && sudo apt-get -y install ./Zettlr-2.0.1-amd64.deb )
-fi
-
 # ..:: Logseq (note taking in markdown) ::..
 
 if [[ ! -f ~/.local/bin/logseq.AppImage ]]; then
     mkdir -p ~/.local/bin/
-    wget -4 https://github.com/logseq/logseq/releases/download/0.4.4/logseq-linux-x64-0.4.4.AppImage \
+    wget -4 https://github.com/logseq/logseq/releases/download/0.4.6/logseq-linux-x64-0.4.6.AppImage \
         -O ~/.local/bin/logseq.AppImage
     sudo chmod +x ~/.local/bin/logseq.AppImage
 fi

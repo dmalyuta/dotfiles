@@ -101,3 +101,17 @@ if not_installed fzf; then
     git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
     ~/.fzf/install --all
 fi
+
+# ..:: Gedit plugins ::..
+
+GEDIT_PLUGINS_DIR=~/.local/share/gedit/plugins/
+
+mkdir -p GEDIT_PLUGINS_DIR
+
+RESTORE_MINIMAP_DIR="${GEDIT_PLUGINS_DIR}restore-minimap"
+if [[ ! -d "$RESTORE_MINIMAP_DIR" ]]; then
+    git clone https://github.com/johnfactotum/gedit-restore-minimap.git "$RESTORE_MINIMAP_DIR"
+fi
+
+# Set default settings
+cat "$DIR"/.config/gedit_settings.txt | xargs -L 1 gsettings set

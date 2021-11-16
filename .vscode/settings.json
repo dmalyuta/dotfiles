@@ -43,6 +43,7 @@
     "security.workspace.trust.untrustedFiles": "open",
     "workbench.editor.enablePreview": false,
     "workbench.editor.untitled.hint": "hidden",
+    "files.insertFinalNewline": true,
     "editor.wordWrap": "off",
     "files.eol": "\n",
     "editor.rulers": [ 100 ],

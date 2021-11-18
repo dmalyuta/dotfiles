@@ -21,7 +21,7 @@ org.gnome.gedit.preferences.print margin-right 25.0
 org.gnome.gedit.preferences.print print-font-body-pango 'Monospace 9'
 org.gnome.gedit.preferences.print print-syntax-highlighting true
 org.gnome.gedit.preferences.print margin-bottom 25.0
-org.gnome.gedit.preferences.print print-wrap-mode 'word'
+org.gnome.gedit.preferences.print print-wrap-mode 'none'
 org.gnome.gedit.plugins.filebrowser tree-view true
 org.gnome.gedit.plugins.filebrowser filter-mode "['hide-hidden', 'hide-binary']"
 org.gnome.gedit.plugins.filebrowser filter-pattern ''
@@ -38,9 +38,9 @@ org.gnome.gedit.state.window size "(1262, 1002)"
 org.gnome.gedit.state.window state 87168
 org.gnome.gedit.plugins active-plugins "['filebrowser', 'time', 'docinfo', 'modelines', 'spell', 'restore_minimap']"
 org.gnome.gedit.preferences.editor auto-save-interval "uint32 10"
-org.gnome.gedit.preferences.editor wrap-last-split-mode 'word'
+org.gnome.gedit.preferences.editor wrap-last-split-mode 'none'
 org.gnome.gedit.preferences.editor use-default-font true
-org.gnome.gedit.preferences.editor tabs-size "uint32 8"
+org.gnome.gedit.preferences.editor tabs-size "uint32 4"
 org.gnome.gedit.preferences.editor auto-save false
 org.gnome.gedit.preferences.editor background-pattern 'none'
 org.gnome.gedit.preferences.editor smart-home-end 'after'
@@ -50,13 +50,13 @@ org.gnome.gedit.preferences.editor editor-font 'Monospace 12'
 org.gnome.gedit.preferences.editor bracket-matching true
 org.gnome.gedit.preferences.editor syntax-highlighting true
 org.gnome.gedit.preferences.editor display-right-margin true
-org.gnome.gedit.preferences.editor insert-spaces false
+org.gnome.gedit.preferences.editor insert-spaces true
 org.gnome.gedit.preferences.editor max-undo-actions 2000
 org.gnome.gedit.preferences.editor restore-cursor-position true
 org.gnome.gedit.preferences.editor highlight-current-line true
 org.gnome.gedit.preferences.editor display-line-numbers true
 org.gnome.gedit.preferences.editor auto-indent true
-org.gnome.gedit.preferences.editor wrap-mode 'word'
+org.gnome.gedit.preferences.editor wrap-mode 'none'
 org.gnome.gedit.preferences.editor ensure-trailing-newline true
 org.gnome.gedit.preferences.editor right-margin-position "uint32 80"
 org.gnome.gedit.preferences.editor create-backup-copy false

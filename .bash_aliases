@@ -40,6 +40,17 @@ notebookd() {
     exit
 }
 
+# Open a terminal easily
+term() {
+    # Open terminator without blocking the terminal
+    terminator > /dev/null 2>&1 &
+}
+termd() {
+    # Open terminator and close the terminal
+    term
+    exit
+}
+
 # Restart networking
 alias restart-network='sudo systemctl restart NetworkManager.service'
 

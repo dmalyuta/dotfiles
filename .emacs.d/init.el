@@ -1350,7 +1350,7 @@ is automatically turned on while the line numbers are displayed."
   ;; Default mode line
   (doom-modeline-def-modeline 'main
     '(bar window-number danylo/matches buffer-info remote-host buffer-position selection-info danylo/turbo)
-    '(input-method debug lsp major-mode danylo/vcs process))
+    '(input-method debug major-mode danylo/vcs process))
   ;; Helm mode line
   (doom-modeline-def-modeline 'helm
     '(bar window-number helm-buffer-id helm-number helm-follow helm-prefix-argument) '())
@@ -2561,53 +2561,6 @@ If there is no shell open, prints a message to inform."
 ;; Source: https://emacs-lsp.github.io/lsp-mode/page/performance/
 (setq read-process-output-max (* 1024 1024 10)) ;; 10mb
 
-(use-package lsp-mode
-  ;; https://github.com/emacs-lsp/lsp-mode
-  ;; Emacs client/library for the Language Server Protocol
-  :init
-  (setq lsp-keymap-prefix "C-c l"
-        ;; Turn off the annoying progress spinner
-        lsp-progress-via-spinner nil
-        ;; Turn off LSP-mode imenu
-        lsp-enable-imenu nil
-        ;; Optional: fine-tune lsp-idle-delay. This variable determines how
-        ;; often lsp-mode will refresh the highlights, lenses, links, etc
-        ;; while you type.
-        lsp-idle-delay 0.5
-        ;; Use clangd instead
-        ;; https://www.reddit.com/r/cpp/comments/cafj21/ccls_clangd_and_cquery/
-        ;; lsp-disabled-clients '(ccls)
-        ;; lsp-clients-clangd-executable "clangd"
-        ;; Use company-capf for completion. Although company-lsp also
-        ;; supports caching lsp-mode’s company-capf does that by default. To
-        ;; achieve that uninstall company-lsp or put these lines in your
-        ;; config:
-        lsp-prefer-capf t
-        lsp-prefer-flymake nil
-        ;; Linting
-        lsp-diagnostic-package :none
-        ;; Diagnostics turn off
-        lsp-modeline-diagnostics-scope :none
-        ;; Other niceties
-        lsp-signature-auto-activate nil
-        lsp-signature-doc-lines 1
-        lsp-eldoc-enable-hover nil ;; Show variable info on hover
-        eldoc-idle-delay 0 ;; Delay before showing variable info on hover
-        lsp-enable-semantic-highlighting t
-        lsp-enable-snippet t ;; Enable arguments completion
-        lsp-enable-on-type-formatting nil ;; Do not auto-reformat code
-        lsp-headerline-breadcrumb-enable nil ;; Disable headerline breadcrumbs
-        lsp-enable-symbol-highlighting nil ;; Do not highlight symbols on hover
-        ;; Disabled LSP clients
-        ;; C++: use clangd
-        lsp-disabled-clients '(ccls (python-mode . pyls))
-        )
-  :hook
-  ((lsp-mode . (lambda ()
-                 (setq company-minimum-prefix-length 1)
-                 (push 'company-capf company-backends))))
-  )
-
 (use-package eglot
   ;; https://github.com/joaotavora/eglot
   ;; A client for Language Server Protocol servers
@@ -2617,40 +2570,6 @@ If there is no shell open, prints a message to inform."
   :config
   (add-to-list 'eglot-stay-out-of 'imenu)
   )
-
-;; Replace LSP spinner with a static gear (I like this better visually)
-
-(defun danylo/lsp-gear-show (orig-fun &rest args)
-  "Replace LSP spinner with a static gear, while the LSP process executes."
-  (mapc
-   (lambda (buf)
-     (with-current-buffer buf
-       (when (and buffer-file-name (bound-and-true-p lsp-mode))
-         ;; Snow process icon
-         (setq mode-line-process
-               (propertize
-                "   " 'display
-                (propertize (danylo/fa-icon "cogs") 'face
-                            `(:family ,(all-the-icons-faicon-family)
-                                      :inherit mode-line-inactive)))))))
-   (buffer-list))
-  (force-mode-line-update t))
-
-(defun danylo/lsp-gear-hide (orig-fun &rest args)
-  "Hide the gear icon."
-  (when (--all? (eq (lsp--workspace-status it) 'initialized)
-                lsp--buffer-workspaces)
-    (mapc
-     (lambda (buf)
-       (with-current-buffer buf
-         (when (and buffer-file-name
-                    (boundp 'lsp-mode))
-           (setq mode-line-process ""))))
-     (buffer-list))
-    (force-mode-line-update t)))
-
-(advice-add 'lsp--spinner-start :around #'danylo/lsp-gear-show)
-(advice-add 'lsp--spinner-stop :around #'danylo/lsp-gear-hide)
 
 ;;;; Open files manually, rather than through xref
 
@@ -2716,12 +2635,10 @@ find a definion."
 (use-package cc-mode
   ;; Emacs C-style language mode
   :ensure nil
-  :defines (lsp-clients-clangd-args)
   :bind (:map c-mode-base-map
               ("C-c f o" . ff-find-other-file)
               )
-  :hook ((c-mode-common . lsp)
-         (c-mode-common . yas-minor-mode))
+  :hook ((c-mode-common . yas-minor-mode))
   :custom
   (c-offsets-alist '((inline-open           . 0)
                      (brace-list-open       . 0)
@@ -2738,17 +2655,6 @@ find a definion."
   (setq c-basic-offset 2)
   ;; (remove-hook 'c-mode-common-hook 'semantic-mode)
   ;; (remove-hook 'c-mode-common-hook 'semantic)
-  :config
-  ;; Configure clangd for C++
-  (with-eval-after-load 'lsp-mode
-    (setq lsp-clients-clangd-args
-          '("-j=2"
-            "--background-index"
-            "--clang-tidy"
-            "--completion-style=bundled"
-            "--pch-storage=memory"
-            "--header-insertion=never"
-            "--suggest-missing-includes")))
   )
 
 (defun danylo/semantic-remove-hooks ()
@@ -2824,71 +2730,6 @@ Do this after `q` in Debugger buffer."
               python-fill-docstring-style 'pep-257-nn)
   (remove-hook 'python-mode-hook 'semantic-mode)
   (remove-hook 'python-mode-hook 'semantic))
-
-;;;; LSP
-
-(use-package lsp-pyright
-  ;; https://github.com/emacs-lsp/lsp-pyright
-  ;; lsp-mode client leveraging Pyright language server
-  :hook ((python-mode . (lambda ()
-                          (require 'lsp-pyright)
-                          (lsp))))
-  :init
-  (setq
-   ;; Do not print "analyzing... Done" in the minibuffer
-   ;; (I find it distracting)
-   lsp-pyright-show-analyzing nil
-   ;; Disable auto-import completions
-   lsp-pyright-auto-import-completions nil
-   ))
-
-;; Configure Flycheck
-(add-hook 'python-mode-hook
-          (lambda ()
-            (setq flycheck-enabled-checkers '(python-flake8))
-            (setq flycheck-disabled-checkers
-                  '(python-mypy
-                    python-pylint
-                    python-pyright))))
-
-(defun danylo/lsp-eldoc-toggle-hover ()
-  "Toggle variable info"
-  (interactive)
-  (if lsp-eldoc-enable-hover
-      (progn (setq lsp-eldoc-enable-hover nil)
-             (eldoc-mode -1))
-    (progn (setq lsp-eldoc-enable-hover t)
-           (eldoc-mode 1))))
-
-(defun danylo/lsp-variable-info-message (string)
-  "Display variable info"
-  (message "%s %s"
-           (danylo/fa-icon "info" `,danylo/yellow)
-           (propertize string 'face
-                       `(:foreground ,danylo/yellow))))
-
-(defun danylo/lsp-display-variable-info ()
-  (interactive)
-  (if (not (looking-at "[[:space:]\n]"))
-      (when (lsp--capability :hoverProvider)
-        (lsp-request-async
-         "textDocument/hover"
-         (lsp--text-document-position-params)
-         (-lambda ((hover &as &Hover? :range? :contents))
-           (when hover
-             (danylo/lsp-variable-info-message
-              (and contents (lsp--render-on-hover-content
-                             contents
-                             lsp-eldoc-render-all)))))
-         :error-handler #'ignore
-         :mode 'tick
-         :cancel-token :eldoc-hover))))
-
-(general-define-key
- :prefix "C-c l"
- :keymaps 'lsp-mode-map
- "i" 'danylo/lsp-eldoc-toggle-hover
- "v" 'danylo/lsp-display-variable-info)
 
 ;;;; Imenu setup
 

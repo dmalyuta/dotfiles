@@ -59,8 +59,10 @@
     "metaGo.jumper.enableRippleSupportForSequentialTargetCharsCommand": false,
     "explorer.confirmDelete": false,
     "bookmarks.saveBookmarksInProject": true,
-    "editor.parameterHints.enabled": false,
-    "editor.parameterHints": false,
+    "editor.quickSuggestions": { "other": false, "comments": false, "strings": false },
+    "editor.quickSuggestionsDelay": 1000,
+    "editor.inlineSuggest.enabled": false,
+    "editor.snippetSuggestions": "top",
 
     /// Online
     "telemetry.telemetryLevel": "off",

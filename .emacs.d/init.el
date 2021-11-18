@@ -4,10 +4,13 @@
 ;; No garbage collection at startup
 (setq gc-cons-threshold most-positive-fixnum)
 
+;; Increase the amount of data which Emacs reads from the process
+;; Source: https://emacs-lsp.github.io/lsp-mode/page/performance/
+(setq read-process-output-max (* 1024 1024 10)) ;; 10mb
+
 ;; Suppress general warnings
 (setq warning-suppress-types
-      '(((flycheck syntax-checker))
-        (server)
+      '((server)
         (comp)))
 
 ;; Native compilation settings
@@ -2006,7 +2009,7 @@ Default is 80"
   (require 'bufler)
   (setq bufler-filter-buffer-modes
         (append bufler-filter-buffer-modes
-                '(imenu-list-major-mode flycheck-error-list-mode))
+                '(imenu-list-major-mode))
         bufler-filter-buffer-name-regexps
         (append bufler-filter-buffer-name-regexps
                 `(,(rx "*Help*")
@@ -2040,13 +2043,6 @@ with C-u."
 (defun danylo/quit-and-kill-window (orig-fun &rest args)
   "Optionally also kill the window after quitting it."
   (setq delete-this-window nil)
-  ;; Check if window should be deleted
-  (require 'flycheck)
-  (mapc
-   (lambda (val)
-     (setq delete-this-window
-           (or delete-this-window (string= (buffer-name) val))))
-   `(,flycheck-error-list-buffer))
   ;; Quit or delete window as appropriate
   (if delete-this-window
       (progn
@@ -2113,169 +2109,14 @@ to (vterm) with no argument will create a **new** vterm buffer."
  "C-c t e" 'vterm
  "C-c t r" 'danylo/run-terminator-here)
 
-;;; ..:: Syntax checking ::..
-
-;; Size of flycheck error list
-(defconst flycheck-error-list-height 10)
-
-(use-package flycheck
-  ;; https://github.com/flycheck/flycheck
-  ;; A modern on-the-fly syntax checking extension
-  :hook ((c-mode-common . flycheck-mode)
-         (python-mode . flycheck-mode)
-         (sh-mode . flycheck-mode)
-         (julia-mode . flycheck-mode))
-  :bind (("C-c f e" . flycheck-display-error-at-point)
-         ("C-c f v" . flycheck-verify-setup)
-         ("C-c f l" . danylo/flycheck-list-errors)
-         :map flycheck-mode-map
-         ("C-c ! l" . danylo/flycheck-list-errors))
-  :init
-  (setq flycheck-enabled-checkers '(c/c++-gcc)
-        flycheck-check-syntax-automatically '(mode-enabled save)
-        flycheck-display-errors-delay 0.5
-        flycheck-checker-error-threshold 400
-        flycheck-indication-mode 'left-fringe
-        flycheck-highlighting-style `(conditional
-                                      ,most-positive-fixnum
-                                      level-face (delimiters "" "")))
-  (add-hook 'flycheck-mode-hook
-            (lambda ()
-              )))
-
-(with-eval-after-load "flycheck"
-  ;; Update Flycheck fringe indicators
-  ;; Inspired by Spacemacs (https://github.com/syl20bnr/spacemacs)
-  (flycheck-define-error-level 'error
-    :severity 2
-    :overlay-category 'flycheck-error-overlay
-    :fringe-bitmap 'danylo/flycheck-fringe-indicator
-    :error-list-face 'flycheck-error-list-error
-    :fringe-face 'flycheck-fringe-error)
-  (flycheck-define-error-level 'warning
-    :severity 1
-    :overlay-category 'flycheck-warning-overlay
-    :fringe-bitmap 'danylo/flycheck-fringe-indicator
-    :error-list-face 'flycheck-error-list-warning
-    :fringe-face 'flycheck-fringe-warning)
-  (flycheck-define-error-level 'info
-    :severity 0
-    :overlay-category 'flycheck-info-overlay
-    :fringe-bitmap 'danylo/flycheck-fringe-indicator
-    :error-list-face 'flycheck-error-list-info
-    :fringe-face 'flycheck-fringe-info)
-  ;; Removes the "hatch pattern" for multi-line errors
-  (define-fringe-bitmap 'flycheck-fringe-bitmap-continuation
-    (vector #b0))
-  ;; Update faces
-  (set-face-attribute 'flycheck-fringe-error nil :foreground `,danylo/red)
-  (set-face-attribute 'flycheck-fringe-warning nil :foreground `,danylo/yellow)
-  (set-face-attribute 'flycheck-fringe-info nil :foreground `,danylo/green)
-  (set-face-attribute 'flycheck-error nil :underline `,danylo/red)
-  (set-face-attribute 'flycheck-warning nil :underline `,danylo/yellow)
-  (set-face-attribute 'flycheck-info nil :underline `,danylo/green))
-
-(with-eval-after-load "flymake"
-  ;; Update Flymake fringe indicators
-  ;; Make it look like Flycheck
-  (setq flymake-error-bitmap '(danylo/flycheck-fringe-indicator flycheck-fringe-error)
-        flymake-warning-bitmap '(danylo/flycheck-fringe-indicator flycheck-fringe-warning)
-        flymake-note-bitmap '(danylo/flycheck-fringe-indicator flycheck-fringe-info))
-  ;; Update faces
-  (set-face-attribute 'flymake-error nil :underline `,danylo/red)
-  (set-face-attribute 'flymake-warning nil :underline `,danylo/yellow)
-  (set-face-attribute 'flymake-note nil :underline `,danylo/green))
-
-(defun danylo/flycheck-list-errors ()
-  "Open the list of errors in the current buffer."
-  (interactive)
-  (unless flycheck-mode
-    (user-error "Flycheck mode not enabled"))
-  ;; Create and initialize the error list
-  (unless (get-buffer flycheck-error-list-buffer)
-    (with-current-buffer (get-buffer-create flycheck-error-list-buffer)
-      (flycheck-error-list-mode)))
-  ;; Reset the error filter
-  (flycheck-error-list-reset-filter)
-  ;; Open the error buffer
-  (let ((source (current-buffer)))
-    (if (get-buffer-window flycheck-error-list-buffer)
-        (progn
-          (pop-to-buffer flycheck-error-list-buffer)
-          (flycheck-error-list-set-source source))
-      (let ((this-window (selected-window))
-            (new-window (split-window-vertically
-                         (* -1 (max 4 (min danylo/flycheck-error-list-size
-                                           (/ (window-total-height) 2)))))))
-        (select-window new-window)
-        (switch-to-buffer flycheck-error-list-buffer)
-        (flycheck-error-list-set-source source)
-        (select-window this-window)))))
-
-(defun danylo/flycheck-jump-in-buffer (orig-fun &rest args)
-  "In BUFFER, jump to ERROR.
-Patched so that if the last window visited is the buffer, jump to that one.
-This improves the default behaviour of just jumping to any open window that
-holds the buffer, which can be erratic.
-The remainder of the function is a carbon-copy from Flycheck."
-  (setq buffer (nth 0 args)
-        error (nth 1 args))
-  (if (eq (window-buffer) (get-buffer flycheck-error-list-buffer))
-      (progn
-        ;; The patch: try first by going to last window
-        (let ((current-window (selected-window)))
-          (danylo/switch-to-last-window)
-          (unless (eq (current-buffer) buffer)
-            (pop-to-buffer buffer 'other-window))))
-    (switch-to-buffer buffer))
-  (let ((pos (flycheck-error-pos error)))
-    (unless (eq (goto-char pos) (point))
-      (widen)
-      (goto-char pos)))
-  (flycheck-error-list-highlight-errors 'preserve-pos))
-(advice-add 'flycheck-jump-in-buffer :around #'danylo/flycheck-jump-in-buffer)
-
-;;;; >> Spell checking <<
-
-(use-package speck
-  ;; Minor mode for spell checking
-  :ensure nil
-  :quelpa ((speck :fetcher url
-                  :url "https://raw.githubusercontent.com/emacsmirror/emacswiki.org/master/speck.el"))
-  :bind (:map speck-mode-map
-              ("C-c s w" . speck-popup-menu-at-point)
-              ("C-c s r" . speck-replace-next)
-              ("C-c s a" . speck-add-next))
-  :init
-  (add-hook 'speck-mode-hook
-            (lambda () (set-face-attribute 'speck-mouse nil
-                                           :background `,danylo/faded))))
-
-(defun danylo/toggle-spellcheck ()
-  "Turn on spell checking."
-  (interactive)
-  (if (bound-and-true-p speck-mode)
-      ;; Turn off spellcheck
-      (speck-mode -1)
-    ;; Turn on spellcheck
-    (speck-mode +1)))
-
-(general-define-key
- "C-c s s" 'danylo/toggle-spellcheck)
-
 ;;; ..:: Completion ::..
 
 (use-package company
   ;; https://github.com/company-mode/company-mode
   ;;  Modular in-buffer completion framework for Emacs
-  :hook ((c-mode-common . company-mode)
-         (julia-mode . company-mode)
-         (emacs-lisp-mode . company-mode)
-         (comint-mode . company-mode)
+  :hook ((emacs-lisp-mode . company-mode)
          (LaTeX-mode . company-mode)
-         (sh-mode . company-mode)
-         (web-mode . company-mode)
-         (graphviz-dot-mode . company-mode))
+         (sh-mode . company-mode))
   :bind (("S-<return>" . company-complete))
   :init
   (setq company-dabbrev-downcase 0
@@ -2298,12 +2139,6 @@ argument: number-or-marker-p, nil'."
     (setq company-candidates-cache nil))
   (company-cancel 'unique))
 (advice-add 'company--continue :around #'danylo/company--continue)
-
-(use-package company-shell
-  ;; https://github.com/Alexander-Miller/company-shell
-  ;; company mode completion backends for your shell functions
-  :hook ((shell-mode . (lambda ()
-                         (add-to-list 'company-backends 'company-shell)))))
 
 ;;; ..:: File management ::..
 
@@ -2555,22 +2390,6 @@ If there is no shell open, prints a message to inform."
     (message "No shell open."))
   shell-content)
 
-;;; ..:: Language server protocol ::..
-
-;; Increase the amount of data which Emacs reads from the process
-;; Source: https://emacs-lsp.github.io/lsp-mode/page/performance/
-(setq read-process-output-max (* 1024 1024 10)) ;; 10mb
-
-(use-package eglot
-  ;; https://github.com/joaotavora/eglot
-  ;; A client for Language Server Protocol servers
-  :init (setq eglot-connect-timeout 300
-              eglot-autoreconnect nil
-              eglot-autoshutdown t)
-  :config
-  (add-to-list 'eglot-stay-out-of 'imenu)
-  )
-
 ;;;; Open files manually, rather than through xref
 
 (defun danylo/ffap (&optional filename)
@@ -2682,34 +2501,6 @@ Semantic."
   (setq srefactor-ui-menu-show-help nil)
   :config
   (require 'srefactor))
-
-;;;; Debugging
-
-(add-hook 'gud-mode-hook
-          (lambda ()
-            (dolist (m (list gud-mode-map gdb-inferior-io-mode-map))
-              (define-key m (kbd "C-<up>") 'nil)
-              (define-key m (kbd "C-<down>") 'nil)
-              (define-key m (kbd "C-S-<up>") 'nil)
-              (define-key m (kbd "C-S-<down>") 'nil))))
-
-(defvar all-gud-modes '(gud-mode comint-mode gdb-locals-mode
-  gdb-frames-mode gdb-breakpoints-mode)
-  "A list of modes when using gdb")
-
-(defun kill-all-gud-buffers ()
-  "Kill all gud buffers including Debugger, Locals, Frames, Breakpoints.
-Do this after `q` in Debugger buffer."
-  (interactive)
-  (save-excursion
-        (let ((count 0))
-          (dolist (buffer (buffer-list))
-                (set-buffer buffer)
-                (when (member major-mode all-gud-modes)
-                  (setq count (1+ count))
-                  (kill-buffer buffer)
-                  (delete-other-windows))) ;; fix the remaining two windows issue
-          (message "Killed %i buffer(s)." count))))
 
 ;;; ..:: Python ::..
 
@@ -2870,42 +2661,6 @@ blocks."
     (unless (or (eq (char-before) ?`) (eq (char-after string-open) ?`))
       (apply orig-fun args))))
 (advice-add 'julia-syntax-stringify :around #'danylo/ignore-triple-backticks)
-
-(use-package eglot-jl
-  ;; https://github.com/non-Jedi/eglot-jl
-  ;; Wrapper for using Julia LanguageServer.jl with emacs eglot
-  :hook ((julia-mode
-          . (lambda ()
-              (setenv "JULIA_NUM_THREADS" "2")
-              (setq eglot-ignored-server-capabilites
-                    (append eglot-ignored-server-capabilites
-                            '(:hoverProvider :signatureHelpProvider)))
-              (eglot-ensure))))
-  :init
-  (setq eglot-jl-language-server-project "~/.julia/environments/v1.6")
-  ;; Disable Flymake, see
-  ;; https://github.com/joaotavora/eglot/issues/123#issuecomment-444104870
-  (add-hook 'eglot--managed-mode-hook (lambda () (flymake-mode -1)))
-  :config
-  (eglot-jl-init))
-
-(defun danylo/eglot-flymake-backend (orig-fun &rest args)
-  "Turn off Flymake diagnostics when using Julia."
-  (unless (derived-mode-p 'julia-mode)
-    (apply orig-fun args)))
-(advice-add 'eglot-flymake-backend :around #'danylo/eglot-flymake-backend)
-
-(use-package julia-staticlint
-  ;; https://github.com/dmalyuta/julia-staticlint
-  ;; Emacs Flycheck support for StaticLint.jl
-  :ensure nil
-  :quelpa ((julia-staticlint :fetcher github
-                             :repo "dmalyuta/julia-staticlint"
-                             :files (:defaults "julia_staticlint_server.jl"
-                                               "julia_staticlint_client.jl")))
-  :hook ((julia-mode . julia-staticlint-activate))
-  :config
-  (julia-staticlint-init))
 
 ;;;; Julia shell interaction
 
@@ -3450,35 +3205,6 @@ Patched so that any new file by default is guessed as being its own master."
   ;; An elisp library for working with xml, esxml and sxml.
   ;; **Loading this just because unpackaged needs it**
   )
-
-;;; ..:: HTML/CSS ::..
-
-(use-package company-web
-  ;; https://github.com/osv/company-web
-  ;; Emacs company backend for html, jade, slim
-  :hook ((web-mode
-          . (lambda ()
-              (setq company-backends
-                    (append '(company-web-html) company-backends)))))
-  :config
-  (require 'company-web-html))
-
-(use-package web-mode
-  ;; https://github.com/fxbois/web-mode
-  ;; Web template editing mode for emacs
-  :ensure nil
-  :quelpa ((web-mode :fetcher github
-                     :repo "fxbois/web-mode"
-                     :commit "3ff506a"))
-  :init
-  (add-to-list 'auto-mode-alist '("\\.html?\\'" . web-mode))
-  (add-to-list 'auto-mode-alist '("\\.[s]css?\\'" . web-mode))
-  (add-to-list 'auto-mode-alist '("\\.js?\\'" . web-mode))
-  (setq web-mode-markup-indent-offset 2
-        web-mode-css-indent-offset 2
-        web-mode-code-indent-offset 2)
-  :config
-  (require 'web-mode))
 
 ;;; ..:: Graphviz ::..
 

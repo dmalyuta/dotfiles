@@ -236,3 +236,7 @@ python ~/.bin/set_customshortcut.py 'invert-color' 'xcalib -invert -alter' '<Shi
 # Rofi desktop searching
 python ~/.bin/set_customshortcut.py 'launch-rofi' \
        "rofi -modi drun,window,find:~/.bin/finder.sh -show drun" '<Ctrl><Alt>R'
+
+# Flameshot screenshot
+python ~/.bin/set_customshortcut.py 'take-screenshot' \
+       "/usr/bin/flameshot gui" '<Ctrl><Alt>P'

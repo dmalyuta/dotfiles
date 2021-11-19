@@ -1,6 +1,6 @@
 org.gnome.gedit.preferences.ui statusbar-visible true
 org.gnome.gedit.preferences.ui bottom-panel-visible false
-org.gnome.gedit.preferences.ui side-panel-visible false
+org.gnome.gedit.preferences.ui side-panel-visible true
 org.gnome.gedit.preferences.ui show-tabs-mode 'auto'
 org.gnome.gedit.plugins.pythonconsole use-system-font true
 org.gnome.gedit.plugins.pythonconsole command-color '#314e6c'
@@ -21,13 +21,11 @@ org.gnome.gedit.preferences.print margin-right 25.0
 org.gnome.gedit.preferences.print print-font-body-pango 'Monospace 9'
 org.gnome.gedit.preferences.print print-syntax-highlighting true
 org.gnome.gedit.preferences.print margin-bottom 25.0
-org.gnome.gedit.preferences.print print-wrap-mode 'none'
+org.gnome.gedit.preferences.print print-wrap-mode 'word'
 org.gnome.gedit.plugins.filebrowser tree-view true
-org.gnome.gedit.plugins.filebrowser filter-mode "['hide-hidden', 'hide-binary']"
+org.gnome.gedit.plugins.filebrowser filter-mode "['hide-binary']"
 org.gnome.gedit.plugins.filebrowser filter-pattern ''
 org.gnome.gedit.plugins.filebrowser enable-remote false
-org.gnome.gedit.plugins.filebrowser root 'file:///'
-org.gnome.gedit.plugins.filebrowser virtual-root 'file:///home/danylo/Documents/dotfiles/.modules'
 org.gnome.gedit.plugins.filebrowser binary-patterns "['*.la', '*.lo']"
 org.gnome.gedit.plugins.filebrowser open-at-first-doc true
 org.gnome.gedit.state.window bottom-panel-size 140
@@ -36,9 +34,9 @@ org.gnome.gedit.state.window side-panel-active-page 'GeditWindowDocumentsPanel'
 org.gnome.gedit.state.window bottom-panel-active-page ''
 org.gnome.gedit.state.window size "(1262, 1002)"
 org.gnome.gedit.state.window state 87168
-org.gnome.gedit.plugins active-plugins "['filebrowser', 'time', 'docinfo', 'modelines', 'spell', 'restore_minimap']"
+org.gnome.gedit.plugins active-plugins "['scroll_past', 'filebrowser', 'time', 'quickhighlight', 'docinfo', 'modelines', 'quickopen', 'spell']"
 org.gnome.gedit.preferences.editor auto-save-interval "uint32 10"
-org.gnome.gedit.preferences.editor wrap-last-split-mode 'none'
+org.gnome.gedit.preferences.editor wrap-last-split-mode 'word'
 org.gnome.gedit.preferences.editor use-default-font true
 org.gnome.gedit.preferences.editor tabs-size "uint32 4"
 org.gnome.gedit.preferences.editor auto-save false
@@ -55,7 +53,7 @@ org.gnome.gedit.preferences.editor max-undo-actions 2000
 org.gnome.gedit.preferences.editor restore-cursor-position true
 org.gnome.gedit.preferences.editor highlight-current-line true
 org.gnome.gedit.preferences.editor display-line-numbers true
-org.gnome.gedit.preferences.editor auto-indent true
+org.gnome.gedit.preferences.editor auto-indent false
 org.gnome.gedit.preferences.editor wrap-mode 'none'
 org.gnome.gedit.preferences.editor ensure-trailing-newline true
 org.gnome.gedit.preferences.editor right-margin-position "uint32 80"

@@ -89,6 +89,8 @@ if not_installed shutter; then
     sudo apt-get -y install shutter
 fi
 
+sudo apt-get -y install flameshot
+
 if not_installed peek; then
     sudo add-apt-repository -y ppa:peek-developers/stable
     sudo apt-get update
@@ -108,9 +110,9 @@ GEDIT_PLUGINS_DIR=~/.local/share/gedit/plugins/
 
 mkdir -p GEDIT_PLUGINS_DIR
 
-RESTORE_MINIMAP_DIR="${GEDIT_PLUGINS_DIR}restore-minimap"
-if [[ ! -d "$RESTORE_MINIMAP_DIR" ]]; then
-    git clone https://github.com/johnfactotum/gedit-restore-minimap.git "$RESTORE_MINIMAP_DIR"
+SCROLL_PAST_DIR="${GEDIT_PLUGINS_DIR}scroll-past"
+if [[ ! -d "$SCROLL_PAST_DIR" ]]; then
+    git clone https://github.com/hardpixel/gedit-scroll-past "$SCROLL_PAST_DIR"
 fi
 
 # Set default settings

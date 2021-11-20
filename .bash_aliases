@@ -239,4 +239,4 @@ python ~/.bin/set_customshortcut.py 'launch-rofi' \
 
 # Flameshot screenshot
 python ~/.bin/set_customshortcut.py 'take-screenshot' \
-       "/usr/bin/flameshot gui" '<Ctrl><Alt>P'
+       "/usr/bin/flameshot gui" '<Shift><Ctrl><Alt>P'

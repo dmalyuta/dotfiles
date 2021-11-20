@@ -53,7 +53,7 @@ org.gnome.gedit.preferences.editor max-undo-actions 2000
 org.gnome.gedit.preferences.editor restore-cursor-position true
 org.gnome.gedit.preferences.editor highlight-current-line true
 org.gnome.gedit.preferences.editor display-line-numbers true
-org.gnome.gedit.preferences.editor auto-indent false
+org.gnome.gedit.preferences.editor auto-indent true
 org.gnome.gedit.preferences.editor wrap-mode 'none'
 org.gnome.gedit.preferences.editor ensure-trailing-newline true
 org.gnome.gedit.preferences.editor right-margin-position "uint32 80"

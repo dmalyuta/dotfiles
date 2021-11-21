@@ -108,7 +108,7 @@ fi
 
 GEDIT_PLUGINS_DIR=~/.local/share/gedit/plugins/
 
-mkdir -p GEDIT_PLUGINS_DIR
+mkdir -p $GEDIT_PLUGINS_DIR
 
 SCROLL_PAST_DIR="${GEDIT_PLUGINS_DIR}scroll-past"
 if [[ ! -d "$SCROLL_PAST_DIR" ]]; then

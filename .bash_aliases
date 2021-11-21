@@ -72,6 +72,69 @@ semacsd() {
     exit
 }
 
+# Create emacs server and connect to server
+EMACS_DEFAULT_DAEMON="emacs-server"
+
+emacs-start() {
+    name=$1
+    if [ -z "$name" ]; then
+        name="$EMACS_DEFAULT_DAEMON"
+    fi
+    emacs --daemon=$name
+}
+
+emacs-stop() {
+    name=$1
+    if [ -z "$name" ]; then
+        name="$EMACS_DEFAULT_DAEMON"
+    fi
+    emacsclient -s $name -e "(kill-emacs)"
+}
+
+emacs-list-servers() {
+    ls -1 /run/user/1000/emacs
+}
+
+emacs-connect-new() {
+    name=$1
+    file=$2
+    if [ -z "$2" ]; then
+        name="$EMACS_DEFAULT_DAEMON"
+        file="$1"
+    fi
+    if [ -z "$file" ]; then
+        nohup emacsclient -c -s "$name" -e "(raise-frame)" &>/dev/null & disown
+    else
+        nohup emacsclient -c -s "$name" "$file" &>/dev/null & disown
+    fi
+}
+
+emacs-connect() {
+    name=$1
+    file=$2
+
+    if [ -z "$2" ]; then
+        name="$EMACS_DEFAULT_DAEMON"
+        file="$1"
+    fi
+
+    window_count=$( emacsclient -s emacs-server -e "(length (frame-list))" )
+
+    if [ -z "$file" ]; then
+        if [ "$window_count" = "1" ]; then
+            nohup emacsclient -c -s "$name" -e "(raise-frame)" &>/dev/null & disown
+        else
+            nohup emacsclient -s "$name" -e "(raise-frame)" &>/dev/null & disown
+        fi
+    else
+        if [ "$window_count" = "1" ]; then
+            nohup emacsclient -c -s "$name" "$file" &>/dev/null & disown
+        else
+            nohup emacsclient -s "$name" "$file" &>/dev/null & disown
+        fi
+    fi
+}
+
 # LibreOffice open file without blocking terminal
 sdoc() {
     nohup libreoffice6.4 $@ &>/dev/null & disown

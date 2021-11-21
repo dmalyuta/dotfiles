@@ -444,7 +444,7 @@ directory."
          :map default-text-scale-mode-map
          ("C-M-0" . danylo/reset-font-size))
   :init
-  (add-hook 'after-init-hook
+  (add-hook 'emacs-startup-hook
             (lambda ()
               (setq danylo/default-font-size
                     (face-attribute 'default :height))))
@@ -1099,7 +1099,18 @@ height."
 ;;; ..:: Theming and code aesthetics ::..
 
 ;; Set frame title
-(setq frame-title-format '("GNU Emacs " emacs-version))
+(defvar frame-title '("GNU Emacs " emacs-version)
+  "Frame (i.e., window) title.")
+
+(defun danylo/make-frame-title ()
+  "Sets the frame title."
+  (if (boundp 'server-name)
+      (setq frame-title-format (append frame-title '(" [" server-name "]")))
+    (setq frame-title-format frame-title)))
+(danylo/make-frame-title)
+(add-hook 'after-make-frame-functions
+          (lambda (new-frame)
+            (danylo/make-frame-title)))
 
 (use-package rainbow-delimiters
   ;; https://github.com/Fanael/rainbow-delimiters
@@ -1272,10 +1283,9 @@ is automatically turned on while the line numbers are displayed."
 
 (add-hook 'after-init-hook
           (lambda ()
-            (when (window-system)
-              ;; Default Emacs font
-              (set-face-attribute 'default nil
-                                  :height `,danylo/font-default-height))))
+            ;; Default Emacs font
+            (set-face-attribute 'default nil
+                                :height `,danylo/font-default-height)))
 
 ;; Speed up font-lock mode speed (can causes laggy scrolling)
 (setq-default font-lock-support-mode 'jit-lock-mode

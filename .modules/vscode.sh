@@ -35,4 +35,24 @@ ln -sf "$DIR"/.vscode/snippets ~/.config/Code/User
 # To save current extensions into dotfiles, do:
 # code --list-extensions > "$DIR"/.vscode/extensions.txt
 
-cat "$DIR"/.vscode/extensions.txt | xargs -L 1 code --install-extension
+# Get extension lists...
+# ... that are not currently installed
+VSCODE_INSTALLED_EXTENSIONS=/tmp/vscode_installed_extensions.txt
+code --list-extensions > "$VSCODE_INSTALLED_EXTENSIONS"
+# ... that are wanted to be installed
+VSCODE_WANTED_EXTENSIONS="$DIR"/.vscode/extensions.txt
+# ... that are to be removed (because they are not in the wanted extensions list)
+VSCODE_EXTENSIONS_TO_REMOVE=/tmp/vscode_extensions_to_remove.txt
+comm -23 <(sort -d "$VSCODE_INSTALLED_EXTENSIONS") <(sort -d "$VSCODE_WANTED_EXTENSIONS") > \
+     "$VSCODE_EXTENSIONS_TO_REMOVE"
+# ... that are to be installed (because they are in the wanted extensions list, but
+# are not currently installed)
+VSCODE_EXTENSIONS_TO_INSTALL=/tmp/vscode_extensions_to_install.txt
+comm -13 <(sort -d "$VSCODE_INSTALLED_EXTENSIONS") <(sort -d "$VSCODE_WANTED_EXTENSIONS") > \
+     "$VSCODE_EXTENSIONS_TO_INSTALL"
+
+# Remove extensions that are no longer wanted
+cat "$VSCODE_EXTENSIONS_TO_REMOVE" | xargs -L 1 code --uninstall-extension
+
+# Install extensions that are not already installed
+cat "$VSCODE_EXTENSIONS_TO_INSTALL" | xargs -L 1 code --install-extension

@@ -118,7 +118,7 @@
             ]
         },
         "multiCommand.doubleSuggestionsToggle": {
-            "interval": 50,
+            // "interval": 50,
             "sequence": [
                 "editor.action.triggerSuggest",
                 "editor.cancelOperation",

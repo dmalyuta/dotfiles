@@ -59,12 +59,8 @@
     "metaGo.jumper.enableRippleSupportForSequentialTargetCharsCommand": false,
     "explorer.confirmDelete": false,
     "bookmarks.saveBookmarksInProject": true,
-    "editor.quickSuggestions": { "other": true, "comments": true, "strings": true },
-    // The following hack seems to make sure the suggestions list is populated, but does not appear
-    // for any perceptible amount of time. The problem is that if quick suggestions are turned off,
-    // then I seem to need to trigger suggestions twice in order to have the list populated, which
-    // is annoying
-    "editor.quickSuggestionsDelay": 86400000, // 24 hours
+    "editor.quickSuggestions": { "other": false, "comments": false, "strings": false },
+    "editor.quickSuggestionsDelay": 1000,
     "editor.suggestOnTriggerCharacters": false,
     "editor.acceptSuggestionOnCommitCharacter": false,
     "editor.wordBasedSuggestions": false,
@@ -122,7 +118,15 @@
             "deleteLeft",
             "deleteRight",
             ]
-        }
+        },
+        {
+            "command": "multiCommand.doubleSuggestionsToggle",
+            "sequence": [
+            "editor.action.triggerSuggest",
+            "editor.cancelOperation",
+            "editor.action.triggerSuggest",
+            ]
+        },
     ],
 
     /// Language: plain text

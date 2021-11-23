@@ -178,15 +178,8 @@ passwordcopy() {
 }
 alias pswd="passwordcopy"
 
-# Git push
-gitpush() {
-    pswd github.com
-    git push
-}
-gitpushoverleaf() {
-    pswd overleaf.com
-    git push
-}
+# Git commands
+alias git-print-branch="git rev-parse --abbrev-ref HEAD"
 
 # Git GUI viewer
 gitview() {

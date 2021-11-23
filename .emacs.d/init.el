@@ -1841,6 +1841,10 @@ in the following cases:
 (general-define-key
  "C-c e t" 'danylo/turbo-toggle)
 
+;;;; Server mode customization
+
+(setq server-client-instructions nil)
+
 ;;; ..:: Window management ::..
 
 ;;;; >> Movement across windows <<

@@ -105,29 +105,27 @@
     "zenMode.hideTabs": false,
 
     /// Multi-commands
-    "multiCommand.commands": [
-        {
-            "command": "multiCommand.betterZenMode",
+    "multiCommand.commands": {
+        "multiCommand.betterZenMode": {
             "sequence": [
-            "workbench.action.toggleZenMode",
+                "workbench.action.toggleZenMode",
             ]
         },
-        {
-            "command": "multiCommand.deleteLeftRight",
+        "multiCommand.deleteLeftRight": {
             "sequence": [
-            "deleteLeft",
-            "deleteRight",
+                "deleteLeft",
+                "deleteRight",
             ]
         },
-        {
-            "command": "multiCommand.doubleSuggestionsToggle",
+        "multiCommand.doubleSuggestionsToggle": {
+            "interval": 50,
             "sequence": [
-            "editor.action.triggerSuggest",
-            "editor.cancelOperation",
-            "editor.action.triggerSuggest",
+                "editor.action.triggerSuggest",
+                "editor.cancelOperation",
+                "editor.action.triggerSuggest",
             ]
         },
-    ],
+    },
 
     /// Language: plain text
     "[plaintext]": {

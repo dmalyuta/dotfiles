@@ -107,25 +107,13 @@
 
     /// Multi-commands
     "multiCommand.commands": {
-        "multiCommand.betterZenMode": {
-            "sequence": [
-                "workbench.action.toggleZenMode",
-            ]
-        },
-        "multiCommand.deleteLeftRight": {
-            "sequence": [
-                "deleteLeft",
-                "deleteRight",
-            ]
-        },
-        "multiCommand.doubleSuggestionsToggle": {
-            // "interval": 50,
-            "sequence": [
-                "editor.action.triggerSuggest",
-                "editor.cancelOperation",
-                "editor.action.triggerSuggest",
-            ]
-        },
+        // "multiCommand.NAME": {
+        //     "interval": INTERVAL_BETWEEN_COMMANDS_MS,
+        //     "sequence": [
+        //         "COMMAND_1",
+        //         "COMMAND_2",
+        //     ]
+        // },
     },
 
     /// Language: plain text
@@ -160,6 +148,8 @@
     /// Language: Python
     "jupyter.interactiveWindowMode": "perFile",
     "jupyter.askForKernelRestart": false,
+    "pylance.insidersChannel": "daily",
+    // "python.analysis.logLevel": "Trace",
 
     /// Language: Julia
     "terminal.integrated.commandsToSkipShell": [

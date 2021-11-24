@@ -199,8 +199,7 @@
     },
     {
         "key": "ctrl+k z",
-        "command": "extension.multiCommand.execute" ,
-        "args": { "command": "multiCommand.betterZenMode" }
+        "command": "workbench.action.toggleZenMode"
     },
     {
         "key": "ctrl+shift+l b",
@@ -251,10 +250,6 @@
         "key": "ctrl+alt+v",
         "command": "-latex-workshop.view",
         "when": "!config.latex-workshop.bind.altKeymap.enabled && editorLangId =~ /latex|rsweave|jlweave/"
-    },
-    {
-        "key": "alt+delete",
-        "command": "multiCommand.deleteLeftRight"
     },
     {
         "key": "alt+v f",
@@ -456,6 +451,11 @@
     },
     {
         "key": "ctrl+space",
-        "command": "multiCommand.doubleSuggestionsToggle"
-    }
+        "command": "-toggleSuggestionDetails"
+    },
+    {
+        "key": "ctrl+i",
+        "command": "toggleSuggestionDetails",
+        "when": "suggestWidgetVisible && textInputFocus"
+    },
 ]

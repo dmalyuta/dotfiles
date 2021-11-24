@@ -80,6 +80,7 @@
     /// Git
     "git.confirmSync": false,
     "diffEditor.ignoreTrimWhitespace": false,
+    "gitlens.views.branches.branches.layout": "list",
 
     /// ToDo highlighting
     "todohighlight.isEnable": true,

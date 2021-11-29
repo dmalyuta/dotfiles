@@ -4,6 +4,7 @@ alefragnani.Bookmarks
 alefragnani.project-manager
 buenon.scratchpads
 cbuelter.vscode-toggle-max-editor
+christian-kohler.path-intellisense
 CoenraadS.bracket-pair-colorizer-2
 dbaeumer.vscode-eslint
 denco.confluence-markup

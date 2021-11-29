@@ -473,7 +473,7 @@
         "command": "cursorLineStartSelect"
     },
     {
-        "key": "ctrl+shift+space",
+        "key": "ctrl+space",
         "command": "suggestions-multi-trigger.toggleSuggestions"
     },
 ]

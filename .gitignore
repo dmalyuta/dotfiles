@@ -2,3 +2,5 @@
 .jupyter/lab/
 .emacs.d/**/*.elc
 .emacs.d/**/.yas-compiled-snippets*
+/.vscode/**/node_modules
+/.vscode/**/out

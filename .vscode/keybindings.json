@@ -458,4 +458,22 @@
         "command": "toggleSuggestionDetails",
         "when": "suggestWidgetVisible && textInputFocus"
     },
+    {
+        "key": "shift+alt+e",
+        "command": "cursorEndSelect",
+        "when": "textInputFocus"
+    },
+    {
+        "key": "shift+end",
+        "command": "-cursorEndSelect",
+        "when": "textInputFocus"
+    },
+    {
+        "key": "shift+alt+a",
+        "command": "cursorLineStartSelect"
+    },
+    {
+        "key": "ctrl+shift+space",
+        "command": "suggestions-multi-trigger.toggleSuggestions"
+    },
 ]

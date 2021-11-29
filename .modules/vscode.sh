@@ -4,6 +4,14 @@
 #
 # Author: Danylo Malyuta, 2021.
 
+# ..:: Node 17.x.x ::..
+
+NODE_VERSION="$(node --version | cut -d '.' -f 1 | cut -d 'v' -f 2)"
+if [ "$NODE_VERSION" -lt 17 ]; then
+    curl -fsSL https://deb.nodesource.com/setup_17.x | sudo -E bash -
+    sudo apt-get -y install nodejs
+fi
+
 # ..:: VS Code ::..
 
 if not_installed code; then
@@ -56,3 +64,7 @@ cat "$VSCODE_EXTENSIONS_TO_REMOVE" | xargs -L 1 code --uninstall-extension
 
 # Install extensions that are not already installed
 cat "$VSCODE_EXTENSIONS_TO_INSTALL" | xargs -L 1 code --install-extension
+
+# Install custom extensions
+VSCODE_EXTENSION="suggestions-multi-trigger"
+code --install-extension "$DIR"/.vscode/"$VSCODE_EXTENSION"/"$VSCODE_EXTENSION"-0.0.1.vsix

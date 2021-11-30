@@ -58,3 +58,6 @@ sudo apt-get -y install pyprof2calltree
 sudo apt-get -y install jupyter \
      jupyter-notebook
 pip install jupyterlab
+
+# diffing and merging of Jupyter Notebooks
+pip install nbdime

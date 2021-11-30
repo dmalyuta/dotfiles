@@ -276,7 +276,7 @@
         "command": "workbench.action.showAllEditorsByMostRecentlyUsed"
     },
     {
-        "key": "ctrl+shift+b",
+        "key": "ctrl+shift+9",
         "command": "editor.action.selectToBracket"
     },
     {

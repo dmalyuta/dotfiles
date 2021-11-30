@@ -41,6 +41,9 @@ if not_installed batcat; then
     sudo dpkg-divert --package batcat --add --rename --divert /usr/bin/bat /usr/bin/batcat
 fi
 
+# Jsonnet commandline interpreter
+snap install jsonnet
+
 # ..:: System resource monitoring ::..
 
 sudo apt-get -y install htop

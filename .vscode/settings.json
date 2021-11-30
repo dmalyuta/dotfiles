@@ -150,6 +150,7 @@
     "jupyter.askForKernelRestart": false,
     "pylance.insidersChannel": "daily",
     // "python.analysis.logLevel": "Trace",
+    "python.analysis.indexing": true,
 
     /// Language: Julia
     "terminal.integrated.commandsToSkipShell": [

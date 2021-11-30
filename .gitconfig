@@ -12,4 +12,7 @@
 [mergetool "vscode"]
     # Choose one of these 2 lines (not both!) explained below.
     cmd = code --wait "$MERGED"
-
+[push]
+    default = matching
+[mergetool]
+    keepBackup = false

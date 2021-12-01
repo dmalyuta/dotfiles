@@ -29,7 +29,6 @@ if ! grep -q ".local.bashrc" ~/.bashrc; then
       echo "fi"; } >> ~/.bashrc
 fi
 
-
 # Various executable scripts
 ln -sf "$DIR"/.bin ~
 

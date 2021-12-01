@@ -42,7 +42,7 @@ if not_installed batcat; then
 fi
 
 # Jsonnet commandline interpreter
-snap install jsonnet
+sudo apt-get -y install jsonnet
 
 # ..:: System resource monitoring ::..
 

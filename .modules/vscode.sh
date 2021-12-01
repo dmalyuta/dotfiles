@@ -60,10 +60,14 @@ comm -13 <(sort -d "$VSCODE_INSTALLED_EXTENSIONS") <(sort -d "$VSCODE_WANTED_EXT
      "$VSCODE_EXTENSIONS_TO_INSTALL"
 
 # Remove extensions that are no longer wanted
-cat "$VSCODE_EXTENSIONS_TO_REMOVE" | xargs -L 1 code --uninstall-extension
+if [[ ! -z $(cat "$VSCODE_EXTENSIONS_TO_REMOVE") ]]; then
+    cat "$VSCODE_EXTENSIONS_TO_REMOVE" | xargs -L 1 code --uninstall-extension
+fi
 
 # Install extensions that are not already installed
-cat "$VSCODE_EXTENSIONS_TO_INSTALL" | xargs -L 1 code --install-extension
+if [[ ! -z $(cat "$VSCODE_EXTENSIONS_TO_INSTALL") ]]; then
+    cat "$VSCODE_EXTENSIONS_TO_INSTALL" | xargs -L 1 code --install-extension
+fi
 
 # Install custom extensions
 VSCODE_EXTENSION="suggestions-multi-trigger"

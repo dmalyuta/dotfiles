@@ -490,4 +490,8 @@
         "command": "workbench.action.terminal.moveToTerminalPanel",
         "when": "terminalFocus"
     },
+    {
+        "key": "ctrl+shift+l u",
+        "command": "unicode-latex.insertMathSymbol"
+    },
 ]

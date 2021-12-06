@@ -41,6 +41,7 @@ ms-vscode.powershell
 ms-vscode.test-adapter-converter
 nemesv.copy-file-name
 nwbjjbb.repeat-paste
+oijaz.unicode-latex
 redhat.vscode-yaml
 ryuta46.multi-command
 sdras.night-owl

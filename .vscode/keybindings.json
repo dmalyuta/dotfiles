@@ -257,7 +257,11 @@
     },
     {
         "key": "alt+w t",
-        "command": "workbench.action.createTerminalEditor"
+        "command": "workbench.action.terminal.newWithCwd",
+        "args": {
+            "cwd": "${fileDirname}"
+        }
+        // "command": "workbench.action.createTerminalEditor"
     },
     {
         "key": "alt+v t",
@@ -475,5 +479,15 @@
     {
         "key": "ctrl+space",
         "command": "suggestions-multi-trigger.toggleSuggestions"
+    },
+    {
+        "key": "alt+shift+up",
+        "command": "workbench.action.terminal.moveToEditor",
+        "when": "terminalFocus"
+    },
+    {
+        "key": "shift+alt+down",
+        "command": "workbench.action.terminal.moveToTerminalPanel",
+        "when": "terminalFocus"
     },
 ]

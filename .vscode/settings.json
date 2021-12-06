@@ -76,6 +76,7 @@
 
     /// Terminal
     "terminal.integrated.defaultProfile.linux": "bash",
+    "terminal.integrated.cwd": "${fileDirname}",
 
     /// Git
     "git.confirmSync": false,

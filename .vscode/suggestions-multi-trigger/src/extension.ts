@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 
 // Globals
 let prevTime: number = 0;
-let retriggerInterval: number = 60; // seconds
+let retriggerInterval: number = 180; // seconds
 
 // Wait for ms milliseconds
 function delay(ms: number) {
@@ -12,14 +12,24 @@ function delay(ms: number) {
 }
 
 async function multiSuggestionsCommand(interval: number = 300) {
-	let currentTime: number = Date.now()/1000; // UNIX seconds now
-	await vscode.commands.executeCommand('editor.action.triggerSuggest');
-	if (currentTime - prevTime > retriggerInterval) {
-		console.log('Re-trigger suggestions');
-		await delay(interval);
-		await vscode.commands.executeCommand('editor.action.triggerSuggest');
+	const editor = vscode.window.activeTextEditor;
+	if (editor) {
+		let language = editor.document.languageId;
+		if (language === 'python') {
+			// Re-trigger suggestions for Python
+			let currentTime: number = Date.now()/1000; // UNIX seconds now
+			await vscode.commands.executeCommand('editor.action.triggerSuggest');
+			if (currentTime - prevTime > retriggerInterval) {
+				console.log('Re-trigger suggestions');
+				await delay(interval);
+				await vscode.commands.executeCommand('editor.action.triggerSuggest');
+			}
+			prevTime = currentTime;
+		} else {
+			// Simply trigger suggestions for other languages
+			await vscode.commands.executeCommand('editor.action.triggerSuggest');
+		}
 	}
-	prevTime = currentTime;
 }
 
 // Runs at extension activation

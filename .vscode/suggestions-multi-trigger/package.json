@@ -1,9 +1,9 @@
 {
 	"name": "suggestions-multi-trigger",
 	"displayName": "SuggestionsMultiTrigger",
-	"description": "Triggers suggestions multiple times until the list is populated by LSP",
+	"description": "Triggers suggestions twice with a delay in hope that the list is populated by LSP",
 	"publisher": "dmalyuta",
-	"version": "0.0.1",
+	"version": "0.0.2",
 	"engines": {
 		"vscode": "^1.62.0"
 	},

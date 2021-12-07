@@ -41,7 +41,7 @@ ln -sf "$DIR"/.vscode/snippets ~/.config/Code/User
 # ..:: Install extensions ::..
 
 # To save current extensions into dotfiles, do:
-# code --list-extensions > "$DIR"/.vscode/extensions.txt
+#   code --list-extensions > "$DIR"/.vscode/extensions.txt
 
 # Get extension lists...
 # ... that are not currently installed
@@ -70,5 +70,8 @@ if [[ ! -z $(cat "$VSCODE_EXTENSIONS_TO_INSTALL") ]]; then
 fi
 
 # Install custom extensions
+# To install an extension, do:
+#   cd <extension-dir>
+#   vsce package -o compiled-extension.vsix
 VSCODE_EXTENSION="suggestions-multi-trigger"
-code --install-extension "$DIR"/.vscode/"$VSCODE_EXTENSION"/"$VSCODE_EXTENSION"-0.0.1.vsix
+code --install-extension "$DIR"/.vscode/"$VSCODE_EXTENSION"/compiled-extension.vsix

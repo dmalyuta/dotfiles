@@ -70,8 +70,9 @@ if [[ ! -z $(cat "$VSCODE_EXTENSIONS_TO_INSTALL") ]]; then
 fi
 
 # Install custom extensions
-# To install an extension, do:
+# To compile a custom extension, do:
 #   cd <extension-dir>
 #   vsce package -o compiled-extension.vsix
+# (ref: https://code.visualstudio.com/api/working-with-extensions/publishing-extension#usage)
 VSCODE_EXTENSION="suggestions-multi-trigger"
 code --install-extension "$DIR"/.vscode/"$VSCODE_EXTENSION"/compiled-extension.vsix

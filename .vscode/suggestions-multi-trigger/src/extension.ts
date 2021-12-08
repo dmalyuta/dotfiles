@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 
 // Globals
 let prevTime: number = 0;
-let retriggerInterval: number = 180; // seconds
+let retriggerIntervalSeconds: number = 150;
 
 // Wait for ms milliseconds
 function delay(ms: number) {
@@ -19,7 +19,7 @@ async function multiSuggestionsCommand(interval: number = 300) {
 			// Re-trigger suggestions for Python
 			let currentTime: number = Date.now()/1000; // UNIX seconds now
 			await vscode.commands.executeCommand('editor.action.triggerSuggest');
-			if (currentTime - prevTime > retriggerInterval) {
+			if (currentTime - prevTime > retriggerIntervalSeconds) {
 				console.log('Re-trigger suggestions');
 				await delay(interval);
 				await vscode.commands.executeCommand('editor.action.triggerSuggest');

@@ -1,8 +1,12 @@
+import { type } from 'os';
+import { types } from 'util';
 import * as vscode from 'vscode';
 
 // Globals
 let prevTime: number = 0;
-let retriggerIntervalSeconds: number = 150;
+let defaultIntervalMilliseconds: number = 300;
+let defaultRetriggerIntervalSeconds: number = 100;
+let defaultLanguages: string[] = [];
 
 // Wait for ms milliseconds
 function delay(ms: number) {
@@ -11,11 +15,29 @@ function delay(ms: number) {
     }
 }
 
-async function multiSuggestionsCommand(interval: number = 300) {
+async function multiSuggestionsCommand(arg: any) {
+	// Set the arguments
+	let interval = defaultIntervalMilliseconds;
+	let retriggerIntervalSeconds = defaultRetriggerIntervalSeconds;
+	let languages = defaultLanguages;
+	if (arg !== null && typeof arg === 'object') {
+		if (!(arg.delay === undefined) && typeof arg.delay === 'number') {
+			interval = arg.delay;
+		}
+		if (!(arg.interval === undefined) && typeof arg.interval === 'number') {
+			retriggerIntervalSeconds = arg.interval;
+		}
+		if (!(arg.languages === undefined) && typeof arg.languages === 'object') {
+			languages = arg.languages;
+		}
+	}
+	console.log(interval);
+	console.log(retriggerIntervalSeconds);
+	console.log(languages);
 	const editor = vscode.window.activeTextEditor;
 	if (editor) {
 		let language = editor.document.languageId;
-		if (language === 'python') {
+		if (languages.includes(language)) {
 			// Re-trigger suggestions for Python
 			let currentTime: number = Date.now()/1000; // UNIX seconds now
 			await vscode.commands.executeCommand('editor.action.triggerSuggest');

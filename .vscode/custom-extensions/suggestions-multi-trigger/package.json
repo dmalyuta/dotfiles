@@ -3,7 +3,7 @@
 	"displayName": "SuggestionsMultiTrigger",
 	"description": "Triggers suggestions twice with a delay in hope that the list is populated by LSP",
 	"publisher": "dmalyuta",
-	"version": "0.0.2",
+	"version": "0.0.3",
 	"engines": {
 		"vscode": "^1.62.0"
 	},

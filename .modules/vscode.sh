@@ -75,4 +75,4 @@ fi
 #   vsce package -o compiled-extension.vsix
 # (ref: https://code.visualstudio.com/api/working-with-extensions/publishing-extension#usage)
 VSCODE_EXTENSION="suggestions-multi-trigger"
-code --install-extension "$DIR"/.vscode/"$VSCODE_EXTENSION"/compiled-extension.vsix
+code --install-extension "$DIR"/.vscode/custom-extensions/"$VSCODE_EXTENSION"/compiled-extension.vsix

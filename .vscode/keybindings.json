@@ -478,7 +478,12 @@
     },
     {
         "key": "ctrl+space",
-        "command": "suggestions-multi-trigger.toggleSuggestions"
+        "command": "suggestions-multi-trigger.toggleSuggestions",
+        "args": {
+            "delay": 500,
+            "interval": 150,
+            "languages": ["python"]
+        }
     },
     {
         "key": "alt+shift+up",

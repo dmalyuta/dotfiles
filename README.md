@@ -1,6 +1,6 @@
 # Ubuntu dotfiles
 
-Ubuntu 20.04.2 LTS auto-configuration.
+Ubuntu 20.04.3 LTS auto-configuration.
 
 ## Automatic install script
 

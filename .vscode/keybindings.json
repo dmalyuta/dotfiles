@@ -502,4 +502,9 @@
         "key": "ctrl+shift+l u",
         "command": "unicode-latex.insertMathSymbol"
     },
+    {
+        "key": "ctrl+enter",
+        "command": "notebook.cell.execute",
+        "when": "notebookCellListFocused && notebookMissingKernelExtension && !notebookCellExecuting && notebookCellType == 'code' || notebookCellListFocused && !notebookCellExecuting && notebookCellType == 'code' && notebookKernelCount > 0"
+    },
 ]

@@ -88,7 +88,6 @@ export function activate(context: vscode.ExtensionContext) {
 		'suggestions-multi-trigger.cancelCompletion', cancelCompletion);
 	context.subscriptions.push(cancelCompletionCmd);
 
-	vscode.workspace.onDidChangeTextDocument(cancelCompletion);
 }
 
 // Runs at extension deactivation

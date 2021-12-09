@@ -42,6 +42,11 @@
 				"when": "suggestions-multi-trigger.afterFirstTrigger"
 			},
 			{
+				"key": "enter",
+				"command": "suggestions-multi-trigger.cancelSecondTrigger",
+				"when": "suggestions-multi-trigger.afterFirstTrigger"
+			},
+			{
 				"key": "ctrl+i",
 				"command": "suggestions-multi-trigger.cancelSecondTrigger",
 				"when": "suggestions-multi-trigger.afterFirstTrigger"

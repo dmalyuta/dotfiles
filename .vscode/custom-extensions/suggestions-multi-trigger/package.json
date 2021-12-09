@@ -1,9 +1,9 @@
 {
 	"name": "suggestions-multi-trigger",
 	"displayName": "SuggestionsMultiTrigger",
-	"description": "Triggers suggestions twice with a delay in hope that the list is populated by LSP",
+	"description": "Trigger suggestions twice with a delay in hope that the list is populated by LSP",
 	"publisher": "dmalyuta",
-	"version": "0.0.3",
+	"version": "0.1.0",
 	"engines": {
 		"vscode": "^1.62.0"
 	},
@@ -18,7 +18,8 @@
 		"commands": [
 			{
 				"command": "suggestions-multi-trigger.toggleSuggestions",
-				"title": "Trigger Multi-Suggest"
+				"title": "trigger",
+				"category": "Multi-suggest: "
 			}
 		],
 		"menus": {
@@ -28,7 +29,39 @@
 					"when": "editorHasCompletionItemProvider"
 				}
 			]
-		}
+		},
+		"keybindings": [
+			{
+				"key": "up",
+				"command": "suggestions-multi-trigger.cancelSecondTrigger",
+				"when": "suggestions-multi-trigger.afterFirstTrigger"
+			},
+			{
+				"key": "down",
+				"command": "suggestions-multi-trigger.cancelSecondTrigger",
+				"when": "suggestions-multi-trigger.afterFirstTrigger"
+			},
+			{
+				"key": "ctrl+i",
+				"command": "suggestions-multi-trigger.cancelSecondTrigger",
+				"when": "suggestions-multi-trigger.afterFirstTrigger"
+			},
+			{
+				"key": "esc",
+				"command": "suggestions-multi-trigger.cancelCompletion",
+				"when": "suggestWidgetVisible"
+			},
+			{
+				"key": "left",
+				"command": "suggestions-multi-trigger.cancelCompletion",
+				"when": "suggestWidgetVisible"
+			},
+			{
+				"key": "right",
+				"command": "suggestions-multi-trigger.cancelCompletion",
+				"when": "suggestWidgetVisible"
+			}
+		]
 	},
 	"scripts": {
 		"vscode:prepublish": "npm run compile",

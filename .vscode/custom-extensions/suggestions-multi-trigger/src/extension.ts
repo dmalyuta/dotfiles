@@ -1,12 +1,12 @@
-import { type } from 'os';
-import { types } from 'util';
 import * as vscode from 'vscode';
 
 // Globals
-let prevTime: number = 0;
-let defaultIntervalMilliseconds: number = 300;
+let defaultFirstIntervalMilliseconds: number = 300;
 let defaultRetriggerIntervalSeconds: number = 100;
 let defaultLanguages: string[] = [];
+let dontRetrigger: boolean = false;
+const afterFirstTriggerContext: string = 'suggestions-multi-trigger.afterFirstTrigger';
+let prevTime: number = 0;
 
 // Wait for ms milliseconds
 function delay(ms: number) {
@@ -15,9 +15,9 @@ function delay(ms: number) {
     }
 }
 
-async function multiSuggestionsCommand(arg: any) {
+async function doMultiSuggestions(arg: any) {
 	// Set the arguments
-	let interval = defaultIntervalMilliseconds;
+	let interval = defaultFirstIntervalMilliseconds;
 	let retriggerIntervalSeconds = defaultRetriggerIntervalSeconds;
 	let languages = defaultLanguages;
 	if (arg !== null && typeof arg === 'object') {
@@ -31,20 +31,27 @@ async function multiSuggestionsCommand(arg: any) {
 			languages = arg.languages;
 		}
 	}
-	console.log(interval);
-	console.log(retriggerIntervalSeconds);
-	console.log(languages);
+
+	// Run the suggestions trigger command
 	const editor = vscode.window.activeTextEditor;
 	if (editor) {
 		let language = editor.document.languageId;
 		if (languages.includes(language)) {
-			// Re-trigger suggestions for Python
+			// Re-trigger suggestions for the special languages
 			let currentTime: number = Date.now()/1000; // UNIX seconds now
+			let cursorPos: number = editor.document.offsetAt(editor.selection.active);
 			await vscode.commands.executeCommand('editor.action.triggerSuggest');
 			if (currentTime - prevTime > retriggerIntervalSeconds) {
 				console.log('Re-trigger suggestions');
+				vscode.commands.executeCommand('setContext', afterFirstTriggerContext, true);
 				await delay(interval);
-				await vscode.commands.executeCommand('editor.action.triggerSuggest');
+				if (editor.document.offsetAt(editor.selection.active) !== cursorPos) {
+					cancelCompletion();
+				}
+				if (!dontRetrigger) {
+					await vscode.commands.executeCommand('editor.action.triggerSuggest');
+				}
+				vscode.commands.executeCommand('setContext', afterFirstTriggerContext, false);
 			}
 			prevTime = currentTime;
 		} else {
@@ -52,6 +59,16 @@ async function multiSuggestionsCommand(arg: any) {
 			await vscode.commands.executeCommand('editor.action.triggerSuggest');
 		}
 	}
+	dontRetrigger = false;
+}
+
+async function cancelSecondTrigger() {
+	dontRetrigger = true;
+}
+
+async function cancelCompletion(event?: vscode.TextDocumentChangeEvent) {
+	cancelSecondTrigger();
+	vscode.commands.executeCommand('hideSuggestWidget');
 }
 
 // Runs at extension activation
@@ -59,15 +76,19 @@ export function activate(context: vscode.ExtensionContext) {
 
 	console.log('Activated the SuggestionsMultiTrigger extension');
 
-	// vscode.workspace.onDidSaveTextDocument(() => {
-	//     triggerTwice = true;
-	// });
-
 	let triggerSuggestionCmd = vscode.commands.registerCommand(
-		'suggestions-multi-trigger.toggleSuggestions',
-		multiSuggestionsCommand);
-
+		'suggestions-multi-trigger.toggleSuggestions', doMultiSuggestions);
 	context.subscriptions.push(triggerSuggestionCmd);
+
+	let cancelRetriggerCmd = vscode.commands.registerCommand(
+		'suggestions-multi-trigger.cancelSecondTrigger', cancelSecondTrigger);
+	context.subscriptions.push(cancelRetriggerCmd);
+
+	let cancelCompletionCmd = vscode.commands.registerCommand(
+		'suggestions-multi-trigger.cancelCompletion', cancelCompletion);
+	context.subscriptions.push(cancelCompletionCmd);
+
+	vscode.workspace.onDidChangeTextDocument(cancelCompletion);
 }
 
 // Runs at extension deactivation

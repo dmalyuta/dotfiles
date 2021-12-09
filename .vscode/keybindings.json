@@ -480,9 +480,9 @@
         "key": "ctrl+space",
         "command": "suggestions-multi-trigger.toggleSuggestions",
         "args": {
-            "delay": 1000, // milliseconds
-            "interval": 150, // seconds
-            // Languages where to use (other languages to a regular triggerSuggest)
+            "delay": 600, // milliseconds
+            "interval": 90, // seconds
+            // Languages where to use (other languages trigger a regular suggestion)
             "languages": [
                 "python",
             ]

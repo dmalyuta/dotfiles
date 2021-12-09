@@ -159,4 +159,12 @@
     ],
     "julia.symbolCacheDownload": true,
     "julia.enableTelemetry": false,
+    "[julia]": {
+        // Julia-specific customizations of the general config
+        "editor.unicodeHighlight.allowedCharacters": {
+            "ρ": true,
+            "σ": true,
+            "γ": true
+        },
+    },
 }

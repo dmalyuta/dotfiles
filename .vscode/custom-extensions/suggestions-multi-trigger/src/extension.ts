@@ -7,6 +7,7 @@ let defaultLanguages: string[] = [];
 let dontRetrigger: boolean = false;
 const afterFirstTriggerContext: string = 'suggestions-multi-trigger.afterFirstTrigger';
 let prevTime: number = 0;
+let doMultiSuggestionsRunning: boolean = false;
 
 // Wait for ms milliseconds
 function delay(ms: number) {
@@ -16,6 +17,14 @@ function delay(ms: number) {
 }
 
 async function doMultiSuggestions(arg: any) {
+	if (doMultiSuggestionsRunning) {
+		// Simply trigger suggestions once
+		cancelSecondTrigger();
+		await vscode.commands.executeCommand('editor.action.triggerSuggest');
+		return;
+	}
+	doMultiSuggestionsRunning = true;
+
 	// Set the arguments
 	let interval = defaultFirstIntervalMilliseconds;
 	let retriggerIntervalSeconds = defaultRetriggerIntervalSeconds;
@@ -60,9 +69,11 @@ async function doMultiSuggestions(arg: any) {
 		}
 	}
 	dontRetrigger = false;
+	doMultiSuggestionsRunning = false;
 }
 
 async function cancelSecondTrigger() {
+	console.log('Cancelling second trigger');
 	dontRetrigger = true;
 }
 

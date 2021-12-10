@@ -67,7 +67,7 @@
     "editor.parameterHints.enabled": false,
     "editor.suggest.snippetsPreventQuickSuggestions": false,
     "editor.inlineSuggest.enabled": false,
-    "editor.snippetSuggestions": "top",
+    "editor.snippetSuggestions": "inline",
 
     /// Online
     "telemetry.telemetryLevel": "off",

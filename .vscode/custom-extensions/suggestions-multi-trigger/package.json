@@ -34,22 +34,26 @@
 			{
 				"key": "up",
 				"command": "suggestions-multi-trigger.cancelSecondTrigger",
-				"when": "suggestions-multi-trigger.afterFirstTrigger"
+				"when": "suggestions-multi-trigger.afterFirstTrigger && suggestWidgetVisible",
+				"args": "up"
 			},
 			{
 				"key": "down",
 				"command": "suggestions-multi-trigger.cancelSecondTrigger",
-				"when": "suggestions-multi-trigger.afterFirstTrigger"
+				"when": "suggestions-multi-trigger.afterFirstTrigger && suggestWidgetVisible",
+				"args": "down"
 			},
 			{
 				"key": "enter",
 				"command": "suggestions-multi-trigger.cancelSecondTrigger",
-				"when": "suggestions-multi-trigger.afterFirstTrigger"
+				"when": "suggestions-multi-trigger.afterFirstTrigger && suggestWidgetVisible",
+				"args": "enter"
 			},
 			{
 				"key": "ctrl+i",
 				"command": "suggestions-multi-trigger.cancelSecondTrigger",
-				"when": "suggestions-multi-trigger.afterFirstTrigger"
+				"when": "suggestions-multi-trigger.afterFirstTrigger && suggestWidgetVisible",
+				"args": "ctrl+i"
 			},
 			{
 				"key": "esc",
@@ -59,12 +63,14 @@
 			{
 				"key": "left",
 				"command": "suggestions-multi-trigger.cancelCompletion",
-				"when": "suggestWidgetVisible"
+				"when": "suggestWidgetVisible",
+				"args": "left"
 			},
 			{
 				"key": "right",
 				"command": "suggestions-multi-trigger.cancelCompletion",
-				"when": "suggestWidgetVisible"
+				"when": "suggestWidgetVisible",
+				"args": "right"
 			}
 		]
 	},

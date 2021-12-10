@@ -484,9 +484,22 @@
             "interval": 90, // seconds
             // Languages where to use (other languages trigger a regular suggestion)
             "languages": [
-                "python",
+                "python"
             ]
-        }
+        },
+        "when": "editorLangId == python"
+    },
+    {
+        "key": "ctrl+space",
+        "command": "suggestions-multi-trigger.toggleSuggestions",
+        "args": {
+            "delay": 86400000, // 24 hours, basically turn off re-triggering
+            "interval": 90,
+            "languages": [
+                "julia"
+            ]
+        },
+        "when": "editorLangId == julia"
     },
     {
         "key": "alt+shift+up",

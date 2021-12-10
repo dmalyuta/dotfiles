@@ -72,14 +72,51 @@ async function doMultiSuggestions(arg: any) {
 	doMultiSuggestionsRunning = false;
 }
 
-async function cancelSecondTrigger() {
+async function cancelSecondTrigger(key?: string) {
 	console.log('Cancelling second trigger');
 	dontRetrigger = true;
+	vscode.commands.executeCommand('setContext', afterFirstTriggerContext, false);
+
+	if (key !== null && typeof key === 'string') {
+		// Re-emit the intend command
+		switch(key) {
+			case "up": {
+				await vscode.commands.executeCommand('selectPrevSuggestion');
+				break;
+			}
+			case "down": {
+				await vscode.commands.executeCommand('selectNextSuggestion');
+				break;
+			}
+			case "enter": {
+				await vscode.commands.executeCommand('acceptSelectedSuggestion');
+				break;
+			}
+			case "ctrl+i": {
+				await vscode.commands.executeCommand('toggleSuggestionDetails');
+				break;
+			}
+		}
+	}
 }
 
-async function cancelCompletion(event?: vscode.TextDocumentChangeEvent) {
+async function cancelCompletion(key?: string) {
 	cancelSecondTrigger();
 	vscode.commands.executeCommand('hideSuggestWidget');
+
+	if (key !== null && typeof key === 'string') {
+		// Re-emit the intend command
+		switch(key) {
+			case "left": {
+				await vscode.commands.executeCommand('cursorLeft');
+				break;
+			}
+			case "right": {
+				await vscode.commands.executeCommand('cursorRight');
+				break;
+			}
+		}
+	}
 }
 
 // Runs at extension activation

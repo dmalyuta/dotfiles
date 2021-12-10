@@ -59,10 +59,10 @@ async function doMultiSuggestions(arg: any) {
 				}
 				if (!dontRetrigger) {
 					await vscode.commands.executeCommand('editor.action.triggerSuggest');
+					prevTime = currentTime;
 				}
 				vscode.commands.executeCommand('setContext', afterFirstTriggerContext, false);
 			}
-			prevTime = currentTime;
 		} else {
 			// Simply trigger suggestions for other languages
 			await vscode.commands.executeCommand('editor.action.triggerSuggest');
@@ -72,50 +72,25 @@ async function doMultiSuggestions(arg: any) {
 	doMultiSuggestionsRunning = false;
 }
 
-async function cancelSecondTrigger(key?: string) {
+async function cancelSecondTrigger(cmd?: string) {
 	console.log('Cancelling second trigger');
 	dontRetrigger = true;
 	vscode.commands.executeCommand('setContext', afterFirstTriggerContext, false);
 
-	if (key !== null && typeof key === 'string') {
-		// Re-emit the intend command
-		switch(key) {
-			case "up": {
-				await vscode.commands.executeCommand('selectPrevSuggestion');
-				break;
-			}
-			case "down": {
-				await vscode.commands.executeCommand('selectNextSuggestion');
-				break;
-			}
-			case "enter": {
-				await vscode.commands.executeCommand('acceptSelectedSuggestion');
-				break;
-			}
-			case "ctrl+i": {
-				await vscode.commands.executeCommand('toggleSuggestionDetails');
-				break;
-			}
-		}
+	if (cmd !== null && typeof cmd === 'string') {
+		// Re-emit a command
+		await vscode.commands.executeCommand(cmd);
 	}
 }
 
-async function cancelCompletion(key?: string) {
+async function cancelCompletion(cmd?: string) {
+	console.log('Cancelling suggestion');
 	cancelSecondTrigger();
 	vscode.commands.executeCommand('hideSuggestWidget');
 
-	if (key !== null && typeof key === 'string') {
-		// Re-emit the intend command
-		switch(key) {
-			case "left": {
-				await vscode.commands.executeCommand('cursorLeft');
-				break;
-			}
-			case "right": {
-				await vscode.commands.executeCommand('cursorRight');
-				break;
-			}
-		}
+	if (cmd !== null && typeof cmd === 'string') {
+		// Re-emit a command
+		await vscode.commands.executeCommand(cmd);
 	}
 }
 

@@ -481,7 +481,7 @@
         "command": "suggestions-multi-trigger.toggleSuggestions",
         "args": {
             "delay": 2000, // milliseconds
-            "interval": 90, // seconds
+            "interval": 150, // seconds
             // Languages where to use (other languages trigger a regular suggestion)
             "languages": [
                 "python"
@@ -494,7 +494,7 @@
         "command": "suggestions-multi-trigger.toggleSuggestions",
         "args": {
             "delay": 86400000, // 24 hours, basically turn off re-triggering
-            "interval": 90,
+            "interval": 150,
             "languages": [
                 "julia"
             ]

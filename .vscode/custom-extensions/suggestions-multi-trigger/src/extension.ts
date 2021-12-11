@@ -48,15 +48,11 @@ async function doMultiSuggestions(arg: any) {
 		if (languages.includes(language)) {
 			// Re-trigger suggestions for the special languages
 			let currentTime: number = Date.now()/1000; // UNIX seconds now
-			let cursorPos: number = editor.document.offsetAt(editor.selection.active);
 			await vscode.commands.executeCommand('editor.action.triggerSuggest');
 			if (currentTime - prevTime > retriggerIntervalSeconds) {
 				console.log('Re-trigger suggestions');
 				vscode.commands.executeCommand('setContext', afterFirstTriggerContext, true);
 				await delay(interval);
-				if (editor.document.offsetAt(editor.selection.active) !== cursorPos) {
-					cancelCompletion();
-				}
 				if (!dontRetrigger) {
 					await vscode.commands.executeCommand('editor.action.triggerSuggest');
 					prevTime = currentTime;

@@ -68,6 +68,7 @@
     "editor.suggest.snippetsPreventQuickSuggestions": false,
     "editor.inlineSuggest.enabled": false,
     "editor.snippetSuggestions": "inline",
+    "notebook.lineNumbers": "on",
 
     /// Online
     "telemetry.telemetryLevel": "off",

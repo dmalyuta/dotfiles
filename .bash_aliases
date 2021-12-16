@@ -183,6 +183,7 @@ alias pswd="passwordcopy"
 
 # Git commands
 alias git-print-branch="git rev-parse --abbrev-ref HEAD"
+alias git-cd-root="cd $(git root)"
 
 # Git GUI viewer
 gitview() {

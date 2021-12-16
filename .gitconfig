@@ -17,3 +17,5 @@
 [mergetool]
     keepBackup = false
     prompt = false
+[alias]
+    root = rev-parse --show-toplevel

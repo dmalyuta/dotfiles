@@ -194,7 +194,7 @@
         "command": "workbench.action.quickSwitchWindow"
     },
     {
-        "key": "ctrl+alt+f12",
+        "key": "alt+f12",
         "command": "editor.action.revealDeclaration"
     },
     {

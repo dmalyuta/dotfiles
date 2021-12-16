@@ -52,7 +52,7 @@
     "center-editor-window.threeStateToggle": true,
     "center-editor-window.offset": 5,
     "editor.bracketPairColorization.enabled": true,
-    "editor.guides.bracketPairs":"active",
+    "editor.guides.bracketPairs": false,
     "editor.guides.bracketPairsHorizontal": false,
     "files.trimTrailingWhitespace": true,
     "metaGo.decoration.characters": "a,s,d,f,g,h,j,k,l",

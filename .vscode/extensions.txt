@@ -17,6 +17,7 @@ iocave.monkey-patch
 jacobdufault.fuzzy-search
 James-Yu.latex-workshop
 jgclark.vscode-todo-highlight
+jomeinaster.bracket-peek
 julialang.language-julia
 kaiwood.center-editor-window
 kbysiec.vscode-search-everywhere
@@ -26,6 +27,7 @@ metaseed.metago
 metaseed.MetaJump
 metaseed.MetaWord
 mhutchie.git-graph
+mindaro-dev.file-downloader
 ms-python.python
 ms-python.vscode-pylance
 ms-toolsai.jupyter
@@ -45,6 +47,7 @@ redhat.vscode-yaml
 ryuta46.multi-command
 sdras.night-owl
 sleistner.vscode-fileutils
+StackBuild.bazel-stack-vscode
 stkb.rewrap
 TomRijndorp.find-it-faster
 tootone.org-mode

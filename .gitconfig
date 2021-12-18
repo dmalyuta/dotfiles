@@ -19,3 +19,4 @@
     prompt = false
 [alias]
     root = rev-parse --show-toplevel
+    add-existing = add -u

@@ -284,6 +284,10 @@
         "command": "editor.action.selectToBracket"
     },
     {
+        "key": "ctrl+shift+0",
+        "command": "editor.action.selectToBracket"
+    },
+    {
         "key": "alt+v q",
         "command": "workbench.action.toggleMenuBar"
     },

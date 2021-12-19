@@ -1,0 +1,47 @@
+[1mdiff --git a/.modules/usability.sh b/.modules/usability.sh[m
+[1mindex 542b4ee..0e34933 100644[m
+[1m--- a/.modules/usability.sh[m
+[1m+++ b/.modules/usability.sh[m
+[36m@@ -17,6 +17,15 @@[m [mfi[m
+ # Fix bug that Ctrl-Alt-T creates a new icon sidebar[m
+ gsettings set org.gnome.desktop.default-applications.terminal exec "terminator"[m
+ [m
+[32m+[m[32m# Open Nautilus directory in terminal[m
+[32m+[m[32mpython -c "import nautilus_open_any_terminal" > /dev/null 2>&1[m
+[32m+[m[32mif [ $? -ne 0 ]; then[m
+[32m+[m[32m    sudo apt-get -y install python-nautilus[m
+[32m+[m[32m    pip install nautilus-open-any-terminal[m
+[32m+[m[32m    glib-compile-schemas ~/.local/share/glib-2.0/schemas/[m
+[32m+[m[32m    gsettings set com.github.stunkymonkey.nautilus-open-any-terminal terminal terminator[m
+[32m+[m[32mfi[m
+[32m+[m
+ # ..:: Mouse cursor ::..[m
+ [m
+ mkdir -p ~/.icons[m
+[36m@@ -139,5 +148,5 @@[m [msudo apt-get -y install xcalib \[m
+ [m
+ # Increase inotify to make sure Evince updates on PDF update[m
+ # Source: https://superuser.com/a/1387905/512940[m
+[31m-echo fs.inotify.max_user_watches=100000 | sudo tee -a /etc/sysctl.conf[m
+[32m+[m[32mecho fs.inotify.max_user_watches=524288 | sudo tee -a /etc/sysctl.conf[m
+ sudo sysctl -p[m
+[1mdiff --git a/install.sh b/install.sh[m
+[1mindex abcfdd8..0a7f1d4 100644[m
+[1m--- a/install.sh[m
+[1m+++ b/install.sh[m
+[36m@@ -64,13 +64,13 @@[m [mln -sf "$DIR"/.config/startup.jl ~/.julia/config[m
+ # ..:: Install modules ::..[m
+ [m
+ source .modules/functions.sh[m
+[31m-source .modules/usability.sh[m
+ source .modules/dev_tools.sh[m
+ source .modules/python.sh[m
+ source .modules/julia.sh[m
+[32m+[m[32msource .modules/usability.sh[m
+ source .modules/productivity.sh[m
+[31m-source .modules/emacs.sh[m
+ source .modules/vscode.sh[m
+[32m+[m[32msource .modules/emacs.sh[m
+ [m
+ # ..:: Cleanup ::..[m
+ [m

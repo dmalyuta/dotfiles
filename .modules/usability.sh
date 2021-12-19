@@ -17,6 +17,15 @@ fi
 # Fix bug that Ctrl-Alt-T creates a new icon sidebar
 gsettings set org.gnome.desktop.default-applications.terminal exec "terminator"
 
+# Open Nautilus directory in terminal
+python -c "import nautilus_open_any_terminal" > /dev/null 2>&1
+if [ $? -ne 0 ]; then
+    sudo apt-get -y install python-nautilus
+    pip install nautilus-open-any-terminal
+    glib-compile-schemas ~/.local/share/glib-2.0/schemas/
+    gsettings set com.github.stunkymonkey.nautilus-open-any-terminal terminal terminator
+fi
+
 # ..:: Mouse cursor ::..
 
 mkdir -p ~/.icons
@@ -139,5 +148,5 @@ sudo apt-get -y install xcalib \
 
 # Increase inotify to make sure Evince updates on PDF update
 # Source: https://superuser.com/a/1387905/512940
-echo fs.inotify.max_user_watches=100000 | sudo tee -a /etc/sysctl.conf
+echo fs.inotify.max_user_watches=524288 | sudo tee -a /etc/sysctl.conf
 sudo sysctl -p

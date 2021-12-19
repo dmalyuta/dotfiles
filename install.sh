@@ -64,13 +64,13 @@ ln -sf "$DIR"/.config/startup.jl ~/.julia/config
 # ..:: Install modules ::..
 
 source .modules/functions.sh
-source .modules/usability.sh
 source .modules/dev_tools.sh
 source .modules/python.sh
 source .modules/julia.sh
+source .modules/usability.sh
 source .modules/productivity.sh
-source .modules/emacs.sh
 source .modules/vscode.sh
+source .modules/emacs.sh
 
 # ..:: Cleanup ::..
 

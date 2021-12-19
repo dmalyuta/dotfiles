@@ -1,23 +1,35 @@
 [global_config]
-  suppress_multiple_term_dialog = True
-  title_receive_bg_color = "#000000"
+  dbus = False
   title_transmit_bg_color = "#000000"
+  title_receive_bg_color = "#000000"
+  suppress_multiple_term_dialog = True
 [keybindings]
+  go_next = F7
+  go_up = KP_Up
   go_down = KP_Down
   go_left = KP_Left
-  go_next = F7
   go_right = KP_Right
-  go_up = KP_Up
-  group_all_toggle = F5
-  group_tab_toggle = F6
-  move_tab_left = KP_Home
-  move_tab_right = KP_Page_Up
-  next_tab = KP_Page_Down
-  prev_tab = KP_End
+  resize_up = <Primary>KP_Up
   resize_down = <Primary>KP_Down
   resize_left = <Primary>KP_Left
   resize_right = <Primary>KP_Right
-  resize_up = <Primary>KP_Up
+  move_tab_right = KP_Page_Up
+  move_tab_left = KP_Home
+  next_tab = KP_Page_Down
+  prev_tab = KP_End
+  group_all_toggle = F5
+  group_tab_toggle = F6
+[profiles]
+  [[default]]
+    background_darkness = 0.88
+    background_type = transparent
+    cursor_color = "#839496"
+    foreground_color = "#839496"
+    scrollback_infinite = True
+    palette = "#000000:#cd0000:#00cd00:#cdcd00:#0000ee:#cd00cd:#00cdcd:#e5e5e5:#7f7f7f:#ff0000:#00ff00:#ffff00:#5c5cff:#ff00ff:#00ffff:#ffffff"
+    login_shell = True
+    use_custom_command = True
+    custom_command = TERM=xterm-256color bash
 [layouts]
   [[default]]
     [[[child1]]]
@@ -191,16 +203,3 @@
       type = Terminal
       uuid = 710ce98a-59bb-40e7-871e-f9b005309789
 [plugins]
-[profiles]
-  [[default]]
-    background_darkness = 0.88
-    background_image = None
-    background_type = transparent
-    cursor_color = "#839496"
-    custom_command = TERM=xterm-256color bash
-    foreground_color = "#839496"
-    login_shell = True
-    palette = "#000000:#cd0000:#00cd00:#cdcd00:#0000ee:#cd00cd:#00cdcd:#e5e5e5:#7f7f7f:#ff0000:#00ff00:#ffff00:#5c5cff:#ff00ff:#00ffff:#ffffff"
-    scroll_on_output = False
-    scrollback_infinite = True
-    use_custom_command = True

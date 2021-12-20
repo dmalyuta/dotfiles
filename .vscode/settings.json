@@ -135,7 +135,7 @@
 
     /// Language: LaTeX
     "latex-workshop.view.pdf.viewer": "tab",
-    "latex-workshop.view.pdf.backgroundColor": "#011627ff",
+    "latex-workshop.view.pdf.backgroundColor": "#23272eff",
     "latex-workshop.intellisense.includegraphics.preview.pdf.enabled": true,
     "latex-workshop.view.pdf.hand": true,
     "latex-workshop.view.pdf.invert": 0,

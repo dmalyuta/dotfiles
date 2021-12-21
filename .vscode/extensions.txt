@@ -28,6 +28,7 @@ metaseed.MetaJump
 metaseed.MetaWord
 mhutchie.git-graph
 mindaro-dev.file-downloader
+ms-azuretools.vscode-docker
 ms-python.python
 ms-python.vscode-pylance
 ms-toolsai.jupyter

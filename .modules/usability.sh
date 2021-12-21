@@ -4,6 +4,10 @@
 #
 # Author: Danylo Malyuta, 2020.
 
+# ..:: Shell type ::..
+
+sudo usermod -s /bin/bash "$USERNAME"
+
 # ..:: Terminal emulator ::..
 
 if not_installed terminator; then

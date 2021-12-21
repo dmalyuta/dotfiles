@@ -154,6 +154,7 @@
     "pylance.insidersChannel": "daily",
     // "python.analysis.logLevel": "Trace",
     "python.analysis.indexing": true,
+    "python.analysis.completeFunctionParens": true,
 
     /// Language: Julia
     "terminal.integrated.commandsToSkipShell": [
@@ -169,4 +170,7 @@
             "γ": true
         },
     },
+
+    /// Language: C/C++
+    "C_Cpp.autocompleteAddParentheses": true,
 }

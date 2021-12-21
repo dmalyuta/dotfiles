@@ -1,4 +1,3 @@
-adam-bender.commit-message-editor
 albert.TabOut
 alefragnani.Bookmarks
 alefragnani.project-manager

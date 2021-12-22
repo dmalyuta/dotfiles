@@ -70,6 +70,7 @@
     "editor.inlineSuggest.enabled": false,
     "editor.snippetSuggestions": "inline",
     "notebook.lineNumbers": "on",
+    "bracket-peek.previewLocation": "Hover",
 
     /// Online
     "telemetry.telemetryLevel": "off",

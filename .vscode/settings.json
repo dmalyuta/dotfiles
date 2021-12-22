@@ -168,7 +168,8 @@
         "editor.unicodeHighlight.allowedCharacters": {
             "ρ": true,
             "σ": true,
-            "γ": true
+            "γ": true,
+            "ℓ": true,
         },
     },
 

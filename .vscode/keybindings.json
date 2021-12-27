@@ -280,11 +280,11 @@
         "command": "workbench.action.showAllEditorsByMostRecentlyUsed"
     },
     {
-        "key": "ctrl+shift+9",
+        "key": "ctrl+shift+[",
         "command": "editor.action.selectToBracket"
     },
     {
-        "key": "ctrl+shift+0",
+        "key": "ctrl+shift+]",
         "command": "editor.action.selectToBracket"
     },
     {

@@ -13,7 +13,6 @@ heptio.jsonnet
 hoovercj.vscode-settings-cycler
 iocave.customize-ui
 iocave.monkey-patch
-jacobdufault.fuzzy-search
 James-Yu.latex-workshop
 jgclark.vscode-todo-highlight
 jomeinaster.bracket-peek
@@ -49,7 +48,6 @@ sdras.night-owl
 sleistner.vscode-fileutils
 StackBuild.bazel-stack-vscode
 stkb.rewrap
-TomRijndorp.find-it-faster
 tootone.org-mode
 vscode-icons-team.vscode-icons
 wmaurer.vscode-jumpy

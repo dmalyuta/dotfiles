@@ -253,7 +253,8 @@
     },
     {
         "key": "alt+v f",
-        "command": "togglemaxeditor.toggleMaximizeEditor"
+        "command": "togglemaxeditor.toggleMaximizeEditor",
+        "when": "editorFocus"
     },
     {
         "key": "alt+w t",

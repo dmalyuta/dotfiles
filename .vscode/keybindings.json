@@ -293,7 +293,8 @@
     },
     {
         "key": "alt+v f",
-        "command": "workbench.action.toggleMaximizedPanel"
+        "command": "workbench.action.toggleMaximizedPanel",
+        "when": "panelFocus"
     },
     {
         "key": "ctrl+alt+w",

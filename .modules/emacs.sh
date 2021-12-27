@@ -20,22 +20,22 @@ if not_installed emacs; then
     sudo add-apt-repository -y ppa:ubuntu-toolchain-r/ppa
     sudo apt-get update
     sudo apt-get -y install libxpm-dev \
-	 libgif-dev \
-	 libjpeg-dev \
-	 libpng-dev \
-	 libtiff-dev \
-	 libx11-dev \
-	 libncurses5-dev \
-	 automake \
-	 autoconf \
-	 texinfo \
-	 libgtk2.0-dev \
-	 gcc-10 \
-	 g++-10 \
-	 libgccjit0 \
-	 libgccjit-10-dev \
-	 libjansson4 \
-	 libjansson-dev
+        libgif-dev \
+        libjpeg-dev \
+        libpng-dev \
+        libtiff-dev \
+        libx11-dev \
+        libncurses5-dev \
+        automake \
+        autoconf \
+        texinfo \
+        libgtk2.0-dev \
+        gcc-10 \
+        g++-10 \
+        libgccjit0 \
+        libgccjit-10-dev \
+        libjansson4 \
+        libjansson-dev
 
     # Get fast JSON
     sudo apt-get -y install libjansson4 libjansson-dev
@@ -67,86 +67,9 @@ ln -sf "$DIR"/.emacs.d/lisp/danylo-prog-font-lock.el ~/.emacs.d/lisp
 ln -sf "$DIR"/.emacs.d/lisp/danylo-text-font-lock.el ~/.emacs.d/lisp
 ln -sf "$DIR"/.emacs.d/lisp/snippets ~/.emacs.d/lisp/
 
-# ..:: Language Server Protocols ::..
-
-# >> C++ <<
-
-sudo apt-get -y install clangd-9
-sudo update-alternatives --install /usr/bin/clangd clangd /usr/bin/clangd-9 100
-
-if not_installed ccls; then
-    sudo apt-get -y install libtinfo5 \
-         clang \
-         libclang-10-dev \
-         bear
-
-    ( cd /tmp && \
-	  rm -rf ccls && \
-	  git clone --depth=1 --recursive https://github.com/MaskRay/ccls && \
-	  cd ccls && \
-          cmake -H. -BRelease -DCMAKE_BUILD_TYPE=Release \
-                -DCMAKE_PREFIX_PATH=/usr/lib/llvm-10 \
-                -DLLVM_INCLUDE_DIR=/usr/lib/llvm-10/include \
-                -DLLVM_BUILD_INCLUDE_DIR=/usr/include/llvm-10/ && \
-	  cmake --build Release && \
-          cd Release && \
-          sudo make install)
-	  # cmake --build Release --target install
-fi
-
-# >> Python <<
-
-if not_installed pyright; then
-    sudo apt-get -y install curl
-
-    curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -
-    sudo apt-get -y install nodejs
-    sudo npm install -g pyright
-
-    pip install git+https://github.com/predictive-analytics-lab/data-science-types
-fi
-
-# >> Julia <<
-
-# Check if Julia LSP installed
-echo 'using Pkg; Pkg.status()' | julia | grep LanguageServer > /dev/null 2>&1
-
-if [ $? -ne 0 ]; then
-    # Install Julia language server
-    cat << EOF | julia
-using Pkg
-Pkg.add(PackageSpec(url="https://github.com/julia-vscode/LanguageServer.jl", rev="52dd52a"))
-Pkg.add(PackageSpec(url="https://github.com/julia-vscode/StaticLint.jl", rev="3a8b7b1"))
-Pkg.add("SymbolServer")
-Pkg.add("CSTParser")
-
-EOF
-fi
-
 # ..:: Language tools ::..
 
-# >> C++ <<
-
-if not_installed global; then
-    # Dependencies
-    sudo apt-get -y install libncurses5 libncurses5-dev
-
-    wget -4 ftp://ftp.gnu.org/pub/gnu/global/global-6.5.5.tar.gz -P /tmp/
-    tar -zxvf /tmp/global-6.5.5.tar.gz -C /tmp
-    ( cd /tmp/global-6.5.5/ && ./configure && make && sudo make install )
-fi
-
-# >> Python <<
-
-pip install virtualenv jedi flake8
-
-# Add the virtualenv path to the PATH
-if ! echo "$PATH" | grep -q virtualenv; then
-    echo export PATH="$PATH":"$(command -v virtualenv)" >> ~/.bashrc
-fi
-
 # >> Bash <<
-
 sudo apt-get -y install shellcheck
 
 # ..:: Other ::..

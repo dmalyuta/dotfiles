@@ -20,19 +20,20 @@ sudo apt-get -y install gitg
 # ..:: Misc ::..
 
 sudo apt-get -y install gitk \
-     build-essential \
-     libgoogle-glog-dev \
-     gdbserver \
-     aptitude \
-     xclip \
-     silversearcher-ag \
-     screen \
-     tmux \
-     sshpass \
-     tree \
-     bash-completion \
-     meld \
-     kcachegrind
+    build-essential \
+    libgoogle-glog-dev \
+    gdbserver \
+    aptitude \
+    xclip \
+    silversearcher-ag \
+    screen \
+    tmux \
+    sshpass \
+    tree \
+    bash-completion \
+    meld \
+    kcachegrind \
+    curl
 
 if not_installed batcat; then
     sudo apt-get -y install -o Dpkg::Options::=--force-overwrite bat ripgrep
@@ -57,6 +58,13 @@ fi
 if not_installed zenith; then
     wget -4 https://github.com/bvaisvil/zenith/releases/download/0.12.0/zenith_0.12.0-1_amd64.deb -P /tmp/
     ( cd /tmp && sudo dpkg -i zenith_0.12.0-1_amd64.deb )
+fi
+
+# ..:: Node.js ::..
+
+if not_installed node; then
+    curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -
+    sudo apt-get -y install nodejs
 fi
 
 # ..:: CMake ::..

@@ -36,12 +36,14 @@ if ! (conda info --envs | grep -q $PYENV_NAME); then
     echo "conda activate py397" >> ~/.bashrc
 
     # Install some Python modules
+    pip install jedi
     pip install flake8 pdbpp
     pip install scipy numpy nptyping
     pip install pandas pytest black pyfzf
     pip install vtk==9.0.3
     pip install mayavi
     pip install PySide2
+    pip install virtualenv
 
     # Add virtualenv to Jupyter
     # https://gist.github.com/swedishmike/902fb27d627313c31a95e31c44e302ac
@@ -51,7 +53,13 @@ fi
 
 # ..:: Other tools ::..
 
+# Profiling
 sudo apt-get -y install pyprof2calltree
+
+# Add the virtualenv path to the PATH
+if ! echo "$PATH" | grep -q virtualenv; then
+    echo export PATH="$PATH":"$(command -v virtualenv)" >> ~/.bashrc
+fi
 
 # ..:: Jupyter notebook ::..
 

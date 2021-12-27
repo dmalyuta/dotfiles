@@ -28,6 +28,8 @@ Pkg.add("IJulia")
 Pkg.add("OhMyREPL")
 Pkg.add("BenchmarkTools")
 
+Pkg.add("LanguageServer")
+
 Pkg.add("LinearAlgebra")
 Pkg.add("JuMP")
 Pkg.add("ECOS")

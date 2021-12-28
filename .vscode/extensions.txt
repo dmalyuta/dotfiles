@@ -43,6 +43,7 @@ nemesv.copy-file-name
 nwbjjbb.repeat-paste
 oijaz.unicode-latex
 redhat.vscode-yaml
+ryu1kn.text-marker
 ryuta46.multi-command
 sdras.night-owl
 sleistner.vscode-fileutils

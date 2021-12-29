@@ -531,4 +531,14 @@
         "command": "editor.action.peekDefinition",
         "when": "editorHasDefinitionProvider && editorTextFocus && !inReferenceSearchEditor && !isInEmbeddedEditor"
     },
+    {
+        "key": "alt+h m",
+        "command": "textmarker.toggleHighlight",
+        "when": "editorTextFocus"
+    },
+    {
+        "key": "alt+h c",
+        "command": "textmarker.clearAllHighlight",
+        "when": "editorTextFocus"
+    },
 ]

@@ -78,6 +78,7 @@
     "editor.snippetSuggestions": "inline",
     "notebook.lineNumbers": "on",
     "bracket-peek.previewLocation": "Hover",
+    "extensions.ignoreRecommendations": true,
 
     /// Online
     "telemetry.telemetryLevel": "off",

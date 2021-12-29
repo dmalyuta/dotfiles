@@ -46,7 +46,6 @@ sdras.night-owl
 sleistner.vscode-fileutils
 StackBuild.bazel-stack-vscode
 stkb.rewrap
-streetsidesoftware.code-spell-checker
 tootone.org-mode
 vscode-icons-team.vscode-icons
 wmaurer.vscode-jumpy

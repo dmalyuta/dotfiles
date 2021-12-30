@@ -216,14 +216,22 @@ alias emacsgitconnect='emacsclient --create-frame --socket-name=git'
 alias findfile='find . -type f -name'
 alias finddir='find . -type d -name'
 
-# Get line of output
-getline() {
-    sed -n "$@"p
+# Show lines or get line of output
+# Call:
+#   $ <command> | lines
+#   $ <command> | lines <number>
+lines() {
+    local length=$(($#))
+    if [ $length -eq 0 ]; then
+        cat --number
+    elif [ $length -eq 1 ]; then
+        sed -n "$1"p | sed 's/^[ \t]\+[0-9]\+[ \t]\+//' | sed -e 's/^[[:space:]]*//'
+    else
+        echo "Incorrect usage of lines commands. Possible usage:"
+        echo "  lines"
+        echo "  lines <number>"
+    fi
 }
-
-# Show line numbers in standard output
-# E.g. $ findfile 'foobar' | showlinenumbers
-alias showlinenumbers='cat --number'
 
 # ls with directories first when `ls -1`
 alias ls='ls --color -h --group-directories-first'

@@ -168,10 +168,6 @@
         "command": "-metaGo.gotoSmart"
     },
     {
-        "key": "alt+s",
-        "command": "metaGo.gotoSmart"
-    },
-    {
         "key": "ctrl+alt+-",
         "command": "workbench.action.navigateBack"
     },
@@ -576,5 +572,38 @@
         "key": "ctrl+alt+up",
         "command": "-editor.action.insertCursorAbove",
         "when": "editorTextFocus"
+    },
+    {
+        "key": "ctrl+e",
+        "command": "workbench.action.quickOpen",
+        "when": "!terminalFocus"
+    },
+    {
+        "key": "ctrl+e",
+        "command": "-workbench.action.quickOpen"
+    },
+    {
+        "key": "ctrl+f",
+        "command": "actions.find",
+        "when": "(editorFocus || editorIsOpen) && !terminalFocus"
+    },
+    {
+        "key": "ctrl+alt+f",
+        "command": "workbench.action.terminal.focusFind",
+        "when": "terminalFindFocused && terminalHasBeenCreated || terminalFindFocused && terminalProcessSupported || terminalFocus && terminalHasBeenCreated || terminalFocus && terminalProcessSupported"
+    },
+    {
+        "key": "ctrl+f",
+        "command": "-workbench.action.terminal.focusFind",
+        "when": "terminalFindFocused && terminalHasBeenCreated || terminalFindFocused && terminalProcessSupported || terminalFocus && terminalHasBeenCreated || terminalFocus && terminalProcessSupported"
+    },
+    {
+        "key": "ctrl+p",
+        "command": "workbench.action.quickOpen",
+        "when": "!terminalFocus"
+    },
+    {
+        "key": "ctrl+p",
+        "command": "-workbench.action.quickOpen"
     },
 ]

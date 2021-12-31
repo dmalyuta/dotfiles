@@ -87,7 +87,8 @@
 
     /// Terminal
     "terminal.integrated.defaultProfile.linux": "bash",
-    "terminal.integrated.cwd": "${fileDirname}",
+    // see options for cwd at: https://code.visualstudio.com/docs/editor/variables-reference
+    "terminal.integrated.cwd": "${workspaceFolder}",
 
     /// Git
     "git.confirmSync": false,

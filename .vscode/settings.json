@@ -172,6 +172,7 @@
     ],
     "julia.symbolCacheDownload": true,
     "julia.enableTelemetry": false,
+    "julia.enableCrashReporter": false,
     "[julia]": {
         // Julia-specific customizations of the general config
         "editor.unicodeHighlight.allowedCharacters": {

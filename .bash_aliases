@@ -23,6 +23,9 @@ alias abouthw='sudo lshw -short'
 # Kill processes matching grep
 alias killgrep='~/.bin/killgrep.sh'
 
+# Find files
+alias fd='fdfind'
+
 # Open file or URL in default application
 alias easyopen='xdg-open'
 

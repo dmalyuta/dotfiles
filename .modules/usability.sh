@@ -139,7 +139,8 @@ sudo apt-get -y install recoll \
      pdfgrep \
      rofi \
      exo-utils \
-     tree
+     tree \
+     fd-find
 
 # ..:: Other ::..
 

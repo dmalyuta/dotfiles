@@ -1267,11 +1267,6 @@ is automatically turned on while the line numbers are displayed."
 (use-package doom-themes
   ;; https://github.com/hlissner/emacs-doom-themes
   ;; An opinionated pack of modern color-themes
-  :ensure nil
-  :quelpa ((doom-themes :fetcher github
-                        :repo "hlissner/emacs-doom-themes"
-                        :commit "b2c0ea0"
-                        :files (:defaults "themes")))
   :config
   (load-theme 'doom-one t)
   (set-face-attribute 'region nil

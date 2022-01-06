@@ -50,10 +50,10 @@ if not_installed emacs; then
 	  # run `./configure --help > /tmp/emacs_configure_help.txt` to print
 	  # out a file of configuration options
           ./configure --without-gpm --with-mailutils --with-native-compilation \
-           --with-json --with-x-toolkit=gtk3 --with-xwidgets \
-           CFLAGS="-O3 -mtune=native -march=native -fomit-frame-pointer" && \
-	   make NATIVE_FULL_AOT=1 -j2 && \
-	   sudo make install )
+                      --with-json --with-pgtk --with-xwidgets --with-xinput2 \
+                      CFLAGS="-O3 -mtune=native -march=native -fomit-frame-pointer" && \
+	  make NATIVE_FULL_AOT=1 -j2 && \
+	  sudo make install )
 fi
 
 # ..:: Configuration ::..

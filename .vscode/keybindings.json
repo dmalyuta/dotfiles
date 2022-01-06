@@ -253,11 +253,24 @@
         "when": "editorFocus"
     },
     {
-        "key": "alt+w t",
+        "key": "alt+w f",
         "command": "workbench.action.terminal.newWithCwd",
         "args": {
             "cwd": "${fileDirname}"
         }
+    },
+    {
+        "key": "alt+w r",
+        "command": "workbench.action.terminal.openNativeConsole"
+    },
+    {
+        "key": "ctrl+shift+c",
+        "command": "-workbench.action.terminal.openNativeConsole",
+        "when": "!terminalFocus"
+    },
+    {
+        "key": "alt+w t",
+        "command": "workbench.action.terminal.new"
         // "command": "workbench.action.createTerminalEditor"
     },
     {

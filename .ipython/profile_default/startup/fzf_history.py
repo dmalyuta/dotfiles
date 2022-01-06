@@ -18,7 +18,10 @@ import IPython
 try:
     import prompt_toolkit
     from prompt_toolkit.keys import Keys
-    _KeyPressEvent = prompt_toolkit.key_binding.input_processor.KeyPressEvent
+    try:
+        _KeyPressEvent = prompt_toolkit.key_binding.key_processor.KeyPressEvent
+    except:
+        _KeyPressEvent = prompt_toolkit.key_binding.input_processor.KeyPressEvent
 except (ImportError, ValueError):
     pass
 

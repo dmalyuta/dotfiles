@@ -37,6 +37,9 @@ mkdir -p ~/.config/terminator
 ln -sf "$DIR"/.dircolors ~
 ln -sf "$DIR"/.config/terminator/config ~/.config/terminator
 
+# Tmux
+ln -sf "$DIR"/.tmux.conf ~
+
 # Git
 cp -f "$DIR"/.gitconfig ~
 ln -sf "$DIR"/.gitk ~

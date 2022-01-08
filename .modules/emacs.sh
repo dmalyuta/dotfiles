@@ -79,3 +79,11 @@ sudo apt-get -y install fonts-powerline
 
 # libvterm fast terminal emulation inside Emacs
 sudo apt-get -y install libvterm-dev
+if [[ ! -d ~/.emacs.d/emacs-libvterm ]]; then
+    git clone https://github.com/akermu/emacs-libvterm.git
+    ( cd ~/.emacs.d/emacs-libvterm && \
+          mkdir -p build && \
+          cd build && \
+          cmake .. && \
+          make )
+fi

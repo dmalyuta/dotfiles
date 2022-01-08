@@ -2067,9 +2067,14 @@ with C-u."
   (interactive "@")
   (shell-command (concat "terminator > /dev/null 2>&1 & disown") nil nil))
 
+(defconst danylo/emacs-libvterm-dir
+    `,(danylo/make-path "emacs-libvterm/")
+    "Location of emacs-libvterm.")
+
 (use-package vterm
   ;; https://github.com/akermu/emacs-libvterm
   ;; Emacs libvterm integration
+  :load-path danylo/emacs-libvterm-dir
   :bind (:map vterm-mode-map
               ("C-<up>" . nil)
               ("C-<down>" . nil)

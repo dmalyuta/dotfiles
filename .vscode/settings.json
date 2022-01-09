@@ -68,7 +68,7 @@
     "explorer.confirmDelete": false,
     "bookmarks.saveBookmarksInProject": true,
     "editor.quickSuggestions": { "other": false, "comments": false, "strings": false },
-    "editor.quickSuggestionsDelay": 1000,
+    "editor.quickSuggestionsDelay": 3600000,
     "editor.suggestOnTriggerCharacters": false,
     "editor.acceptSuggestionOnCommitCharacter": false,
     "editor.wordBasedSuggestions": false,

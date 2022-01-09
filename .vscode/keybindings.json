@@ -619,4 +619,23 @@
         "key": "ctrl+p",
         "command": "-workbench.action.quickOpen"
     },
+    {
+        "key": "alt+w alt+w",
+        "command": "workbench.action.terminal.sendSequence",
+        "args": {
+            // To find the combination:
+            //   $ showkey -a
+            // Then type the key. E.g. For alt+w:
+            //     ^[w      27 0033 0x1b
+            //             119 0167 0x77
+            // The last column shows the UTF-8 encoding. Append 00 in for, you get the UTF-16.
+            // The first line is for "alt" and the second is for "w". Prepend \u for VS-code and
+            // then the UTF-16 encodings. Hence in VS code populate the field:
+            //     "text": "\u001b\u0077"
+            // Effect is that "alt+w alt+w" keyboard combination will send "alt+w" to the active
+            // terminal.
+            "text": "\u001b\u0077"
+        },
+        "when": "terminalFocus"
+    },
 ]

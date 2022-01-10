@@ -29,6 +29,9 @@ alias fd='fdfind'
 # Open file or URL in default application
 alias easyopen='xdg-open'
 
+# Check OOM'ed processes
+alias oom-ls='sudo egrep -i -r ''killed process'' /var/log/'
+
 # Open browser
 if [ ! -f ~/.local/bin/browser ]; then
     ln -sf /usr/bin/brave-browser ~/.local/bin/browser

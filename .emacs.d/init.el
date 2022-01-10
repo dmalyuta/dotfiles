@@ -710,6 +710,22 @@ Source: https://emacs.stackexchange.com/a/50834/13661"
  "C-v" 'danylo/fast-scroll-up
  "M-v" 'danylo/fast-scroll-down)
 
+;;; Mouse wheel scroll behaviour
+(mouse-wheel-mode 't)
+(setq mouse-wheel-scroll-amount '(1 ((shift) . 1)))
+(setq mouse-wheel-progressive-speed nil)
+(setq mouse-wheel-follow-mouse 't) ;; scroll window under mouse
+(setq scroll-conservatively 101)
+
+(use-package good-scroll
+  ;; https://github.com/io12/good-scroll.el
+  ;; Attempt at good pixel-based smooth scrolling in Emacs.
+  :init
+  (global-set-key [next] #'good-scroll-up-full-screen)
+  (global-set-key [prior] #'good-scroll-down-full-screen)
+  :config
+  (good-scroll-mode 1))
+
 ;;;; eval-buffer default directory fix
 
 (defun danylo/eval-buffer-maintain-dir (orig-fun &rest args)

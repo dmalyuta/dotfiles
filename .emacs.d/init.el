@@ -723,6 +723,10 @@ Source: https://emacs.stackexchange.com/a/50834/13661"
   :init
   (global-set-key [next] #'good-scroll-up-full-screen)
   (global-set-key [prior] #'good-scroll-down-full-screen)
+  (setq good-scroll-step 70
+        good-scroll-render-rate 0.01
+        good-scroll-duration 0.1
+        good-scroll-algorithm #'good-scroll-bezier)
   :config
   (good-scroll-mode 1))
 

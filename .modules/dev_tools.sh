@@ -33,7 +33,8 @@ sudo apt-get -y install gitk \
     bash-completion \
     meld \
     kcachegrind \
-    curl
+    curl \
+    jq
 
 if not_installed batcat; then
     sudo apt-get -y install -o Dpkg::Options::=--force-overwrite bat ripgrep

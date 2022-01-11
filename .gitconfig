@@ -20,3 +20,4 @@
 [alias]
     root = rev-parse --show-toplevel
     add-existing = add -u
+    log-tree = log --oneline --abbrev-commit --graph

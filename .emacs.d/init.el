@@ -715,7 +715,6 @@ Source: https://emacs.stackexchange.com/a/50834/13661"
 (setq mouse-wheel-scroll-amount '(1 ((shift) . 1)))
 (setq mouse-wheel-progressive-speed nil)
 (setq mouse-wheel-follow-mouse 't) ;; scroll window under mouse
-(setq scroll-conservatively 101)
 
 (use-package good-scroll
   ;; https://github.com/io12/good-scroll.el

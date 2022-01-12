@@ -1,6 +1,15 @@
 # ~/.local.bashrc: sourced from .bashrc in order to separate default
 # .bashrc file from personal customizations.
 
+# Tmux command line
+if command -v tmux &> /dev/null && \
+        [ -n "$PS1" ] && \
+        [[ ! "$TERM" =~ screen ]] && \
+        [[ ! "$TERM" =~ tmux ]] && \
+        [ -z "$TMUX" ]; then
+  exec tmux
+fi
+
 # Terminator title settings with set_title <TITLE>
 set_title() {
     printf "\e]2;$*\a";

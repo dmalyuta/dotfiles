@@ -51,6 +51,7 @@
     "workbench.editor.enablePreview": false,
     "workbench.editor.untitled.hint": "hidden",
     "files.insertFinalNewline": true,
+    "files.trimFinalNewlines": true,
     "editor.wordWrap": "off",
     "files.eol": "\n",
     "editor.rulers": [ 100 ],

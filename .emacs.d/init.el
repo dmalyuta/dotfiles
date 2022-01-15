@@ -2081,10 +2081,10 @@ with C-u."
 
 ;;; ..:: Terminal emulator ::..
 
-(defun danylo/run-terminator-here ()
+(defun danylo/run-terminal-here ()
   "Run terminal from current buffer"
   (interactive "@")
-  (shell-command (concat "terminator > /dev/null 2>&1 & disown") nil nil))
+  (shell-command (concat "alacritty > /dev/null 2>&1 & disown") nil nil))
 
 (defconst danylo/emacs-libvterm-dir
     `,(danylo/make-path "emacs-libvterm/")
@@ -2140,7 +2140,7 @@ to (vterm) with no argument will create a **new** vterm buffer."
 
 (general-define-key
  "C-c t e" 'vterm
- "C-c t r" 'danylo/run-terminator-here)
+ "C-c t r" 'danylo/run-terminal-here)
 
 ;;; ..:: Completion ::..
 

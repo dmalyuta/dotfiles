@@ -36,6 +36,7 @@ ln -sf "$DIR"/.bin ~
 mkdir -p ~/.config/terminator
 ln -sf "$DIR"/.dircolors ~
 ln -sf "$DIR"/.config/terminator/config ~/.config/terminator
+ln -sf "$DIR"/.alacritty.yml ~
 
 # Tmux
 ln -sf "$DIR"/.tmux.conf ~

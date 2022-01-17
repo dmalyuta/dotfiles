@@ -5,14 +5,16 @@
 # Author: Danylo Malyuta, 2020.
 
 if not_installed julia; then
-    wget -4 https://julialang-s3.julialang.org/bin/linux/x64/1.6/julia-1.6.1-linux-x86_64.tar.gz \
-	 -P /tmp/
-    tar -xvzf /tmp/julia-1.6.1-linux-x86_64.tar.gz -C /tmp
-    sudo cp -r /tmp/julia-1.6.1 /opt/
-    sudo ln -sf /opt/julia-1.6.1/bin/julia /usr/local/bin/julia
+    JULIA_VERSION=1.7.1
+    BASE_JULIA_VERSION="$(echo $JULIA_VERSION | cut -d '.' -f 1-2)"
+    JULIA_URL=https://julialang-s3.julialang.org/bin/linux/x64/$BASE_JULIA_VERSION/julia-$JULIA_VERSION-linux-x86_64.tar.gz
+    wget -4 $JULIA_URL -P /tmp/
+    tar -xvzf /tmp/julia-$JULIA_VERSION-linux-x86_64.tar.gz -C /tmp
+    sudo cp -r /tmp/julia-$JULIA_VERSION /opt/
+    sudo ln -sf /opt/julia-$JULIA_VERSION/bin/julia /usr/local/bin/julia
 
     # This makes PackageCompiler.jl work
-    sudo ln -f /opt/julia-1.6.1/lib/libjulia.so.1.5 \
+    sudo ln -f /opt/julia-$JULIA_VERSION/lib/libjulia.so.$BASE_JULIA_VERSION \
 	 /usr/lib/x86_64-linux-gnu/libjulia.so
 fi
 

@@ -68,12 +68,12 @@ now() { date "+%d%m%YT%H%M%S"; } # shortcut for timestamps
 
 # Gedit open file without blocking terminal
 gedit() {
-    nohup gedit $@ &>/dev/null & disown
+    nohup gedit $@ > /dev/null 2>&1 & disown
 }
 
 # Emacs open file without blocking terminal
 semacs() {
-    nohup emacs $@ &>/dev/null & disown
+    nohup emacs $@ > /dev/null 2>&1 & disown
 }
 
 semacsd() {
@@ -112,9 +112,9 @@ emacs-connect-new() {
         file="$1"
     fi
     if [ -z "$file" ]; then
-        nohup emacsclient -c -s "$name" -e "(raise-frame)" &>/dev/null & disown
+        nohup emacsclient -c -s "$name" -e "(raise-frame)" > /dev/null 2>&1 & disown
     else
-        nohup emacsclient -c -s "$name" "$file" &>/dev/null & disown
+        nohup emacsclient -c -s "$name" "$file" > /dev/null 2>&1 & disown
     fi
 }
 
@@ -131,27 +131,27 @@ emacs-connect() {
 
     if [ -z "$file" ]; then
         if [ "$window_count" = "1" ]; then
-            nohup emacsclient -c -s "$name" -e "(raise-frame)" &>/dev/null & disown
+            nohup emacsclient -c -s "$name" -e "(raise-frame)" > /dev/null 2>&1 & disown
         else
-            nohup emacsclient -s "$name" -e "(raise-frame)" &>/dev/null & disown
+            nohup emacsclient -s "$name" -e "(raise-frame)" > /dev/null 2>&1 & disown
         fi
     else
         if [ "$window_count" = "1" ]; then
-            nohup emacsclient -c -s "$name" "$file" &>/dev/null & disown
+            nohup emacsclient -c -s "$name" "$file" > /dev/null 2>&1 & disown
         else
-            nohup emacsclient -s "$name" "$file" &>/dev/null & disown
+            nohup emacsclient -s "$name" "$file" > /dev/null 2>&1 & disown
         fi
     fi
 }
 
 # LibreOffice open file without blocking terminal
 sdoc() {
-    nohup libreoffice6.4 $@ &>/dev/null & disown
+    nohup libreoffice6.4 $@ > /dev/null 2>&1 & disown
 }
 
 # Evince open file without blocking terminal
 sevince() {
-    nohup evince $@ &>/dev/null & disown
+    nohup evince $@ > /dev/null 2>&1 & disown
 }
 
 # Emacs byte-compile
@@ -196,7 +196,7 @@ git-log () {
 
 # Git GUI viewer
 gitview() {
-    nohup gitg $@ &>/dev/null & disown
+    nohup gitg $@ > /dev/null 2>&1 & disown
 }
 
 # Show kernel log

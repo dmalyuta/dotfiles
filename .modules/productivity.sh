@@ -66,9 +66,10 @@ fi
 # ..:: Inkscape ::..
 
 if not_installed inkscape; then
-    sudo add-apt-repository -y ppa:inkscape.dev/stable
+    sudo add-apt-repository -y universe
+    sudo add-apt-repository -y ppa:inkscape.dev/trunk
     sudo apt-get update
-    sudo apt-get -y install inkscape
+    sudo apt-get -y --install-suggests install inkscape-trunk
 fi
 
 # Install TeX Text plugin for better LaTeX editing

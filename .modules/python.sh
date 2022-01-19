@@ -69,3 +69,8 @@ pip install jupyterlab
 
 # diffing and merging of Jupyter Notebooks
 pip install nbdime
+
+# ..:: Git ::..
+
+# README file local preview
+pip install grip

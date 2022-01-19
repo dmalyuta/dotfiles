@@ -40,7 +40,10 @@ Pkg.add("PyPlot")
 Pkg.add("Colors")
 Pkg.add("Printf")
 
+Pkg.add("Revise")
 Pkg.add("Test")
+
+Pkg.add("JuliaFormatter")
 EOF
 
 fi

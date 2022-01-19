@@ -58,10 +58,6 @@
  :upgrade nil)
 (require 'quelpa-use-package)
 
-;; Lisp deprecation
-;; https://github.com/kiwanami/emacs-epc/issues/35
-(setq byte-compile-warnings '(cl-functions))
-
 ;;; ..:: Customization variables ::..
 
 (eval-and-compile
@@ -604,11 +600,13 @@ not have to update when the cursor is moving quickly."
 (setq auto-save-file-name-transforms `((".*" ,danylo/emacs-backup-dir t)))
 (setq auto-save-default nil) ;; Disable auto-save (I save myself)
 
-(defun danylo/byte-compile-init-dir ()
-  "Byte-compile Emacs config."
+(defun danylo/byte-compile-init-dir (&optional force-recompile)
+  "Byte-compile Emacs config. If FORCE-RECOMPILE is t then
+recompile all the files (default is nil)."
   (interactive)
-  (byte-recompile-file (danylo/make-path "init.el") nil 0)
-  (byte-recompile-directory danylo/emacs-custom-lisp-dir 0))
+  (byte-recompile-file (danylo/make-path "init.el") force-recompile 0)
+  (byte-recompile-file (danylo/make-path "early-init.el") force-recompile 0)
+  (byte-recompile-directory danylo/emacs-custom-lisp-dir 0 force-recompile))
 
 ;;;; Dired (directory listing)
 
@@ -2086,9 +2084,8 @@ with C-u."
   (interactive "@")
   (shell-command (concat "alacritty > /dev/null 2>&1 & disown") nil nil))
 
-(defconst danylo/emacs-libvterm-dir
-    `,(danylo/make-path "emacs-libvterm/")
-    "Location of emacs-libvterm.")
+(defconst danylo/emacs-libvterm-dir `,(danylo/make-path "libvterm/")
+  "Location of emacs-libvterm.")
 
 (use-package vterm
   ;; https://github.com/akermu/emacs-libvterm
@@ -2106,10 +2103,11 @@ with C-u."
               ("C-c t t" . vterm-copy-mode))
   :hook ((vterm-mode-hook . (lambda ()
                               (goto-address-mode 1))))
-  :init (setq vterm-always-compile-module t
-              vterm-kill-buffer-on-exit t
-              vterm-max-scrollback 100000)
-  )
+  :init
+  (require 'vterm)
+  (setq vterm-always-compile-module t
+        vterm-kill-buffer-on-exit t
+        vterm-max-scrollback 100000))
 
 (defun danylo/vterm (orig-fun &rest args)
   "Create a new vterm buffer, or open an existing one. This

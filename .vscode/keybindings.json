@@ -638,4 +638,9 @@
         },
         "when": "terminalFocus"
     },
+    {
+        "key": "ctrl+c",
+        "command": "editor.action.clipboardCopyAction",
+        "when": "markdownPreviewFocus"
+    },
 ]

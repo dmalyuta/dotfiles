@@ -167,7 +167,7 @@
     /// Language: Python
     "jupyter.interactiveWindowMode": "perFile",
     "jupyter.askForKernelRestart": false,
-    "pylance.insidersChannel": "daily",
+    "pylance.insidersChannel": "off",
     // "python.analysis.logLevel": "Trace",
     "python.analysis.indexing": true,
     "python.analysis.completeFunctionParens": true,

@@ -7,7 +7,7 @@ if command -v tmux &> /dev/null && \
         [[ ! "$TERM" =~ screen ]] && \
         [[ ! "$TERM" =~ tmux ]] && \
         [ -z "$TMUX" ]; then
-  exec tmux
+    exec tmux
 fi
 
 # Terminator title settings with set_title <TITLE>

@@ -34,7 +34,7 @@ alias oom-ls='sudo egrep -i -r ''killed process'' /var/log/'
 
 # Open browser
 if [ ! -f ~/.local/bin/browser ]; then
-    ln -sf /usr/bin/brave-browser ~/.local/bin/browser
+    ln -sf /usr/bin/google-chrome ~/.local/bin/browser
 fi
 
 # Open logseq easily

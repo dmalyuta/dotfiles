@@ -182,6 +182,7 @@
     "[julia]": {
         // Julia-specific customizations of the general config
         "editor.unicodeHighlight.allowedCharacters": {
+            "α": true,
             "ρ": true,
             "σ": true,
             "γ": true,

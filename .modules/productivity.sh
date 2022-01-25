@@ -4,7 +4,7 @@
 #
 # Author: Danylo Malyuta, 2020.
 
-# ..:: Brave Browser ::..
+# ..:: Chrome browser ::..
 
 # Remove Firefox
 if ! not_installed firefox; then
@@ -15,14 +15,11 @@ if ! not_installed firefox; then
     sudo rm -rf /usr/lib/firefox-addons
 fi
 
-if not_installed brave-browser; then
-    sudo apt-get -y install apt-transport-https curl gnupg
-    curl -s https://brave-browser-apt-release.s3.brave.com/brave-core.asc | \
-	sudo apt-key --keyring /etc/apt/trusted.gpg.d/brave-browser-release.gpg add -
-    echo "deb [arch=amd64] https://brave-browser-apt-release.s3.brave.com/ stable main" | \
-	sudo tee /etc/apt/sources.list.d/brave-browser-release.list
-    sudo apt-get -y update
-    sudo apt-get -y install brave-browser
+if not_installed google-chrome; then
+    sudo apt-get -y install apt-transport-https gnupg
+    wget -4 https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb -P /tmp/
+    ( cd /tmp/ && \
+          sudo apt-get -y install ./google-chrome-stable_current_amd64.deb )
 fi
 
 # ..:: LaTeX ::..

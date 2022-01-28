@@ -25,6 +25,7 @@ if not_installed alacritty; then
     # Make Alacritty the new terminal!
     sudo apt-get purge -y gnome-terminal
     sudo ln -sf /usr/bin/alacritty /usr/bin/gnome-terminal
+    sudo update-alternatives --install /usr/bin/x-terminal-emulator x-terminal-emulator /usr/bin/alacritty 100
     sudo update-alternatives --set x-terminal-emulator /usr/bin/alacritty
 fi
 

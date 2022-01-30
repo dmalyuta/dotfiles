@@ -107,6 +107,9 @@ if [ ! -d "$EXTDIR" ]; then
     mv /tmp/stealfocus/* "$EXTDIR"
 fi
 
+# Workspaces on al displays
+dconf write /org/gnome/mutter/workspaces-only-on-primary false
+
 # >> Now update the Gnome configuration <<
 
 # Restart the Gnome shell, to make sure everything is up-to-date

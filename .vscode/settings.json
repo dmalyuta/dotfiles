@@ -147,7 +147,7 @@
     /// Language: JSON*
     "[jsonnet]": {
         "editor.tabSize": 2,
-    }
+    },
 
     /// Language: LaTeX
     "latex-workshop.view.pdf.viewer": "tab",

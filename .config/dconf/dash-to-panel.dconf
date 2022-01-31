@@ -1,5 +1,6 @@
 [/]
 animate-app-switch=true
+animate-appicon-hover-animation-extent={'RIPPLE': 4, 'PLANK': 4, 'SIMPLE': 1}
 animate-window-launch=true
 available-monitors=[0]
 dot-color-1='#5294e2'
@@ -13,7 +14,10 @@ dot-color-unfocused-4='#5294e2'
 dot-position='BOTTOM'
 focus-highlight-color='#eeeeee'
 hotkeys-overlay-combo='TEMPORARILY'
+multi-monitors=false
+panel-anchors='{"0":"MIDDLE","1":"MIDDLE"}'
 panel-element-positions='{"0":[{"element":"showAppsButton","visible":false,"position":"stackedTL"},{"element":"activitiesButton","visible":false,"position":"stackedTL"},{"element":"leftBox","visible":true,"position":"stackedTL"},{"element":"taskbar","visible":true,"position":"centered"},{"element":"centerBox","visible":true,"position":"stackedBR"},{"element":"rightBox","visible":true,"position":"stackedBR"},{"element":"systemMenu","visible":true,"position":"stackedBR"},{"element":"dateMenu","visible":true,"position":"stackedBR"},{"element":"desktopButton","visible":false,"position":"stackedBR"}]}'
+panel-lengths='{"0":100,"1":100}'
 panel-positions='{"0":"BOTTOM"}'
 panel-size=32
 peek-mode=false

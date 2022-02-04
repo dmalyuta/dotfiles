@@ -2,6 +2,7 @@
     /// Appearance
     "window.zoomLevel": -1,
     "window.titleBarStyle": "custom",
+    "workbench.experimental.layoutControl.enabled": true,
     "workbench.colorTheme": "One Dark Pro Darker",
     "editor.renderLineHighlight": "gutter",
     "workbench.colorCustomizations": {

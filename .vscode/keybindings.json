@@ -37,8 +37,12 @@
         "command": "-workbench.action.togglePanel"
     },
     {
-        "key": "alt+v s",
+        "key": "alt+v [",
         "command": "workbench.action.toggleSidebarVisibility"
+    },
+    {
+        "key": "alt+v ]",
+        "command": "workbench.action.toggleAuxiliaryBar"
     },
     {
         "key": "ctrl+b",

@@ -8,11 +8,10 @@ dbaeumer.vscode-eslint
 denco.confluence-markup
 dmalyuta.suggestions-multi-trigger
 eamodio.gitlens
+Gruntfuggly.activitusbar
 hbenl.vscode-test-explorer
 heptio.jsonnet
 hoovercj.vscode-settings-cycler
-iocave.customize-ui
-iocave.monkey-patch
 James-Yu.latex-workshop
 jgclark.vscode-todo-highlight
 jomeinaster.bracket-peek

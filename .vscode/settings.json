@@ -2,6 +2,7 @@
     /// Appearance
     "window.zoomLevel": -1,
     "window.titleBarStyle": "custom",
+    "workbench.activityBar.visible": false,
     "workbench.experimental.layoutControl.enabled": true,
     "workbench.colorTheme": "One Dark Pro Darker",
     "editor.renderLineHighlight": "gutter",
@@ -33,7 +34,6 @@
     "breadcrumbs.showVariables": false,
     "window.customMenuBarAltFocus": false,
     "window.menuBarVisibility": "hidden",
-    "customizeUI.activityBar": "bottom",
     "workbench.editor.showTabs": false,
     "editor.minimap.enabled": false,
     "vsicons.dontShowNewVersionMessage": true,

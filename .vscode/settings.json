@@ -1,6 +1,6 @@
 {
     /// Appearance
-    "workbench.activityBar.visible": true,
+    "workbench.activityBar.visible": false,
     "window.zoomLevel": -1,
     "window.titleBarStyle": "custom",
     "workbench.experimental.layoutControl.enabled": true,

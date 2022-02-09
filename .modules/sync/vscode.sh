@@ -15,7 +15,7 @@ vscode_cleanup_settings() {
     # Operate on settings.json
     # - Make sure that activity bar is hidden
     sed -i '/workbench\.activityBar\.visible/d' $SETTINGS_FILE_PATH
-    sed -i '/\/\/\/ Appearance/a'"$TAB"'"workbench.activityBar.visible": true,' \
+    sed -i '/\/\/\/ Appearance/a'"$TAB"'"workbench.activityBar.visible": false,' \
         $SETTINGS_FILE_PATH
 }
 

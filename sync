@@ -14,12 +14,22 @@
 # Author: Danylo Malyuta, 2022.
 
 OPERATION_KIND=$1
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+
+source .modules/sync/vscode.sh
 
 push_operation() {
+    # Run pre-push commands
+    vscode_cleanup_settings
+
+    # Push to remote
     git add --all
     read -p 'Commit message: ' COMMIT_MESSAGE
     git commit -m "$COMMIT_MESSAGE"
     git push
+
+    # Post-push actions
+    vscode_restore_settings
 }
 
 pull_operation() {

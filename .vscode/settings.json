@@ -81,6 +81,11 @@
     "notebook.lineNumbers": "on",
     "bracket-peek.previewLocation": "Hover",
     "extensions.ignoreRecommendations": true,
+    "zenMode.restore": false,
+
+    /// Startup
+    "remote.restoreForwardedPorts": false,
+    "terminal.integrated.persistentSessionReviveProcess": "never",
 
     /// Online
     "telemetry.telemetryLevel": "off",

@@ -1,10 +1,9 @@
 #!/bin/bash
 #
-# Installation script for the dotfiles, and to configure the Linux
-# environment.
+# Installation script for the dotfiles, and to configure the Linux environment.
 #
 # Run using:
-# $ source install.sh
+# $ ./install
 #
 # Author: Danylo Malyuta, 2020.
 

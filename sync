@@ -1,0 +1,46 @@
+#!/bin/bash
+#
+# Syncing script for the local directory with the remote repository.
+#
+# To get content from remote:
+# $ ./sync pull
+#
+# To upload content to remote:
+# $ ./sync push
+#
+# To do both at once:
+# $ ./sync bidi
+#
+# Author: Danylo Malyuta, 2022.
+
+OPERATION_KIND=$1
+
+push_operation() {
+    git add --all
+    read -p 'Commit message: ' COMMIT_MESSAGE
+    git commit -m "$COMMIT_MESSAGE"
+    git push
+}
+
+pull_operation() {
+    git pull
+}
+
+if [[ $OPERATION_KIND = pull ]]; then
+    pull_operation
+elif [[ $OPERATION_KIND = push ]]; then
+    push_operation
+elif [[ $OPERATION_KIND = bidi ]]; then
+    pull_operation
+    push_operation
+else
+    cat << EOF
+Unknown command.
+To download from remote:
+  $ sync pull
+To upload to remote:
+  $ sync push
+To do pull and then push:
+  $ sync bidi
+EOF
+fi

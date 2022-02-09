@@ -13,10 +13,15 @@ vscode_cleanup_settings() {
     cp $SETTINGS_FILE_PATH /tmp/settings.json.bk
 
     # Operate on settings.json
-    # - Make sure that activity bar is hidden
+    # - Activity bar is hidden
     sed -i '/workbench\.activityBar\.visible/d' $SETTINGS_FILE_PATH
-    sed -i '/\/\/\/ Appearance/a'"$TAB"'"workbench.activityBar.visible": false,' \
-        $SETTINGS_FILE_PATH
+    sed -i '/\/\/\/ Appearance/a'"$TAB"'"workbench.activityBar.visible": false,' $SETTINGS_FILE_PATH
+    # - Minimap is disabled
+    sed -i '/editor\.minimap\.enabled/d' $SETTINGS_FILE_PATH
+    sed -i '/workbench\.activityBar\.visible/a'"$TAB"'"editor.minimap.enabled": false,' $SETTINGS_FILE_PATH
+    # - Window zoom level
+    sed -i '/window\.zoomLevel/d' $SETTINGS_FILE_PATH
+    sed -i '/editor\.minimap\.enabled/a'"$TAB"'"window.zoomLevel": -1,' $SETTINGS_FILE_PATH
 }
 
 vscode_restore_settings() {

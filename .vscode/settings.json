@@ -1,6 +1,7 @@
 {
     /// Appearance
     "workbench.activityBar.visible": false,
+    "editor.minimap.enabled": false,
     "window.zoomLevel": -1,
     "window.titleBarStyle": "custom",
     "workbench.experimental.layoutControl.enabled": true,
@@ -35,7 +36,6 @@
     "window.customMenuBarAltFocus": false,
     "window.menuBarVisibility": "hidden",
     "workbench.editor.showTabs": false,
-    "editor.minimap.enabled": false,
     "vsicons.dontShowNewVersionMessage": true,
     "textmarker.commandsOnContextMenu": {
         "updateHighlight": false,

@@ -5,29 +5,41 @@
 #
 # Author: Danylo Malyuta, 2022.
 
+escape_for_sed() {
+    echo $(printf '%s\n' "$1" | sed -e 's/[]\/$*.^[]/\\&/g')
+}
+
+vscode_add_line() {
+    FILE="$1"
+    AFTER_LINE="$2"
+    SETTING="$3"
+    VALUE="$4"
+
+    TAB=$(printf '\%.0s ' {1..4})
+    SETTING_ESCAPED=$(escape_for_sed "$SETTING")
+    AFTER_LINE_ESCAPED=$(escape_for_sed "$AFTER_LINE")
+
+    sed -i '/'"$SETTING_ESCAPED"'/d' $FILE
+    sed -i '/'"$AFTER_LINE_ESCAPED"'/a'"$TAB"'"'"$SETTING"'": '"$VALUE"',' $FILE
+}
+
 vscode_cleanup_settings() {
     SETTINGS_FILE_PATH=$DIR/.vscode/settings.json
-    TAB=$(printf '\%.0s ' {1..4})
 
     # Save the current version
     cp $SETTINGS_FILE_PATH /tmp/settings.json.bk
 
     # Operate on settings.json
-    # - Activity bar is hidden
-    sed -i '/workbench\.activityBar\.visible/d' $SETTINGS_FILE_PATH
-    sed -i '/\/\/\/ Appearance/a'"$TAB"'"workbench.activityBar.visible": false,' $SETTINGS_FILE_PATH
-    # - Minimap is disabled
-    sed -i '/editor\.minimap\.enabled/d' $SETTINGS_FILE_PATH
-    sed -i '/workbench\.activityBar\.visible/a'"$TAB"'"editor.minimap.enabled": false,' $SETTINGS_FILE_PATH
-    # - Window zoom level
-    sed -i '/window\.zoomLevel/d' $SETTINGS_FILE_PATH
-    sed -i '/editor\.minimap\.enabled/a'"$TAB"'"window.zoomLevel": -1,' $SETTINGS_FILE_PATH
+    AFTER_LINE="/// Appearance"
+    vscode_add_line "$SETTINGS_FILE_PATH" "$AFTER_LINE" "window.zoomLevel" -1
+    vscode_add_line "$SETTINGS_FILE_PATH" "$AFTER_LINE" "editor.minimap.enabled" false
+    vscode_add_line "$SETTINGS_FILE_PATH" "$AFTER_LINE" "workbench.activityBar.visible" false
 
     # Show the diff
     if [[ $(git diff $SETTINGS_FILE_PATH) = "" ]]; then
         echo "No VS Code settings.json changes"
     else
-        git diff $SETTINGS_FILE_PATH
+        git --no-pager diff $SETTINGS_FILE_PATH
     fi
 }
 

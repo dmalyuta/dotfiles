@@ -24,11 +24,10 @@ vscode_cleanup_settings() {
     sed -i '/editor\.minimap\.enabled/a'"$TAB"'"window.zoomLevel": -1,' $SETTINGS_FILE_PATH
 
     # Show the diff
-    SETTINGS_DIFF=$(git diff $SETTINGS_FILE_PATH)
-    if [[ $SETTINGS_DIFF = "" ]]; then
+    if [[ $(git diff $SETTINGS_FILE_PATH) = "" ]]; then
         echo "No VS Code settings.json changes"
     else
-        echo $SETTINGS_DIFF
+        git diff $SETTINGS_FILE_PATH
     fi
 }
 

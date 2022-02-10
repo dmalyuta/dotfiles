@@ -25,9 +25,11 @@ push_operation() {
     # Push to remote
     git add --all
     git --no-pager status
-    read -p 'Commit message: ' COMMIT_MESSAGE
-    git commit -m "$COMMIT_MESSAGE"
-    git push
+    if [ -n "$(git status --porcelain)" ]; then
+        read -p 'Commit message: ' COMMIT_MESSAGE
+        git commit -m "$COMMIT_MESSAGE"
+        git push
+    fi
 
     # Post-push actions
     vscode_restore_settings

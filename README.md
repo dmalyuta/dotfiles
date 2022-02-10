@@ -4,9 +4,9 @@ Ubuntu 20.04.3 LTS auto-configuration.
 
 ## Automatic install script
 
-Use the script `install.sh` to install the full environment. Simply run
+Use the Bash script `install` to install the full environment. Simply run
 ```
-source install.sh
+./install
 ```
 
 ## License

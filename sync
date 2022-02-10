@@ -26,9 +26,11 @@ push_operation() {
     git add --all
     git --no-pager status
     if [ -n "$(git status --porcelain)" ]; then
-        read -p 'Commit message: ' COMMIT_MESSAGE
-        git commit -m "$COMMIT_MESSAGE"
-        git push
+        read -p 'Proceed [Yn]? ' USER_PROCEED
+        if [[ $USER_PROCEED == "" ]]; then
+            GIT_EDITOR=nano git commit
+            git push
+        fi
     fi
 
     # Post-push actions

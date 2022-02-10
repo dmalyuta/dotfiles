@@ -29,7 +29,15 @@ push_operation() {
         read -p 'Proceed [Yn]? ' USER_PROCEED
         if [[ $USER_PROCEED == "" ]]; then
             GIT_EDITOR=nano git commit
-            git push
+            git log --name-status HEAD^..HEAD
+            read -p 'Push [Yn]? ' USER_PROCEED
+            if [[ $USER_PROCEED == "" ]]; then
+                git push
+            else
+                echo "Aborting"
+            fi
+        else
+            echo "Aborting"
         fi
     fi
 

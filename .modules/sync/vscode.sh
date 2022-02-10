@@ -22,6 +22,14 @@ vscode_cleanup_settings() {
     # - Window zoom level
     sed -i '/window\.zoomLevel/d' $SETTINGS_FILE_PATH
     sed -i '/editor\.minimap\.enabled/a'"$TAB"'"window.zoomLevel": -1,' $SETTINGS_FILE_PATH
+
+    # Show the diff
+    SETTINGS_DIFF=$(git diff $SETTINGS_FILE_PATH)
+    if [[ $SETTINGS_DIFF = "" ]]; then
+        echo "No VS Code settings.json changes"
+    else
+        echo $SETTINGS_DIFF
+    fi
 }
 
 vscode_restore_settings() {

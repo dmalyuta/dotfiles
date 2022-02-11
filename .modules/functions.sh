@@ -9,3 +9,11 @@ not_installed() {
     local name="$1"
     ! type -t "$name" > /dev/null 2>&1
 }
+
+parse_yn() {
+    if [[ "$1" == "" || "$1" == "Y" || "$1" == "y" ]]; then
+        true
+    else
+        false
+    fi
+}

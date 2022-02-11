@@ -17,6 +17,7 @@ OPERATION_KIND=$1
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
 source .modules/sync/vscode.sh
+source .modules/functions.sh
 
 push_operation() {
     # Run pre-push commands
@@ -27,11 +28,11 @@ push_operation() {
     git --no-pager status
     if [ -n "$(git status --porcelain)" ]; then
         read -p 'Proceed [Yn]? ' USER_PROCEED
-        if [[ $USER_PROCEED == "" ]]; then
+        if parse_yn "$USER_PROCEED"; then
             GIT_EDITOR=nano git commit
             git log --name-status HEAD^..HEAD
             read -p 'Push [Yn]? ' USER_PROCEED
-            if [[ $USER_PROCEED == "" ]]; then
+            if parse_yn "$USER_PROCEED"; then
                 git push
             else
                 echo "Aborting"

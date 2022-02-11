@@ -37,6 +37,7 @@ push_operation() {
                 echo "Aborting"
             fi
         else
+            git reset
             echo "Aborting"
         fi
     fi

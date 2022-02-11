@@ -1,8 +1,10 @@
 {
-    /// Appearance
+    /// Default controlled settings
     "workbench.activityBar.visible": false,
     "editor.minimap.enabled": false,
     "window.zoomLevel": -1,
+
+    /// Appearance
     "window.titleBarStyle": "custom",
     "workbench.experimental.layoutControl.enabled": true,
     "workbench.colorTheme": "One Dark Pro Darker",
@@ -114,6 +116,14 @@
             "text": "WARN",
             "color": "yellow",
             "fontWeight": "bold"
+        },
+        {
+            "text": "NOTE",
+            "color": "orange",
+            "fontWeight": "bold",
+            "regex": {
+                "pattern": "(?<=^|\"|\\s)(NOTE|NB)(?!\\w)"
+            },
         }
     ],
     "todohighlight.defaultStyle": {

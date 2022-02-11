@@ -46,7 +46,7 @@ push_operation() {
 }
 
 pull_operation() {
-    git pull
+    GIT_EDITOR=nano git pull
 }
 
 if [[ $OPERATION_KIND = pull ]]; then

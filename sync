@@ -43,10 +43,12 @@ push_operation() {
 
     # Post-push actions
     vscode_restore_settings
+    git status
 }
 
 pull_operation() {
     GIT_EDITOR=nano git pull
+    git status
 }
 
 if [[ $OPERATION_KIND = pull ]]; then

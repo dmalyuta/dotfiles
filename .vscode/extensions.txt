@@ -8,7 +8,6 @@ dbaeumer.vscode-eslint
 denco.confluence-markup
 dmalyuta.suggestions-multi-trigger
 eamodio.gitlens
-Gruntfuggly.activitusbar
 hbenl.vscode-test-explorer
 heptio.jsonnet
 hoovercj.vscode-settings-cycler

@@ -53,6 +53,18 @@ pull_operation() {
     git status
 }
 
+reset_operation() {
+    git checkout -- .
+}
+
+status_operation() {
+    git status
+}
+
+diff_operation() {
+    git diff
+}
+
 if [[ $OPERATION_KIND = pull ]]; then
     pull_operation
 elif [[ $OPERATION_KIND = push ]]; then
@@ -60,14 +72,26 @@ elif [[ $OPERATION_KIND = push ]]; then
 elif [[ $OPERATION_KIND = bidi ]]; then
     pull_operation
     push_operation
+elif [[ $OPERATION_KIND = reset ]]; then
+    push_operation
+elif [[ $OPERATION_KIND = status ]]; then
+    status_operation
+elif [[ $OPERATION_KIND = diff ]]; then
+    diff_operation
 else
     cat << EOF
 Unknown command.
+To view current status:
+  $ ./sync status
+To view local changes:
+  $ ./sync diff
 To download from remote:
-  $ sync pull
+  $ ./sync pull
 To upload to remote:
-  $ sync push
+  $ ./sync push
 To do pull and then push:
-  $ sync bidi
+  $ ./sync bidi
+To erase all local changes:
+  $ ./sync reset
 EOF
 fi

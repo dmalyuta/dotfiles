@@ -647,4 +647,13 @@
         "command": "editor.action.clipboardCopyAction",
         "when": "markdownPreviewFocus"
     },
+    {
+        "key": "alt+v ctrl+r",
+        "command": "workbench.action.reloadWindow"
+    },
+    {
+        "key": "ctrl+r",
+        "command": "-workbench.action.reloadWindow",
+        "when": "isDevelopment"
+    },
 ]

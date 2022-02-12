@@ -6,6 +6,9 @@
 
     /// Appearance
     "window.titleBarStyle": "custom",
+    "customizeUI.activityBar": "bottom",
+    "customizeUI.activityBarHideSettings": true,
+    "customizeUI.moveStatusbar": true,
     "workbench.experimental.layoutControl.enabled": true,
     "workbench.colorTheme": "One Dark Pro Darker",
     "editor.renderLineHighlight": "gutter",

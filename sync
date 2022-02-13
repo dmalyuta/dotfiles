@@ -24,9 +24,11 @@ push_operation() {
     vscode_cleanup_settings
 
     # Push to remote
+    GIT_DIFF_OUTPUT="$(diff_operation)"
     git add --all
     git --no-pager status
     if [ -n "$(git status --porcelain)" ]; then
+        echo -e "$GIT_DIFF_OUTPUT"
         read -p 'Proceed [Yn]? ' USER_PROCEED
         if parse_yn "$USER_PROCEED"; then
             GIT_EDITOR=nano git commit
@@ -62,7 +64,13 @@ status_operation() {
 }
 
 diff_operation() {
-    git diff
+    RED='\033[0;31m'
+    NC='\033[0m' # No Color
+    BOLD=$(tput bold)
+    NORM=$(tput sgr0)
+    echo -e "${RED}${BOLD}-- Changes --${NC}${NORM}"
+    git --no-pager diff --color=always
+    echo -e "${RED}${BOLD}-------------${NC}${NORM}"
 }
 
 if [[ $OPERATION_KIND = pull ]]; then

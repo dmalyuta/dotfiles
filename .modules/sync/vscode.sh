@@ -42,8 +42,6 @@ vscode_cleanup_settings() {
     # Show the diff
     if [[ $(git diff $SETTINGS_FILE_PATH) = "" ]]; then
         echo "No VS Code settings.json changes"
-    else
-        git --no-pager diff $SETTINGS_FILE_PATH
     fi
 }
 

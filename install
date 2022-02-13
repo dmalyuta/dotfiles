@@ -68,6 +68,7 @@ ln -sf "$DIR"/.config/startup.jl ~/.julia/config
 
 source .modules/functions.sh
 source .modules/dev_tools.sh
+source .modules/cpp.sh
 source .modules/python.sh
 source .modules/julia.sh
 source .modules/usability.sh

@@ -87,6 +87,7 @@
     "bracket-peek.previewLocation": "Hover",
     "extensions.ignoreRecommendations": true,
     "zenMode.restore": false,
+    "explorer.confirmDragAndDrop": false,
 
     /// Startup
     "remote.restoreForwardedPorts": false,
@@ -101,6 +102,7 @@
     "terminal.integrated.defaultProfile.linux": "bash",
     // see options for cwd at: https://code.visualstudio.com/docs/editor/variables-reference
     "terminal.integrated.cwd": "${workspaceFolder}",
+    "terminal.external.linuxExec": "x-terminal-emulator",
 
     /// Git
     "git.confirmSync": false,

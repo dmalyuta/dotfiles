@@ -47,6 +47,7 @@ sleistner.vscode-fileutils
 StackBuild.bazel-stack-vscode
 stkb.rewrap
 tootone.org-mode
+usernamehw.find-jump
 vscode-icons-team.vscode-icons
 wmaurer.vscode-jumpy
 zhuangtongfa.material-theme

@@ -656,4 +656,12 @@
         "command": "-workbench.action.reloadWindow",
         "when": "isDevelopment"
     },
+    {
+        "key": "alt+s",
+        "command": "findJump.activate"
+    },
+    {
+        "key": "ctrl+;",
+        "command": "-findJump.activate"
+    },
 ]

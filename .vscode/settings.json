@@ -69,9 +69,6 @@
     "editor.guides.bracketPairs": false,
     "editor.guides.bracketPairsHorizontal": false,
     "files.trimTrailingWhitespace": true,
-    "metaGo.decoration.characters": "a,s,d,f,g,h,j,k,l",
-    "metaGo.decoration.additionalSingleCharCodeCharacters": "F,J",
-    "metaGo.jumper.enableRippleSupportForSequentialTargetCharsCommand": false,
     "explorer.confirmDelete": false,
     "bookmarks.saveBookmarksInProject": true,
     "editor.quickSuggestions": { "other": false, "comments": false, "strings": false },
@@ -88,6 +85,7 @@
     "extensions.ignoreRecommendations": true,
     "zenMode.restore": false,
     "explorer.confirmDragAndDrop": false,
+    "findJump.jumpChars": "asdfghjkl;ASDFGHJKL:",
 
     /// Startup
     "remote.restoreForwardedPorts": false,
@@ -173,7 +171,6 @@
     /// Language: LaTeX
     "latex-workshop.view.pdf.viewer": "tab",
     "latex-workshop.view.pdf.backgroundColor": "#23272eff",
-    "latex-workshop.intellisense.includegraphics.preview.pdf.enabled": true,
     "latex-workshop.view.pdf.hand": true,
     "latex-workshop.view.pdf.invert": 0,
     "latex-workshop.view.pdf.invertMode.enabled": "never",

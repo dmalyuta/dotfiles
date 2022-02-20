@@ -140,13 +140,25 @@
 
     /// Multi-commands
     "multiCommand.commands": {
-        // "multiCommand.NAME": {
-        //     "interval": INTERVAL_BETWEEN_COMMANDS_MS,
-        //     "sequence": [
-        //         "COMMAND_1",
-        //         "COMMAND_2",
-        //     ]
-        // },
+        "multiCommand.closeSideAndAuxiliaryBar": {
+            "label": "closeSideAndAuxiliaryBar",
+            "description": "Close both the sidebar and auxiliary bar",
+            "sequence": [
+                "workbench.action.closeSidebar",
+                "workbench.action.focusAuxiliaryBar",
+                "workbench.action.toggleAuxiliaryBar"
+            ]
+        },
+        "multiCommand.showSideAndAuxiliaryBar": {
+            "label": "showSideAndAuxiliaryBar",
+            "description": "Show both the sidebar and auxiliary bar",
+            "sequence": [
+                "workbench.action.closeSidebar",
+                "workbench.action.toggleSidebarVisibility",
+                "workbench.action.focusAuxiliaryBar",
+                "workbench.action.focusLastEditorGroup"
+            ]
+        }
     },
 
     /// Language: plain text

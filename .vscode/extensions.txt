@@ -13,6 +13,7 @@ heptio.jsonnet
 hoovercj.vscode-settings-cycler
 iocave.customize-ui
 iocave.monkey-patch
+jack89ita.open-file-from-path
 James-Yu.latex-workshop
 jgclark.vscode-todo-highlight
 jomeinaster.bracket-peek

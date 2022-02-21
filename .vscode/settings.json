@@ -113,12 +113,20 @@
         {
             "text": "TODO",
             "color": "#16c60cff",
-            "fontWeight": "bold"
+            "fontWeight": "bold",
+            "before": {
+			    "contentText": "✔",
+                "margin": "0 1ex 0 0",
+            },
         },
         {
             "text": "WARN",
             "color": "yellow",
-            "fontWeight": "bold"
+            "fontWeight": "bold",
+            "before": {
+			    "contentText": "📢",
+                "margin": "0 1ex 0 0",
+            },
         },
         {
             "text": "NOTE",
@@ -127,10 +135,14 @@
             "regex": {
                 "pattern": "(?<=^|\"|\\s)(NOTE|NB)(?!\\w)"
             },
+            "before": {
+			    "contentText": "📚",
+                "margin": "0 1ex 0 0",
+            },
         }
     ],
     "todohighlight.defaultStyle": {
-        "backgroundColor": "rgba(0,0,0,0)"
+        "backgroundColor": "rgba(0,0,0,0.2)",
     },
 
     /// Zen mode (minimalist layout)

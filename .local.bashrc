@@ -6,8 +6,14 @@ if command -v tmux &> /dev/null && \
         [ -n "$PS1" ] && \
         [[ ! "$TERM" =~ screen ]] && \
         [[ ! "$TERM" =~ tmux ]] && \
-        [ -z "$TMUX" ]; then
-    exec tmux
+        [ -z "$TMUX" ] && \
+        [ -z "$INSIDE_VSCODE" ]; then
+    if tmux ls 2> /dev/null | grep -q -v attached; then
+        # Reclaim an existing, detached session
+        exec tmux attach -t $(tmux ls 2> /dev/null | grep -v attached | head -1 | cut -d : -f 1)
+    else
+        exec tmux
+    fi
 fi
 
 # Terminator title settings with set_title <TITLE>

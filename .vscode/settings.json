@@ -101,6 +101,9 @@
     // see options for cwd at: https://code.visualstudio.com/docs/editor/variables-reference
     "terminal.integrated.cwd": "${workspaceFolder}",
     "terminal.external.linuxExec": "x-terminal-emulator",
+    "terminal.integrated.env.linux": {
+        "INSIDE_VSCODE": "true",
+    },
 
     /// Git
     "git.confirmSync": false,

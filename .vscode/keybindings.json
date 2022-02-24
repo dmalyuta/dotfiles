@@ -144,26 +144,6 @@
         "when": "editorTextFocus"
     },
     {
-        "key": "alt+w",
-        "command": "-toggleSearchEditorWholeWord",
-        "when": "inSearchEditor && searchInputBoxFocus"
-    },
-    {
-        "key": "alt+w",
-        "command": "-workbench.action.terminal.toggleFindWholeWord",
-        "when": "terminalFindFocused && terminalProcessSupported || terminalFocus && terminalProcessSupported"
-    },
-    {
-        "key": "alt+w",
-        "command": "-toggleSearchWholeWord",
-        "when": "searchViewletFocus"
-    },
-    {
-        "key": "alt+w",
-        "command": "-toggleFindWholeWord",
-        "when": "editorFocus"
-    },
-    {
         "key": "alt+w shift+\\",
         "command": "workbench.action.splitEditorRight"
     },
@@ -698,5 +678,55 @@
         "key": "alt+w f2",
         "command": "workbench.action.terminal.rename",
         "when": "terminalFocus"
+    },
+    {
+        "key": "alt+p",
+        "command": "extension.openFileFromPath",
+        "when": "!terminalFocus"
+    },
+    {
+        "key": "alt+d",
+        "command": "-extension.openFileFromPath",
+        "when": "!terminalFocus"
+    },
+    {
+        "key": "alt+u",
+        "command": "toggleSearchEditorWholeWord",
+        "when": "inSearchEditor && searchInputBoxFocus"
+    },
+    {
+        "key": "alt+w",
+        "command": "-toggleSearchEditorWholeWord",
+        "when": "inSearchEditor && searchInputBoxFocus"
+    },
+    {
+        "key": "alt+u",
+        "command": "toggleFindWholeWord",
+        "when": "editorFocus"
+    },
+    {
+        "key": "alt+w",
+        "command": "-toggleFindWholeWord",
+        "when": "editorFocus"
+    },
+    {
+        "key": "alt+u",
+        "command": "toggleSearchWholeWord",
+        "when": "searchViewletFocus"
+    },
+    {
+        "key": "alt+w",
+        "command": "-toggleSearchWholeWord",
+        "when": "searchViewletFocus"
+    },
+    {
+        "key": "alt+u",
+        "command": "workbench.action.terminal.toggleFindWholeWord",
+        "when": "terminalFindFocused && terminalProcessSupported || terminalFocus && terminalProcessSupported"
+    },
+    {
+        "key": "alt+w",
+        "command": "-workbench.action.terminal.toggleFindWholeWord",
+        "when": "terminalFindFocused && terminalProcessSupported || terminalFocus && terminalProcessSupported"
     },
 ]

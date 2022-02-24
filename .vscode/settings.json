@@ -120,6 +120,7 @@
             "before": {
 			    "contentText": "✔",
                 "margin": "0 1ex 0 0",
+                "color": "#16c60cff",
             },
         },
         {
@@ -129,6 +130,7 @@
             "before": {
 			    "contentText": "📢",
                 "margin": "0 1ex 0 0",
+                "color": "yellow",
             },
         },
         {
@@ -141,6 +143,7 @@
             "before": {
 			    "contentText": "📚",
                 "margin": "0 1ex 0 0",
+                "color": "orange",
             },
         }
     ],

@@ -33,6 +33,7 @@ vscode_cleanup_settings() {
     AFTER_LINE="^{$"
     vscode_add_line "$SETTINGS_FILE_PATH" "$AFTER_LINE" "window.zoomLevel" -1
     vscode_add_line "$SETTINGS_FILE_PATH" "$AFTER_LINE" "editor.minimap.enabled" false
+    vscode_add_line "$SETTINGS_FILE_PATH" "$AFTER_LINE" "workbench.editor.showTabs" false
     vscode_add_line "$SETTINGS_FILE_PATH" "$AFTER_LINE" "workbench.activityBar.visible" false
 
     CONTROLLED_SETTINGS_HEADER=$(escape_for_sed "/// Default controlled settings")

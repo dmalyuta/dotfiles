@@ -1,6 +1,7 @@
 {
     /// Default controlled settings
     "workbench.activityBar.visible": false,
+    "workbench.editor.showTabs": false,
     "editor.minimap.enabled": false,
     "window.zoomLevel": -1,
 
@@ -40,7 +41,6 @@
     "breadcrumbs.showVariables": false,
     "window.customMenuBarAltFocus": false,
     "window.menuBarVisibility": "hidden",
-    "workbench.editor.showTabs": false,
     "vsicons.dontShowNewVersionMessage": true,
     "textmarker.commandsOnContextMenu": {
         "updateHighlight": false,

@@ -20,11 +20,12 @@ source .modules/sync/vscode.sh
 source .modules/functions.sh
 
 push_operation() {
+    GIT_DIFF_OUTPUT="$(diff_operation)"
+
     # Run pre-push commands
     vscode_cleanup_settings
 
     # Push to remote
-    GIT_DIFF_OUTPUT="$(diff_operation)"
     git add --all
     git --no-pager status
     if [ -n "$(git status --porcelain)" ]; then
@@ -46,8 +47,8 @@ push_operation() {
     fi
 
     # Post-push actions
-    vscode_restore_settings
     git status
+    vscode_restore_settings
 }
 
 pull_operation() {
@@ -60,10 +61,13 @@ reset_operation() {
 }
 
 status_operation() {
+    vscode_cleanup_settings
     git status
+    vscode_restore_settings
 }
 
 diff_operation() {
+    vscode_cleanup_settings
     RED='\033[0;31m'
     NC='\033[0m' # No Color
     BOLD=$(tput bold)
@@ -71,6 +75,7 @@ diff_operation() {
     echo -e "${RED}${BOLD}-- Changes --${NC}${NORM}"
     git --no-pager diff --color=always
     echo -e "${RED}${BOLD}-------------${NC}${NORM}"
+    vscode_restore_settings
 }
 
 if [[ $OPERATION_KIND = pull ]]; then
@@ -81,7 +86,7 @@ elif [[ $OPERATION_KIND = bidi ]]; then
     pull_operation
     push_operation
 elif [[ $OPERATION_KIND = reset ]]; then
-    push_operation
+    reset_operation
 elif [[ $OPERATION_KIND = status ]]; then
     status_operation
 elif [[ $OPERATION_KIND = diff ]]; then
@@ -99,7 +104,7 @@ To upload to remote:
   $ ./sync push
 To do pull and then push:
   $ ./sync bidi
-To erase all local changes:
+To undo all local changes:
   $ ./sync reset
 EOF
 fi

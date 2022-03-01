@@ -47,8 +47,8 @@ push_operation() {
     fi
 
     # Post-push actions
-    git status
     vscode_restore_settings
+    status_operation
 }
 
 pull_operation() {

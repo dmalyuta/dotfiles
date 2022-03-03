@@ -127,6 +127,9 @@
             "text": "WARN",
             "color": "yellow",
             "fontWeight": "bold",
+            "regex": {
+                "pattern": "(?<=^|\"|\\s)(WARN|WARNING)(?!\\w)"
+            },
             "before": {
 			    "contentText": "📢",
                 "margin": "0 1ex 0 0",

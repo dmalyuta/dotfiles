@@ -38,6 +38,7 @@ push_operation() {
             if parse_yn "$USER_PROCEED"; then
                 git push
             else
+                git reset HEAD~1
                 echo "Aborting"
             fi
         else

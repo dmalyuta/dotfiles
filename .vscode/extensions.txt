@@ -8,6 +8,8 @@ dbaeumer.vscode-eslint
 denco.confluence-markup
 dmalyuta.suggestions-multi-trigger
 eamodio.gitlens
+gitkraken.gitkraken-authentication
+gurumukhi.selected-lines-count
 hbenl.vscode-test-explorer
 heptio.jsonnet
 hoovercj.vscode-settings-cycler

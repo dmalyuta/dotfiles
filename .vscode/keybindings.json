@@ -645,12 +645,12 @@
         "command": "-findJump.activate"
     },
     {
-        "key": "alt+v shift+]",
+        "key": "alt+v shift+[",
         "command": "multiCommand.closeSideAndAuxiliaryBar",
         "when": "auxiliaryBarVisible || sideBarVisible"
     },
     {
-        "key": "alt+v shift+[",
+        "key": "alt+v shift+]",
         "command": "multiCommand.showSideAndAuxiliaryBar",
         "when": "!auxiliaryBarVisible || !sideBarVisible"
     },

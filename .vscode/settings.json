@@ -11,6 +11,7 @@
     "customizeUI.activityBarHideSettings": true,
     "customizeUI.moveStatusbar": true,
     "workbench.experimental.layoutControl.enabled": true,
+    "workbench.experimental.layoutControl.type": "both",
     "workbench.colorTheme": "One Dark Pro Darker",
     "editor.renderLineHighlight": "gutter",
     "workbench.colorCustomizations": {
@@ -109,6 +110,10 @@
     "git.confirmSync": false,
     "diffEditor.ignoreTrimWhitespace": false,
     "gitlens.views.branches.branches.layout": "list",
+    "gitlens.plusFeatures.enabled": false,
+    "gitlens.showWelcomeOnInstall": false,
+    "gitlens.showWhatsNewAfterUpgrades": false,
+    "gitlens.virtualRepositories.enabled": false,
 
     /// ToDo highlighting
     "todohighlight.isEnable": true,

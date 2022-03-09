@@ -680,16 +680,6 @@
         "when": "terminalFocus"
     },
     {
-        "key": "alt+p",
-        "command": "extension.openFileFromPath",
-        "when": "!terminalFocus"
-    },
-    {
-        "key": "alt+d",
-        "command": "-extension.openFileFromPath",
-        "when": "!terminalFocus"
-    },
-    {
         "key": "alt+u",
         "command": "toggleSearchEditorWholeWord",
         "when": "inSearchEditor && searchInputBoxFocus"
@@ -728,5 +718,9 @@
         "key": "alt+w",
         "command": "-workbench.action.terminal.toggleFindWholeWord",
         "when": "terminalFindFocused && terminalProcessSupported || terminalFocus && terminalProcessSupported"
+    },
+    {
+        "key": "alt+q",
+        "command": "-seito-openfile.openFileLikeThisFile"
     },
 ]

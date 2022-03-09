@@ -8,6 +8,7 @@ dbaeumer.vscode-eslint
 denco.confluence-markup
 dmalyuta.suggestions-multi-trigger
 eamodio.gitlens
+Fr43nk.seito-openfile
 gitkraken.gitkraken-authentication
 gurumukhi.selected-lines-count
 hbenl.vscode-test-explorer
@@ -15,7 +16,6 @@ heptio.jsonnet
 hoovercj.vscode-settings-cycler
 iocave.customize-ui
 iocave.monkey-patch
-jack89ita.open-file-from-path
 James-Yu.latex-workshop
 jgclark.vscode-todo-highlight
 jomeinaster.bracket-peek

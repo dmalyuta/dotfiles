@@ -190,9 +190,6 @@ alias pswd="passwordcopy"
 # Git commands
 alias git-print-branch="git rev-parse --abbrev-ref HEAD"
 alias git-cd-root="cd \$(git root)"
-git-log () {
-    git log --oneline --abbrev-commit --graph --pretty=format:"%C(yellow)%h %Cred%>(12)%ar %Cgreen%<(7)%aN%Cred%d %Creset%s"
-}
 
 # Git GUI viewer
 gitview() {

@@ -30,6 +30,10 @@ fi
 
 # Various executable scripts
 ln -sf "$DIR"/.bin ~
+if ! grep -q "git-custom-commands" ~/.bashrc; then
+    { echo ""; \
+      echo "export PATH=\$PATH:~/.bin/git-custom-commands"; } >> ~/.bashrc
+fi
 
 # Terminal
 mkdir -p ~/.config/terminator

@@ -1,0 +1,2 @@
+#!/bin/sh
+git log --oneline --abbrev-commit --graph --pretty=format:"%C(yellow)%h %Cred%>(12)%ar %Cgreen%<(7)%aN%Cred%d %Creset%s"

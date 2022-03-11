@@ -48,8 +48,7 @@ push_operation() {
     fi
 
     # Post-push actions
-    vscode_restore_settings
-    status_operation
+    status_operation 1
 }
 
 pull_operation() {
@@ -62,7 +61,10 @@ reset_operation() {
 }
 
 status_operation() {
-    vscode_cleanup_settings
+    local NO_CLEANUP="$1"
+    if [[ -z "$NO_CLEANUP" ]]; then
+        vscode_cleanup_settings
+    fi
     git status
     vscode_restore_settings
 }

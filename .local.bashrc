@@ -3,11 +3,17 @@
 
 # Tmux command line
 if command -v tmux &> /dev/null && \
-        [ -n "$PS1" ] && \
-        [[ ! "$TERM" =~ screen ]] && \
-        [[ ! "$TERM" =~ tmux ]] && \
-        [ -z "$TMUX" ] && \
-        [ -z "$INSIDE_VSCODE" ]; then
+        [[ -n "$PS1" && \
+            ! "$TERM" =~ screen && \
+            ! "$TERM" =~ tmux && \
+            -z "$TMUX" && \
+            # Solution for "Unable to resolve your shell environtment"
+            # https://github.com/microsoft/vscode/issues/135166#issuecomment-947185908
+            # But the INVOCATION_PID is set in a regular shell as well. Better to use VSCODE_PID as
+            # suggested from the list of environment variables set by VS Code:
+            # https://github.com/microsoft/vscode/issues/134864#issuecomment-945037189
+            ( -z "$VSCODE_PID" || \
+                ( ! -z "$INSIDE_VSCODE" && ( -n "$SSH_CLIENT" || -n "$SSH_TTY" ) ) ) ]]; then
     if tmux ls 2> /dev/null | grep -q -v attached; then
         # Reclaim an existing, detached session
         exec tmux attach -t $(tmux ls 2> /dev/null | grep -v attached | head -1 | cut -d : -f 1)
@@ -59,12 +65,12 @@ parse_return_code() {
 parse_ssh() {
     # Print if using computer over ssh
     if [ -n "$SSH_CLIENT" ] || [ -n "$SSH_TTY" ]; then
-	echo "(ssh) "
-	# many other tests omitted
+	    echo "(ssh) "
+	    # many other tests omitted
     else
-	case $(ps -o comm= -p $PPID) in
-	    sshd|*/sshd) echo "(ssh) ";;
-	esac
+	    case $(ps -o comm= -p $PPID) in
+	        sshd|*/sshd) echo "(ssh) ";;
+	    esac
     fi
 }
 

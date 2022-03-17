@@ -152,6 +152,20 @@ gsettings set org.gnome.desktop.input-sources xkb-options "['caps:hyper']"
 sudo apt-get -y install xserver-xorg-input-all xserver-xorg-input-synaptics
 sudo adduser "$USER" input
 
+# ..:: Autokey ::..
+# A desktop automation utility for Linux and X11.
+
+if not_installed autokey; then
+    # Instructions: https://www.makeuseof.com/use-autokey-to-automate-repetitive-tasks-on-linux/
+    sudo apt-get -y install autokey-gtk
+
+    # Link configuration from these dotfiles
+    mkdir -p ~/.config/autokey/data
+    rm -rf ~/.config/autokey/data
+    ln -sf "$DIR"/.config/autokey/data ~/.config/autokey/data
+    ln -sf "$DIR"/.config/autokey/autokey.json ~/.config/autokey/autokey.json
+fi
+
 # ..:: Search ::..
 
 sudo apt-get -y install recoll \

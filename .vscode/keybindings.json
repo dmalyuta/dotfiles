@@ -723,4 +723,14 @@
         "key": "alt+q",
         "command": "-seito-openfile.openFileLikeThisFile"
     },
+    {
+        "key": "shift+alt+o",
+        "command": "seito-openfile.openFileLikeThisFile",
+        "when": "editorTextFocus"
+    },
+    {
+        "key": "shift+alt+o",
+        "command": "-editor.action.organizeImports",
+        "when": "editorTextFocus && !editorReadonly && supportedCodeAction =~ /(\\s|^)source\\.organizeImports\\b/"
+    },
 ]

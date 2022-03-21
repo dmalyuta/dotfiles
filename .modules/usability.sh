@@ -182,10 +182,15 @@ if not_installed wine; then
     # Instructions:
     # https://www.omgubuntu.co.uk/2021/01/wine-6-0-released-how-to-install-on-ubuntu
     # https://linuxize.com/post/how-to-install-wine-on-ubuntu-20-04/
+    # https://askubuntu.com/questions/219791/improve-gui-appearance-of-wine-applications
 
     wget -qO- https://dl.winehq.org/wine-builds/winehq.key | sudo apt-key add -
     sudo add-apt-repository -y 'deb https://dl.winehq.org/wine-builds/ubuntu/ focal main'
-    sudo apt-get -y --install-recommends install winehq-stable
+    sudo apt-get -y --install-recommends install winehq-staging
+    sudo apt-get -y install winetricks
+
+    # Install fonts
+    winetricks allfonts
 fi
 
 # ..:: Other ::..

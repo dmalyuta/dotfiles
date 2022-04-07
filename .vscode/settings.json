@@ -30,7 +30,7 @@
     },
     "workbench.iconTheme": "vscode-icons",
     "workbench.startupEditor": "none",
-    "workbench.editor.wrapTabs": true,
+    "workbench.editor.wrapTabs": false,
     "editor.cursorStyle": "block",
     "editor.cursorBlinking": "solid",
     "editor.occurrencesHighlight": false,

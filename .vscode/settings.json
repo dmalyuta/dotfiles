@@ -54,7 +54,7 @@
     "security.workspace.trust.enabled": false,
     "security.workspace.trust.startupPrompt": "never",
     "security.workspace.trust.untrustedFiles": "open",
-    "files.autoSave": "off",
+    "files.autoSave": "onWindowChange",
     "workbench.editor.enablePreview": false,
     "workbench.editor.untitled.hint": "hidden",
     "files.insertFinalNewline": true,

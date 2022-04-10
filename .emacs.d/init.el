@@ -714,18 +714,8 @@ Source: https://emacs.stackexchange.com/a/50834/13661"
 (setq mouse-wheel-progressive-speed nil)
 (setq mouse-wheel-follow-mouse 't) ;; scroll window under mouse
 
-(use-package good-scroll
-  ;; https://github.com/io12/good-scroll.el
-  ;; Attempt at good pixel-based smooth scrolling in Emacs.
-  :init
-  (global-set-key [next] #'good-scroll-up-full-screen)
-  (global-set-key [prior] #'good-scroll-down-full-screen)
-  (setq good-scroll-step 70
-        good-scroll-render-rate 0.01
-        good-scroll-duration 0.1
-        good-scroll-algorithm #'good-scroll-bezier)
-  :config
-  (good-scroll-mode 1))
+;;; Pixel-precision scrolling
+(pixel-scroll-precision-mode 1)
 
 ;;;; eval-buffer default directory fix
 

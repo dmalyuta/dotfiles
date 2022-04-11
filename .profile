@@ -6,16 +6,11 @@
 # source .bashrc
 # see http://stackoverflow.com/questions/820517/bashrc-at-ssh-login
 if [ -f ~/.bashrc ]; then
-    . ~/.bashrc
-fi
-
-# personal additions to .bashrc
-if [ -f ~/.local.bashrc ]; then
-    . ~/.local.bashrc
+   . ~/.bashrc
 fi
 
 # add .bin directory to path, which includes custom
 # user scripts
 if [ -d ~/.bin ]; then
-    PATH="${HOME}/.bin:$PATH"
+   PATH="${HOME}/.bin:$PATH"
 fi

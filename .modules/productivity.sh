@@ -20,6 +20,9 @@ if not_installed google-chrome; then
     wget -4 https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb -P /tmp/
     ( cd /tmp/ && \
           sudo apt-get -y install ./google-chrome-stable_current_amd64.deb )
+
+    # Make `browser` command launch Chrome.
+    sudo ln -sf /usr/bin/google-chrome /usr/bin/browser
 fi
 
 # ..:: LaTeX ::..

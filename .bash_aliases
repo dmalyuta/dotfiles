@@ -32,11 +32,6 @@ alias easyopen='xdg-open'
 # Check OOM'ed processes
 alias oom-ls='sudo egrep -i -r ''killed process'' /var/log/'
 
-# Open browser
-if [ ! -f ~/.local/bin/browser ]; then
-    ln -sf /usr/bin/google-chrome ~/.local/bin/browser
-fi
-
 # Open logseq easily
 alias logseq="logseq.AppImage"
 notebook() {

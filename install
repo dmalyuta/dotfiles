@@ -19,21 +19,10 @@ ln -sf "$DIR"/.config/gtk-3.0/gtk.css ~/.config/gtk-3.0/
 ln -sf "$DIR"/.profile ~
 ln -sf "$DIR"/.bash_aliases ~
 ln -sf "$DIR"/.local.bashrc ~
-
-if ! grep -q ".local.bashrc" ~/.bashrc; then
-    { echo ""; \
-      echo "# personal additions to .bashrc"; \
-      echo "if [ -f ~/.local.bashrc ]; then"; \
-      echo "    . ~/.local.bashrc"; \
-      echo "fi"; } >> ~/.bashrc
-fi
+ln -sf "$DIR"/.bash_profile ~
 
 # Various executable scripts
 ln -sf "$DIR"/.bin ~
-if ! grep -q "git-custom-commands" ~/.bashrc; then
-    { echo ""; \
-      echo "export PATH=\$PATH:~/.bin/git-custom-commands"; } >> ~/.bashrc
-fi
 
 # Terminal
 mkdir -p ~/.config/terminator
@@ -81,6 +70,9 @@ source .modules/vscode.sh
 source .modules/emacs.sh
 source .modules/hardware.sh
 
-# ..:: Cleanup ::..
+# ..:: Finishing tasks ::..
 
+update_bashrc()
+
+# Remove stale modules
 sudo apt-get -yf autoremove

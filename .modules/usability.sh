@@ -46,6 +46,27 @@ if [ $? -ne 0 ]; then
     gsettings set com.github.stunkymonkey.nautilus-open-any-terminal terminal alacritty
 fi
 
+# ..:: Tmux ::..
+# Terminal multiplexer
+
+if not_installed tmux; then
+    # Install needed packages
+    sudo apt-get install -y bison libevent-dev libncurses-dev
+
+    git clone https://github.com/tmux/tmux.git /tmp/tmux
+    ( cd /tmp/tmux && \
+      sh autogen.sh && \
+      ./configure && \
+      make && \
+      sudo make install )
+fi
+
+if [ ! -d ~/.tmux/plugins/tpm ]; then
+    # Tmux Plugin Manager
+    mkdir -p ~/.tmux/plugins
+    git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
+fi
+
 # ..:: Mouse cursor ::..
 
 mkdir -p ~/.icons

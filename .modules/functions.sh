@@ -17,3 +17,17 @@ parse_yn() {
         false
     fi
 }
+
+update_bashrc() {
+    if ! grep -q ".local.bashrc" ~/.bashrc; then
+        cat << EOF >> ~/.bashrc
+#############################################
+#### This part should go at the very end ####
+#############################################
+export PATH=\$PATH:~/.bin/git-custom-commands
+if [ -f ~/.local.bashrc ]; then
+    . ~/.local.bashrc
+fi
+EOF
+    fi
+}

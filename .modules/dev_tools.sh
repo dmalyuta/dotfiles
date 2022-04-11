@@ -27,7 +27,6 @@ sudo apt-get -y install gitk \
     xclip \
     silversearcher-ag \
     screen \
-    tmux \
     sshpass \
     tree \
     bash-completion \

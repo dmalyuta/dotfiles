@@ -26,7 +26,7 @@
         "diffEditor.insertedLineBackground": "#22336866",
         "diffEditor.removedLineBackground": "#72336a66",
         "diffEditorGutter.insertedLineBackground": "#223368ff",
-        "diffEditorGutter.removedLineBackground": "#72336aff",
+        "diffEditorGutter.removedLineBackground": "#72336a44",
         "diffEditorOverview.insertedForeground": "#02b40b",
         "diffEditorOverview.removedForeground": "#a10000",
     },

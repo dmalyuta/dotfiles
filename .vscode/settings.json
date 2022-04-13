@@ -99,6 +99,7 @@
 
     /// Terminal
     "terminal.integrated.defaultProfile.linux": "bash",
+    "terminal.integrated.enableMultiLinePasteWarning": false,
     // see options for cwd at: https://code.visualstudio.com/docs/editor/variables-reference
     "terminal.integrated.cwd": "${workspaceFolder}",
     "terminal.external.linuxExec": "x-terminal-emulator",

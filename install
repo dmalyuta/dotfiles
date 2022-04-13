@@ -64,6 +64,7 @@ source .modules/dev_tools.sh
 source .modules/cpp.sh
 source .modules/python.sh
 source .modules/julia.sh
+source .modules/csharp.sh
 source .modules/usability.sh
 source .modules/productivity.sh
 source .modules/vscode.sh

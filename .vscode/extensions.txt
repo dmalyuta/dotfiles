@@ -9,7 +9,6 @@ denco.confluence-markup
 dmalyuta.suggestions-multi-trigger
 eamodio.gitlens
 Fr43nk.seito-openfile
-gitkraken.gitkraken-authentication
 gurumukhi.selected-lines-count
 hbenl.vscode-test-explorer
 heptio.jsonnet
@@ -27,6 +26,7 @@ mattn.Lisp
 mhutchie.git-graph
 mindaro-dev.file-downloader
 ms-azuretools.vscode-docker
+ms-dotnettools.csharp
 ms-python.python
 ms-python.vscode-pylance
 ms-toolsai.jupyter

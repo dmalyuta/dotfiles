@@ -39,4 +39,5 @@ rm /tmp/packages-microsoft-prod.deb
 mkdir -p ~/.dotnet/tools
 cat << EOF >> ~/.bashrc
 export PATH=\$PATH:~/.dotnet/tools
+DOTNET_CLI_TELEMETRY_OPTOUT=true
 EOF

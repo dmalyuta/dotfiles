@@ -8,6 +8,7 @@ christian-kohler.path-intellisense
 dbaeumer.vscode-eslint
 denco.confluence-markup
 dmalyuta.suggestions-multi-trigger
+dseight.disasexpl
 eamodio.gitlens
 Fr43nk.seito-openfile
 gurumukhi.selected-lines-count

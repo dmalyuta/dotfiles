@@ -737,4 +737,23 @@
         "key": "alt+w ctrl+shift+w",
         "command": "workbench.action.duplicateWorkspaceInNewWindow"
     },
+    {
+        "key": "ctrl+alt+.",
+        "command": "workbench.action.compareEditor.focusPrimarySide",
+        "when": "isInDiffEditor"
+    },
+    {
+        "key": "ctrl+alt+o",
+        "command": "workbench.action.compareEditor.focusOtherSide",
+        "when": "isInDiffEditor"
+    },
+    {
+        "key": "ctrl+alt+,",
+        "command": "workbench.action.compareEditor.focusSecondarySide",
+        "when": "isInDiffEditor"
+    },
+    {
+        "key": "ctrl+\\",
+        "command": "-workbench.action.splitEditor"
+    },
 ]

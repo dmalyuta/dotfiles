@@ -1,7 +1,6 @@
 #!/bin/bash
-# Re-numbers windows so that they all again start from zero and go up in
-# contiguous numbers
-CURRENT_WINDOW=$(tmux display-message -p '#W')
+# Re-numbers windows so that they all again start from zero and go up in contiguous numbers.
+CURRENT_WINDOW=$(tmux display-message -p '#{window_id}')
 LAST_WINDOW=-1
 tmux list-windows | while read line; do
     WINDOW_NUMBER=$(echo $line | sed 's/^\([0-9]\+\):.*/\1/')

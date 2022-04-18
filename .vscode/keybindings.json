@@ -766,4 +766,8 @@
         "command": "-workbench.action.terminal.toggleTerminal",
         "when": "terminal.active"
     },
+    {
+        "key": "alt+f11",
+        "command": "editor.action.goToTypeDefinition"
+    },
 ]

@@ -99,6 +99,14 @@ if not_installed peek; then
     sudo apt-get -y install peek
 fi
 
+# ..:: OS image ISO flasher ::..
+
+if [[ ! -d /opt/balenaEtcher ]]; then
+    curl -1sLf 'https://dl.cloudsmith.io/public/balena/etcher/setup.deb.sh' | sudo -E bash
+    sudo apt-get -y update
+    sudo apt-get -y install balena-etcher-electron
+fi
+
 # ..:: Command line ::..
 
 if not_installed fzf; then

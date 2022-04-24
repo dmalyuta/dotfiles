@@ -10,25 +10,45 @@ sudo usermod -s /bin/bash "$USERNAME"
 
 # ..:: Terminal emulator ::..
 
-if not_installed tabby; then
-    # https://tabby.sh/
-    TABBY_VERSION=1.0.176
-    wget -4 https://github.com/Eugeny/tabby/releases/download/v$TABBY_VERSION/tabby-$TABBY_VERSION-linux-x64.deb \
-        -O /tmp/tabby-install.deb
-    sudo apt-get install -y /tmp/tabby-install.deb
+if not_installed alacritty; then
+    # Instructions: https://github.com/alacritty/alacritty/blob/master/INSTALL.md#debianubuntu
+    sudo apt-get -y install cmake \
+         pkg-config \
+         libfreetype6-dev \
+         libfontconfig1-dev \
+         libxcb-xfixes0-dev \
+         libxkbcommon-dev \
+         python3
 
-    # Version control the configuration
-    ln -sf "$DIR"/.config/tabby/config.yaml ~/.config/tabby/config.yaml
+    # Install Alacritty
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+    rustup override set stable
+    rustup update stable
+    git clone https://github.com/alacritty/alacritty.git /tmp/alacritty
+    ( cd /tmp/alacritty && \
+        cargo build --release && \
+        sudo cp target/release/alacritty /usr/bin/alacritty )
 
-    # Make Tabby the new terminal!
-    sudo apt-get purge -y gnome-terminal
-    sudo ln -sf /usr/bin/tabby /usr/bin/gnome-terminal
-    sudo update-alternatives --install /usr/bin/x-terminal-emulator x-terminal-emulator /usr/bin/tabby 100
-    sudo update-alternatives --set x-terminal-emulator /usr/bin/tabby
+    # Make Alacritty the new terminal!
+    if ! not_installed alacritty; then
+        sudo apt-get purge -y gnome-terminal
+        sudo ln -sf /usr/bin/alacritty /usr/bin/gnome-terminal
+        sudo update-alternatives --install /usr/bin/x-terminal-emulator x-terminal-emulator /usr/bin/alacritty 100
+        sudo update-alternatives --set x-terminal-emulator /usr/bin/alacritty
+    fi
 fi
 
 # Fix bug that Ctrl-Alt-T creates a new icon sidebar
-gsettings set org.gnome.desktop.default-applications.terminal exec "tabby"
+gsettings set org.gnome.desktop.default-applications.terminal exec "alacritty"
+
+# Open Nautilus directory in terminal
+python -c "import nautilus_open_any_terminal" > /dev/null 2>&1
+if [ $? -ne 0 ]; then
+    sudo apt-get -y install python3-nautilus
+    pip install nautilus-open-any-terminal
+    glib-compile-schemas ~/.local/share/glib-2.0/schemas/
+    gsettings set com.github.stunkymonkey.nautilus-open-any-terminal terminal alacritty
+fi
 
 # ..:: Tmux ::..
 # Terminal multiplexer

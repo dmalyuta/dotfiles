@@ -22,6 +22,7 @@ ln -sf "$DIR"/.bin ~
 
 # Terminal
 ln -sf "$DIR"/.dircolors ~
+ln -sf "$DIR"/.alacritty.yml ~
 
 # Tmux
 ln -sf "$DIR"/.tmux.conf ~

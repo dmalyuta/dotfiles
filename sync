@@ -16,6 +16,10 @@
 OPERATION_KIND=$1
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
+# Sync some files that are on the computer
+cp ~/.config/tabby/config.yaml "$DIR"/.config/tabby/config.yaml
+
+# Get some needed functions
 source .modules/sync/vscode.sh
 source .modules/functions.sh
 

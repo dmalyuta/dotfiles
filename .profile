@@ -14,3 +14,4 @@ fi
 if [ -d ~/.bin ]; then
    PATH="${HOME}/.bin:$PATH"
 fi
+. "$HOME/.cargo/env"

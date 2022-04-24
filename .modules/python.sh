@@ -5,12 +5,13 @@
 #
 # Author: Danylo Malyuta, 2020.
 
-sudo apt-get -y install python python3-pip
+sudo apt-get -y install python3 python3-pip
+sudo update-alternatives --install /usr/bin/python python /usr/bin/python3 100
 
 # ..:: Anaconda ::..
 
 if not_installed conda; then
-    wget -4 https://repo.anaconda.com/archive/Anaconda3-2021.05-Linux-x86_64.sh \
+    wget -4 https://repo.anaconda.com/archive/Anaconda3-2021.11-Linux-x86_64.sh \
 	 -O /tmp/anaconda.sh
     chmod +x /tmp/anaconda.sh
     /tmp/anaconda.sh
@@ -18,37 +19,38 @@ if not_installed conda; then
     # Update conda
     conda install anaconda
     conda update -n base -c defaults conda
+    
+    # Make changes take effect
+    source ~/.bashrc
 fi
 
 # ..:: Default Python environment ::..
 
-PYENV_NAME=py397
+PYENV_NAME=py3104
 CONDA_PATH=$(conda info --base)/etc/profile.d/conda.sh
 
 if ! (conda info --envs | grep -q $PYENV_NAME); then
     source "$CONDA_PATH"
-    conda create -y -n $PYENV_NAME python=3.9.7
+    conda create -y -n $PYENV_NAME python=3.10.4
     conda activate $PYENV_NAME
     conda install -y ipython
 
     # Make it the default virtualenv on bash startup
-    echo "" >> ~/.bashrc
-    echo "conda activate py397" >> ~/.bashrc
+    cat << EOF >> ~/.bashrc
+conda activate $PYENV_NAME
+EOF
 
     # Install some Python modules
     pip install jedi
     pip install flake8 pdbpp
     pip install scipy numpy nptyping
     pip install pandas pytest black pyfzf
-    pip install vtk==9.0.3
-    pip install mayavi
-    pip install PySide2
     pip install virtualenv
 
     # Add virtualenv to Jupyter
     # https://gist.github.com/swedishmike/902fb27d627313c31a95e31c44e302ac
     pip install --user ipykernel
-    python -m ipykernel install --user --name=py397
+    python -m ipykernel install --user --name=py3104
 fi
 
 # ..:: Other tools ::..

@@ -33,7 +33,7 @@ fi
 
 # ..:: Configuration ::..
 
-mkdir -p ~/.vscode
+mkdir -p ~/.config/Code/User
 ln -sf "$DIR"/.vscode/settings.json ~/.config/Code/User
 ln -sf "$DIR"/.vscode/keybindings.json ~/.config/Code/User
 ln -sf "$DIR"/.vscode/snippets ~/.config/Code/User

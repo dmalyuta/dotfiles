@@ -8,16 +8,12 @@
 
 # Remove Firefox
 if ! not_installed firefox; then
-    sudo apt-get -y purge firefox
-    sudo apt-get -y autoremove
-    rm -rf .mozilla/firefox/
-    sudo rm -rf /etc/firefox/
-    sudo rm -rf /usr/lib/firefox-addons
+    sudo snap remove --purge firefox
 fi
 
 if not_installed google-chrome; then
     sudo apt-get -y install apt-transport-https gnupg
-    wget -4 https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb -P /tmp/
+    wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb -P /tmp/
     ( cd /tmp/ && \
           sudo apt-get -y install ./google-chrome-stable_current_amd64.deb )
 
@@ -48,7 +44,7 @@ fi
 
 if [[ ! -f ~/.local/bin/logseq.AppImage ]]; then
     mkdir -p ~/.local/bin/
-    LOGSEQ_VERSION=0.6.5
+    LOGSEQ_VERSION=0.6.6
     wget -4 https://github.com/logseq/logseq/releases/download/$LOGSEQ_VERSION/logseq-linux-x64-$LOGSEQ_VERSION.AppImage \
         -O ~/.local/bin/logseq.AppImage
     sudo chmod +x ~/.local/bin/logseq.AppImage
@@ -57,8 +53,7 @@ fi
 # ..:: Enpass password manager ::..
 
 if [[ ! -d /opt/enpass ]]; then
-    echo "deb https://apt.enpass.io/ stable main" | \
-	sudo tee /etc/apt/sources.list.d/enpass.list
+    echo "deb https://apt.enpass.io/ stable main" | sudo tee /etc/apt/sources.list.d/enpass.list
     wget -O - https://apt.enpass.io/keys/enpass-linux.key | sudo apt-key add -
     sudo apt-get -y update
     sudo apt-get -y install enpass
@@ -85,12 +80,7 @@ fi
 
 # ..:: Screen capture ::..
 
-if not_installed shutter; then
-    sudo add-apt-repository -y ppa:linuxuprising/shutter
-    sudo apt-get update
-    sudo apt-get -y install shutter
-fi
-
+sudo apt-get -y install shutter
 sudo apt-get -y install flameshot
 
 if not_installed peek; then

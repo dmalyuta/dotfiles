@@ -10,48 +10,36 @@ sudo usermod -s /bin/bash "$USERNAME"
 
 # ..:: Terminal emulator ::..
 
-if not_installed alacritty; then
-    # Instructions: https://github.com/alacritty/alacritty/blob/master/INSTALL.md#debianubuntu
-    sudo apt-get -y install cmake \
-         pkg-config \
-         libfreetype6-dev \
-         libfontconfig1-dev \
-         libxcb-xfixes0-dev \
-         libxkbcommon-dev \
-         python3
+if not_installed tabby; then
+    # https://tabby.sh/
+    TABBY_VERSION=1.0.176
+    wget -4 https://github.com/Eugeny/tabby/releases/download/v$TABBY_VERSION/tabby-$TABBY_VERSION-linux-x64.deb \
+        -O /tmp/tabby-install.deb
+    sudo apt-get install -y /tmp/tabby-install.deb
 
-    sudo apt-get -y install alacritty
+    # Version control the configuration
+    ln -sf "$DIR"/.config/tabby/config.yaml ~/.config/tabby/config.yaml
 
-    # Make Alacritty the new terminal!
+    # Make Tabby the new terminal!
     sudo apt-get purge -y gnome-terminal
-    sudo ln -sf /usr/bin/alacritty /usr/bin/gnome-terminal
-    sudo update-alternatives --install /usr/bin/x-terminal-emulator x-terminal-emulator /usr/bin/alacritty 100
-    sudo update-alternatives --set x-terminal-emulator /usr/bin/alacritty
-fi
-
-# Legacy (01/2022: switched from Terminator to Alacritty)
-if not_installed terminator; then
-    sudo apt-get -y install terminator
+    sudo ln -sf /usr/bin/tabby /usr/bin/gnome-terminal
+    sudo update-alternatives --install /usr/bin/x-terminal-emulator x-terminal-emulator /usr/bin/tabby 100
+    sudo update-alternatives --set x-terminal-emulator /usr/bin/tabby
 fi
 
 # Fix bug that Ctrl-Alt-T creates a new icon sidebar
-gsettings set org.gnome.desktop.default-applications.terminal exec "alacritty"
-
-# Open Nautilus directory in terminal
-python -c "import nautilus_open_any_terminal" > /dev/null 2>&1
-if [ $? -ne 0 ]; then
-    sudo apt-get -y install python-nautilus
-    pip install nautilus-open-any-terminal
-    glib-compile-schemas ~/.local/share/glib-2.0/schemas/
-    gsettings set com.github.stunkymonkey.nautilus-open-any-terminal terminal alacritty
-fi
+gsettings set org.gnome.desktop.default-applications.terminal exec "tabby"
 
 # ..:: Tmux ::..
 # Terminal multiplexer
 
 if not_installed tmux; then
     # Install needed packages
-    sudo apt-get install -y bison libevent-dev libncurses-dev
+    sudo apt-get install -y bison \
+        libevent-dev \
+        libncurses-dev \
+        autotools-dev \
+        automake
 
     git clone https://github.com/tmux/tmux.git /tmp/tmux
     ( cd /tmp/tmux && \
@@ -93,7 +81,11 @@ fi
 #
 # This will print any settings that are changed, every time you change something in GUI.
 
-sudo apt-get -y install dconf-cli
+sudo apt-get -y install dconf-cli gettext
+
+# Gnome shell Chrom install integration
+# Visit https://extensions.gnome.org/ to install extensions directly
+sudo apt-get -y install chrome-gnome-shell
 
 mkdir -p ~/.local/share/gnome-shell/extensions
 
@@ -111,7 +103,7 @@ fi
 # Traditional menu
 if [ ! -d ~/.local/share/gnome-shell/extensions/arcmenu@arcmenu.com ]; then
     rm -rf /tmp/arcmenu
-    git clone --single-branch --branch 'gnome-3.36/3.38' \
+    git clone --single-branch --branch master \
         https://gitlab.com/arcmenu/ArcMenu.git /tmp/arcmenu
     (cd /tmp/arcmenu && make install)
 
@@ -128,7 +120,7 @@ if [ ! -d "$EXTDIR" ]; then
     mv /tmp/stealfocus/* "$EXTDIR"
 fi
 
-# Workspaces on al displays
+# Workspaces on all displays
 dconf write /org/gnome/mutter/workspaces-only-on-primary false
 
 # >> Now update the Gnome configuration <<
@@ -136,6 +128,10 @@ dconf write /org/gnome/mutter/workspaces-only-on-primary false
 # Restart the Gnome shell, to make sure everything is up-to-date
 busctl --user call org.gnome.Shell /org/gnome/Shell org.gnome.Shell \
        Eval s 'Meta.restart("Restarting Gnome Shell...")'
+
+# No desktop icons
+gsettings set org.gnome.desktop.background show-desktop-icons false
+gsettings set org.gnome.shell.extensions.ding show-home false
 
 # Show battery percentage
 gsettings set org.gnome.desktop.interface show-battery-percentage true
@@ -216,9 +212,12 @@ fi
 
 # ..:: Other ::..
 
+# Disable the message "Sorry, Ubuntu xy.zw has experienced an internal error"
+sudo sed -i -e '/enabled=/s/1/0/' /etc/default/apport
+
 sudo apt-get -y install xcalib \
      compizconfig-settings-manager \
-     gnome-tweak-tool \
+     gnome-tweaks \
      pdftk \
      unrar \
      xdotool

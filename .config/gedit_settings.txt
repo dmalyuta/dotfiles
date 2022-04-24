@@ -63,5 +63,4 @@ org.gnome.gedit.plugins.time custom-format '%d/%m/%Y %H:%M:%S'
 org.gnome.gedit.plugins.time selected-format '%c'
 org.gnome.gedit.state.history-entry replace-with-entry "['']"
 org.gnome.gedit.state.history-entry search-for-entry "['']"
-org.gnome.gedit.state.file-filter filter-id 0
 org.gnome.gedit.plugins.spell highlight-misspelled false

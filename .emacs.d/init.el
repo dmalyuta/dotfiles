@@ -2072,7 +2072,7 @@ with C-u."
 (defun danylo/run-terminal-here ()
   "Run terminal from current buffer"
   (interactive "@")
-  (shell-command (concat "alacritty > /dev/null 2>&1 & disown") nil nil))
+  (shell-command (concat "tabby > /dev/null 2>&1 & disown") nil nil))
 
 (defconst danylo/emacs-libvterm-dir `,(danylo/make-path "libvterm/")
   "Location of emacs-libvterm.")

@@ -7,13 +7,16 @@
 # ..:: CMake ::..
 # C++ build system
 
-if not_installed cmake; then
+CMAKE_VERSION="3.23.1"
+if [[ not_installed cmake || \
+       "$(cmake --version | head -n 1 | cut -d ' ' -f 3)" != \
+       "$CMAKE_VERSION" ]]; then
     # Dependencies
     sudo apt-get -y install libssl-dev
 
-    wget -4 https://github.com/Kitware/CMake/releases/download/v3.18.4/cmake-3.18.4.tar.gz -P /tmp/
-    tar -xvf /tmp/cmake-3.18.4.tar.gz -C /tmp
-    ( cd /tmp/cmake-3.18.4/ && ./bootstrap && make && sudo make install )
+    wget -4 https://github.com/Kitware/CMake/releases/download/v"$CMAKE_VERSION"/cmake-"$CMAKE_VERSION".tar.gz -P /tmp/
+    tar -xvf /tmp/cmake-"$CMAKE_VERSION".tar.gz -C /tmp
+    ( cd /tmp/cmake-"$CMAKE_VERSION"/ && ./bootstrap && make && sudo make install )
 fi
 
 # ..:: Bazel ::..

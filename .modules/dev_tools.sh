@@ -6,9 +6,9 @@
 
 # ..:: Latest version of Git ::..
 
-GIT_VERSION="$(git --version | cut -d ' ' -f 3 | cut -d '.' -f 1)"
-if [ "$GIT_VERSION" -lt 2 ]; then
-    sudo apt-get -y install python-software-properties
+GIT_VERSION="2.36.0"
+if [ "$(git --version | cut -d ' ' -f 3)" != "$GIT_VERSION" ]; then
+    sudo apt-get -y install software-properties-common
     sudo add-apt-repository -y ppa:git-core/ppa
     sudo apt-get update
     sudo apt-get -y install git
@@ -82,12 +82,12 @@ if not_installed docker; then
     if ! sudo apt-key fingerprint 0EBFCD88 | grep -q Docker; then
 	echo "Failed to install Docker!"
     else
-	sudo add-apt-repository \
+	sudo add-apt-repository -y \
 	     "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
              $(lsb_release -cs) \
              stable"
 	sudo apt-get update
 	# Install Docker
-	sudo apt-get install docker-ce docker-ce-cli containerd.io
+	sudo apt-get install -y docker-ce docker-ce-cli containerd.io
     fi
 fi

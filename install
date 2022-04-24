@@ -11,10 +11,6 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
 # ..:: Copy dotfiles to home directory ::..
 
-# Gnome desktop
-mkdir -p ~/.config/gtk-3.0
-ln -sf "$DIR"/.config/gtk-3.0/gtk.css ~/.config/gtk-3.0/
-
 # Bash
 ln -sf "$DIR"/.profile ~
 ln -sf "$DIR"/.bash_aliases ~
@@ -25,10 +21,7 @@ ln -sf "$DIR"/.bash_profile ~
 ln -sf "$DIR"/.bin ~
 
 # Terminal
-mkdir -p ~/.config/terminator
 ln -sf "$DIR"/.dircolors ~
-ln -sf "$DIR"/.config/terminator/config ~/.config/terminator
-ln -sf "$DIR"/.alacritty.yml ~
 
 # Tmux
 ln -sf "$DIR"/.tmux.conf ~
@@ -73,7 +66,7 @@ source .modules/hardware.sh
 
 # ..:: Finishing tasks ::..
 
-update_bashrc()
+update_bashrc
 
 # Remove stale modules
 sudo apt-get -yf autoremove

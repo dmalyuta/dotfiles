@@ -21,13 +21,21 @@ if not_installed alacritty; then
          python3
 
     # Install Alacritty
+    ALACRITTY_SRC="/tmp/alacritty"
     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
     rustup override set stable
     rustup update stable
-    git clone https://github.com/alacritty/alacritty.git /tmp/alacritty
-    ( cd /tmp/alacritty && \
+    rm -rf "$ALACRITTY_SRC"
+    git clone https://github.com/alacritty/alacritty.git "$ALACRITTY_SRC"
+    ( cd "$ALACRITTY_SRC" && \
         cargo build --release && \
         sudo cp target/release/alacritty /usr/bin/alacritty )
+
+    # Create desktop entry for Alacritty
+    sudo cp "$ALACRITTY_SRC"/extra/logo/alacritty-term.svg /usr/share/pixmaps/Alacritty.svg
+    sed -i -e '/Actions=New;/,+100d' "$ALACRITTY_SRC"/extra/linux/Alacritty.desktop
+    sudo desktop-file-install "$ALACRITTY_SRC"/extra/linux/Alacritty.desktop
+    sudo update-desktop-database
 
     # Make Alacritty the new terminal!
     if ! not_installed alacritty; then

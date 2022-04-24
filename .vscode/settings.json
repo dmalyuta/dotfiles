@@ -145,6 +145,19 @@
             },
         },
         {
+            "text": "BUG",
+            "color": "red",
+            "fontWeight": "bold",
+            "regex": {
+                "pattern": "(?<=^|\"|\\s)(BUG|FIXME)(?!\\w)"
+            },
+            "before": {
+			    "contentText": "🐞",
+                "margin": "0 1ex 0 0",
+                "color": "red",
+            },
+        },
+        {
             "text": "NOTE",
             "color": "orange",
             "fontWeight": "bold",

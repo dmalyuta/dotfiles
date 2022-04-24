@@ -10,52 +10,44 @@ sudo usermod -s /bin/bash "$USERNAME"
 
 # ..:: Terminal emulator ::..
 
-if not_installed alacritty; then
-    # Instructions: https://github.com/alacritty/alacritty/blob/master/INSTALL.md#debianubuntu
-    sudo apt-get -y install cmake \
-         pkg-config \
-         libfreetype6-dev \
-         libfontconfig1-dev \
-         libxcb-xfixes0-dev \
-         libxkbcommon-dev \
-         python3
+if not_installed kitty; then
+    # Instructions: https://sw.kovidgoyal.net/kitty/binary/
+    curl -L https://sw.kovidgoyal.net/kitty/installer.sh | sh /dev/stdin launch=n
 
-    # Install Alacritty
-    ALACRITTY_SRC="/tmp/alacritty"
-    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-    rustup override set stable
-    rustup update stable
-    rm -rf "$ALACRITTY_SRC"
-    git clone https://github.com/alacritty/alacritty.git "$ALACRITTY_SRC"
-    ( cd "$ALACRITTY_SRC" && \
-        cargo build --release && \
-        sudo cp target/release/alacritty /usr/bin/alacritty )
-
-    # Create desktop entry for Alacritty
-    sudo cp "$ALACRITTY_SRC"/extra/logo/alacritty-term.svg /usr/share/pixmaps/Alacritty.svg
-    sed -i -e '/Actions=New;/,+100d' "$ALACRITTY_SRC"/extra/linux/Alacritty.desktop
-    sudo desktop-file-install "$ALACRITTY_SRC"/extra/linux/Alacritty.desktop
+    # Create desktop entry for Kitty
+    ln -s ~/.local/kitty.app/bin/kitty ~/.local/bin/
+    cp ~/.local/kitty.app/share/applications/kitty.desktop ~/.local/share/applications/
+    cp ~/.local/kitty.app/share/applications/kitty-open.desktop ~/.local/share/applications/
+    sed -i "s|Icon=kitty|Icon=/home/$USER/.local/kitty.app/share/icons/hicolor/256x256/apps/kitty.png|g" \
+        ~/.local/share/applications/kitty*.desktop
+    sed -i "s|Exec=kitty|Exec=/home/$USER/.local/kitty.app/bin/kitty|g" \
+        ~/.local/share/applications/kitty*.desktop
+    sudo desktop-file-install ~/.local/share/applications/kitty*.desktop
     sudo update-desktop-database
 
-    # Make Alacritty the new terminal!
-    if ! not_installed alacritty; then
+    # Make Kitty the new terminal!
+    if ! not_installed kitty; then
         sudo apt-get purge -y gnome-terminal
-        sudo ln -sf /usr/bin/alacritty /usr/bin/gnome-terminal
-        sudo update-alternatives --install /usr/bin/x-terminal-emulator x-terminal-emulator /usr/bin/alacritty 100
-        sudo update-alternatives --set x-terminal-emulator /usr/bin/alacritty
+        sudo ln -sf ~/.local/bin/kitty /usr/bin/gnome-terminal
+        sudo update-alternatives --install /usr/bin/x-terminal-emulator x-terminal-emulator ~/.local/bin/kitty 100
+        sudo update-alternatives --set x-terminal-emulator ~/.local/bin/kitty
     fi
 fi
 
 # Fix bug that Ctrl-Alt-T creates a new icon sidebar
-gsettings set org.gnome.desktop.default-applications.terminal exec "alacritty"
+gsettings set org.gnome.desktop.default-applications.terminal exec "x-terminal-emulator"
 
 # Open Nautilus directory in terminal
 python -c "import nautilus_open_any_terminal" > /dev/null 2>&1
 if [ $? -ne 0 ]; then
     sudo apt-get -y install python3-nautilus
-    pip install nautilus-open-any-terminal
+    pip3 install --user nautilus-open-any-terminal
+    mkdir -p ~/.local/share/glib-2.0/schemas/
+    # WARN this is fragile with respect to the Python version
+    cp anaconda3/envs/py3104/lib/python3.10/site-packages/nautilus_open_any_terminal/schemas/* \
+        ~/.local/share/glib-2.0/schemas/
     glib-compile-schemas ~/.local/share/glib-2.0/schemas/
-    gsettings set com.github.stunkymonkey.nautilus-open-any-terminal terminal alacritty
+    gsettings set com.github.stunkymonkey.nautilus-open-any-terminal terminal x-terminal-emulator
 fi
 
 # ..:: Tmux ::..

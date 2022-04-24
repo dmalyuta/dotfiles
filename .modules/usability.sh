@@ -207,10 +207,27 @@ fi
 
 sudo apt-get -y install recoll \
      pdfgrep \
-     rofi \
      exo-utils \
      tree \
      fd-find
+
+# ..:: Rofi launcher ::..
+
+if not_installed rofi; then
+    # Install Rofi itself
+    sudo apt-get -y install rofi
+
+    # Install themes for Rofi
+    git clone --depth=1 https://github.com/adi1090x/rofi.git /tmp/rofi-themes
+    ( cd /tmp/rofi-themes && chmod +x setup.sh && ./setup.sh )
+
+    # Select themes
+    # Application launcher
+    LAUNCHER_FILE="$HOME/.config/rofi/launchers/colorful/launcher.sh"
+    sed -i -e '/theme=\"style_/s/[0-9]/5/' "$LAUNCHER_FILE"
+    sed -i -e '/^themes=/s/^/#/g' "$LAUNCHER_FILE"
+    sed -i -e '/^theme=.*RANDOM/s/^/#/g' "$LAUNCHER_FILE"
+fi
 
 # ..:: Wine ::..
 # Windows program emulation

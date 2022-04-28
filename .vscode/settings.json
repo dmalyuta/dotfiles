@@ -29,6 +29,8 @@
         "diffEditorGutter.removedLineBackground": "#72336a44",
         "diffEditorOverview.insertedForeground": "#02b40b",
         "diffEditorOverview.removedForeground": "#a10000",
+        "statusBarItem.remoteBackground": "#5a34a0",
+        "statusBarItem.remoteForeground": "#ccc",
     },
     "workbench.iconTheme": "vscode-icons",
     "workbench.startupEditor": "none",

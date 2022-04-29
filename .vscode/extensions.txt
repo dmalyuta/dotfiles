@@ -23,6 +23,7 @@ jomeinaster.bracket-peek
 julialang.language-julia
 kaiwood.center-editor-window
 kbysiec.vscode-search-everywhere
+kevinkyang.auto-comment-blocks
 KevinRose.vsc-python-indent
 mattn.Lisp
 mhutchie.git-graph

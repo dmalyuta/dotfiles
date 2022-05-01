@@ -110,7 +110,7 @@ sudo apt-get -y install chrome-gnome-shell
 mkdir -p ~/.local/share/gnome-shell/extensions
 
 # Application launchers in the panel
-if [ ! -d ~/.local/share/gnome-shell/extensions/arcmenu@arcmenu.com ]; then
+if [ ! -d ~/.local/share/gnome-shell/extensions/dash-to-panel@jderose9.github.com ]; then
     rm -rf /tmp/dash-to-panel
     git clone https://github.com/home-sweet-gnome/dash-to-panel.git /tmp/dash-to-panel
     (cd /tmp/dash-to-panel && make install)

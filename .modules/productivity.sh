@@ -43,11 +43,18 @@ fi
 # ..:: Logseq (note taking in markdown) ::..
 
 if [[ ! -f ~/.local/bin/logseq.AppImage ]]; then
-    mkdir -p ~/.local/bin/
     LOGSEQ_VERSION=0.6.5
     wget -4 https://github.com/logseq/logseq/releases/download/$LOGSEQ_VERSION/logseq-linux-x64-$LOGSEQ_VERSION.AppImage \
-        -O ~/.local/bin/logseq.AppImage
-    sudo chmod +x ~/.local/bin/logseq.AppImage
+        -O /tmp/logseq.AppImage
+    sudo chmod +x /tmp/logseq.AppImage
+    sudo mv /tmp/logseq.AppImage /usr/bin/logseq
+
+    # Create the desktop entry to launch the app.
+    wget -4 https://raw.githubusercontent.com/logseq/logseq/master/resources/img/logo.png \
+        -O /tmp/Logseq.png
+    sudo cp /tmp/Logseq.png /usr/share/pixmaps/Logseq.png
+    sudo desktop-file-install "$DIR"/.local/share/applications/logseq.desktop
+    sudo update-desktop-database
 fi
 
 # ..:: Enpass password manager ::..

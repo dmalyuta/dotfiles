@@ -33,7 +33,6 @@ alias easyopen='xdg-open'
 alias oom-ls='sudo egrep -i -r ''killed process'' /var/log/'
 
 # Open logseq easily
-alias logseq="logseq.AppImage"
 notebook() {
     # Open logseq without blocking the terminal
     logseq > /dev/null 2>&1 &

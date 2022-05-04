@@ -189,6 +189,9 @@ gsettings set org.gnome.desktop.input-sources xkb-options "['caps:hyper']"
 sudo apt-get -y install xserver-xorg-input-all xserver-xorg-input-synaptics
 sudo adduser "$USER" input
 
+# Enable two-finger horizontal scroll with the touchpad
+synclient HorizTwoFingerScroll=1
+
 # ..:: Autokey ::..
 # A desktop automation utility for Linux and X11.
 
@@ -245,6 +248,13 @@ if not_installed wine; then
 
     # Install fonts
     winetricks allfonts
+fi
+
+# ..:: Flatpak ::..
+
+if not_installed flatpak; then
+    sudo apt-get -y install flatpak
+    flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
 fi
 
 # ..:: Other ::..

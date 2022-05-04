@@ -57,6 +57,12 @@ if [[ ! -f ~/.local/bin/logseq.AppImage ]]; then
     sudo update-desktop-database
 fi
 
+# ..:: Micropad ::..
+
+if not_installed micropad; then
+    sudo snap install micropad
+fi
+
 # ..:: Enpass password manager ::..
 
 if [[ ! -d /opt/enpass ]]; then

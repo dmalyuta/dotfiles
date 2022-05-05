@@ -91,6 +91,15 @@ if [[ ! -d ~/.config/inkscape/extensions/textext ]]; then
     ( cd /tmp/textext-1.3.0/ && python3 setup.py )
 fi
 
+# ..:: Draw.io ::..
+
+if not_installed drawio; then
+    DRAWIO_VERSION=17.4.2
+    wget https://github.com/jgraph/drawio-desktop/releases/download/v$DRAWIO_VERSION/drawio-amd64-$DRAWIO_VERSION.deb \
+        -O /tmp/drawio.deb
+    sudo apt-get install -y /tmp/drawio.deb
+fi
+
 # ..:: Screen capture ::..
 
 sudo apt-get -y install shutter

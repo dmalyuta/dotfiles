@@ -57,6 +57,15 @@ if [[ ! -f ~/.local/bin/logseq.AppImage ]]; then
     sudo update-desktop-database
 fi
 
+# ..:: Obsidian (note taking in markdown) ::..
+
+if not_installed obsidian; then
+    OBSIDIAN_VERSION=0.14.6
+    wget https://github.com/obsidianmd/obsidian-releases/releases/download/v$OBSIDIAN_VERSION/obsidian_$OBSIDIAN_VERSION_amd64.snap \
+        -4 /tmp/obsidian.snap
+    sudo snap install --dangerous /tmp/obsidian.snap
+fi
+
 # ..:: Micropad ::..
 
 if not_installed micropad; then

@@ -204,7 +204,7 @@ alias neg='xcalib -invert -alter'
 # Start Emacs server for Git
 emacsgit() {
     if ! (ps aux | grep -E "[e]macs.*git.*--daemon" > /dev/null 2>&1); then
-	~/.bin/emacs_git.sh
+	    ~/.bin/emacs_git.sh
     fi
 }
 

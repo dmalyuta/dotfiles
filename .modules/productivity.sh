@@ -62,8 +62,18 @@ fi
 if not_installed obsidian; then
     OBSIDIAN_VERSION=0.14.6
     wget https://github.com/obsidianmd/obsidian-releases/releases/download/v$OBSIDIAN_VERSION/obsidian_$OBSIDIAN_VERSION_amd64.snap \
-        -4 /tmp/obsidian.snap
+        -O /tmp/obsidian.snap
     sudo snap install --dangerous /tmp/obsidian.snap
+
+    # Fonts for appearance
+    wget https://icomoon.io/LigatureFont.zip -O /tmp/LigatureFont.zip
+    unzip -o /tmp/LigatureFont.zip -d /tmp/
+    mkdir -p ~/.local/share/fonts/
+    cp /tmp/Font/IcoMoon-Free.ttf ~/.local/share/fonts/
+    fc-cache -f -v
+    if ! (fc-list | grep -q IcoMoon); then
+        echo '/!\ Failed to install IcoMoon font.'
+    fi
 fi
 
 # ..:: Micropad ::..

@@ -1,0 +1,14 @@
+{
+  "enabledCssSnippets": [
+    "cursor",
+    "custom-icons-differing-files-and-folders",
+    "enlarge-image-on-hover",
+    "image-cards",
+    "nicer-checkboxes",
+    "stylish-blockquotes"
+  ],
+  "theme": "obsidian",
+  "cssTheme": "Minimal",
+  "translucency": false,
+  "baseFontSize": 28
+}

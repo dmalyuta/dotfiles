@@ -5,6 +5,6 @@
   "newFileFolderPath": "pages",
   "attachmentFolderPath": "assets",
   "newLinkFormat": "relative",
-  "useMarkdownLinks": true,
+  "useMarkdownLinks": false,
   "defaultViewMode": "preview"
 }

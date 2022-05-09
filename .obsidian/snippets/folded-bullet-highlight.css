@@ -1,0 +1,7 @@
+/* Source: https://forum.obsidian.md/t/outliner-mode-similar-to-logseq-roam-dynalist/13769/71 */
+.markdown-source-view.mod-cm6 .is-collapsed~.cm-formatting-list .list-bullet:after,
+ul>li.is-collapsed::marker {
+    color: var(--text-normal);
+    -webkit-text-stroke-width: 9px;
+    -webkit-text-stroke-color: #333;
+}

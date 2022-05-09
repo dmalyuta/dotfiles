@@ -5,7 +5,8 @@
     "image-cards",
     "nicer-checkboxes",
     "stylish-blockquotes",
-    "cursor"
+    "cursor",
+    "folded-bullet-highlight"
   ],
   "theme": "obsidian",
   "cssTheme": "Things",

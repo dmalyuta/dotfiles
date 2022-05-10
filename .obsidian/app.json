@@ -6,5 +6,6 @@
   "attachmentFolderPath": "assets",
   "newLinkFormat": "relative",
   "useMarkdownLinks": false,
-  "defaultViewMode": "preview"
+  "defaultViewMode": "preview",
+  "useTab": false
 }

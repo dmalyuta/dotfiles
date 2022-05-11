@@ -7,5 +7,7 @@
   "newLinkFormat": "relative",
   "useMarkdownLinks": false,
   "defaultViewMode": "preview",
-  "useTab": false
+  "useTab": false,
+  "showIndentGuide": true,
+  "smartIndentList": true
 }

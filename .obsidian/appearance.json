@@ -6,7 +6,8 @@
     "nicer-checkboxes",
     "stylish-blockquotes",
     "cursor",
-    "folded-bullet-highlight"
+    "folded-bullet-highlight",
+    "codeblock-style"
   ],
   "theme": "obsidian",
   "cssTheme": "Things",

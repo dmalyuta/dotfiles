@@ -1,0 +1,12 @@
+/*
+Source:
+https://forum.obsidian.md/t/better-treatment-of-code-live-preview-code-wrap-horizont-scroll-and-smart-indent/33718/4
+*/
+
+.HyperMD-codeblock {
+  white-space: nowrap;
+}
+
+.markdown-preview-view code {
+  white-space: nowrap;
+}

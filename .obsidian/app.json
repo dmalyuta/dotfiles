@@ -9,5 +9,6 @@
   "defaultViewMode": "preview",
   "useTab": false,
   "showIndentGuide": true,
-  "smartIndentList": true
+  "smartIndentList": true,
+  "promptDelete": false
 }

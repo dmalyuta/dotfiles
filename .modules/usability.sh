@@ -184,6 +184,12 @@ gsettings set org.gnome.desktop.peripherals.mouse natural-scroll false
 # Make Capslock the Hyper key, which I use in Emacs
 gsettings set org.gnome.desktop.input-sources xkb-options "['caps:hyper']"
 
+# File browser
+# Allow to unfold folders
+gsettings set org.gnome.nautilus.list-view use-tree-view true
+# Put folders above files
+gsettings set org.gtk.Settings.FileChooser sort-directories-first true
+
 # ..:: Input device driver ::..
 
 sudo apt-get -y install xserver-xorg-input-all xserver-xorg-input-synaptics

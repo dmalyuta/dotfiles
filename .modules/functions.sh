@@ -20,6 +20,7 @@ parse_yn() {
 
 update_bashrc() {
     if ! grep -q ".local.bashrc" ~/.bashrc; then
+        # Source the local bashrc file
         cat << EOF >> ~/.bashrc
 #############################################
 #### This part should go at the very end ####
@@ -29,5 +30,10 @@ if [ -f ~/.local.bashrc ]; then
     . ~/.local.bashrc
 fi
 EOF
+
+        # Make sure that Python virtual environment gets activated *afterwards*
+        local python_venv_activate="$(cat ~/.bashrc | grep "conda activate")"
+        sed -n '/'"$python_venv_activate"'/d' ~/.bashrc
+        echo "$python_venv_activate" >> ~/.bashrc
     fi
 }

@@ -143,11 +143,7 @@ fi
 # Workspaces on all displays
 dconf write /org/gnome/mutter/workspaces-only-on-primary false
 
-# >> Now update the Gnome configuration <<
-
-# Restart the Gnome shell, to make sure everything is up-to-date
-busctl --user call org.gnome.Shell /org/gnome/Shell org.gnome.Shell \
-       Eval s 'Meta.restart("Restarting Gnome Shell...")'
+# >> Now update the Gnome configuration (changes require restart) <<
 
 # No desktop icons
 gsettings set org.gnome.desktop.background show-desktop-icons false

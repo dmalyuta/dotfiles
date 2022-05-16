@@ -133,10 +133,10 @@ if [ ! -d ~/.local/share/gnome-shell/extensions/arcmenu@arcmenu.com ]; then
 fi
 
 # Focus window without "Window is ready" notification
-EXTDIR="$HOME/.local/share/gnome-shell/extensions/focus-my-window@varianto25.com"
+EXTDIR="$HOME/.local/share/gnome-shell/extensions/noannoyance@daase.net"
 if [ ! -d "$EXTDIR" ]; then
     mkdir -p "$EXTDIR"
-    git clone https://github.com/v-dimitrov/gnome-shell-extension-stealmyfocus /tmp/stealfocus
+    git clone https://github.com/bdaase/noannoyance /tmp/stealfocus
     mv /tmp/stealfocus/* "$EXTDIR"
 fi
 
@@ -166,7 +166,7 @@ gsettings set org.gnome.desktop.interface cursor-size 22
 gnome-extensions disable ubuntu-dock@ubuntu.com
 gsettings set org.gnome.shell enabled-extensions \
 	  "['dash-to-panel@jderose9.github.com', 'arcmenu@arcmenu.com', \
-            'focus-my-window@varianto25.com']"
+            'noannoyance@daase.net']"
 
 # Use Alt as window action key (e.g. to drag window around)
 gsettings set org.gnome.desktop.wm.preferences mouse-button-modifier '<Alt>'
@@ -271,6 +271,7 @@ sudo sed -i -e '/enabled=/s/1/0/' /etc/default/apport
 sudo apt-get -y install xcalib \
      compizconfig-settings-manager \
      gnome-tweaks \
+     gnome-shell-extension-prefs \
      pdftk \
      unrar \
      xdotool

@@ -32,5 +32,13 @@
       ],
       "key": "]"
     }
+  ],
+  "editor:toggle-source": [
+    {
+      "modifiers": [
+        "Mod"
+      ],
+      "key": "T"
+    }
   ]
 }

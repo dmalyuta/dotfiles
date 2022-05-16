@@ -132,6 +132,14 @@ if [ ! -d ~/.local/share/gnome-shell/extensions/arcmenu@arcmenu.com ]; then
 	  "$DIR"/.config/dconf/arcmenu.dconf
 fi
 
+# Better window tiling
+if [ ! -d ~/.local/share/gnome-shell/extensions/tiling-assistant@leleat-on-github ]; then
+    rm -rf /tmp/tiling-assistant
+    git clone https://github.com/Leleat/Tiling-Assistant /tmp/tiling-assistant
+    chmod +x /tmp/tiling-assistant/scripts/build.sh
+    /tmp/tiling-assistant/scripts/build.sh -i
+fi
+
 # Focus window without "Window is ready" notification
 EXTDIR="$HOME/.local/share/gnome-shell/extensions/noannoyance@daase.net"
 if [ ! -d "$EXTDIR" ]; then
@@ -160,9 +168,10 @@ gsettings set org.gnome.desktop.interface cursor-size 22
 
 # Enable the extensions
 gnome-extensions disable ubuntu-dock@ubuntu.com
-gsettings set org.gnome.shell enabled-extensions \
-	  "['dash-to-panel@jderose9.github.com', 'arcmenu@arcmenu.com', \
-            'noannoyance@daase.net']"
+gnome-extensions enable dash-to-panel@jderose9.github.com
+gnome-extensions enable arcmenu@arcmenu.com
+gnome-extensions enable noannoyance@daase.net
+gnome-extensions enable tiling-assistant@leleat-on-github
 
 # Use Alt as window action key (e.g. to drag window around)
 gsettings set org.gnome.desktop.wm.preferences mouse-button-modifier '<Alt>'

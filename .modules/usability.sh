@@ -134,8 +134,10 @@ fi
 
 # Better window tiling
 if [ ! -d ~/.local/share/gnome-shell/extensions/tiling-assistant@leleat-on-github ]; then
+    PINNED_COMMIT_HASH=8e0910351382a5942901b676a443e8048ed61c38
     rm -rf /tmp/tiling-assistant
     git clone https://github.com/Leleat/Tiling-Assistant /tmp/tiling-assistant
+    ( cd /tmp/tiling-assistant && git checkout $PINNED_COMMIT_HASH )
     chmod +x /tmp/tiling-assistant/scripts/build.sh
     /tmp/tiling-assistant/scripts/build.sh -i
 fi

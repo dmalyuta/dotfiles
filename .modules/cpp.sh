@@ -47,3 +47,7 @@ if not_installed clang-$CLANG_VERSION; then
     sudo update-alternatives --install /usr/bin/clang clang /usr/lib/llvm-14/bin/clang 100
     sudo update-alternatives --set clang /usr/lib/llvm-14/bin/clang
 fi
+
+# ..:: Debugging ::..
+
+sudo apt-get -y install ddd

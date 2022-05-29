@@ -11,6 +11,7 @@ dmalyuta.suggestions-multi-trigger
 dseight.disasexpl
 eamodio.gitlens
 Fr43nk.seito-openfile
+GuidoTapia2.unicode-math-vscode
 gurumukhi.selected-lines-count
 hbenl.vscode-test-explorer
 heptio.jsonnet

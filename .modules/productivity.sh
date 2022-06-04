@@ -138,6 +138,11 @@ if [[ ! -d /opt/balenaEtcher ]]; then
     sudo apt-get -y install balena-etcher-electron
 fi
 
+# ..:: Miscellaneous ::..
+
+# Infinite canvas for reference images.
+sudo apt-get -y install pureref
+
 # ..:: Command line ::..
 
 if not_installed fzf; then

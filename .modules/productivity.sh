@@ -43,7 +43,7 @@ fi
 # ..:: Logseq (note taking in markdown) ::..
 
 if [[ ! -f ~/.local/bin/logseq.AppImage ]]; then
-    LOGSEQ_VERSION=0.6.5
+    LOGSEQ_VERSION=0.7.1
     wget -4 https://github.com/logseq/logseq/releases/download/$LOGSEQ_VERSION/logseq-linux-x64-$LOGSEQ_VERSION.AppImage \
         -O /tmp/logseq.AppImage
     sudo chmod +x /tmp/logseq.AppImage

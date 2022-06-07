@@ -1,0 +1,6 @@
+#!/bin/sh
+GIT_NUM_LINES=$1
+if [ -z $GIT_NUM_LINES ]; then
+    GIT_NUM_LINES=10
+fi
+git tree | head -n $GIT_NUM_LINES

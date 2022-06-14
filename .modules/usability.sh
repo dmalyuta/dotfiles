@@ -281,7 +281,8 @@ sudo apt-get -y install xcalib \
      gnome-shell-extension-prefs \
      pdftk \
      unrar \
-     xdotool
+     xdotool \
+     simple-scan
 
 # Increase inotify to make sure Evince updates on PDF update
 # Source: https://superuser.com/a/1387905/512940

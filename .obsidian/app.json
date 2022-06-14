@@ -10,5 +10,6 @@
   "useTab": false,
   "showIndentGuide": true,
   "smartIndentList": true,
-  "promptDelete": false
+  "promptDelete": false,
+  "fileSortOrder": "byModifiedTime"
 }

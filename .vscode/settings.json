@@ -234,6 +234,7 @@
     "latex-workshop.view.pdf.invertMode.enabled": "never",
     "latex-workshop.view.pdf.zoom": "page-width",
     "latex-workshop.latex.autoBuild.run": "never",
+    "latex-workshop.view.outline.commands": [],
     "[latex]": {
         // LaTeX-specific customizations of the general config
         "editor.rulers": [ 80 ],

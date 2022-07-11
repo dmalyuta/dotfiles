@@ -7,6 +7,7 @@
 
     /// Appearance
     "window.titleBarStyle": "custom",
+    "window.commandCenter": true,
     "customizeUI.activityBar": "bottom",
     "customizeUI.activityBarHideSettings": true,
     "customizeUI.statusBarPosition": "under-panel",

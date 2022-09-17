@@ -5,16 +5,17 @@ alefragnani.project-manager
 buenon.scratchpads
 cbuelter.vscode-toggle-max-editor
 christian-kohler.path-intellisense
+DavidAnson.vscode-markdownlint
 dbaeumer.vscode-eslint
 denco.confluence-markup
 dmalyuta.suggestions-multi-trigger
 dseight.disasexpl
 eamodio.gitlens
 Fr43nk.seito-openfile
+Grafana.vscode-jsonnet
 GuidoTapia2.unicode-math-vscode
 gurumukhi.selected-lines-count
 hbenl.vscode-test-explorer
-heptio.jsonnet
 hoovercj.vscode-settings-cycler
 iocave.customize-ui
 iocave.monkey-patch
@@ -23,7 +24,6 @@ jgclark.vscode-todo-highlight
 jomeinaster.bracket-peek
 julialang.language-julia
 kaiwood.center-editor-window
-kbysiec.vscode-search-everywhere
 kevinkyang.auto-comment-blocks
 KevinRose.vsc-python-indent
 mattn.Lisp
@@ -43,6 +43,7 @@ ms-vscode.cpptools
 ms-vscode.live-server
 ms-vscode.powershell
 ms-vscode.test-adapter-converter
+naumovs.color-highlight
 nemesv.copy-file-name
 nwbjjbb.repeat-paste
 oijaz.unicode-latex
@@ -57,5 +58,6 @@ tootone.org-mode
 usernamehw.find-jump
 vscode-icons-team.vscode-icons
 wmaurer.vscode-jumpy
+yzhang.markdown-all-in-one
 zhuangtongfa.material-theme
 zxh404.vscode-proto3

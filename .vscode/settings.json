@@ -70,6 +70,7 @@
     "files.eol": "\n",
     "editor.rulers": [ 100 ],
     "editor.wordWrapColumn": 100,
+    "editor.stickyScroll.enabled": true,
     "editor.stickyTabStops": true,
     "center-editor-window.threeStateToggle": true,
     "center-editor-window.offset": 5,
@@ -245,7 +246,6 @@
     /// Language: Python
     "jupyter.interactiveWindowMode": "perFile",
     "jupyter.askForKernelRestart": false,
-    "pylance.insidersChannel": "off",
     // "python.analysis.logLevel": "Trace",
     "python.analysis.indexing": true,
     "python.analysis.completeFunctionParens": true,

@@ -230,7 +230,7 @@
 
     /// Language: LaTeX
     "latex-workshop.view.pdf.viewer": "tab",
-    "latex-workshop.view.pdf.backgroundColor": "#23272eff",
+    "latex-workshop.view.pdf.color.dark.backgroundColor": "#23272eff",
     "latex-workshop.view.pdf.hand": true,
     "latex-workshop.view.pdf.invert": 0,
     "latex-workshop.view.pdf.invertMode.enabled": "never",
@@ -249,6 +249,7 @@
     // "python.analysis.logLevel": "Trace",
     "python.analysis.indexing": true,
     "python.analysis.completeFunctionParens": true,
+    "python.analysis.autoImportCompletions": false,
 
     /// Language: Julia
     "terminal.integrated.commandsToSkipShell": [

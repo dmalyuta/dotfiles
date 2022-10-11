@@ -19,19 +19,20 @@ if not_installed conda; then
     # Update conda
     conda install anaconda
     conda update -n base -c defaults conda
-    
+
     # Make changes take effect
     source ~/.bashrc
 fi
 
 # ..:: Default Python environment ::..
 
-PYENV_NAME=py3104
+PYVERSION=3.10.6
+PYENV_NAME=py"${PYVERSION//./}"
 CONDA_PATH=$(conda info --base)/etc/profile.d/conda.sh
 
 if ! (conda info --envs | grep -q $PYENV_NAME); then
     source "$CONDA_PATH"
-    conda create -y -n $PYENV_NAME python=3.10.4
+    conda create -y -n $PYENV_NAME python=3.10.6
     conda activate $PYENV_NAME
     conda install -y ipython
 
@@ -50,7 +51,7 @@ EOF
     # Add virtualenv to Jupyter
     # https://gist.github.com/swedishmike/902fb27d627313c31a95e31c44e302ac
     pip install --user ipykernel
-    python -m ipykernel install --user --name=py3104
+    python -m ipykernel install --user --name=$PYENV_NAME
 fi
 
 # ..:: Other tools ::..
@@ -68,11 +69,3 @@ fi
 sudo apt-get -y install jupyter \
      jupyter-notebook
 pip install jupyterlab
-
-# diffing and merging of Jupyter Notebooks
-pip install nbdime
-
-# ..:: Git ::..
-
-# README file local preview
-pip install grip

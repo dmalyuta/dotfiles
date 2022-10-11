@@ -60,8 +60,8 @@ fi
 # ..:: Obsidian (note taking in markdown) ::..
 
 if not_installed obsidian; then
-    OBSIDIAN_VERSION=0.14.6
-    wget https://github.com/obsidianmd/obsidian-releases/releases/download/v$OBSIDIAN_VERSION/obsidian_$OBSIDIAN_VERSION_amd64.snap \
+    OBSIDIAN_VERSION=0.15.9
+    wget https://github.com/obsidianmd/obsidian-releases/releases/download/v$OBSIDIAN_VERSION/obsidian_"$OBSIDIAN_VERSION"_amd64.snap \
         -O /tmp/obsidian.snap
     sudo snap install --dangerous /tmp/obsidian.snap
 
@@ -74,12 +74,6 @@ if not_installed obsidian; then
     if ! (fc-list | grep -q IcoMoon); then
         echo '/!\ Failed to install IcoMoon font.'
     fi
-fi
-
-# ..:: Micropad ::..
-
-if not_installed micropad; then
-    sudo snap install micropad
 fi
 
 # ..:: Enpass password manager ::..
@@ -138,28 +132,9 @@ if [[ ! -d /opt/balenaEtcher ]]; then
     sudo apt-get -y install balena-etcher-electron
 fi
 
-# ..:: Miscellaneous ::..
-
-# Infinite canvas for reference images.
-sudo apt-get -y install pureref
-
 # ..:: Command line ::..
 
 if not_installed fzf; then
     git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
     ~/.fzf/install --all
 fi
-
-# ..:: Gedit plugins ::..
-
-GEDIT_PLUGINS_DIR=~/.local/share/gedit/plugins/
-
-mkdir -p $GEDIT_PLUGINS_DIR
-
-SCROLL_PAST_DIR="${GEDIT_PLUGINS_DIR}scroll-past"
-if [[ ! -d "$SCROLL_PAST_DIR" ]]; then
-    git clone https://github.com/hardpixel/gedit-scroll-past "$SCROLL_PAST_DIR"
-fi
-
-# Set default settings
-cat "$DIR"/.config/gedit_settings.txt | xargs -L 1 gsettings set

@@ -37,19 +37,6 @@ fi
 # Fix bug that Ctrl-Alt-T creates a new icon sidebar
 gsettings set org.gnome.desktop.default-applications.terminal exec "x-terminal-emulator"
 
-# Open Nautilus directory in terminal
-python -c "import nautilus_open_any_terminal" > /dev/null 2>&1
-if [ $? -ne 0 ]; then
-    sudo apt-get -y install python3-nautilus
-    pip3 install --user nautilus-open-any-terminal
-    mkdir -p ~/.local/share/glib-2.0/schemas/
-    # WARN this is fragile with respect to the Python version
-    cp anaconda3/envs/py3104/lib/python3.10/site-packages/nautilus_open_any_terminal/schemas/* \
-        ~/.local/share/glib-2.0/schemas/
-    glib-compile-schemas ~/.local/share/glib-2.0/schemas/
-    gsettings set com.github.stunkymonkey.nautilus-open-any-terminal terminal x-terminal-emulator
-fi
-
 # ..:: Tmux ::..
 # Terminal multiplexer
 
@@ -130,16 +117,6 @@ if [ ! -d ~/.local/share/gnome-shell/extensions/arcmenu@arcmenu.com ]; then
     # Link to my own settings
     dconf load /org/gnome/shell/extensions/arcmenu/ < \
 	  "$DIR"/.config/dconf/arcmenu.dconf
-fi
-
-# Better window tiling
-if [ ! -d ~/.local/share/gnome-shell/extensions/tiling-assistant@leleat-on-github ]; then
-    PINNED_COMMIT_HASH=342e4baa9c8b2cc6db6084b8a7a92dae27afa02d
-    rm -rf /tmp/tiling-assistant
-    git clone https://github.com/Leleat/Tiling-Assistant /tmp/tiling-assistant
-    ( cd /tmp/tiling-assistant && git checkout $PINNED_COMMIT_HASH )
-    chmod +x /tmp/tiling-assistant/scripts/build.sh
-    /tmp/tiling-assistant/scripts/build.sh -i
 fi
 
 # Focus window without "Window is ready" notification

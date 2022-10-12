@@ -10,7 +10,6 @@
 
 if not_installed emacs; then
     # Dependencies
-    sudo apt-get -y build-dep emacs
     sudo apt-get -y install libwebkit2gtk-4.0-dev \
 	 autoconf \
 	 texinfo \
@@ -35,7 +34,8 @@ if not_installed emacs; then
         libgccjit0 \
         libgccjit-10-dev \
         libjansson4 \
-        libjansson-dev
+        libjansson-dev \
+        libgnutls28-dev
 
     # Get fast JSON
     sudo apt-get -y install libjansson4 libjansson-dev

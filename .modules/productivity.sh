@@ -85,6 +85,14 @@ if [[ ! -d /opt/enpass ]]; then
     sudo apt-get -y install enpass
 fi
 
+# ..:: Nextcloud cloud storage client ::..
+
+if not_installed nextcloud; then
+    sudo add-apt-repository -y ppa:nextcloud-devs/client
+    sudo apt-get -y update
+    sudo apt-get -y install nextcloud-client
+fi
+
 # ..:: Inkscape ::..
 
 if not_installed inkscape; then

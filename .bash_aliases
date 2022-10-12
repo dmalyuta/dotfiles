@@ -302,7 +302,7 @@ python ~/.bin/set_customshortcut.py 'invert-color' 'xcalib -invert -alter' '<Shi
 
 # Rofi desktop searching
 python ~/.bin/set_customshortcut.py 'launch-rofi' \
-       "/home/dmalyuta/.config/rofi/launchers/colorful/launcher.sh" '<Ctrl><Alt>R'
+       "$HOME/.config/rofi/launchers/type-2/launcher.sh" '<Ctrl><Alt>R'
 
 # Flameshot screenshot
 python ~/.bin/set_customshortcut.py 'take-screenshot' \

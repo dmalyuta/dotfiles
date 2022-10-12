@@ -130,6 +130,9 @@ fi
 # Workspaces on all displays
 dconf write /org/gnome/mutter/workspaces-only-on-primary false
 
+# Drag windows with mouse click via Ctrl+Lieft mouse
+gsettings set org.gnome.desktop.wm.preferences mouse-button-modifier '<Alt>'
+
 # >> Now update the Gnome configuration (changes require restart) <<
 
 # No desktop icons
@@ -216,7 +219,7 @@ if not_installed rofi; then
 
     # Select themes
     # Application launcher
-    LAUNCHER_FILE="$HOME/.config/rofi/launchers/colorful/launcher.sh"
+    LAUNCHER_FILE="$HOME/.config/rofi/launchers/type-2/launcher.sh"
     sed -i -e '/theme=\"style_/s/[0-9]/5/' "$LAUNCHER_FILE"
     sed -i -e '/^themes=/s/^/#/g' "$LAUNCHER_FILE"
     sed -i -e '/^theme=.*RANDOM/s/^/#/g' "$LAUNCHER_FILE"

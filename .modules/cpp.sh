@@ -8,7 +8,7 @@
 # C++ build system
 
 CMAKE_VERSION="3.23.1"
-if [[ not_installed cmake || \
+if [[ $(not_installed cmake) || \
        "$(cmake --version | head -n 1 | cut -d ' ' -f 3)" != \
        "$CMAKE_VERSION" ]]; then
     # Dependencies

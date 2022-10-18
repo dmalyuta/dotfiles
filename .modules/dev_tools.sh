@@ -14,9 +14,6 @@ if [ "$(git --version | cut -d ' ' -f 3)" != "$GIT_VERSION" ]; then
     sudo apt-get -y install git
 fi
 
-# Git GUI
-sudo apt-get -y install gitg
-
 # ..:: Misc ::..
 
 sudo apt-get -y install gitk \
@@ -63,7 +60,7 @@ fi
 # ..:: Node.js ::..
 
 if not_installed node; then
-    curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -
+    curl -sL https://deb.nodesource.com/setup_14.x | sudo -E bash -
     sudo apt-get -y install nodejs
 fi
 

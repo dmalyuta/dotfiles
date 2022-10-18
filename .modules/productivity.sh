@@ -40,42 +40,6 @@ if not_installed libreoffice || ! (libreoffice --version | grep -Eq ".*7.*"); th
     sudo apt-get -y install libreoffice
 fi
 
-# ..:: Logseq (note taking in markdown) ::..
-
-if [[ ! -f ~/.local/bin/logseq.AppImage ]]; then
-    LOGSEQ_VERSION=0.7.1
-    wget -4 https://github.com/logseq/logseq/releases/download/$LOGSEQ_VERSION/logseq-linux-x64-$LOGSEQ_VERSION.AppImage \
-        -O /tmp/logseq.AppImage
-    sudo chmod +x /tmp/logseq.AppImage
-    sudo mv /tmp/logseq.AppImage /usr/bin/logseq
-
-    # Create the desktop entry to launch the app.
-    wget -4 https://raw.githubusercontent.com/logseq/logseq/master/resources/img/logo.png \
-        -O /tmp/Logseq.png
-    sudo cp /tmp/Logseq.png /usr/share/pixmaps/Logseq.png
-    sudo desktop-file-install "$DIR"/.local/share/applications/logseq.desktop
-    sudo update-desktop-database
-fi
-
-# ..:: Obsidian (note taking in markdown) ::..
-
-if not_installed obsidian; then
-    OBSIDIAN_VERSION=0.15.9
-    wget https://github.com/obsidianmd/obsidian-releases/releases/download/v$OBSIDIAN_VERSION/obsidian_"$OBSIDIAN_VERSION"_amd64.snap \
-        -O /tmp/obsidian.snap
-    sudo snap install --dangerous /tmp/obsidian.snap
-
-    # Fonts for appearance
-    wget https://icomoon.io/LigatureFont.zip -O /tmp/LigatureFont.zip
-    unzip -o /tmp/LigatureFont.zip -d /tmp/
-    mkdir -p ~/.local/share/fonts/
-    cp /tmp/Font/IcoMoon-Free.ttf ~/.local/share/fonts/
-    fc-cache -f -v
-    if ! (fc-list | grep -q IcoMoon); then
-        echo '/!\ Failed to install IcoMoon font.'
-    fi
-fi
-
 # ..:: Enpass password manager ::..
 
 if [[ ! -d /opt/enpass ]]; then
@@ -112,15 +76,6 @@ if [[ ! -d ~/.config/inkscape/extensions/textext ]]; then
     ( cd /tmp/textext-1.3.0/ && python3 setup.py )
 fi
 
-# ..:: Draw.io ::..
-
-if not_installed drawio; then
-    DRAWIO_VERSION=17.4.2
-    wget https://github.com/jgraph/drawio-desktop/releases/download/v$DRAWIO_VERSION/drawio-amd64-$DRAWIO_VERSION.deb \
-        -O /tmp/drawio.deb
-    sudo apt-get install -y /tmp/drawio.deb
-fi
-
 # ..:: Screen capture ::..
 
 sudo apt-get -y install shutter
@@ -130,14 +85,6 @@ if not_installed peek; then
     sudo add-apt-repository -y ppa:peek-developers/stable
     sudo apt-get update
     sudo apt-get -y install peek
-fi
-
-# ..:: OS image ISO flasher ::..
-
-if [[ ! -d /opt/balenaEtcher ]]; then
-    curl -1sLf 'https://dl.cloudsmith.io/public/balena/etcher/setup.deb.sh' | sudo -E bash
-    sudo apt-get -y update
-    sudo apt-get -y install balena-etcher-electron
 fi
 
 # ..:: Command line ::..

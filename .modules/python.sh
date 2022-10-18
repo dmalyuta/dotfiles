@@ -17,15 +17,14 @@ if not_installed conda; then
     /tmp/anaconda.sh
 
     # Update conda
-    conda install anaconda
-    conda update -n base -c defaults conda
-
-    # Make changes take effect
-    source ~/.bashrc
+    . ~/.bashrc
+    conda install -y anaconda
+    conda update -y -n base -c defaults conda
 fi
 
 # ..:: Default Python environment ::..
 
+source ~/.bashrc
 PYVERSION=3.10.6
 PYENV_NAME=py"${PYVERSION//./}"
 CONDA_PATH=$(conda info --base)/etc/profile.d/conda.sh
@@ -63,6 +62,9 @@ sudo apt-get -y install pyprof2calltree
 if ! echo "$PATH" | grep -q virtualenv; then
     echo export PATH="$PATH":"$(command -v virtualenv)" >> ~/.bashrc
 fi
+
+# Update to make sure that the new Python is loaded
+source ~/.bashrc
 
 # ..:: Jupyter notebook ::..
 

@@ -5,7 +5,7 @@
 # Author: Danylo Malyuta, 2020.
 
 if not_installed julia; then
-    JULIA_VERSION=1.7.2
+    JULIA_VERSION=1.8.2
     BASE_JULIA_VERSION="$(echo $JULIA_VERSION | cut -d '.' -f 1-2)"
     JULIA_URL=https://julialang-s3.julialang.org/bin/linux/x64/$BASE_JULIA_VERSION/julia-$JULIA_VERSION-linux-x86_64.tar.gz
     wget -4 $JULIA_URL -P /tmp/

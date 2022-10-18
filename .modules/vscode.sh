@@ -4,11 +4,11 @@
 #
 # Author: Danylo Malyuta, 2021.
 
-# ..:: Node 17.x.x ::..
+# ..:: Node 18.x.x ::..
 
 NODE_VERSION="$(node --version | cut -d '.' -f 1 | cut -d 'v' -f 2)"
 if [ "$NODE_VERSION" -lt 17 ]; then
-    curl -fsSL https://deb.nodesource.com/setup_17.x | sudo -E bash -
+    curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
     sudo apt-get -y install nodejs
 fi
 
@@ -68,11 +68,3 @@ fi
 if [[ ! -z $(cat "$VSCODE_EXTENSIONS_TO_INSTALL") ]]; then
     cat "$VSCODE_EXTENSIONS_TO_INSTALL" | xargs -L 1 code --install-extension
 fi
-
-# Install custom extensions
-# To compile a custom extension, do:
-#   cd <extension-dir>
-#   vsce package -o compiled-extension.vsix
-# (ref: https://code.visualstudio.com/api/working-with-extensions/publishing-extension#usage)
-VSCODE_EXTENSION="suggestions-multi-trigger"
-code --install-extension "$DIR"/.vscode/custom-extensions/"$VSCODE_EXTENSION"/compiled-extension.vsix

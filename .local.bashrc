@@ -6,11 +6,6 @@ set_title() {
     printf "\e]2;$*\a";
 }
 
-# Private bashrc file
-if [ -f ~/.local.bashrc.private ]; then
-    source ~/.local.bashrc.private
-fi
-
 # checksum check
 checksum_check() {
     local file="$1"
@@ -71,11 +66,6 @@ export EDITOR="emacs -nw"
 
 # Use VSCode as visual editor
 export VISUAL="code --wait"
-
-# Synaptics touchpad config
-if [ -f ~/.input_config.sh ]; then
-    source ~/.input_config.sh
-fi
 
 # Vterm configuration
 # https://github.com/akermu/emacs-libvterm/blob/master/README.md

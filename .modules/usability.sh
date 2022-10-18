@@ -27,15 +27,10 @@ if not_installed kitty; then
 
     # Make Kitty the new terminal!
     if ! not_installed kitty; then
-        sudo apt-get purge -y gnome-terminal
-        sudo ln -sf ~/.local/bin/kitty /usr/bin/gnome-terminal
         sudo update-alternatives --install /usr/bin/x-terminal-emulator x-terminal-emulator ~/.local/bin/kitty 100
         sudo update-alternatives --set x-terminal-emulator ~/.local/bin/kitty
     fi
 fi
-
-# Fix bug that Ctrl-Alt-T creates a new icon sidebar
-gsettings set org.gnome.desktop.default-applications.terminal exec "x-terminal-emulator"
 
 # ..:: Tmux ::..
 # Terminal multiplexer
@@ -62,143 +57,6 @@ if [ ! -d ~/.tmux/plugins/tpm ]; then
     git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
 fi
 
-# ..:: Mouse cursor ::..
-
-mkdir -p ~/.icons
-
-if [ ! -d ~/.icons/GoogleDot ]; then
-    wget -4 https://github.com/ful1e5/Google_Cursor/releases/download/v1.0.0/GoogleDot.tar.gz \
-	 -O /tmp/GoogleDot.tar.gz
-    tar -xvf /tmp/GoogleDot.tar.gz -C /tmp
-    mv /tmp/GoogleDot ~/.icons/
-fi
-
-# ..:: Gnome desktop customization ::..
-
-# In order to save current extension settings into these dotfiles:
-# (source: https://askubuntu.com/a/1178587)
-#
-#   $ cd <DOTFILES_BASE_DIRECTORY>
-#   $ dconf dump /org/gnome/shell/extensions/<EXT_NAME>/ > .config/dconf/<EXT_NAME>.dconf
-#
-# Note also that you can easily check which dconf settings are changed when
-# using GUI, by opening a terminal and running:
-#
-#   $ dconf watch /
-#
-# This will print any settings that are changed, every time you change something in GUI.
-
-sudo apt-get -y install dconf-cli gettext
-
-# Gnome shell Chrom install integration
-# Visit https://extensions.gnome.org/ to install extensions directly
-sudo apt-get -y install chrome-gnome-shell
-
-mkdir -p ~/.local/share/gnome-shell/extensions
-
-# Application launchers in the panel
-if [ ! -d ~/.local/share/gnome-shell/extensions/dash-to-panel@jderose9.github.com ]; then
-    rm -rf /tmp/dash-to-panel
-    git clone https://github.com/home-sweet-gnome/dash-to-panel.git /tmp/dash-to-panel
-    (cd /tmp/dash-to-panel && make install)
-
-    # Link to my own settings
-    dconf load /org/gnome/shell/extensions/dash-to-panel/ < \
-	  "$DIR"/.config/dconf/dash-to-panel.dconf
-fi
-
-# Traditional menu
-if [ ! -d ~/.local/share/gnome-shell/extensions/arcmenu@arcmenu.com ]; then
-    rm -rf /tmp/arcmenu
-    git clone --single-branch --branch master \
-        https://gitlab.com/arcmenu/ArcMenu.git /tmp/arcmenu
-    (cd /tmp/arcmenu && make install)
-
-    # Link to my own settings
-    dconf load /org/gnome/shell/extensions/arcmenu/ < \
-	  "$DIR"/.config/dconf/arcmenu.dconf
-fi
-
-# Focus window without "Window is ready" notification
-EXTDIR="$HOME/.local/share/gnome-shell/extensions/noannoyance@daase.net"
-if [ ! -d "$EXTDIR" ]; then
-    mkdir -p "$EXTDIR"
-    git clone https://github.com/bdaase/noannoyance /tmp/stealfocus
-    mv /tmp/stealfocus/* "$EXTDIR"
-fi
-
-# Workspaces on all displays
-dconf write /org/gnome/mutter/workspaces-only-on-primary false
-
-# Drag windows with mouse click via Ctrl+Lieft mouse
-gsettings set org.gnome.desktop.wm.preferences mouse-button-modifier '<Alt>'
-
-# >> Now update the Gnome configuration (changes require restart) <<
-
-# No desktop icons
-gsettings set org.gnome.desktop.background show-desktop-icons false
-gsettings set org.gnome.shell.extensions.ding show-home false
-
-# Show battery percentage
-gsettings set org.gnome.desktop.interface show-battery-percentage true
-
-# Use GoogleDot cursor theme
-gsettings set org.gnome.desktop.interface cursor-theme 'GoogleDot'
-
-# Mouse cursor size
-gsettings set org.gnome.desktop.interface cursor-size 22
-
-# Enable the extensions
-gnome-extensions disable ubuntu-dock@ubuntu.com
-gnome-extensions enable dash-to-panel@jderose9.github.com
-gnome-extensions enable arcmenu@arcmenu.com
-gnome-extensions enable noannoyance@daase.net
-gnome-extensions enable tiling-assistant@leleat-on-github
-
-# Use Alt as window action key (e.g. to drag window around)
-gsettings set org.gnome.desktop.wm.preferences mouse-button-modifier '<Alt>'
-
-# Detach modal dialogs from parent window (better "Save As" window)
-gsettings set org.gnome.mutter attach-modal-dialogs false
-
-# Four static workspaces
-gsettings set org.gnome.mutter dynamic-workspaces false
-gsettings set org.gnome.desktop.wm.preferences num-workspaces 4
-
-# Turn off natural scrolling
-gsettings set org.gnome.desktop.peripherals.mouse natural-scroll false
-
-# Make Capslock the Hyper key, which I use in Emacs
-gsettings set org.gnome.desktop.input-sources xkb-options "['caps:hyper']"
-
-# File browser
-# Allow to unfold folders
-gsettings set org.gnome.nautilus.list-view use-tree-view true
-# Put folders above files
-gsettings set org.gtk.Settings.FileChooser sort-directories-first true
-
-# ..:: Input device driver ::..
-
-sudo apt-get -y install xserver-xorg-input-all xserver-xorg-input-synaptics
-sudo adduser "$USER" input
-
-# Enable two-finger horizontal scroll with the touchpad
-synclient HorizTwoFingerScroll=1
-
-# ..:: Autokey ::..
-# A desktop automation utility for Linux and X11.
-
-if not_installed autokey; then
-    # Instructions: https://www.makeuseof.com/use-autokey-to-automate-repetitive-tasks-on-linux/
-    sudo apt-get -y install autokey-gtk
-
-    # Link configuration from these dotfiles
-    mkdir -p ~/.config/autokey/data
-    rm -rf ~/.config/autokey/data
-    ln -sf "$DIR"/.config/autokey/data ~/.config/autokey/data
-    ln -sf "$DIR"/.config/autokey/autokey.json ~/.config/autokey/autokey.json
-fi
-
 # ..:: Search ::..
 
 sudo apt-get -y install recoll \
@@ -206,24 +64,6 @@ sudo apt-get -y install recoll \
      exo-utils \
      tree \
      fd-find
-
-# ..:: Rofi launcher ::..
-
-if not_installed rofi; then
-    # Install Rofi itself
-    sudo apt-get -y install rofi
-
-    # Install themes for Rofi
-    git clone --depth=1 https://github.com/adi1090x/rofi.git /tmp/rofi-themes
-    ( cd /tmp/rofi-themes && chmod +x setup.sh && ./setup.sh )
-
-    # Select themes
-    # Application launcher
-    LAUNCHER_FILE="$HOME/.config/rofi/launchers/type-2/launcher.sh"
-    sed -i -e '/theme=\"style_/s/[0-9]/5/' "$LAUNCHER_FILE"
-    sed -i -e '/^themes=/s/^/#/g' "$LAUNCHER_FILE"
-    sed -i -e '/^theme=.*RANDOM/s/^/#/g' "$LAUNCHER_FILE"
-fi
 
 # ..:: Wine ::..
 # Windows program emulation
@@ -243,22 +83,12 @@ if not_installed wine; then
     winetricks allfonts
 fi
 
-# ..:: Flatpak ::..
-
-if not_installed flatpak; then
-    sudo apt-get -y install flatpak
-    flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
-fi
-
 # ..:: Other ::..
 
 # Disable the message "Sorry, Ubuntu xy.zw has experienced an internal error"
 sudo sed -i -e '/enabled=/s/1/0/' /etc/default/apport
 
 sudo apt-get -y install xcalib \
-     compizconfig-settings-manager \
-     gnome-tweaks \
-     gnome-shell-extension-prefs \
      pdftk \
      unrar \
      xdotool \

@@ -3,7 +3,7 @@
     "workbench.activityBar.visible": false,
     "workbench.editor.showTabs": false,
     "editor.minimap.enabled": false,
-    "window.zoomLevel": -1,
+    "window.zoomLevel": 0,
 
     /// Appearance
     "window.titleBarStyle": "custom",

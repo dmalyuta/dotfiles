@@ -15,7 +15,6 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 ln -sf "$DIR"/.profile ~
 ln -sf "$DIR"/.bash_aliases ~
 ln -sf "$DIR"/.local.bashrc ~
-ln -sf "$DIR"/.bash_profile ~
 
 # Various executable scripts
 ln -sf "$DIR"/.bin ~
@@ -32,12 +31,6 @@ ln -sf "$DIR"/.tmux.conf ~
 # Git
 cp -f "$DIR"/.gitconfig ~
 ln -sf "$DIR"/.gitk ~
-
-# Input devices
-ln -sf "$DIR"/.input_config.sh ~
-sudo ln -sf "$DIR"/.peripherals/40-libinput.conf /usr/share/X11/xorg.conf.d
-sudo ln -sf "$DIR"/.peripherals/51-synaptics-quirks.conf /usr/share/X11/xorg.conf.d
-sudo ln -sf "$DIR"/.peripherals/70-synaptics.conf /usr/share/X11/xorg.conf.d
 
 # Python
 mkdir -p ~/.ipython/profile_default/startup

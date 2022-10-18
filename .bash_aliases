@@ -289,21 +289,3 @@ pdfinterleave() {
     local output_pdf="$3"
     pdftk A="$odd_pdf" B="$even_pdf" shuffle A B output "$output_pdf"
 }
-
-# ..:: Shortcuts ::..
-# You can clear these by doing:
-# $ gsettings set org.gnome.settings-daemon.plugins.media-keys custom-keybindings []
-
-# Shortcut Ctrl+Alt+B for web browser
-python ~/.bin/set_customshortcut.py 'launch-browser' 'browser' '<Ctrl><Alt>B'
-
-# Shortcut Shift+Ctrl+Alt+N for screen color inverse
-python ~/.bin/set_customshortcut.py 'invert-color' 'xcalib -invert -alter' '<Shift><Ctrl><Alt>N'
-
-# Rofi desktop searching
-python ~/.bin/set_customshortcut.py 'launch-rofi' \
-       "$HOME/.config/rofi/launchers/type-2/launcher.sh" '<Ctrl><Alt>R'
-
-# Flameshot screenshot
-python ~/.bin/set_customshortcut.py 'take-screenshot' \
-       "/usr/bin/flameshot gui" '<Shift><Ctrl><Alt>P'

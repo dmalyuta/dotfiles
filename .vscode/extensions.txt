@@ -8,7 +8,6 @@ christian-kohler.path-intellisense
 DavidAnson.vscode-markdownlint
 dbaeumer.vscode-eslint
 denco.confluence-markup
-dmalyuta.suggestions-multi-trigger
 dseight.disasexpl
 eamodio.gitlens
 Fr43nk.seito-openfile

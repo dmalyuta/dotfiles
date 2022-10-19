@@ -8,6 +8,18 @@
 
 sudo usermod -s /bin/bash "$USERNAME"
 
+# ..:: Linux Kernel management ::..
+
+# IMPORTANT: Sign kernels for Secure Boot by following
+#   https://github.com/berglh/ubuntu-sb-kernel-signing  (sign kernel)
+#   https://unix.stackexchange.com/a/421650             (set default kernel version)
+#   https://access.redhat.com/articles/5337691          (check if Secure Boot is running)
+
+if not_installed kitty; then
+    sudo add-apt-repository -y ppa:cappelikan/ppa
+    sudo apt-get -y install mainline
+fi
+
 # ..:: Terminal emulator ::..
 
 if not_installed kitty; then

@@ -18,6 +18,7 @@ if not_installed conda; then
 
     # Update conda
     . ~/.bashrc
+    export PATH="/home/danylo/anaconda3/bin:$PATH"
     conda install -y anaconda
     conda update -y -n base -c defaults conda
 fi

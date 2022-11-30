@@ -41,9 +41,64 @@ if not_installed clang-$CLANG_VERSION; then
     chmod +x /tmp/llvm.sh
     sudo /tmp/llvm.sh $CLANG_VERSION
 
+    sudo apt-get install clang-tidy-14 clang-format-14 clang-tools-14 llvm-14-dev lld-14 lldb-14 \
+        llvm-14-tools libomp-14-dev libc++-14-dev libc++abi-14-dev libclang-common-14-dev \
+        libclang-14-dev libclang-cpp14-dev libunwind-14-dev
+
     sudo ln -sf /usr/lib/llvm-14/bin/clang /usr/bin/clang
     sudo update-alternatives --install /usr/bin/clang clang /usr/lib/llvm-14/bin/clang 100
     sudo update-alternatives --set clang /usr/lib/llvm-14/bin/clang
+fi
+
+# ..:: Custom sysroot ::..
+
+if [ ! -d /usr/local/custom_sysroot ]; then
+
+sudo -- -sh -c <<EOF
+mkdir /usr/local/custom_sysroot
+cd /usr/local/custom_sysroot
+mkdir usr
+cd usr/
+mkdir include
+mkdir lib
+mkdir libexec
+cd include/
+###########################
+### Set up /usr/include ###
+cp -Rs /usr/include/* .
+###########################
+cd ../lib/
+#######################
+### Set up /usr/lib ###
+cp -s /usr/lib/x86_64-linux-gnu/*.a .
+cp -s /usr/lib/x86_64-linux-gnu/*.o .
+cp -s /usr/lib/x86_64-linux-gnu/*.so* .
+mkdir x86_64-linux-gnu
+ln -s /usr/lib/x86_64-linux-gnu/libc_nonshared.a x86_64-linux-gnu/
+#######################
+cd ..
+#########################
+### Set up /usr/lib64 ###
+ln -s lib lib64
+#########################
+cd ..
+mkdir lib
+cd lib
+###################
+### Set up /lib ###
+ln -s /lib/x86_64-linux-gnu .
+mkdir -p gcc/x86_64-linux-gnu/12
+ln -s /lib/gcc/x86_64-linux-gnu/12/* gcc/x86_64-linux-gnu/12/
+###################
+cd ..
+mkdir lib64
+cd lib64
+#####################
+### Set up /lib64 ###
+ln -s /lib64/ld-linux-x86-64.so.2 .
+#####################
+EOF
+
 fi
 
 # ..:: Debugging ::..

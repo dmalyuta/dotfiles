@@ -47,7 +47,7 @@ fi
 # ..:: Tmux ::..
 # Terminal multiplexer
 
-if not_installed tmux; then
+if [ ! -f /usr/local/bin/tmux ]; then
     # Install needed packages
     sudo apt-get install -y bison \
         libevent-dev \
@@ -55,6 +55,7 @@ if not_installed tmux; then
         autotools-dev \
         automake
 
+    rm -rf /tmp/tmux
     git clone https://github.com/tmux/tmux.git /tmp/tmux
     ( cd /tmp/tmux && \
       sh autogen.sh && \
@@ -104,7 +105,8 @@ sudo apt-get -y install xcalib \
      pdftk \
      unrar \
      xdotool \
-     simple-scan
+     simple-scan \
+     cpulimit  # sudo cpulimit -p <PID> --limit <PERCENT (0 to 100)> --background
 
 # Increase inotify to make sure Evince updates on PDF update
 # Source: https://superuser.com/a/1387905/512940

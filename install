@@ -8,6 +8,10 @@
 # Author: Danylo Malyuta, 2020.
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+if [ "$(pwd)" != "$DIR" ]; then
+   >&2 echo "ERROR: please run ./install from the root of the dotfiles repo."
+   exit 1
+fi
 
 # ..:: Copy dotfiles to home directory ::..
 
@@ -17,6 +21,9 @@ ln -sf "$DIR"/.bash_aliases ~
 ln -sf "$DIR"/.local.bashrc ~
 
 # Various executable scripts
+if [ ! -f ./.bin/colorizer/Library/colorizer.sh ]; then
+   git submodule update --init --recursive
+fi
 ln -sf "$DIR"/.bin ~
 
 # Terminal

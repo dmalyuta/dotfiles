@@ -50,6 +50,9 @@ if [[ ! -d /opt/enpass ]]; then
 fi
 
 # ..:: Nextcloud cloud storage client ::..
+# To run Nextcloud with limited resources (to ensure that it doesn't starve host OS from resources):
+#   systemd-run --scope -p MemoryLimit=1000M -p CPUQuota=10% /usr/bin/nextcloud
+# See https://www.baeldung.com/linux/limit-resource-consumption
 
 if not_installed nextcloud; then
     sudo add-apt-repository -y ppa:nextcloud-devs/client

@@ -94,7 +94,7 @@
     "extensions.ignoreRecommendations": true,
     "zenMode.restore": false,
     "explorer.confirmDragAndDrop": false,
-    "findJump.jumpChars": "asdfghjkl;ASDFGHJKL:",
+    "search.followSymlinks": false,
 
     /// Startup
     "remote.restoreForwardedPorts": false,

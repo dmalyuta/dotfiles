@@ -33,7 +33,7 @@ EOF
 
         # Make sure that Python virtual environment gets activated *afterwards*
         local python_venv_activate="$(cat ~/.bashrc | grep "conda activate")"
-        sed -n '/'"$python_venv_activate"'/d' ~/.bashrc
+        sed -i '/'"$python_venv_activate"'/d' ~/.bashrc
         echo "$python_venv_activate" >> ~/.bashrc
     fi
 }

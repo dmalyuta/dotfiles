@@ -106,7 +106,8 @@ sudo apt-get -y install xcalib \
      unrar \
      xdotool \
      simple-scan \
-     cpulimit  # sudo cpulimit -p <PID> --limit <PERCENT (0 to 100)> --background
+     cpulimit \  # sudo cpulimit -p <PID> --limit <PERCENT (0 to 100)> --background
+     filelight  # Ringchart explorer of what's taking up disk space
 
 # Increase inotify to make sure Evince updates on PDF update
 # Source: https://superuser.com/a/1387905/512940

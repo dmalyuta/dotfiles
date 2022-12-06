@@ -23,6 +23,9 @@ alias abouthw='sudo lshw -short'
 # Kill processes matching grep
 alias killgrep='~/.bin/killgrep.sh'
 
+# Run process with restricted resources
+alias throttle='~/.bin/run_throttled.sh'
+
 # Find files
 alias fd='fdfind'
 

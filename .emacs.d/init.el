@@ -762,10 +762,10 @@ Source: http://steve.yegge.googlepages.com/my-dot-emacs-file"
 (use-package back-button
   ;; https://github.com/rolandwalker/back-button
   ;; Visual navigation through mark rings in Emacs.
-  :bind (("C-x -" . back-button-local-backward)
-         ("C-x =" . back-button-local-forward)
-         ("C-x C--" . back-button-global-backward)
-         ("C-x C-=" . back-button-global-forward)
+  :bind (("C-x ," . back-button-local-backward)
+         ("C-x ." . back-button-local-forward)
+         ("C-x C-," . back-button-global-backward)
+         ("C-x C-." . back-button-global-forward)
          )
   :init (back-button-mode 1))
 
@@ -1836,6 +1836,11 @@ in the following cases:
 ;; Install with:
 ;;   M-: (mapc #'treesit-install-language-grammar (mapcar #'car treesit-language-source-alist))
 
+(use-package tree-sitter
+  ;; https://github.com/emacs-tree-sitter/elisp-tree-sitter
+  ;; Emacs Lisp bindings for tree-sitter.
+  )
+
 (setq treesit-language-source-alist
       '((bash "https://github.com/tree-sitter/tree-sitter-bash")
         (cmake "https://github.com/uyha/tree-sitter-cmake")
@@ -1854,6 +1859,31 @@ in the following cases:
         (tsx "https://github.com/tree-sitter/tree-sitter-typescript" "master" "tsx/src")
         (typescript "https://github.com/tree-sitter/tree-sitter-typescript" "master" "typescript/src")
         (yaml "https://github.com/ikatyang/tree-sitter-yaml")))
+
+;;;; Code folding
+
+(use-package fringe-helper
+  ;; https://github.com/nschum/fringe-helper.el
+  ;; Helper functions for fringe bitmaps.
+  )
+
+(use-package ts-fold
+  ;; https://github.com/emacs-tree-sitter/ts-fold
+  ;; Code-folding using tree-sitter.
+  :after (tree-sitter fringe-helper)
+  :quelpa ((ts-fold :fetcher github
+                    :repo "emacs-tree-sitter/ts-fold"))
+  :init
+  (global-ts-fold-mode))
+
+(use-package origami
+  ;; https://github.com/gregsexton/origami.el
+  ;; A folding minor mode for Emacs.
+  :init
+  (require 'origami)
+  (global-origami-mode)
+  :bind (("C-c o t" . origami-toggle-node))
+  )
 
 ;;; ..:: Window management ::..
 
@@ -2223,6 +2253,8 @@ argument: number-or-marker-p, nil'."
   :init
   (add-hook 'c-mode-hook 'lsp)
   (add-hook 'c++-mode-hook 'lsp)
+  (setq lsp-clients-clangd-args '("--header-insertion=never"))
+  (define-key lsp-mode-map (kbd "C-c l") lsp-command-map))
   (with-eval-after-load 'lsp-mode
     (add-hook 'lsp-mode-hook #'lsp-enable-which-key-integration)
     (yas-global-mode)
@@ -2422,6 +2454,11 @@ fill after inserting the link."
                       :foreground `,danylo/blue
                       :box t
                       :weight 'bold))
+
+(use-package why-this
+  ;; https://codeberg.org/akib/emacs-why-this
+  ;; Why the current line contains this?
+  )
 
 ;;; ..:: Shell interaction ::..
 

@@ -10,15 +10,11 @@
 
 if not_installed emacs; then
     # Dependencies
-    sudo apt-get -y install libwebkit2gtk-4.0-dev \
-	 autoconf \
-	 texinfo \
-	 libncurses-dev
-
-    # Get libgcc and other libs for native compilation
-    sudo add-apt-repository -y ppa:ubuntu-toolchain-r/ppa
-    sudo apt-get update
-    sudo apt-get -y install libxpm-dev \
+    sudo apt-get -y install libwebkit2gtk-4.1-dev \
+        autoconf \
+        texinfo \
+        libncurses-dev \
+        libxpm-dev \
         libgif-dev \
         libjpeg-dev \
         libpng-dev \
@@ -29,31 +25,36 @@ if not_installed emacs; then
         autoconf \
         texinfo \
         libgtk2.0-dev \
-        gcc-10 \
-        g++-10 \
+        gcc-14 \
+        g++-14 \
         libgccjit0 \
-        libgccjit-10-dev \
+        libgccjit-14-dev \
         libjansson4 \
         libjansson-dev \
         libgnutls28-dev
 
-    # Get fast JSON
-    sudo apt-get -y install libjansson4 libjansson-dev
+    # Treesitter.
+    # https://www.masteringemacs.org/article/how-to-get-started-tree-sitter
+    rm -rf /tmp/treesitter/
+    git clone https://github.com/tree-sitter/tree-sitter.git /tmp/treesitter
+    (cd /tmp/treesitter && make && sudo make install)
+    export LD_LIBRARY_PATH=/usr/local/lib/
+    sudo ldconfig
 
     rm -rf /tmp/emacs/
-    git clone --branch master --depth 1 git://git.savannah.gnu.org/emacs.git \
-	/tmp/emacs
-    ( cd /tmp/emacs/ && \
-	  git checkout master && \
-	  export CC=/usr/bin/gcc-10 CXX=/usr/bin/gcc-10 && \
-	  ./autogen.sh && \
-	  # run `./configure --help > /tmp/emacs_configure_help.txt` to print
-	  # out a file of configuration options
-          ./configure --without-gpm --with-mailutils --with-native-compilation \
-                      --with-json --with-pgtk --with-xwidgets --with-xinput2 \
-                      CFLAGS="-O3 -mtune=native -march=native -fomit-frame-pointer" && \
-	  make NATIVE_FULL_AOT=1 -j2 && \
-	  sudo make install )
+    git clone --depth 1 --branch emacs-30.1 git://git.savannah.gnu.org/emacs.git /tmp/emacs
+    (cd /tmp/emacs/ &&
+        export CC=/usr/bin/gcc CXX=/usr/bin/gcc &&
+        export CFLAGS="-O3 -march=native -mtune=native -flto=auto -fuse-linker-plugin -pipe -fomit-frame-pointer" &&
+        export CXXFLAGS="$CFLAGS" &&
+        export LDFLAGS="-Wl,-O3 -Wl,--as-needed -flto=auto" &&
+        ./autogen.sh &&
+        # run `./configure --help > /tmp/emacs_configure_help.txt` to print out a file of
+        # configuration options
+        ./configure --without-gpm --with-mailutils --with-native-compilation \
+            --with-json --with-x-toolkit=gtk3 --with-xinput2 --with-tree-sitter &&
+        make NATIVE_FULL_AOT=1 -j2 &&
+        sudo make install)
 fi
 
 # ..:: Configuration ::..
@@ -83,9 +84,9 @@ sudo apt-get -y install libvterm-dev
 if [[ ! -d ~/.emacs.d/libvterm ]]; then
     git clone https://github.com/akermu/emacs-libvterm.git \
         ~/.emacs.d/libvterm
-    ( cd ~/.emacs.d/libvterm && \
-          mkdir -p build && \
-          cd build && \
-          cmake .. && \
-          make )
+    (cd ~/.emacs.d/libvterm &&
+        mkdir -p build &&
+        cd build &&
+        cmake .. &&
+        make)
 fi

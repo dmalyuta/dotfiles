@@ -61,7 +61,6 @@ source .modules/csharp.sh
 source .modules/javascript.sh
 source .modules/usability.sh
 source .modules/productivity.sh
-source .modules/vscode.sh
 source .modules/emacs.sh
 source .modules/hardware.sh
 

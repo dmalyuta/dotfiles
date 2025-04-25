@@ -64,8 +64,8 @@ fi
 #  https://unix.stackexchange.com/questions/4859/visual-vs-editor-what-s-the-difference
 export EDITOR="emacs -nw"
 
-# Use VSCode as visual editor
-export VISUAL="code --wait"
+# Use emacs as visual editor
+export VISUAL="emacs"
 
 # Vterm configuration
 # https://github.com/akermu/emacs-libvterm/blob/master/README.md

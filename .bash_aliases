@@ -1,5 +1,11 @@
 # ~/.bash_alises: my aliases for bash
 
+alias refresh='source ~/.bashrc'
+alias which_venv='pip -V'
+alias ll='ls -l'
+alias lld='ll -d */'
+alias peek='tree -L 1'
+
 # Enable using another alias after sudo
 alias sudo='sudo '
 
@@ -291,4 +297,38 @@ pdfinterleave() {
     local even_pdf="$2"
     local output_pdf="$3"
     pdftk A="$odd_pdf" B="$even_pdf" shuffle A B output "$output_pdf"
+}
+
+find_file() {
+    local FILENAME=$1
+    shift
+    find ~+ $@ -type f -name "$FILENAME" 2>&1 | grep -v 'Permission denied'
+}
+
+find_symlink() {
+    local FILENAME=$1
+    shift
+    find ~+ $@ -type l -name "$FILENAME"
+}
+
+find_file_or_symlink() {
+    echo "=== Files ==="
+    find_file $@
+    echo ""
+    echo "=== Symlinks ==="
+    find_symlink $@
+}
+
+find_folder() {
+    local FILENAME=$1
+    shift
+    find ~+ $@ -type d -name "$FILENAME"
+}
+
+find_string() {
+    if [ $# -eq 2 ]; then
+        ag --hidden -G "$1" "$2"
+    else
+        ag --hidden "$1"
+    fi
 }

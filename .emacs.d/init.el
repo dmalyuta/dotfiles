@@ -1084,7 +1084,7 @@ height."
   ;; https://github.com/ptrv/helm-smex
   ;; Helm interface for smex
   :after smex
-  :bind (("M-x" . helm-smex)
+  :bind (("M-x" . helm-M-x)
          ("M-X" . helm-smex-major-mode-commands))
   )
 

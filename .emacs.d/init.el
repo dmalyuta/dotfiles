@@ -666,13 +666,7 @@ Source: https://emacs.stackexchange.com/a/50834/13661"
  "C-x n f" 'danylo/make-new-frame)
 
 ;; Do not ask whether to kill active processes
-(add-hook 'after-init-hook
-          (lambda ()
-            (require 'cl-lib)
-            (defadvice save-buffers-kill-emacs (around no-query-kill-emacs activate)
-              "Prevent \"Active processes exist\" query when quitting Emacs."
-              (cl-letf (((symbol-function #'process-list) (lambda ())))
-                ad-do-it))))
+(setq confirm-kill-processes nil)
 
 ;;;; Scrolling behaviour
 
@@ -762,6 +756,18 @@ Source: http://steve.yegge.googlepages.com/my-dot-emacs-file"
         (set-visited-file-name newname)
         (set-buffer-modified-p nil)
         t))))
+
+;;;;; Move forward and backward in cursor history.
+
+(use-package back-button
+  ;; https://github.com/rolandwalker/back-button
+  ;; Visual navigation through mark rings in Emacs.
+  :bind (("C-x -" . back-button-local-backward)
+         ("C-x =" . back-button-local-forward)
+         ("C-x C--" . back-button-global-backward)
+         ("C-x C-=" . back-button-global-forward)
+         )
+  :init (back-button-mode 1))
 
 ;;; ..:: Searching ::..
 
@@ -1058,7 +1064,9 @@ height."
   ;; https://github.com/bbatsov/helm-projectile
   ;; Helm UI for Projectile
   :after company
-  :init (setq projectile-completion-system 'helm))
+  :init (setq projectile-completion-system 'helm
+              projectile-enable-caching t)
+  )
 
 (use-package helm-xref
   ;; https://github.com/brotzeit/helm-xref
@@ -1337,22 +1345,6 @@ is automatically turned on while the line numbers are displayed."
     "Show the number of active cursors in the buffer from `multiple-cursors'."
     (let ((meta (concat (danylo/doom-modeline-multiple-cursors))))
       meta))
-  (doom-modeline-def-segment danylo/vcs
-    "Displays the current branch, colored based on its state."
-    (let ((active (doom-modeline--active)))
-      (when-let ((icon doom-modeline--vcs-icon)
-                 (text doom-modeline--vcs-text))
-        (concat
-         (doom-modeline-spc)
-         (concat
-          (if active
-              icon
-            (doom-modeline-propertize-icon icon 'mode-line-inactive))
-          (doom-modeline-spc))
-         (if active
-             text
-           (propertize text 'face 'mode-line-inactive))
-         (doom-modeline-spc)))))
   (doom-modeline-def-segment danylo/turbo
     "Displays if turbo mode is on (low latency editing)."
     (if danylo/turbo-on
@@ -1365,7 +1357,7 @@ is automatically turned on while the line numbers are displayed."
   ;; Default mode line
   (doom-modeline-def-modeline 'main
     '(bar window-number danylo/matches buffer-info remote-host buffer-position selection-info danylo/turbo)
-    '(input-method debug major-mode danylo/vcs process))
+    '(input-method debug major-mode vcs process))
   ;; Helm mode line
   (doom-modeline-def-modeline 'helm
     '(bar window-number helm-buffer-id helm-number helm-follow helm-prefix-argument) '())
@@ -1412,36 +1404,6 @@ is automatically turned on while the line numbers are displayed."
     (when count
       (concat (propertize " mc:" 'face face)
               (propertize (format "%d " count) 'face face)))))
-
-(defun danylo/doom-modeline-update-vcs-icon (orig-fun &rest args)
-  "Update icon of vcs state in mode-line.
-Patched for my own icons."
-  (setq doom-modeline--vcs-icon
-        (when (and vc-mode buffer-file-name)
-          (let* ((backend (vc-backend buffer-file-name))
-                 (state   (vc-state buffer-file-name backend)))
-            (cond ((memq state '(edited added))
-                   (propertize (danylo/octicon "git-compare") 'face
-                               `(:family ,(all-the-icons-octicon-family)
-                                         :inherit doom-modeline-warning)))
-                  ((eq state 'needs-merge)
-                   (propertize (danylo/octicon "git-merge") 'face
-                               `(:family ,(all-the-icons-octicon-family)
-                                         :inherit doom-modeline-warning)))
-                  ((eq state 'needs-update)
-                   (propertize (danylo/octicon "arrow-down") 'face
-                               `(:family ,(all-the-icons-octicon-family)
-                                         :inherit doom-modeline-warning)))
-                  ((memq state '(removed conflict unregistered))
-                   (propertize (danylo/octicon "alert") 'face
-                               `(:family ,(all-the-icons-octicon-family)
-                                         :inherit doom-modeline-warning)))
-                  (t
-                   (propertize (danylo/octicon "git-branch") 'face
-                               `(:family ,(all-the-icons-octicon-family)
-                                         :inherit doom-modeline-warning))))))))
-(advice-add 'doom-modeline-update-vcs-icon
-            :around #'danylo/doom-modeline-update-vcs-icon)
 
 ;;;; (start patch) Patch so that doom-modeline maintains highlight focus on active buffer
 
@@ -1560,6 +1522,7 @@ when there is another buffer printing out information."
   :config
   (global-hl-todo-mode)
   (add-to-list 'hl-todo-keyword-faces `("TODO" . ,danylo/black))
+  (add-to-list 'hl-todo-keyword-faces `("NOTE" . ,danylo/black))
   (add-to-list 'hl-todo-keyword-faces `("DONE" . ,danylo/black))
   (add-to-list 'hl-todo-keyword-faces `("FIXME" . ,danylo/black)))
 
@@ -1596,6 +1559,24 @@ when there is another buffer printing out information."
   ;; Improve performance for long lines
   :config
   (global-so-long-mode 1))
+
+(use-package diff-hl
+  ;; https://github.com/dgutov/diff-hl
+  ;; Emacs package for highlighting uncommitted changes.
+  :init
+  (global-diff-hl-mode))
+
+(defun danylo/diff-hl-set-reference ()
+  "Set the reference revision for showing diff-hl changes. Do so buffer-locally."
+  (interactive)
+  (setq-local
+   diff-hl-reference-revision
+   (read-string
+    (format "Set reference revision (buffer %s): "
+            (buffer-name)) "master"))
+  (diff-hl-update))
+
+(global-set-key (kbd "C-c C-g") 'danylo/diff-hl-set-reference)
 
 ;; Remove a significant contributor to line scan slowness
 (setq-default bidi-display-reordering nil)
@@ -1761,13 +1742,16 @@ regions."
          t)
         (t nil)))
 
+(defvar danylo/fill-paragraph-line-width 80
+  "The line width to use for fill-paragraph.")
+
 (defun danylo/smart-fill ()
   "Smart select between regular filling and my own filling."
   (interactive)
   (if (and transient-mark-mode mark-active)
       (fill-region (region-beginning) (region-end) nil t)
     (unless (danylo/fill)
-      (fill-paragraph))
+      (let ((fill-column danylo/fill-paragraph-line-width)) (fill-paragraph)))
     ))
 
 (defun danylo/julia-docstring-fill-skip ()
@@ -1847,6 +1831,30 @@ in the following cases:
 
 (setq server-client-instructions nil)
 
+;;;; Treesitter config.
+;; https://www.masteringemacs.org/article/how-to-get-started-tree-sitter
+;; Install with:
+;;   M-: (mapc #'treesit-install-language-grammar (mapcar #'car treesit-language-source-alist))
+
+(setq treesit-language-source-alist
+      '((bash "https://github.com/tree-sitter/tree-sitter-bash")
+        (cmake "https://github.com/uyha/tree-sitter-cmake")
+        (css "https://github.com/tree-sitter/tree-sitter-css")
+        (c "https://github.com/tree-sitter/tree-sitter-c")
+        (cpp "https://github.com/tree-sitter/tree-sitter-cpp")
+        (elisp "https://github.com/Wilfred/tree-sitter-elisp")
+        (go "https://github.com/tree-sitter/tree-sitter-go")
+        (html "https://github.com/tree-sitter/tree-sitter-html")
+        (javascript "https://github.com/tree-sitter/tree-sitter-javascript" "master" "src")
+        (json "https://github.com/tree-sitter/tree-sitter-json")
+        (make "https://github.com/alemuller/tree-sitter-make")
+        (markdown "https://github.com/ikatyang/tree-sitter-markdown")
+        (python "https://github.com/tree-sitter/tree-sitter-python")
+        (toml "https://github.com/tree-sitter/tree-sitter-toml")
+        (tsx "https://github.com/tree-sitter/tree-sitter-typescript" "master" "tsx/src")
+        (typescript "https://github.com/tree-sitter/tree-sitter-typescript" "master" "typescript/src")
+        (yaml "https://github.com/ikatyang/tree-sitter-yaml")))
+
 ;;; ..:: Window management ::..
 
 ;;;; >> Movement across windows <<
@@ -1923,6 +1931,14 @@ keys), and for the size of the resulting new window."
                             horizontal))
           new-window)
         ))))
+
+;;;; >> Zoom split window <<
+
+(use-package zoom-window
+  ;; https://github.com/emacsorphanage/zoom-window
+  ;; Zoom and Unzoom window.
+  :bind (("C-x C-z" . zoom-window-zoom))
+  )
 
 ;;;; >> Resizing windows <<
 
@@ -2161,6 +2177,71 @@ argument: number-or-marker-p, nil'."
   (company-cancel 'unique))
 (advice-add 'company--continue :around #'danylo/company--continue)
 
+;; (use-package citre
+;;   ;; https://github.com/universal-ctags/citre
+;;   ;; A superior code reading & auto-completion tool with pluggable backends.  :defer t
+;;   :init
+;;   ;; This is needed in `:init' block for lazy load to work.
+;;   (require 'citre-config)
+;;   ;; Bind your frequently used commands.  Alternatively, you can define them
+;;   ;; in `citre-mode-map' so you can only use them when `citre-mode' is enabled.
+;;   (global-set-key (kbd "C-x c j") 'citre-jump)
+;;   (global-set-key (kbd "C-x c J") 'citre-jump-back)
+;;   (global-set-key (kbd "C-x c p") 'citre-ace-peek)
+;;   (global-set-key (kbd "C-x c u") 'citre-update-this-tags-file)
+;;   :config
+;;   (setq
+;;    ;; Set this if you use project management plugin like projectile.  It's
+;;    ;; used for things like displaying paths relatively, see its docstring.
+;;    citre-project-root-function #'projectile-project-root
+;;    ;; Set this if you'd like to use ctags options generated by Citre
+;;    ;; directly, rather than further editing them.
+;;    citre-edit-ctags-options-manually nil
+;;    ;; If you only want the auto enabling citre-mode behavior to work for
+;;    ;; certain modes (like `prog-mode'), set it like this.
+;;    citre-auto-enable-citre-mode-modes '(prog-mode)))
+
+(use-package dape
+  ;; https://github.com/svaante/dape
+  ;; Debug Adapter Protocol for Emacs.
+  )
+
+(use-package yaml)
+
+(use-package lsp-ui
+  :init (setq lsp-ui-sideline-show-diagnostics t))
+
+(use-package flymake-diagnostic-at-point
+  :after flymake
+  :config
+  (add-hook 'flymake-mode-hook #'flymake-diagnostic-at-point-mode))
+
+(use-package lsp-mode
+  ;; https://github.com/emacs-lsp/lsp-mode
+  ;; Emacs client/library for the Language Server Protocol.
+  :after (dape yaml)
+  :init
+  (add-hook 'c-mode-hook 'lsp)
+  (add-hook 'c++-mode-hook 'lsp)
+  (with-eval-after-load 'lsp-mode
+    (add-hook 'lsp-mode-hook #'lsp-enable-which-key-integration)
+    (yas-global-mode)
+    )
+  )
+
+(use-package posframe)
+
+(use-package lsp-treemacs
+  ;; https://github.com/emacs-lsp/lsp-treemacs
+  ;; Integration between lsp-mode and treemacs and implementation of treeview controls using treemacs as a tree renderer.
+  :after (posframe)
+  )
+
+(use-package helm-lsp
+  ;; https://github.com/mrjosh/helm-ls
+  ;; Helm-ls is a helm language server protocol LSP implementation.
+  )
+
 ;;; ..:: File management ::..
 
 (defun danylo/maintain-xref-history (orig-fun &rest args)
@@ -2172,7 +2253,7 @@ argument: number-or-marker-p, nil'."
 (use-package projectile
   ;; https://github.com/bbatsov/projectile
   ;; Project interaction library offering tools to operate on a project level
-  :init (setq projectile-enable-caching nil
+  :init (setq projectile-enable-caching t
               projectile-indexing-method 'alien
               projectile-generic-command
               (let ((cmd "find . -type f "))
@@ -2182,6 +2263,8 @@ argument: number-or-marker-p, nil'."
                       '("*/.ccls-cache*"
                         "*/.clangd*"
                         "*/.git*"
+                        "*/extenal/*"
+                        "*/bazel-*/*"
                         "*/build/*"))
                 (setq cmd (concat cmd "-print0"))
                 cmd))
@@ -2470,7 +2553,8 @@ find a definion."
   :init
   (setq yas-snippet-dirs `(,(danylo/make-path "lisp/snippets")))
   :config
-  (yas-reload-all))
+  ;;(yas-reload-all)
+  )
 
 (use-package cc-mode
   ;; Emacs C-style language mode
@@ -2522,6 +2606,19 @@ Semantic."
   (setq srefactor-ui-menu-show-help nil)
   :config
   (require 'srefactor))
+
+(use-package clang-format
+  ;; https://github.com/emacsmirror/clang-format
+  ;; Format code using clang-format
+  )
+
+(use-package clang-format+
+  ;; https://github.com/SavchenkoValeriy/emacs-clang-format-plus
+  ;; Emacs minor mode for automatic clang-format application
+  :init
+  (add-hook 'c-mode-common-hook #'clang-format+-mode)
+  (setq clang-format+-always-enable t)
+  )
 
 ;;; ..:: Python ::..
 

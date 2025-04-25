@@ -1,0 +1,12 @@
+#!/bin/sh
+# https://stackoverflow.com/a/5188364
+
+LINECOUNT=10
+if [ $# -gt 0 ]; then
+    LINECOUNT=$1
+fi
+# git branch --sort=-committerdate | head -$LINECOUNT
+
+git for-each-ref --sort=committerdate refs/heads/ \
+    --format='%(HEAD) %(align:35)%(color:yellow)%(refname:short)%(color:reset)%(end) - %(color:red)%(objectname:short)%(color:reset) - %(authorname) (%(color:green)%(committerdate)%(color:reset))' \
+    | tail -$LINECOUNT

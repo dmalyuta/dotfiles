@@ -1,0 +1,5 @@
+#!/bin/sh
+# https://stackoverflow.com/a/5188364
+#git branch --sort=-committerdate
+git for-each-ref --sort=committerdate refs/heads/ \
+    --format='%(HEAD) %(align:35)%(color:yellow)%(refname:short)%(color:reset)%(end) - %(color:red)%(objectname:short)%(color:reset) - %(authorname) (%(color:green)%(committerdate)%(color:reset))'

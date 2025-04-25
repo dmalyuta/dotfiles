@@ -1,0 +1,13 @@
+#!/bin/sh
+TEMP_FILE=/tmp/git_treetop_rows
+if [ -f $TEMP_FILE ]; then
+    ROWS=$(cat $TEMP_FILE)
+else
+    ROWS=10
+fi
+if [ $# -gt 0 ]; then
+    ROWS=$1
+fi
+NUM_DIGITS=$(echo -n "$ROWS" | wc -c)
+git tree -$ROWS --color=always | awk -v WIDTH=$NUM_DIGITS '{printf("%-*d %s\n", WIDTH, NR, $0)}' | sed -n "1,$ROWS p"
+echo $ROWS > $TEMP_FILE

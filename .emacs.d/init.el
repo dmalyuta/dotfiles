@@ -2254,12 +2254,10 @@ argument: number-or-marker-p, nil'."
   (add-hook 'c-mode-hook 'lsp)
   (add-hook 'c++-mode-hook 'lsp)
   (setq lsp-clients-clangd-args '("--header-insertion=never"))
-  (define-key lsp-mode-map (kbd "C-c l") lsp-command-map))
+  (define-key lsp-mode-map (kbd "C-c l") lsp-command-map)
   (with-eval-after-load 'lsp-mode
     (add-hook 'lsp-mode-hook #'lsp-enable-which-key-integration)
-    (yas-global-mode)
-    )
-  )
+    (yas-global-mode)))
 
 (use-package posframe)
 

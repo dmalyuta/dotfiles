@@ -769,6 +769,10 @@ Source: http://steve.yegge.googlepages.com/my-dot-emacs-file"
          )
   :init (back-button-mode 1))
 
+(use-package revert-buffer-all
+  ;; Revert all buffers after external changes have been made.
+  )
+
 ;;; ..:: Searching ::..
 
 ;;;; Neotree: view the source code file tree
@@ -2591,29 +2595,26 @@ find a definion."
   ;;(yas-reload-all)
   )
 
+;;;; Indentation style.
+(use-package danylo-code-styles
+  ;; Coding style definitions.
+  :ensure nil
+  :load-path danylo/emacs-custom-lisp-dir)
+
+(c-add-style "danylo-cpp-style" danylo/cpp-style)
+
 (use-package cc-mode
   ;; Emacs C-style language mode
   :ensure nil
+  :after (danylo-code-styles)
   :bind (:map c-mode-base-map
               ("C-c f o" . ff-find-other-file)
               )
-  :hook ((c-mode-common . yas-minor-mode))
-  :custom
-  (c-offsets-alist '((inline-open           . 0)
-                     (brace-list-open       . 0)
-                     (inextern-lang         . 0)
-                     (statement-case-open   . 4)
-                     (access-label          . -)
-                     (case-label            . 0)
-                     (member-init-intro     . +)
-                     (topmost-intro         . 0)
-                     (inlambda              . 0) ;; better indentation for lambda
-                     (innamespace           . 0) ;; no indentation after namespace
-                     (arglist-cont-nonempty . +)))
+  :hook ((c-mode-common . yas-minor-mode)
+         (c-mode-common . subword-mode))
   :init
-  (setq c-basic-offset 2)
-  ;; (remove-hook 'c-mode-common-hook 'semantic-mode)
-  ;; (remove-hook 'c-mode-common-hook 'semantic)
+  (setq c-default-style
+        '((other . "danylo-cpp-style")))
   )
 
 (defun danylo/semantic-remove-hooks ()

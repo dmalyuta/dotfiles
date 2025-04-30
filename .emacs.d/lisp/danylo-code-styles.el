@@ -1,0 +1,95 @@
+;;; danylo-code-styles.el --- Code styles.
+;;
+;; Author: Danylo Malyuta
+;;
+;; Keywords: variables, defcustom, defface
+;;
+;; This file is not part of GNU Emacs
+;;
+;;; Commentary:
+;;
+;;  Code styles loaded by init file.
+;;
+;;; Code:
+
+(defconst danylo/cpp-style
+  '((c-basic-offset . 4)
+    (c-offsets-alist . ((innamespace . +)
+                        (inlambda . 0)
+                        (member-init-intro . +)
+                        (case-label . 0)
+                        (statement-case-open . 0)
+                        (inextern-lang . +)
+                        (brace-list-open . 0)
+                        (inline-open . +)
+                        (knr-argdecl-intro . +)
+                        (substatement-label . 2)
+                        (label . 2)
+                        (func-decl-cont . +)
+                        (knr-argdecl . 0)
+                        (constraint-cont . +)
+                        (annotation-top-cont . 0)
+                        (annotation-var-cont . +)
+                        (member-init-cont . c-lineup-multi-inher)
+                        (inher-intro . +)
+                        (block-open . 0)
+                        (brace-entry-open . 0)
+                        (statement-case-intro . +)
+                        (substatement . +)
+                        (do-while-closure . 0)
+                        (catch-clause . 0)
+                        (stream-op . c-lineup-streamop)
+                        (cpp-macro-cont . +)
+                        (cpp-define-intro c-lineup-cpp-define +)
+                        (friend . 0)
+                        (objc-method-intro . [0])
+                        (objc-method-args-cont . c-lineup-ObjC-method-args)
+                        (objc-method-call-cont c-lineup-ObjC-method-call-colons
+                                               c-lineup-ObjC-method-call +)
+                        (extern-lang-open . 0)
+                        (namespace-open . 0)
+                        (module-open . 0)
+                        (composition-open . 0)
+                        (extern-lang-close . 0)
+                        (namespace-close . 0)
+                        (module-close . 0)
+                        (composition-close . 0)
+                        (inmodule . +)
+                        (incomposition . +)
+                        (template-args-cont c-lineup-template-args
+                                            c-lineup-template-args-indented-from-margin)
+                        (lambda-intro-cont . +)
+                        (inexpr-statement . +)
+                        (inexpr-class . +)
+                        (topmost-intro . 0)
+                        (topmost-intro-cont . 0)
+                        (defun-open . 0)
+                        (defun-block-intro . +)
+                        (statement . 0)
+                        (arglist-intro . +)
+                        (arglist-cont . 0)
+                        (brace-list-entry . 0)
+                        (defun-close . 0)
+                        (substatement-open . 0)
+                        (statement-block-intro . +)
+                        (block-close . 0)
+                        (inline-close . 0)
+                        (statement-cont . +)
+                        (class-open . 0)
+                        (inclass . +)
+                        (access-label . 0)
+                        (class-close . 0)
+                        (else-clause . 0)
+                        (brace-list-intro . +)
+                        (brace-list-close . 0)
+                        (c . c-lineup-C-comments)
+                        (inher-cont . c-lineup-multi-inher)
+                        (string . -1000)
+                        (comment-intro . c-lineup-comment)
+                        (arglist-cont-nonempty . c-lineup-arglist)
+                        (arglist-close . c-lineup-close-paren)
+                        (cpp-macro . -1000))))
+  "Danylo's C++ programming style.")
+
+(provide 'danylo-code-styles)
+;;; danylo-code-styles.el ends here

@@ -322,6 +322,27 @@ directory."
 ;; Move cursor to top/middle/bottom
 (global-set-key (kbd "C-;") 'move-to-window-line-top-bottom)
 
+;; Switch between previous and this buffer.
+(defvar danylo/toggle-between-buffers-value -1
+  "Switching variable that determines if we go to the previous or the next buffer.")
+
+(defun danylo/toggle-between-buffers (&optional arg)
+  "Toggle between this and the last visited buffer in the current window."
+  (interactive "P")
+  (when (not (eq last-command 'danylo/toggle-between-buffers))
+    ;; Reset such that we go the previous buffer if user was doing other things
+    ;; than toggling between buffers.
+    (setq danylo/toggle-between-buffers-value -1))
+  (if (eq danylo/toggle-between-buffers-value -1)
+      (progn
+        (switch-to-prev-buffer)
+        (setq danylo/toggle-between-buffers-value 1))
+    (progn
+      (switch-to-next-buffer)
+      (setq danylo/toggle-between-buffers-value -1))))
+
+(global-set-key (kbd "C-x /") 'danylo/toggle-between-buffers)
+
 ;;;; Smart move cursor in large steps
 
 (defvar danylo/cursor-current-step 1
@@ -1057,7 +1078,8 @@ height."
   ;; The silver searcher with helm interface
   ;;
   ;; Use C-c C-e to batch-edit the search results
-  :init (setq helm-ag-insert-at-point 'symbol))
+  :init (setq helm-ag-insert-at-point 'symbol)
+  :bind (("C-c h a g" . helm-do-ag)))
 
 (use-package helm-company
   ;; https://github.com/Sodel-the-Vociferous/helm-company

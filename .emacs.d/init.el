@@ -1911,6 +1911,9 @@ in the following cases:
   :bind (("C-c o t" . origami-toggle-node))
   )
 
+;; Allow narrow-to-region.
+(put 'narrow-to-region 'disabled nil)
+
 ;;; ..:: Window management ::..
 
 ;;;; >> Movement across windows <<

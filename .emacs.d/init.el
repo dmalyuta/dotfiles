@@ -1153,6 +1153,9 @@ height."
           (lambda (new-frame)
             (danylo/make-frame-title)))
 
+;;;; Font
+;; (set-frame-font "CaskaydiaCove NF" nil t)
+
 (use-package rainbow-delimiters
   ;; https://github.com/Fanael/rainbow-delimiters
   ;; Highlights delimiters such as parentheses, brackets or braces
@@ -2172,7 +2175,12 @@ with C-u."
   (require 'vterm)
   (setq vterm-always-compile-module t
         vterm-kill-buffer-on-exit t
-        vterm-max-scrollback 100000))
+        vterm-max-scrollback 100000)
+  :config
+  (add-hook 'vterm-mode-hook
+            (lambda ()
+              (set (make-local-variable 'buffer-face-mode-face) '(:family "CaskaydiaCove NF"))
+              (buffer-face-mode t))))
 
 (defun danylo/vterm (orig-fun &rest args)
   "Create a new vterm buffer, or open an existing one. This

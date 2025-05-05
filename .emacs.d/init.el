@@ -1908,15 +1908,13 @@ in the following cases:
 (use-package origami
   ;; https://github.com/gregsexton/origami.el
   ;; A folding minor mode for Emacs.
-  :init
-  (require 'origami)
-  (global-origami-mode)
   :bind (("C-c o t" . origami-toggle-node))
-  )
+  :config
+  (require 'origami)
+  (global-origami-mode))
 
 ;; Allow narrow-to-region.
 (put 'narrow-to-region 'disabled nil)
-
 ;;; ..:: Window management ::..
 
 ;;;; >> Movement across windows <<

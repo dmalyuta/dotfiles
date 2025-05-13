@@ -10,6 +10,16 @@ alias ll='ls -l'
 alias lld='ll -d */'
 alias peek='tree -L 1'
 alias copy='DISPLAY=:0 xclip -sel clip'
+alias gitroot='cd $(git rev-parse --show-toplevel)'
+
+################################################################################
+# Navigation.
+################################################################################
+
+cs() {
+    cd $1
+    ll
+}
 
 ################################################################################
 # Search.
@@ -100,19 +110,19 @@ emacs-connect() {
         file="$1"
     fi
 
-    window_count=$( emacsclient -s emacs-server -e "(length (frame-list))" )
+    window_count=$( emacsclient -s $name -e "(length (frame-list))" )
 
     if [ -z "$file" ]; then
         if [ "$window_count" = "1" ]; then
             nohup emacsclient -c -s "$name" -e "$EMACS_DEFAULT_SIZE" > /dev/null 2>&1 & disown
         else
-            nohup emacsclient -s "$name" -e "$EMACS_DEFAULT_SIZE" > /dev/null 2>&1 & disown
+            nohup emacsclient -s "$name" > /dev/null 2>&1 & disown
         fi
     else
         if [ "$window_count" = "1" ]; then
             nohup emacsclient -c -s "$name" -e "$EMACS_DEFAULT_SIZE" "(find-file \"$file\")" > /dev/null 2>&1 & disown
         else
-            nohup emacsclient -s "$name" -e "$EMACS_DEFAULT_SIZE" "(find-file \"$file\")" > /dev/null 2>&1 & disown
+            nohup emacsclient -s "$name" -e "(find-file \"$file\")" > /dev/null 2>&1 & disown
         fi
     fi
 }

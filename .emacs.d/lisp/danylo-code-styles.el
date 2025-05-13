@@ -91,5 +91,22 @@
                         (cpp-macro . -1000))))
   "Danylo's C++ programming style.")
 
+(defun danylo/cpp-ts-style ()
+  "Tree-sitter version of Danylo's C++ programming style."
+  '(((node-is "case") parent-bol 4)
+    ((node-is "default") parent-bol 4)
+    ((node-is "compound_statement") parent-bol 4)
+    ((parent-is "if_statement") standalone-parent 0)
+    ((parent-is "for_statement") standalone-parent 0)
+    ((parent-is "while_statement") standalone-parent 0)
+    ((parent-is "do_statement") standalone-parent 0)
+    ((node-is "parameter_list") parent-bol 4)
+    ((node-is "argument_list") parent-bol 4)
+    ((node-is "template_parameter_list") parent-bol 4)
+    ((node-is "init_declarator") parent-bol 4)
+    ((node-is "return_statement") parent-bol 0)
+    ((node-is "function_definition") parent-bol 0)
+    ((node-is "namespace_definition") parent-bol 0)))
+
 (provide 'danylo-code-styles)
 ;;; danylo-code-styles.el ends here

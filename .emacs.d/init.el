@@ -18,8 +18,8 @@
   (setq comp-deferred-compilation t
         warning-suppress-log-types '((comp)))
   (setq warning-suppress-types
-      (append warning-suppress-types
-              '((comp)))))
+        (append warning-suppress-types
+                '((comp)))))
 
 ;;; ..:: Package management ::..
 
@@ -288,6 +288,72 @@ directory."
               gcmh-high-cons-threshold most-positive-fixnum)
   :config
   (gcmh-mode 1))
+
+;;; ..:: Tree-sitter ::..
+
+;;;; Treesitter config.
+;; https://www.masteringemacs.org/article/how-to-get-started-tree-sitter
+;; Install with:
+;;   M-: (mapc #'treesit-install-language-grammar (mapcar #'car treesit-language-source-alist))
+
+(use-package tree-sitter
+  ;; https://github.com/emacs-tree-sitter/elisp-tree-sitter
+  ;; Emacs Lisp bindings for tree-sitter.
+  :after (danylo-code-styles)
+  :init
+  (setq
+   ;; Language grammars.
+   treesit-language-source-alist
+   '((bash "https://github.com/tree-sitter/tree-sitter-bash")
+     (cmake "https://github.com/uyha/tree-sitter-cmake")
+     (css "https://github.com/tree-sitter/tree-sitter-css")
+     (c "https://github.com/tree-sitter/tree-sitter-c")
+     (cpp "https://github.com/tree-sitter/tree-sitter-cpp")
+     (elisp "https://github.com/Wilfred/tree-sitter-elisp")
+     (go "https://github.com/tree-sitter/tree-sitter-go")
+     (html "https://github.com/tree-sitter/tree-sitter-html")
+     (javascript "https://github.com/tree-sitter/tree-sitter-javascript" "master" "src")
+     (json "https://github.com/tree-sitter/tree-sitter-json")
+     (make "https://github.com/alemuller/tree-sitter-make")
+     (markdown "https://github.com/ikatyang/tree-sitter-markdown")
+     (python "https://github.com/tree-sitter/tree-sitter-python")
+     (toml "https://github.com/tree-sitter/tree-sitter-toml")
+     (tsx "https://github.com/tree-sitter/tree-sitter-typescript" "master" "tsx/src")
+     (typescript "https://github.com/tree-sitter/tree-sitter-typescript" "master" "typescript/src")
+     (yaml "https://github.com/ikatyang/tree-sitter-yaml"))
+
+   ;; C++ indentation.
+   c-ts-mode-indent-offset 4)
+  (add-hook 'c++-ts-mode-hook
+            (lambda ()
+              (setq-local c-ts-mode-indent-style #'danylo/cpp-ts-style)))
+  )
+
+;;;; Remap major modes for tree-sitter.
+(setq major-mode-remap-alist
+      '((c++-mode . c++-ts-mode)
+        (c-mode . c-ts-mode)
+        (python-mode . python-ts-mode)))
+(defun c++-ts-mode-call-hook () (run-hooks 'c++-mode-hook) (run-hooks 'c-mode-common-hook))
+(add-hook 'c++-ts-mode-hook #'c++-ts-mode-call-hook)
+(defun c-ts-mode-call-hook () (run-hooks 'c-mode-hook) (run-hooks 'c-mode-common-hook))
+(add-hook 'c-ts-mode-hook #'c-ts-mode-call-hook)
+(defun python-ts-mode-call-hook () (run-hooks 'python-mode-hook))
+(add-hook 'python-ts-mode-hook #'python-ts-mode-call-hook)
+
+(use-package fringe-helper
+  ;; https://github.com/nschum/fringe-helper.el
+  ;; Helper functions for fringe bitmaps.
+  )
+
+(use-package ts-fold
+  ;; https://github.com/emacs-tree-sitter/ts-fold
+  ;; Code-folding using tree-sitter.
+  :after (tree-sitter fringe-helper)
+  :quelpa ((ts-fold :fetcher github
+                    :repo "emacs-tree-sitter/ts-fold"))
+  :init
+  (global-ts-fold-mode))
 
 ;;; ..:: General usability ::..
 
@@ -778,6 +844,14 @@ Source: http://steve.yegge.googlepages.com/my-dot-emacs-file"
         (set-buffer-modified-p nil)
         t))))
 
+(defun danylo/copy-file-absolute-path (&optional arg)
+  "Copy the absolute path of the file to clipboard."
+  (interactive)
+  (kill-new (buffer-file-name)))
+
+(general-define-key
+ "C-c C-a" 'danylo/copy-file-absolute-path)
+
 ;;;;; Move forward and backward in cursor history.
 
 (use-package back-button
@@ -1267,6 +1341,12 @@ window."
 
 ;;;; Line numbering
 
+;;; Highlight the current line.
+;; All programming major modes.
+(add-hook 'prog-mode-hook #'hl-line-mode)
+;; All modes derived from text-mode.
+(add-hook 'text-mode-hook #'hl-line-mode)
+
 ;; Show line numbers on the left
 (general-define-key
  "C-x n l" 'danylo/toggle-display-line-numbers)
@@ -1592,8 +1672,39 @@ when there is another buffer printing out information."
 (use-package diff-hl
   ;; https://github.com/dgutov/diff-hl
   ;; Emacs package for highlighting uncommitted changes.
-  :init
+  ;; DEPRECATED: use git-gutter below.
+  :disabled
+  :hook ((prog-mode . diff-hl-flydiff-mode)
+         (text-mode . diff-hl-flydiff-mode))
+  :init (setq diff-hl-flydiff-delay 2.0)
+  :config
   (global-diff-hl-mode))
+
+(use-package git-gutter
+  ;; https://github.com/emacsorphanage/git-gutter
+  ;; Emacs port of GitGutter which is Sublime Text Plugin.
+  :hook ((prog-mode . git-gutter-mode)
+         (text-mode . git-gutter-mode))
+  :bind (("C-{" . 'git-gutter:previous-diff)
+         ("C-}" . 'git-gutter:next-diff)
+         )
+  :config
+  (setq
+   ;; Update on save.
+   git-gutter:update-interval 0)
+  )
+
+(use-package git-gutter-fringe
+  ;; https://github.com/emacsorphanage/git-gutter-fringe
+  ;; Fringe version of git-gutter.el
+  :after (git-gutter)
+  :config
+  ;; Gutter indicators.
+  ;; https://ianyepan.github.io/posts/emacs-git-gutter/
+  (define-fringe-bitmap 'git-gutter-fr:added [224] nil nil '(center repeated))
+  (define-fringe-bitmap 'git-gutter-fr:modified [224] nil nil '(center repeated))
+  (define-fringe-bitmap 'git-gutter-fr:deleted [128 192 224 240] nil nil 'bottom)
+  )
 
 (defun danylo/diff-hl-set-reference ()
   "Set the reference revision for showing diff-hl changes. Do so buffer-locally."
@@ -1612,6 +1723,15 @@ when there is another buffer printing out information."
 
 ;; Delete trailing whitespace
 (add-hook 'before-save-hook 'delete-trailing-whitespace)
+
+;;;; Copy whole file to clipboard.
+(defun danylo/copy-whole-file (&optional arg)
+  "Copy whole file to clipboard, without moving the cursor."
+  (interactive)
+  (kill-new (buffer-string)))
+
+(general-define-key
+ "C-c C-w" 'danylo/copy-whole-file)
 
 ;;;; Section delimiters
 
@@ -1860,61 +1980,21 @@ in the following cases:
 
 (setq server-client-instructions nil)
 
-;;;; Treesitter config.
-;; https://www.masteringemacs.org/article/how-to-get-started-tree-sitter
-;; Install with:
-;;   M-: (mapc #'treesit-install-language-grammar (mapcar #'car treesit-language-source-alist))
-
-(use-package tree-sitter
-  ;; https://github.com/emacs-tree-sitter/elisp-tree-sitter
-  ;; Emacs Lisp bindings for tree-sitter.
-  )
-
-(setq treesit-language-source-alist
-      '((bash "https://github.com/tree-sitter/tree-sitter-bash")
-        (cmake "https://github.com/uyha/tree-sitter-cmake")
-        (css "https://github.com/tree-sitter/tree-sitter-css")
-        (c "https://github.com/tree-sitter/tree-sitter-c")
-        (cpp "https://github.com/tree-sitter/tree-sitter-cpp")
-        (elisp "https://github.com/Wilfred/tree-sitter-elisp")
-        (go "https://github.com/tree-sitter/tree-sitter-go")
-        (html "https://github.com/tree-sitter/tree-sitter-html")
-        (javascript "https://github.com/tree-sitter/tree-sitter-javascript" "master" "src")
-        (json "https://github.com/tree-sitter/tree-sitter-json")
-        (make "https://github.com/alemuller/tree-sitter-make")
-        (markdown "https://github.com/ikatyang/tree-sitter-markdown")
-        (python "https://github.com/tree-sitter/tree-sitter-python")
-        (toml "https://github.com/tree-sitter/tree-sitter-toml")
-        (tsx "https://github.com/tree-sitter/tree-sitter-typescript" "master" "tsx/src")
-        (typescript "https://github.com/tree-sitter/tree-sitter-typescript" "master" "typescript/src")
-        (yaml "https://github.com/ikatyang/tree-sitter-yaml")))
-
-;;;; Code folding
-
-(use-package fringe-helper
-  ;; https://github.com/nschum/fringe-helper.el
-  ;; Helper functions for fringe bitmaps.
-  )
-
-(use-package ts-fold
-  ;; https://github.com/emacs-tree-sitter/ts-fold
-  ;; Code-folding using tree-sitter.
-  :after (tree-sitter fringe-helper)
-  :quelpa ((ts-fold :fetcher github
-                    :repo "emacs-tree-sitter/ts-fold"))
-  :init
-  (global-ts-fold-mode))
-
-(use-package origami
-  ;; https://github.com/gregsexton/origami.el
-  ;; A folding minor mode for Emacs.
-  :bind (("C-c o t" . origami-toggle-node))
-  :config
-  (require 'origami)
-  (global-origami-mode))
-
 ;; Allow narrow-to-region.
 (put 'narrow-to-region 'disabled nil)
+
+;;;; Code formatting
+
+(use-package apheleia
+  ;; https://github.com/radian-software/apheleia
+  ;; Run code formatter on buffer contents without moving point, using RCS
+  ;; patches and dynamic programming.
+  :config
+  (apheleia-global-mode +1)
+  (setf (alist-get 'black apheleia-formatters)
+        (append (alist-get 'black apheleia-formatters) '("--required-version" "24.10.0")))
+  )
+
 ;;; ..:: Window management ::..
 
 ;;;; >> Movement across windows <<
@@ -2088,6 +2168,7 @@ Default is 80"
 (use-package transpose-frame
   ;; https://melpa.org/#/transpose-frame
   ;; Transpose windows arrangement in a frame
+  :bind (("C-x t t" . 'transpose-frame))
   )
 
 ;;;; >> Buffer menu <<
@@ -2156,29 +2237,45 @@ with C-u."
 (use-package vterm
   ;; https://github.com/akermu/emacs-libvterm
   ;; Emacs libvterm integration
+  :ensure t
   :load-path danylo/emacs-libvterm-dir
   :bind (:map vterm-mode-map
               ("C-<up>" . nil)
               ("C-<down>" . nil)
               ("C-<left>" . nil)
               ("C-<right>" . nil)
-              ("C-c t t" . vterm-copy-mode)
+              ("C-x [" . vterm-copy-mode)
               ("C-c r" . rename-buffer)
               ("S-<return>" . vterm-send-tab)
               :map vterm-copy-mode-map
-              ("C-c t t" . vterm-copy-mode))
-  :hook ((vterm-mode-hook . (lambda ()
-                              (goto-address-mode 1))))
+              ("q" . vterm-copy-mode) ; Exit from vterm-copy-mode
+              )
+  :hook ((vterm-mode . (lambda ()
+                         (goto-address-mode 1)
+                         (set (make-local-variable 'buffer-face-mode-face) '(:family "CaskaydiaCove Nerd Font"))
+                         (buffer-face-mode t))))
   :init
   (require 'vterm)
   (setq vterm-always-compile-module t
         vterm-kill-buffer-on-exit t
-        vterm-max-scrollback 100000)
+        vterm-max-scrollback 100000
+        vterm--prompt-tracking-enabled-p t)
   :config
-  (add-hook 'vterm-mode-hook
-            (lambda ()
-              (set (make-local-variable 'buffer-face-mode-face) '(:family "CaskaydiaCove NF"))
-              (buffer-face-mode t))))
+  ;; Add update-pwd to the list of commands that Emacs is allowed to execute from vterm.
+  (add-to-list 'vterm-eval-cmds '("update-pwd" (lambda (path) (setq default-directory path)))))
+
+(use-package vterm-toggle
+  ;; https://github.com/jixiuf/vterm-toggle
+  ;; Toggles between the vterm buffer and whatever buffer you are editing.
+  :disabled
+  :ensure nil
+  :bind (:map vterm-mode-map
+              ("s-n" . vterm-toggle-forward)
+              ("s-p" . vterm-toggle-backward))
+  :config
+  (global-set-key [f2] 'vterm-toggle)
+  (global-set-key [C-f2] 'vterm-toggle-cd)
+  )
 
 (defun danylo/vterm (orig-fun &rest args)
   "Create a new vterm buffer, or open an existing one. This
@@ -2210,6 +2307,15 @@ to (vterm) with no argument will create a **new** vterm buffer."
 (general-define-key
  "C-c t e" 'vterm
  "C-c t r" 'danylo/run-terminal-here)
+
+;; Find file at point in vterm buffer and open it in a buffer below.
+(push (list "find-file-below"
+            (lambda (path)
+              (if-let* ((buf (find-file-noselect path))
+                        (window (display-buffer-below-selected buf nil)))
+                  (select-window window)
+                (message "Failed to open file: %s" path))))
+      vterm-eval-cmds)
 
 ;;; ..:: Completion ::..
 
@@ -2273,38 +2379,123 @@ argument: number-or-marker-p, nil'."
 
 (use-package yaml)
 
+(use-package lsp-mode
+  ;; https://github.com/emacs-lsp/lsp-mode
+  ;; Emacs client/library for the Language Server Protocol.
+  :after (dape yaml)
+  :ensure t
+  :hook ((c-mode-common . lsp))
+  :init
+  (setq
+   ;; Improve LSP performance.
+   ;; https://emacs-lsp.github.io/lsp-mode/page/performance/#use-plists-for-deserialization
+   ;;
+   ;; To further improve startup performance of the LSP server, reduce the
+   ;; number of watched files: https://emacs-lsp.github.io/lsp-mode/page/file-watchers/
+   ;; You can do this via directory local modification of the relevant variable:
+   ;; ((nil . ((eval
+   ;;           .
+   ;;           (setq lsp-file-watch-ignored-directories
+   ;;                 (append lsp-file-watch-ignored-directories
+   ;;                         '("[/\\\\]foo\\'"
+   ;;                           "[/\\\\]bar\\'"
+   ;;                           )))))))
+   lsp-use-plists t
+
+   ;; Disable all mode line features.
+   lsp-modeline-code-actions-enable nil
+   lsp-modeline-diagnostics-enable  nil
+
+   ;; Limit raising of the echo area to show docs
+   lsp-signature-auto-activate nil
+   lsp-signature-render-documentation nil
+   lsp-signature-doc-lines nil
+   lsp-eldoc-enable-hover nil
+
+   ;; Do not truncate the *lsp-log* buffer.
+   lsp-log-max t
+
+   ;; File watching limit.
+   lsp-file-watch-threshold 5000
+
+   ;; C++ clangd language server.
+   lsp-clients-clangd-args '("--header-insertion=never")
+
+   ;; Imenu integration.
+   lsp-enable-imenu t
+   )
+  (with-eval-after-load 'lsp-mode
+    (add-hook 'lsp-mode-hook #'lsp-enable-which-key-integration)
+    (yas-global-mode)
+    )
+  :config
+  (define-key lsp-mode-map (kbd "C-c l") lsp-command-map)
+
+  ;; WORKAROUND Hide mode-line of the lsp-ui-imenu buffer
+  ;; See https://github.com/emacs-lsp/lsp-ui/issues/243
+  (advice-add 'lsp-ui-imenu :after #'hide-lsp-ui-imenu-mode-line))
+
+;;;;;;;;;; lsp-booster for more performant LSP mode.
+;; Emacs LSP performance booster
+;; https://github.com/blahgeek/emacs-lsp-booster
+;;
+;; Place the executable emacs-lsp-booster into one of the folders returned by
+;; (exec-path) (Print these out with M-:).
+(defun lsp-booster--advice-json-parse (old-fn &rest args)
+  "Try to parse bytecode instead of json."
+  (or
+   (when (equal (following-char) ?#)
+     (let ((bytecode (read (current-buffer))))
+       (when (byte-code-function-p bytecode)
+         (funcall bytecode))))
+   (apply old-fn args)))
+(advice-add (if (progn (require 'json)
+                       (fboundp 'json-parse-buffer))
+                'json-parse-buffer
+              'json-read)
+            :around
+            #'lsp-booster--advice-json-parse)
+
+(defun lsp-booster--advice-final-command (old-fn cmd &optional test?)
+  "Prepend emacs-lsp-booster command to lsp CMD."
+  (let ((orig-result (funcall old-fn cmd test?)))
+    (if (and (not test?)                             ;; for check lsp-server-present?
+             (not (file-remote-p default-directory)) ;; see lsp-resolve-final-command, it would add extra shell wrapper
+             lsp-use-plists
+             (not (functionp 'json-rpc-connection))  ;; native json-rpc
+             (executable-find "emacs-lsp-booster"))
+        (progn
+          (when-let ((command-from-exec-path (executable-find (car orig-result))))  ;; resolve command from exec-path (in case not found in $PATH)
+            (setcar orig-result command-from-exec-path))
+          (message "Using emacs-lsp-booster for %s!" orig-result)
+          (cons "emacs-lsp-booster" orig-result))
+      orig-result)))
+(advice-add 'lsp-resolve-final-command :around #'lsp-booster--advice-final-command)
+;;;;;;;;;; (end of lsp-booster)
+
 (use-package lsp-ui
-  :init (setq lsp-ui-sideline-show-diagnostics t))
+  :after (lsp-mode)
+  :init (setq lsp-ui-sideline-show-diagnostics t
+              lsp-ui-imenu-auto-refresh t
+              ))
 
 (use-package flymake-diagnostic-at-point
   :after flymake
   :config
   (add-hook 'flymake-mode-hook #'flymake-diagnostic-at-point-mode))
 
-(use-package lsp-mode
-  ;; https://github.com/emacs-lsp/lsp-mode
-  ;; Emacs client/library for the Language Server Protocol.
-  :after (dape yaml)
-  :init
-  (add-hook 'c-mode-hook 'lsp)
-  (add-hook 'c++-mode-hook 'lsp)
-  (setq lsp-clients-clangd-args '("--header-insertion=never"))
-  (define-key lsp-mode-map (kbd "C-c l") lsp-command-map)
-  (with-eval-after-load 'lsp-mode
-    (add-hook 'lsp-mode-hook #'lsp-enable-which-key-integration)
-    (yas-global-mode)))
-
 (use-package posframe)
 
 (use-package lsp-treemacs
   ;; https://github.com/emacs-lsp/lsp-treemacs
   ;; Integration between lsp-mode and treemacs and implementation of treeview controls using treemacs as a tree renderer.
-  :after (posframe)
+  :after (posframe lsp-mode)
   )
 
 (use-package helm-lsp
   ;; https://github.com/mrjosh/helm-ls
   ;; Helm-ls is a helm language server protocol LSP implementation.
+  :after (lsp-mode)
   )
 
 ;;; ..:: File management ::..
@@ -2417,13 +2608,13 @@ project."
   ;; Text emphasis
   (add-to-list 'org-emphasis-alist '("$" danylo/org-equation-face))
   (define-key org-mode-map (kbd "C-c f b")
-    (lambda () (interactive) (danylo/org-emphasize "*")))
+              (lambda () (interactive) (danylo/org-emphasize "*")))
   (define-key org-mode-map (kbd "C-c f i")
-    (lambda () (interactive) (danylo/org-emphasize "/")))
+              (lambda () (interactive) (danylo/org-emphasize "/")))
   (define-key org-mode-map (kbd "C-c f u")
-    (lambda () (interactive) (danylo/org-emphasize "_")))
+              (lambda () (interactive) (danylo/org-emphasize "_")))
   (define-key org-mode-map (kbd "C-c f c")
-    (lambda () (interactive) (danylo/org-emphasize "~")))
+              (lambda () (interactive) (danylo/org-emphasize "~")))
   (define-key org-mode-map (kbd "C-c f e") 'danylo/org-emphasize-equation))
 
 (defun danylo/org-emphasize (char)
@@ -2610,11 +2801,13 @@ find a definion."
           (lambda ()
             (setq c-auto-newline nil)
             (c-set-offset 'arglist-cont 'c-lineup-arglist)
-            (c-set-offset 'arglist-cont-nonempty 'c-lineup-arglist)))
+            (c-set-offset 'arglist-cont-nonempty 'c-lineup-arglist)
+            (eldoc-mode -1)))
 
 (use-package modern-cpp-font-lock
   ;; https://github.com/ludwigpacifici/modern-cpp-font-lock
   ;; C++ font-lock for Emacs
+  :disabled
   :hook ((c++-mode . modern-c++-font-lock-mode)))
 
 (use-package yasnippet
@@ -2636,7 +2829,7 @@ find a definion."
 
 (use-package cc-mode
   ;; Emacs C-style language mode
-  :ensure nil
+  :ensure t
   :after (danylo-code-styles)
   :bind (:map c-mode-base-map
               ("C-c f o" . ff-find-other-file)
@@ -2644,44 +2837,26 @@ find a definion."
   :hook ((c-mode-common . yas-minor-mode)
          (c-mode-common . subword-mode))
   :init
-  (setq c-default-style
-        '((other . "danylo-cpp-style")))
+  ;; (add-to-list 'c-ts-mode-indent-style)
+  (setq
+   ;; Legacy modes.
+   c-default-style '((other . "danylo-cpp-style")))
+  ;; Not needed as we are using LSP.
+  (remove-hook 'c-mode-common-hook 'semantic-mode)
   )
-
-(defun danylo/semantic-remove-hooks ()
-  "Remove some offending functions that make completion fail with
-Semantic."
-  (remove-hook 'completion-at-point-functions
-               'semantic-analyze-completion-at-point-function)
-  (remove-hook 'completion-at-point-functions
-               'semantic-analyze-notc-completion-at-point-function)
-  (remove-hook 'completion-at-point-functions
-               'semantic-analyze-nolongprefix-completion-at-point-function))
-
-;; Note to self: look at `semantic-idle-scheduler-setup-timers' function for
-;; the functions that run on an idle timer basis to parse files, when using
-;; Semantic mode
-(add-hook 'semantic-mode-hook #'danylo/semantic-remove-hooks)
-
-(use-package srefactor
-  ;; https://github.com/tuhdo/semantic-refactor
-  ;; C/C++ refactoring tool based on Semantic parser framework
-  :bind (:map c-mode-base-map
-              ("M-RET" . srefactor-refactor-at-point))
-  :hook ((c-mode-common . semantic-mode))
-  :init
-  (setq srefactor-ui-menu-show-help nil)
-  :config
-  (require 'srefactor))
 
 (use-package clang-format
   ;; https://github.com/emacsmirror/clang-format
   ;; Format code using clang-format
+  ;; DEPRECATED: replaced with apheleia package.
+  :disabled
   )
 
 (use-package clang-format+
   ;; https://github.com/SavchenkoValeriy/emacs-clang-format-plus
   ;; Emacs minor mode for automatic clang-format application
+  ;; DEPRECATED: replaced with apheleia package.
+  :disabled
   :init
   (add-hook 'c-mode-common-hook #'clang-format+-mode)
   (setq clang-format+-always-enable t)
@@ -2706,6 +2881,35 @@ Semantic."
               python-fill-docstring-style 'pep-257-nn)
   (remove-hook 'python-mode-hook 'semantic-mode)
   (remove-hook 'python-mode-hook 'semantic))
+
+(use-package python-black
+  ;; https://github.com/wbolster/emacs-python-black
+  ;; Emacs package to reformat Python using black-macchiato.
+  ;; DEPRECATED: replaced with apheleia package.
+  :disabled
+  :demand t
+  :after python
+  :bind (:map python-mode-map
+              ("C-M-f" . 'python-black-buffer)
+              ("C-M-r" . 'python-black-region))
+  :init (setq python-black-extra-args '("--required-version" "24.10.0")))
+
+;;;; LSP setup
+
+(use-package lsp-pyright
+  ;; https://github.com/emacs-lsp/lsp-pyright
+  ;; Microsoft's python language server.
+  :after (lsp-mode)
+  :ensure t
+  :init (setq lsp-pyright-multi-root nil
+              ;; lsp-enable-file-watchers nil
+              )
+  :custom (lsp-pyright-langserver-command "pyright") ;; or basedpyright
+  :hook (python-mode . (lambda ()
+                         (require 'lsp-pyright)
+                         (lsp) ; or lsp-deferred
+                         (setq lsp-signature-auto-activate nil
+                               lsp-signature-render-documentation nil))))
 
 ;;;; Imenu setup
 
@@ -3156,7 +3360,7 @@ LaTeX document."
                           ;; Unset C-c /, which conflicts with google-this
                           (define-key reftex-mode-map (kbd "C-c /") 'nil)
                           (define-key reftex-mode-map (kbd "M-.")
-                            'reftex-view-crossref))))
+                                      'reftex-view-crossref))))
   :init (setq TeX-source-correlate-method 'synctex
               TeX-source-correlate-start-server t
               TeX-install-font-lock 'font-latex-setup

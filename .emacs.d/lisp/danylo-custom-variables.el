@@ -122,6 +122,11 @@ in a while."
   :type 'float
   :group 'danylo)
 
+(defcustom danylo/treesit-verbose nil
+  "Print in minibuffer the matched tree-sitter indentation rule."
+  :type 'boolean
+  :group 'danylo)
+
 ;;;; Faces
 
 ;; Colors taken from doom-one theme

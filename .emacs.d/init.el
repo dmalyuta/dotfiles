@@ -300,6 +300,9 @@ directory."
   ;; https://github.com/emacs-tree-sitter/elisp-tree-sitter
   ;; Emacs Lisp bindings for tree-sitter.
   :after (danylo-code-styles)
+  :hook ((c-mode-common . (lambda ()
+                            (c-ts-common-comment-setup)
+                            (setq-local treesit--indent-verbose danylo/treesit-verbose))))
   :init
   (setq
    ;; Language grammars.
@@ -320,19 +323,22 @@ directory."
      (toml "https://github.com/tree-sitter/tree-sitter-toml")
      (tsx "https://github.com/tree-sitter/tree-sitter-typescript" "master" "tsx/src")
      (typescript "https://github.com/tree-sitter/tree-sitter-typescript" "master" "typescript/src")
-     (yaml "https://github.com/ikatyang/tree-sitter-yaml"))
+     (yaml "https://github.com/ikatyang/tree-sitter-yaml")))
+  )
 
-   ;; C++ indentation.
-   c-ts-mode-indent-offset 4)
-  (add-hook 'c++-ts-mode-hook
-            (lambda ()
-              (setq-local c-ts-mode-indent-style #'danylo/cpp-ts-style)))
+(use-package c-ts-mode
+  ;; Tree-sitter support for C and C++.
+  :if (treesit-language-available-p 'c)
+  :custom
+  (c-ts-mode-indent-offset 4)
+  (c-ts-mode-indent-style #'danylo/cpp-ts-style)
   )
 
 ;;;; Remap major modes for tree-sitter.
 (setq major-mode-remap-alist
       '((c++-mode . c++-ts-mode)
         (c-mode . c-ts-mode)
+        (c-or-c++-mode . c-or-c++-ts-mode)
         (python-mode . python-ts-mode)))
 (defun c++-ts-mode-call-hook () (run-hooks 'c++-mode-hook) (run-hooks 'c-mode-common-hook))
 (add-hook 'c++-ts-mode-hook #'c++-ts-mode-call-hook)
@@ -659,6 +665,10 @@ not have to update when the cursor is moving quickly."
 (setq ring-bell-function 'ignore)
 
 ;;;; Working with buffers
+
+;; Update buffers when files on disk change.
+(global-auto-revert-mode)
+(setq auto-revert-verbose nil)
 
 (defun danylo/revert-buffer-no-confirm ()
   "Revert buffer without confirmation."
@@ -2260,7 +2270,6 @@ with C-u."
         vterm-kill-buffer-on-exit t
         vterm-max-scrollback 100000
         vterm--prompt-tracking-enabled-p t)
-  :config
   ;; Add update-pwd to the list of commands that Emacs is allowed to execute from vterm.
   (add-to-list 'vterm-eval-cmds '("update-pwd" (lambda (path) (setq default-directory path)))))
 
@@ -2309,13 +2318,14 @@ to (vterm) with no argument will create a **new** vterm buffer."
  "C-c t r" 'danylo/run-terminal-here)
 
 ;; Find file at point in vterm buffer and open it in a buffer below.
-(push (list "find-file-below"
-            (lambda (path)
-              (if-let* ((buf (find-file-noselect path))
-                        (window (display-buffer-below-selected buf nil)))
-                  (select-window window)
-                (message "Failed to open file: %s" path))))
-      vterm-eval-cmds)
+(with-eval-after-load 'vterm
+  (push (list "find-file-below"
+              (lambda (path)
+                (if-let* ((buf (find-file-noselect path))
+                          (window (display-buffer-below-selected buf nil)))
+                    (select-window window)
+                  (message "Failed to open file: %s" path))))
+        vterm-eval-cmds))
 
 ;;; ..:: Completion ::..
 

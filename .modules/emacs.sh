@@ -74,6 +74,18 @@ ln -sf "$DIR"/.emacs.d/lisp/snippets ~/.emacs.d/lisp/
 # >> Bash <<
 sudo apt-get -y install shellcheck
 
+# >> C++ <<
+sudo apt-get -y install clang-format
+
+# >> Language servers <<
+if not_installed cargo; then
+    # Install Rust's package manager - Cargo.
+    # https://doc.rust-lang.org/cargo/getting-started/installation.html
+    curl https://sh.rustup.rs -sSf | sh
+fi
+# https://github.com/blahgeek/emacs-lsp-booster
+cargo install emacs-lsp-booster
+
 # ..:: Other ::..
 
 # Fonts

@@ -1,6 +1,6 @@
 # Ubuntu dotfiles
 
-Ubuntu 22.04 LTS auto-configuration.
+Ubuntu 25.04 LTS auto-configuration.
 
 ## Automatic install script
 

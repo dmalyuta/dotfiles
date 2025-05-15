@@ -13,6 +13,10 @@
       '((server)
         (comp)))
 
+;; Debug the appearance of certain startup messages
+;; (setq debug-on-message "Function .+ is already compiled")
+;; (setq debug-on-message "Waiting for .*")
+
 ;; Native compilation settings
 (when (fboundp 'native-compile-async)
   (setq comp-deferred-compilation t
@@ -39,6 +43,11 @@
 (setq use-package-always-ensure t)
 
 ;; Install Quelpa
+(setq quelpa-update-melpa-p nil
+      quelpa-checkout-melpa-p nil
+      quelpa-upgrade-p nil
+      quelpa-verbose nil
+      quelpa-build-verbose nil)
 (unless (package-installed-p 'quelpa)
   (with-temp-buffer
     (url-insert-file-contents
@@ -46,10 +55,6 @@
     (eval-buffer)
     (quelpa-self-upgrade)))
 (require 'quelpa)
-(setq quelpa-update-melpa-p nil
-      quelpa-upgrade-p nil
-      quelpa-verbose nil
-      quelpa-build-verbose nil)
 
 (quelpa
  '(quelpa-use-package
@@ -179,6 +184,7 @@ directory."
   ;;   unpackaged/quelpa-use-package-upgrade: select a (use-package ...) that
   ;;       uses Quelpa and completely upgrade it to the latest online version
   ;;       (replaces all associated directories)
+  :disabled
   :ensure nil
   :after (general hydra ts esxml)
   :init (setq danylo/use-package-always-ensure use-package-always-ensure
@@ -296,35 +302,34 @@ directory."
 ;; Install with:
 ;;   M-: (mapc #'treesit-install-language-grammar (mapcar #'car treesit-language-source-alist))
 
-(use-package tree-sitter
-  ;; https://github.com/emacs-tree-sitter/elisp-tree-sitter
-  ;; Emacs Lisp bindings for tree-sitter.
-  :after (danylo-code-styles)
-  :hook ((c-mode-common . (lambda ()
-                            (c-ts-common-comment-setup)
-                            (setq-local treesit--indent-verbose danylo/treesit-verbose))))
-  :init
-  (setq
-   ;; Language grammars.
-   treesit-language-source-alist
-   '((bash "https://github.com/tree-sitter/tree-sitter-bash")
-     (cmake "https://github.com/uyha/tree-sitter-cmake")
-     (css "https://github.com/tree-sitter/tree-sitter-css")
-     (c "https://github.com/tree-sitter/tree-sitter-c")
-     (cpp "https://github.com/tree-sitter/tree-sitter-cpp")
-     (elisp "https://github.com/Wilfred/tree-sitter-elisp")
-     (go "https://github.com/tree-sitter/tree-sitter-go")
-     (html "https://github.com/tree-sitter/tree-sitter-html")
-     (javascript "https://github.com/tree-sitter/tree-sitter-javascript" "master" "src")
-     (json "https://github.com/tree-sitter/tree-sitter-json")
-     (make "https://github.com/alemuller/tree-sitter-make")
-     (markdown "https://github.com/ikatyang/tree-sitter-markdown")
-     (python "https://github.com/tree-sitter/tree-sitter-python")
-     (toml "https://github.com/tree-sitter/tree-sitter-toml")
-     (tsx "https://github.com/tree-sitter/tree-sitter-typescript" "master" "tsx/src")
-     (typescript "https://github.com/tree-sitter/tree-sitter-typescript" "master" "typescript/src")
-     (yaml "https://github.com/ikatyang/tree-sitter-yaml")))
-  )
+(setq
+ ;; Language grammars.
+ treesit-language-source-alist
+ '((bash "https://github.com/tree-sitter/tree-sitter-bash")
+   (cmake "https://github.com/uyha/tree-sitter-cmake")
+   (css "https://github.com/tree-sitter/tree-sitter-css")
+   (c "https://github.com/tree-sitter/tree-sitter-c")
+   (cpp "https://github.com/tree-sitter/tree-sitter-cpp")
+   (elisp "https://github.com/Wilfred/tree-sitter-elisp")
+   (go "https://github.com/tree-sitter/tree-sitter-go")
+   (html "https://github.com/tree-sitter/tree-sitter-html")
+   (javascript "https://github.com/tree-sitter/tree-sitter-javascript" "master" "src")
+   (json "https://github.com/tree-sitter/tree-sitter-json")
+   (make "https://github.com/alemuller/tree-sitter-make")
+   (markdown "https://github.com/ikatyang/tree-sitter-markdown")
+   (python "https://github.com/tree-sitter/tree-sitter-python")
+   (toml "https://github.com/tree-sitter/tree-sitter-toml")
+   (tsx "https://github.com/tree-sitter/tree-sitter-typescript" "master" "tsx/src")
+   (typescript "https://github.com/tree-sitter/tree-sitter-typescript" "master" "typescript/src")
+   (yaml "https://github.com/ikatyang/tree-sitter-yaml")))
+
+;; Maximally colorful font coloring.
+(setq treesit-font-lock-level 4)
+
+(add-hook 'c-mode-common-hook
+          (lambda ()
+            (c-ts-common-comment-setup)
+            (setq-local treesit--indent-verbose danylo/treesit-verbose)))
 
 (use-package c-ts-mode
   ;; Tree-sitter support for C and C++.
@@ -352,14 +357,30 @@ directory."
   ;; Helper functions for fringe bitmaps.
   )
 
-(use-package ts-fold
-  ;; https://github.com/emacs-tree-sitter/ts-fold
+(use-package treesit-fold
+  ;; https://github.com/emacs-tree-sitter/treesit-fold
   ;; Code-folding using tree-sitter.
-  :after (tree-sitter fringe-helper)
-  :quelpa ((ts-fold :fetcher github
-                    :repo "emacs-tree-sitter/ts-fold"))
+  :after (fringe-helper)
+  :quelpa ((treesit-fold :fetcher github
+                         :repo "emacs-tree-sitter/treesit-fold"))
+  :bind (("C-c f t" . treesit-fold-toggle)
+         ("C-c f a" . treesit-fold-open-all)
+         ("C-c f c" . treesit-fold-close-all))
   :init
-  (global-ts-fold-mode))
+  (setq treesit-fold-line-count-show t
+        treesit-fold-indicators-priority -10)
+  (global-treesit-fold-mode)
+  (global-treesit-fold-indicators-mode)
+  )
+
+(with-eval-after-load 'treesit-fold
+  (defun danylo/treesit-fold-disable-indicator-refresh-on-typing ()
+    "Do not refresh tree-sitter fold indicators refreshing on every character
+typed. This helps improve performance."
+    (remove-hook 'post-command-hook #'treesit-fold-indicators--post-command t))
+
+  (advice-add 'treesit-fold-indicators--enable
+              :after #'danylo/treesit-fold-disable-indicator-refresh-on-typing))
 
 ;;; ..:: General usability ::..
 
@@ -748,7 +769,7 @@ Source: https://emacs.stackexchange.com/a/50834/13661"
     ;; Kill only the current frame, if there is more than one
     (if (> (length (frame-list)) 1)
         ;; Just delete the current frame
-        (delete-frame)
+        (condition-case nil (delete-frame) (error (save-buffers-kill-terminal)))
       ;; Traditional C-x C-c (kill Emacs)
       (save-buffers-kill-terminal))))
 
@@ -1419,7 +1440,7 @@ is automatically turned on while the line numbers are displayed."
 ;; Speed up font-lock mode speed (can causes laggy scrolling)
 (setq-default font-lock-support-mode 'jit-lock-mode
               jit-lock-contextually 'syntax-driven
-              jit-lock-stealth-time 10
+              jit-lock-stealth-time nil
               jit-lock-stealth-nice 0.5
               jit-lock-chunk-size 1000
               jit-lock-stealth-load 200
@@ -1709,11 +1730,15 @@ when there is another buffer printing out information."
   ;; Fringe version of git-gutter.el
   :after (git-gutter)
   :config
+  (setq git-gutter-fr:side 'right-fringe)
   ;; Gutter indicators.
   ;; https://ianyepan.github.io/posts/emacs-git-gutter/
   (define-fringe-bitmap 'git-gutter-fr:added [224] nil nil '(center repeated))
   (define-fringe-bitmap 'git-gutter-fr:modified [224] nil nil '(center repeated))
   (define-fringe-bitmap 'git-gutter-fr:deleted [128 192 224 240] nil nil 'bottom)
+  (set-face-foreground 'git-gutter-fr:modified "#eabc7a")
+  (set-face-foreground 'git-gutter-fr:added    "#95ba63")
+  (set-face-foreground 'git-gutter-fr:deleted  "#ff6655")
   )
 
 (defun danylo/diff-hl-set-reference ()
@@ -2188,6 +2213,8 @@ Default is 80"
 (use-package bufler
   ;; https://github.com/alphapapa/bufler.el
   ;; Group buffers into workspaces with programmable rules
+  :quelpa (bufler :fetcher github :repo "alphapapa/bufler.el"
+                  :files (:defaults (:exclude "helm-bufler.el")))
   :config
   (require 'bufler)
   (setq bufler-filter-buffer-modes
@@ -2234,6 +2261,25 @@ with C-u."
     (apply orig-fun args)))
 (advice-add 'quit-window :around #'danylo/quit-and-kill-window)
 
+(use-package popper
+  ;; https://github.com/karthink/popper
+  ;; Emacs minor-mode to summon and dismiss buffers easily.
+  :after (lsp-mode)
+  :bind (("C-`"   . popper-toggle)
+         ("M-`"   . popper-cycle)
+         ("C-M-`" . popper-toggle-type))
+  :init
+  (setq popper-reference-buffers
+        '("\\*Messages\\*"
+          "Output\\*$"
+          "\\*Async Shell Command\\*"
+          help-mode
+          lsp-help-mode
+          compilation-mode))
+  (popper-mode +1)
+  (popper-echo-mode +1)
+  )
+
 ;;; ..:: Terminal emulator ::..
 
 (defun danylo/run-terminal-here ()
@@ -2247,7 +2293,6 @@ with C-u."
 (use-package vterm
   ;; https://github.com/akermu/emacs-libvterm
   ;; Emacs libvterm integration
-  :ensure t
   :load-path danylo/emacs-libvterm-dir
   :bind (:map vterm-mode-map
               ("C-<up>" . nil)
@@ -2358,29 +2403,30 @@ argument: number-or-marker-p, nil'."
   (company-cancel 'unique))
 (advice-add 'company--continue :around #'danylo/company--continue)
 
-;; (use-package citre
-;;   ;; https://github.com/universal-ctags/citre
-;;   ;; A superior code reading & auto-completion tool with pluggable backends.  :defer t
-;;   :init
-;;   ;; This is needed in `:init' block for lazy load to work.
-;;   (require 'citre-config)
-;;   ;; Bind your frequently used commands.  Alternatively, you can define them
-;;   ;; in `citre-mode-map' so you can only use them when `citre-mode' is enabled.
-;;   (global-set-key (kbd "C-x c j") 'citre-jump)
-;;   (global-set-key (kbd "C-x c J") 'citre-jump-back)
-;;   (global-set-key (kbd "C-x c p") 'citre-ace-peek)
-;;   (global-set-key (kbd "C-x c u") 'citre-update-this-tags-file)
-;;   :config
-;;   (setq
-;;    ;; Set this if you use project management plugin like projectile.  It's
-;;    ;; used for things like displaying paths relatively, see its docstring.
-;;    citre-project-root-function #'projectile-project-root
-;;    ;; Set this if you'd like to use ctags options generated by Citre
-;;    ;; directly, rather than further editing them.
-;;    citre-edit-ctags-options-manually nil
-;;    ;; If you only want the auto enabling citre-mode behavior to work for
-;;    ;; certain modes (like `prog-mode'), set it like this.
-;;    citre-auto-enable-citre-mode-modes '(prog-mode)))
+(use-package citre
+  ;; https://github.com/universal-ctags/citre
+  ;; A superior code reading & auto-completion tool with pluggable backends.  :defer t
+  :disabled
+  :init
+  ;; This is needed in `:init' block for lazy load to work.
+  (require 'citre-config)
+  ;; Bind your frequently used commands.  Alternatively, you can define them
+  ;; in `citre-mode-map' so you can only use them when `citre-mode' is enabled.
+  (global-set-key (kbd "C-x c j") 'citre-jump)
+  (global-set-key (kbd "C-x c J") 'citre-jump-back)
+  (global-set-key (kbd "C-x c p") 'citre-ace-peek)
+  (global-set-key (kbd "C-x c u") 'citre-update-this-tags-file)
+  :config
+  (setq
+   ;; Set this if you use project management plugin like projectile.  It's
+   ;; used for things like displaying paths relatively, see its docstring.
+   citre-project-root-function #'projectile-project-root
+   ;; Set this if you'd like to use ctags options generated by Citre
+   ;; directly, rather than further editing them.
+   citre-edit-ctags-options-manually nil
+   ;; If you only want the auto enabling citre-mode behavior to work for
+   ;; certain modes (like `prog-mode'), set it like this.
+   citre-auto-enable-citre-mode-modes '(prog-mode)))
 
 (use-package dape
   ;; https://github.com/svaante/dape
@@ -2419,6 +2465,7 @@ argument: number-or-marker-p, nil'."
    ;; Limit raising of the echo area to show docs
    lsp-signature-auto-activate nil
    lsp-signature-render-documentation nil
+   lsp-signature-function 'lsp-signature-posframe
    lsp-signature-doc-lines nil
    lsp-eldoc-enable-hover nil
 
@@ -2519,23 +2566,8 @@ argument: number-or-marker-p, nil'."
 (use-package projectile
   ;; https://github.com/bbatsov/projectile
   ;; Project interaction library offering tools to operate on a project level
-  :init (setq projectile-enable-caching t
-              projectile-indexing-method 'alien
-              projectile-generic-command
-              (let ((cmd "find . -type f "))
-                ;; Add all the directories that will be ignored
-                (mapc (lambda (s)
-                        (setq cmd (concat cmd "! -ipath '" s "' ")))
-                      '("*/.ccls-cache*"
-                        "*/.clangd*"
-                        "*/.git*"
-                        "*/extenal/*"
-                        "*/bazel-*/*"
-                        "*/build/*"))
-                (setq cmd (concat cmd "-print0"))
-                cmd))
-
-
+  :init (setq projectile-enable-caching 'persistent
+              projectile-indexing-method 'hybrid)
   :bind (:map projectile-mode-map
               ("C-c p" . projectile-command-map)
               ("C-c p s g" . danylo/helm-projectile-ag-grep))

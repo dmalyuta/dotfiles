@@ -158,7 +158,7 @@
 (defun danylo/make-prog-highlight-keywords ()
   "Make the font-lock keywords for prog-font-lock-mode fontification."
   ;; ..:: Python ::..
-  (cond ((eq major-mode 'python-mode)
+  (cond ((eq major-mode 'python-ts-mode)
          (setq danylo/prog-highlight-keywords
                '(("^\s*\\(Args\\|Returns\\|Raises\\):$"
                   (0 '(face danylo/python-docstring-heading-face) t))

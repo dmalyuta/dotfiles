@@ -102,6 +102,7 @@
     ((match "compound_statement" "if_statement") standalone-parent 0)
     ((match "compound_statement" "else_clause") standalone-parent 0)
     ((match "compound_statement" "for_statement") standalone-parent 0)
+    ((match "compound_statement" "for_range_loop") standalone-parent 0)
     ((match "compound_statement" "while_statement") standalone-parent 0)
     ((match "compound_statement" "switch_statement") standalone-parent 0)
     ((match "compound_statement" "case_statement") standalone-parent 0)

@@ -365,7 +365,8 @@ directory."
                          :repo "emacs-tree-sitter/treesit-fold"))
   :bind (("C-c f t" . treesit-fold-toggle)
          ("C-c f a" . treesit-fold-open-all)
-         ("C-c f c" . treesit-fold-close-all))
+         ("C-c f c" . treesit-fold-close-all)
+         ("C-c f i" . treesit-fold-indicators-mode))
   :init
   (setq treesit-fold-line-count-show t
         treesit-fold-indicators-priority -10)
@@ -373,14 +374,20 @@ directory."
   (global-treesit-fold-indicators-mode)
   )
 
+;;;; (start patch) Throttle the call rate to render treesit-fold fringe indicators.
+(defconst danylo/debounced-treesit-fold-indicators-refresh-idle-delay 0.25)
+(defvar danylo/debounced-treesit-fold-indicators-refresh-timer nil)
+(defun danylo/debounced-treesit-fold-indicators-refresh (orig-fun &rest args)
+  (when danylo/debounced-treesit-fold-indicators-refresh-timer
+    (cancel-timer danylo/debounced-treesit-fold-indicators-refresh-timer))
+  (setq danylo/debounced-treesit-fold-indicators-refresh-timer
+        (run-with-idle-timer
+         danylo/debounced-treesit-fold-indicators-refresh-idle-delay nil
+         (lambda (orig-fun &rest args) (apply orig-fun args)) orig-fun args)))
 (with-eval-after-load 'treesit-fold
-  (defun danylo/treesit-fold-disable-indicator-refresh-on-typing ()
-    "Do not refresh tree-sitter fold indicators refreshing on every character
-typed. This helps improve performance."
-    (remove-hook 'post-command-hook #'treesit-fold-indicators--post-command t))
-
-  (advice-add 'treesit-fold-indicators--enable
-              :after #'danylo/treesit-fold-disable-indicator-refresh-on-typing))
+  (advice-add 'treesit-fold-indicators-refresh
+              :around #'danylo/debounced-treesit-fold-indicators-refresh))
+;;;; (end patch)
 
 ;;; ..:: General usability ::..
 
@@ -899,6 +906,13 @@ Source: http://steve.yegge.googlepages.com/my-dot-emacs-file"
   ;; Revert all buffers after external changes have been made.
   )
 
+;; World clock.
+(setq world-clock-list
+      '(("America/Los_Angeles" "Seattle")
+        ("Europe/Kiev" "Odessa")
+        ("Australia/Sydney" "Sydney")
+        ("Europe/Zurich" "Zurich")))
+
 ;;; ..:: Searching ::..
 
 ;;;; Neotree: view the source code file tree
@@ -1277,6 +1291,12 @@ height."
 active. Basically, any non-file-visiting buffer."
   (not (buffer-file-name (buffer-base-buffer))))
 
+;;; Highlight the current line.
+;; All programming major modes.
+(add-hook 'prog-mode-hook #'hl-line-mode)
+;; All modes derived from text-mode.
+(add-hook 'text-mode-hook #'hl-line-mode)
+
 (use-package solaire-mode
   ;; https://github.com/hlissner/emacs-solaire-mode
   ;; Distinguish file-visiting buffers with slightly different background
@@ -1372,12 +1392,6 @@ window."
 
 ;;;; Line numbering
 
-;;; Highlight the current line.
-;; All programming major modes.
-(add-hook 'prog-mode-hook #'hl-line-mode)
-;; All modes derived from text-mode.
-(add-hook 'text-mode-hook #'hl-line-mode)
-
 ;; Show line numbers on the left
 (general-define-key
  "C-x n l" 'danylo/toggle-display-line-numbers)
@@ -1440,17 +1454,17 @@ is automatically turned on while the line numbers are displayed."
 ;; Speed up font-lock mode speed (can causes laggy scrolling)
 (setq-default font-lock-support-mode 'jit-lock-mode
               jit-lock-contextually 'syntax-driven
-              jit-lock-stealth-time nil
-              jit-lock-stealth-nice 0.5
+              jit-lock-stealth-time 0.05
+              jit-lock-stealth-nice 0.05
               jit-lock-chunk-size 1000
               jit-lock-stealth-load 200
-              jit-lock-antiblink-grace most-positive-fixnum
+              jit-lock-antiblink-grace 10
               ;; Below: jit-lock-defer-time "pauses" fontification while the
               ;; user is typing, as long as the time between successive
               ;; keystrokes is <jit-lock-defer-time. This is what makes typing
               ;; smooth even with some heavy font locking (because the font
               ;; locking will occur during "idle" times)!
-              jit-lock-defer-time `,danylo/fontify-delay
+              jit-lock-defer-time 0.05 ; `,danylo/fontify-delay
               font-lock-maximum-decoration nil)
 
 ;;;; Font lock debug tools
@@ -1465,6 +1479,13 @@ is automatically turned on while the line numbers are displayed."
   ;; Coverage and timing tool for font-lock keywords
   )
 
+(display-time-mode)
+(setq display-time-format "%I:%M"
+      display-time-24hr-format t
+      display-time-default-load-average nil
+      display-time-string-forms
+      '((format-time-string (or display-time-format "%H:%M") now)))
+
 (use-package doom-modeline
   ;; https://github.com/seagle0128/doom-modeline
   ;; A fancy and fast mode-line inspired by minimalism design.
@@ -1478,7 +1499,8 @@ is automatically turned on while the line numbers are displayed."
               inhibit-compacting-font-caches t
               find-file-visit-truename t
               doom-modeline-project-detection 'project
-              doom-modeline-enable-word-count nil)
+              doom-modeline-enable-word-count nil
+              doom-modeline-time t)
   :config
   ;;;; Custom segment definitions
   (doom-modeline-def-segment danylo/matches
@@ -1493,11 +1515,26 @@ is automatically turned on while the line numbers are displayed."
          'face `(:family ,(all-the-icons-faicon-family)
                          :foreground ,(if (doom-modeline--active) danylo/green)))
       ""))
+  (doom-modeline-def-segment danylo/time
+    "Displays the current time."
+    (when (and doom-modeline-time
+               (bound-and-true-p display-time-mode)
+               ;; (doom-modeline--segment-visible 'time)
+               )
+      (concat
+       (doom-modeline-spc)
+       (propertize
+        (danylo/fa-icon "clock-o")
+        'face `(:family ,(all-the-icons-faicon-family)))
+       " "
+       (propertize display-time-string
+                   'face (doom-modeline-face 'doom-modeline-time))
+       (doom-modeline-spc))))
   ;;;; Custom modeline definitions
   ;; Default mode line
   (doom-modeline-def-modeline 'main
     '(bar window-number danylo/matches buffer-info remote-host buffer-position selection-info danylo/turbo)
-    '(input-method debug major-mode vcs process))
+    '(input-method debug major-mode vcs process danylo/time))
   ;; Helm mode line
   (doom-modeline-def-modeline 'helm
     '(bar window-number helm-buffer-id helm-number helm-follow helm-prefix-argument) '())
@@ -2273,9 +2310,11 @@ with C-u."
         '("\\*Messages\\*"
           "Output\\*$"
           "\\*Async Shell Command\\*"
+          "\\*Compile-Log\\*"
           help-mode
           lsp-help-mode
-          compilation-mode))
+          compilation-mode
+          emacs-lisp-compilation-mode))
   (popper-mode +1)
   (popper-echo-mode +1)
   )
@@ -2436,61 +2475,73 @@ argument: number-or-marker-p, nil'."
 (use-package yaml)
 
 (use-package lsp-mode
-  ;; https://github.com/emacs-lsp/lsp-mode
-  ;; Emacs client/library for the Language Server Protocol.
-  :after (dape yaml)
   :ensure t
-  :hook ((c-mode-common . lsp))
+  :hook ((lsp-mode . lsp-diagnostics-mode)
+         (lsp-mode . lsp-completion-mode)
+         (c-mode-common . lsp))
+  :custom
+  (lsp-keymap-prefix "C-c l")
+  (lsp-diagnostics-provider :auto)
+  (lsp-completion-provider :capf)
+  (lsp-session-file (expand-file-name ".lsp-session" user-emacs-directory))
+  (lsp-log-io nil)
+  (lsp-keep-workspace-alive nil)
+  (lsp-idle-delay 0.5)
+  ;; core
+  (lsp-enable-xref t)
+  (lsp-auto-configure t)
+  (lsp-eldoc-enable-hover nil)
+  (lsp-enable-dap-auto-configure nil)
+  (lsp-enable-file-watchers nil)
+  (lsp-enable-folding nil)
+  (lsp-enable-imenu nil)
+  (lsp-enable-indentation nil)
+  (lsp-enable-links nil)
+  (lsp-enable-on-type-formatting nil)
+  (lsp-enable-suggest-server-download nil)
+  (lsp-enable-symbol-highlighting nil)
+  (lsp-enable-text-document-color nil)
+  ;; completion
+  (lsp-completion-enable t)
+  (lsp-completion-enable-additional-text-edit nil)
+  (lsp-enable-snippet nil)
+  (lsp-completion-show-kind nil)
+  ;; headerline
+  (lsp-headerline-breadcrumb-enable t)
+  (lsp-headerline-breadcrumb-enable-diagnostics nil)
+  (lsp-headerline-breadcrumb-enable-symbol-numbers nil)
+  (lsp-headerline-breadcrumb-icons-enable nil)
+  ;; modeline
+  (lsp-modeline-code-actions-enable nil)
+  (lsp-modeline-diagnostics-enable nil)
+  (lsp-modeline-workspace-status-enable nil)
+  (lsp-signature-doc-lines 1)
+  ;; lens
+  (lsp-lens-enable nil)
+  ;; C++
+  (lsp-clients-clangd-args '("--header-insertion=never"))
+  ;; semantic
+  (lsp-semantic-tokens-enable nil)
   :init
-  (setq
-   ;; Improve LSP performance.
-   ;; https://emacs-lsp.github.io/lsp-mode/page/performance/#use-plists-for-deserialization
-   ;;
-   ;; To further improve startup performance of the LSP server, reduce the
-   ;; number of watched files: https://emacs-lsp.github.io/lsp-mode/page/file-watchers/
-   ;; You can do this via directory local modification of the relevant variable:
-   ;; ((nil . ((eval
-   ;;           .
-   ;;           (setq lsp-file-watch-ignored-directories
-   ;;                 (append lsp-file-watch-ignored-directories
-   ;;                         '("[/\\\\]foo\\'"
-   ;;                           "[/\\\\]bar\\'"
-   ;;                           )))))))
-   lsp-use-plists t
-
-   ;; Disable all mode line features.
-   lsp-modeline-code-actions-enable nil
-   lsp-modeline-diagnostics-enable  nil
-
-   ;; Limit raising of the echo area to show docs
-   lsp-signature-auto-activate nil
-   lsp-signature-render-documentation nil
-   lsp-signature-function 'lsp-signature-posframe
-   lsp-signature-doc-lines nil
-   lsp-eldoc-enable-hover nil
-
-   ;; Do not truncate the *lsp-log* buffer.
-   lsp-log-max t
-
-   ;; File watching limit.
-   lsp-file-watch-threshold 5000
-
-   ;; C++ clangd language server.
-   lsp-clients-clangd-args '("--header-insertion=never")
-
-   ;; Imenu integration.
-   lsp-enable-imenu t
-   )
-  (with-eval-after-load 'lsp-mode
-    (add-hook 'lsp-mode-hook #'lsp-enable-which-key-integration)
-    (yas-global-mode)
-    )
+  (setq lsp-use-plists t)
   :config
-  (define-key lsp-mode-map (kbd "C-c l") lsp-command-map)
-
+  ;; (define-key lsp-mode-map (kbd "C-c l") lsp-command-map)
   ;; WORKAROUND Hide mode-line of the lsp-ui-imenu buffer
   ;; See https://github.com/emacs-lsp/lsp-ui/issues/243
   (advice-add 'lsp-ui-imenu :after #'hide-lsp-ui-imenu-mode-line))
+
+(use-package lsp-ui
+  ;; https://github.com/emacs-lsp/lsp-ui
+  ;; UI integrations for lsp-mode.
+  :after (lsp-mode)
+  :custom
+  (lsp-ui-sideline-enable t)
+  ;; (lsp-ui-doc-enable nil)
+  (lsp-ui-doc-delay 0.2)
+  (lsp-ui-sideline-show-diagnostics t)
+  (lsp-ui-sideline-diagnostic-max-line-length 80)
+  (lsp-ui-imenu-auto-refresh nil)
+  )
 
 ;;;;;;;;;; lsp-booster for more performant LSP mode.
 ;; Emacs LSP performance booster
@@ -2530,17 +2581,6 @@ argument: number-or-marker-p, nil'."
 (advice-add 'lsp-resolve-final-command :around #'lsp-booster--advice-final-command)
 ;;;;;;;;;; (end of lsp-booster)
 
-(use-package lsp-ui
-  :after (lsp-mode)
-  :init (setq lsp-ui-sideline-show-diagnostics t
-              lsp-ui-imenu-auto-refresh t
-              ))
-
-(use-package flymake-diagnostic-at-point
-  :after flymake
-  :config
-  (add-hook 'flymake-mode-hook #'flymake-diagnostic-at-point-mode))
-
 (use-package posframe)
 
 (use-package lsp-treemacs
@@ -2553,6 +2593,13 @@ argument: number-or-marker-p, nil'."
   ;; https://github.com/mrjosh/helm-ls
   ;; Helm-ls is a helm language server protocol LSP implementation.
   :after (lsp-mode)
+  )
+
+;;; ..:: Code linting ::..
+
+(use-package flycheck
+  ;; https://github.com/flycheck/flycheck
+  ;; On the fly syntax checking for GNU Emacs
   )
 
 ;;; ..:: File management ::..

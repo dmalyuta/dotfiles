@@ -1,22 +1,5 @@
 # Git defaults configuration
 [core]
-    editor = code --wait
-[diff]
-    tool = vscode
-[difftool]
-    prompt = false
-[difftool "vscode"]
-    cmd = code --wait --diff "$LOCAL" "$REMOTE"
-[merge]
-    tool = vscode
-[mergetool "vscode"]
-    # Choose one of these 2 lines (not both!) explained below.
-    cmd = code --wait "$MERGED"
+    editor = emacsclient -s "git-server"
 [push]
     default = matching
-[mergetool]
-    keepBackup = false
-    prompt = false
-[alias]
-    root = rev-parse --show-toplevel
-    add-existing = add -u

@@ -37,3 +37,6 @@ if [[ "$INSIDE_EMACS" = 'vterm' ]] && [[ -f ~/.emacs.d/libvterm/etc/emacs-vterm-
         vterm_cmd message "%s" "$*"
     }
 fi
+
+# Start Emacs git server on login.
+pgrep -f "emacs.*git-server" > /dev/null || emacs --daemon=git-server

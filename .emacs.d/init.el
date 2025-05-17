@@ -2505,7 +2505,7 @@ argument: number-or-marker-p, nil'."
   (lsp-enable-dap-auto-configure nil)
   (lsp-enable-file-watchers nil)
   (lsp-enable-folding nil)
-  (lsp-enable-imenu nil)
+  (lsp-enable-imenu t)
   (lsp-enable-indentation nil)
   (lsp-enable-links nil)
   (lsp-enable-on-type-formatting nil)

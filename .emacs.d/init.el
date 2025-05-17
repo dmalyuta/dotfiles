@@ -579,6 +579,7 @@ directory."
 ;;;; Parentheses pairing
 
 (electric-pair-mode 1)
+(setq electric-pair-inhibit-predicate 'electric-pair-conservative-inhibit)
 
 (defvar-local danylo/electric-pair-timer nil
   "Timer object for electric pair insertion.")
@@ -594,7 +595,7 @@ with characters."
       (electric-pair-mode 0)
       (setq danylo/electric-pair-timer
             (run-with-idle-timer
-             0.02 nil
+             0.1 nil
              (lambda ()
                (setq danylo/electric-pair-timer nil)
                (electric-pair-mode 1)
@@ -1291,12 +1292,6 @@ height."
 active. Basically, any non-file-visiting buffer."
   (not (buffer-file-name (buffer-base-buffer))))
 
-;;; Highlight the current line.
-;; All programming major modes.
-(add-hook 'prog-mode-hook #'hl-line-mode)
-;; All modes derived from text-mode.
-(add-hook 'text-mode-hook #'hl-line-mode)
-
 (use-package solaire-mode
   ;; https://github.com/hlissner/emacs-solaire-mode
   ;; Distinguish file-visiting buffers with slightly different background
@@ -1306,14 +1301,29 @@ active. Basically, any non-file-visiting buffer."
   ;;
   ;; My workaround is to turn off solaire-mode whenever the buffer is displayed
   ;; in >1 window
-  :ensure nil
+  :ensure t
   :quelpa ((solaire-mode :fetcher github
-                         :repo "hlissner/emacs-solaire-mode"
-                         :commit "2298fd8"))
+                         :repo "hlissner/emacs-solaire-mode"))
   :init (setq solaire-mode-themes-to-face-swap '("doom-one")
               solaire-mode-real-buffer-fn #'danylo/solaire-mode-inactive-buffer)
   :config
   (solaire-global-mode +1))
+
+;;; Highlight the current line.
+;; All programming major modes.
+(add-hook 'prog-mode-hook #'hl-line-mode)
+;; All modes derived from text-mode.
+(add-hook 'text-mode-hook #'hl-line-mode)
+
+;;;; (start patch) Make sure that line highlight is visible.
+(defun my/fix-hl-line-for-solaire-mode ()
+  "Ensure hl-line has a visible background in solaire-mode buffers."
+  (when (and (bound-and-true-p solaire-mode) buffer-file-name)
+    (let ((bg (face-background 'default)))
+      (set-face-background 'solaire-hl-line-face "#21242b" (selected-frame)))))
+(add-hook 'solaire-mode-hook #'my/fix-hl-line-for-solaire-mode)
+(add-hook 'doom-load-theme-hook #'my/fix-hl-line-for-solaire-mode)
+;;;; (end patch)
 
 ;;;; (start patch) Turn off solaire-mode in the minibuffer
 
@@ -2485,6 +2495,7 @@ argument: number-or-marker-p, nil'."
   (lsp-completion-provider :capf)
   (lsp-session-file (expand-file-name ".lsp-session" user-emacs-directory))
   (lsp-log-io nil)
+  (lsp-document-sync-method 'lsp--sync-incremental)
   (lsp-keep-workspace-alive nil)
   (lsp-idle-delay 0.5)
   ;; core

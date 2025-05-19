@@ -1489,12 +1489,12 @@ is automatically turned on while the line numbers are displayed."
   ;; Coverage and timing tool for font-lock keywords
   )
 
-(display-time-mode)
-(setq display-time-format "%I:%M"
+(setq display-time-format "%H:%M"
       display-time-24hr-format t
       display-time-default-load-average nil
       display-time-string-forms
       '((format-time-string (or display-time-format "%H:%M") now)))
+(display-time-mode)
 
 (use-package doom-modeline
   ;; https://github.com/seagle0128/doom-modeline
@@ -1529,14 +1529,15 @@ is automatically turned on while the line numbers are displayed."
     "Displays the current time."
     (when (and doom-modeline-time
                (bound-and-true-p display-time-mode)
-               ;; (doom-modeline--segment-visible 'time)
+               (doom-modeline--segment-visible 'danylo/time)
                )
       (concat
        (doom-modeline-spc)
        (propertize
         (danylo/fa-icon "clock-o")
-        'face `(:family ,(all-the-icons-faicon-family)))
-       " "
+        'face (append `(:family ,(all-the-icons-faicon-family))
+                      (doom-modeline-face 'doom-modeline-time)))
+       (doom-modeline-spc)
        (propertize display-time-string
                    'face (doom-modeline-face 'doom-modeline-time))
        (doom-modeline-spc))))

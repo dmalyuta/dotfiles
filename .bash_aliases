@@ -94,7 +94,7 @@ emacs-stop() {
 emacs-list-servers() {
     #ls -1 /run/user/1000/emacs
     ps aux | grep -E "emacs.*--daemon=.*" | \
-        awk '{for(i=1; i<=NF; i++) if($i ~ "--daemon=.*"){split($i, a, "="); print a[2]; exit}}'
+        awk '/emacs / { match($0, /--daemon=([^ \(]+)/, m); if (m[1] != "") print m[1] }'
 }
 
 emacs-connect-new() {

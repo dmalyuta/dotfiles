@@ -1356,8 +1356,16 @@ turned on or off."
         (need-changing (not (eq state (bound-and-true-p solaire-mode)))))
     (when need-changing
       (if state
-          (solaire-mode +1)
-        (solaire-mode -1)))
+          (progn
+            (solaire-mode +1)
+            (set-face-attribute
+             'treesit-fold-fringe-face nil
+             :background (face-attribute 'solaire-fringe-face :background)))
+        (progn
+          (solaire-mode -1)
+          (set-face-attribute
+           'treesit-fold-fringe-face nil
+           :background (face-attribute 'default :background)))))
     need-changing))
 
 (defun danylo/buffer-shown-in-multiple-windows ()

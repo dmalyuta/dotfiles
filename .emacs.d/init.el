@@ -1153,6 +1153,13 @@ Patched to use original **window** instead of buffer."
                   "\\*pyright.*\\*" "\\*YASnippet.*\\*"
                   ))))
 
+;;;; (start patch) Ensure there are no duplicate buffers in the helm-buffer-list.
+(with-eval-after-load 'helm
+  (defun danylo/helm-buffer-list (orig-fun &rest args)
+    (delq nil (delete-dups (apply orig-fun args))))
+  (advice-add 'helm-buffer-list :around #'danylo/helm-buffer-list))
+;;;; (end patch)
+
 (defun danylo/set-helm-window-height (orig-fun &rest args)
   "Make the Helm window taller."
   (let ((helm-display-buffer-default-height (/ (window-total-height) 2)))

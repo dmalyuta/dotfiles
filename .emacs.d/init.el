@@ -1166,15 +1166,25 @@ Patched to use original **window** instead of buffer."
                    helm-find-files))
 
 (defun danylo/helm-swoop-split-window-function (buf &rest _args)
-  "Show Helm Swoop at bottom of current window, with the correct
-height."
-  (setq danylo/helm-swoop-height
-        (- 0 (1+ danylo/num-completion-candidates)))
-  (if helm-swoop-split-with-multiple-windows
-      (split-window-vertically danylo/helm-swoop-height)
-    (when (one-window-p)
-      (split-window-vertically danylo/helm-swoop-height)))
-  (other-window 1)
+  "Show Helm Swoop at bottom of current window, with the correct height."
+  (let ((danylo/helm-swoop-height
+         (- 0 (1+ danylo/num-completion-candidates)))
+        (split-success t))
+    (if helm-swoop-split-with-multiple-windows
+        (condition-case nil
+            (split-window-vertically danylo/helm-swoop-height)
+          (error (setq split-success nil)))
+      (when (one-window-p)
+        (condition-case nil
+            (split-window-vertically danylo/helm-swoop-height)
+          (error (setq split-success nil)))))
+    (if split-success
+        ;; Go to helm-swoop buffer
+        (other-window 1)
+      (progn
+        ;; Go to last active window and create a helm-swoop buffer there.
+        (danylo/switch-to-last-window)
+        (danylo/helm-swoop-split-window-function (current-buffer)))))
   (switch-to-buffer buf))
 
 (defun danylo/helm-imenu ()
@@ -2972,7 +2982,7 @@ find a definion."
   ;; Python editing major mode
   :ensure nil
   :hook ((python-mode . yas-minor-mode))
-  :bind (:map python-mode-map
+  :bind (:map python-ts-mode-map
               ;; Make indentation automatic, especially ensures correct
               ;; indentation in docstrings (see
               ;; https://emacs.stackexchange.com/a/28445/13661)
@@ -2990,7 +3000,7 @@ find a definion."
   :disabled
   :demand t
   :after python
-  :bind (:map python-mode-map
+  :bind (:map python-ts-mode-map
               ("C-M-f" . 'python-black-buffer)
               ("C-M-r" . 'python-black-region))
   :init (setq python-black-extra-args '("--required-version" "24.10.0")))
@@ -3115,10 +3125,10 @@ lines according to the first line."
 
 (defun danylo/python-config ()
   ;; Key bindings
-  (define-key python-mode-map (kbd "C-c C-s") 'danylo/python-shell-open)
-  (define-key python-mode-map (kbd "C-c C-f") 'danylo/python-shell-run-file)
-  (define-key python-mode-map (kbd "C-c C-r") 'danylo/python-shell-run-region)
-  (define-key python-mode-map (kbd "C-c C-p") nil))
+  (define-key python-ts-mode-map (kbd "C-c C-s") 'danylo/python-shell-open)
+  (define-key python-ts-mode-map (kbd "C-c C-f") 'danylo/python-shell-run-file)
+  (define-key python-ts-mode-map (kbd "C-c C-r") 'danylo/python-shell-run-region)
+  (define-key python-ts-mode-map (kbd "C-c C-p") nil))
 (add-hook 'python-mode-hook (lambda () (danylo/python-config)))
 
 ;;; ..:: Julia ::..

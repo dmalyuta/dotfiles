@@ -377,16 +377,31 @@ directory."
 ;;;; (start patch) Throttle the call rate to render treesit-fold fringe indicators.
 (defconst danylo/debounced-treesit-fold-indicators-refresh-idle-delay 0.25)
 (defvar danylo/debounced-treesit-fold-indicators-refresh-timer nil)
+(defvar danylo/debounced-treesit-fold-indicators-render-window nil)
 (defun danylo/debounced-treesit-fold-indicators-refresh (orig-fun &rest args)
-  (when danylo/debounced-treesit-fold-indicators-refresh-timer
-    (cancel-timer danylo/debounced-treesit-fold-indicators-refresh-timer))
-  (setq danylo/debounced-treesit-fold-indicators-refresh-timer
-        (run-with-idle-timer
-         danylo/debounced-treesit-fold-indicators-refresh-idle-delay nil
-         (lambda (orig-fun &rest args) (apply orig-fun args)) orig-fun args)))
+  (if danylo/debounced-treesit-fold-indicators-render-window
+      (apply orig-fun args)
+    (progn
+      (when danylo/debounced-treesit-fold-indicators-refresh-timer
+        (cancel-timer danylo/debounced-treesit-fold-indicators-refresh-timer))
+      (setq danylo/debounced-treesit-fold-indicators-refresh-timer
+            (run-with-idle-timer
+             danylo/debounced-treesit-fold-indicators-refresh-idle-delay nil
+             (lambda (orig-fun &rest args)
+               (apply orig-fun args)) orig-fun args)))))
+(defun danylo/treesit-fold-indicators-render-on-split (orig-fun &rest args)
+  "Render indicators for all visible windows in the current frame after a window split."
+  (apply orig-fun args)
+  (setq danylo/debounced-treesit-fold-indicators-render-window t)
+  (treesit-fold--with-no-redisplay
+    (dolist (win (window-list (selected-frame)))
+      (treesit-fold-indicators--render-window win)))
+  (setq danylo/debounced-treesit-fold-indicators-render-window nil))
 (with-eval-after-load 'treesit-fold
   (advice-add 'treesit-fold-indicators-refresh
-              :around #'danylo/debounced-treesit-fold-indicators-refresh))
+              :around #'danylo/debounced-treesit-fold-indicators-refresh)
+  (advice-add 'split-window-below :around #'danylo/treesit-fold-indicators-render-on-split)
+  (advice-add 'split-window-right :around #'danylo/treesit-fold-indicators-render-on-split))
 ;;;; (end patch)
 
 ;;; ..:: General usability ::..
@@ -1319,6 +1334,7 @@ active. Basically, any non-file-visiting buffer."
   ;; My workaround is to turn off solaire-mode whenever the buffer is displayed
   ;; in >1 window
   :ensure t
+  :after (doom-themes)
   :quelpa ((solaire-mode :fetcher github
                          :repo "hlissner/emacs-solaire-mode"))
   :init (setq solaire-mode-themes-to-face-swap '("doom-one")
@@ -1364,12 +1380,12 @@ turned on or off."
     (when need-changing
       (if state
           (progn
-            (solaire-mode +1)
+            (turn-on-solaire-mode)
             (set-face-attribute
              'treesit-fold-fringe-face nil
-             :background (face-attribute 'solaire-fringe-face :background)))
+             :background (face-attribute 'solaire-default-face :background)))
         (progn
-          (solaire-mode -1)
+          (turn-off-solaire-mode)
           (set-face-attribute
            'treesit-fold-fringe-face nil
            :background (face-attribute 'default :background)))))
@@ -2446,6 +2462,12 @@ to (vterm) with no argument will create a **new** vterm buffer."
                     (select-window window)
                   (message "Failed to open file: %s" path))))
         vterm-eval-cmds))
+
+(use-package with-editor
+  ;; Use the current Emacs instance as the $EDITOR of child processes.
+  ;; https://github.com/magit/with-editor
+  :config
+  (add-hook 'vterm-mode-hook  'with-editor-export-editor))
 
 ;;; ..:: Completion ::..
 
@@ -3729,3 +3751,11 @@ Patched so that any new file by default is guessed as being its own master."
   :ensure t
   :config
   (setq graphviz-dot-indent-width 4))
+
+;;; ..:: Jinja ::..
+
+(use-package jinja2-mode
+  ;; https://github.com/paradoxxxzero/jinja2-mode
+  ;; Jinja2 mode for emacs.
+  :init
+  (add-to-list 'auto-mode-alist '("\\.j2.*" . jinja2-mode)))

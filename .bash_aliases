@@ -75,29 +75,50 @@ find_string() {
 EMACS_DEFAULT_DAEMON="emacs-server"
 EMACS_DEFAULT_SIZE="(set-frame-size (selected-frame) 100 40)"
 
-emacs-start() {
-    name=$1
-    if [ -z "$name" ]; then
-        name="$EMACS_DEFAULT_DAEMON"
+emacs_start() {
+    local logfile=/tmp/emacs_servers_init.log
+    > $logfile
+    pgrep -f "emacs.*git-server" > /dev/null
+    if [ $? -ne 0 ]; then
+        (nohup emacs --daemon=git-server &>>$logfile </dev/null & disown) &> /dev/null
+        echo "✅ Started git-server"
     fi
-    emacs --daemon=$name
+    pgrep -f "emacs.*${EMACS_DEFAULT_DAEMON}" > /dev/null
+    if [ $? -ne 0 ]; then
+        (nohup emacs --daemon=$EMACS_DEFAULT_DAEMON &>>$logfile </dev/null & disown) &> /dev/null
+        echo "✅ Started $EMACS_DEFAULT_DAEMON"
+    fi
 }
 
-emacs-stop() {
-    name=$1
-    if [ -z "$name" ]; then
-        name="$EMACS_DEFAULT_DAEMON"
+emacs_stop() {
+    local grep_query=$1
+    if [ -z "$grep_query" ]; then
+        local emacs_servers=$(emacs_list_servers)
+    else
+        local emacs_servers=$(emacs_list_servers | grep -E "${grep_query}")
     fi
-    emacsclient -s $name -e "(kill-emacs)"
+    for server_name in $emacs_servers; do
+        emacsclient -s $server_name -e "(kill-emacs)"
+        if [ $? -eq 0 ]; then
+            echo "✅ Stopped $server_name"
+        else
+            echo "❌ Failed to stop $server_name"
+        fi
+    done
 }
 
-emacs-list-servers() {
+emacs_restart_all() {
+    emacs_stop
+    emacs_start
+}
+
+emacs_list_servers() {
     #ls -1 /run/user/1000/emacs
     ps aux | grep -E "emacs.*--daemon=.*" | \
         awk '/emacs / { match($0, /--daemon=([^ \(]+)/, m); if (m[1] != "") print m[1] }'
 }
 
-emacs-connect-new() {
+emacs_connect_new() {
     name=$1
     file=$2
     if [ -z "$2" ]; then
@@ -111,7 +132,7 @@ emacs-connect-new() {
     fi
 }
 
-emacs-connect() {
+emacs_connect() {
     name=$1
     file=$2
 

@@ -1,6 +1,10 @@
 ;;; init.el
 ;; To byte-compile: [M-x byte-compile-init-dir]
 
+;; Frame size
+(setq default-frame-alist
+      (append default-frame-alist '((height . 50) (width . 100))))
+
 ;; No garbage collection at startup
 (setq gc-cons-threshold most-positive-fixnum)
 
@@ -416,10 +420,6 @@ directory."
 
 ;; X-event timeout
 (setq x-wait-for-event-timeout nil)
-
-;; Frame size
-(setq default-frame-alist
-      (append default-frame-alist '((height . 50) (width . 100))))
 
 ;; Default directory
 (setq default-directory "~/")

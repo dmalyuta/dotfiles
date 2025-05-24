@@ -391,12 +391,13 @@ directory."
                (apply orig-fun args)) orig-fun args)))))
 (defun danylo/treesit-fold-indicators-render-on-split (orig-fun &rest args)
   "Render indicators for all visible windows in the current frame after a window split."
-  (apply orig-fun args)
-  (setq danylo/debounced-treesit-fold-indicators-render-window t)
-  (treesit-fold--with-no-redisplay
-    (dolist (win (window-list (selected-frame)))
-      (treesit-fold-indicators--render-window win)))
-  (setq danylo/debounced-treesit-fold-indicators-render-window nil))
+  (let ((new-window (apply orig-fun args)))
+    (setq danylo/debounced-treesit-fold-indicators-render-window t)
+    (treesit-fold--with-no-redisplay
+      (dolist (win (window-list (selected-frame)))
+        (treesit-fold-indicators--render-window win)))
+    (setq danylo/debounced-treesit-fold-indicators-render-window nil)
+    new-window))
 (with-eval-after-load 'treesit-fold
   (advice-add 'treesit-fold-indicators-refresh
               :around #'danylo/debounced-treesit-fold-indicators-refresh)
@@ -537,6 +538,12 @@ directory."
   :config
   (dashboard-setup-startup-hook))
 
+;; Shortcuts to open common useful buffers.
+(general-define-key
+ "C-c o s" 'scratch-buffer
+ "C-c o d" 'dashboard-open
+ "C-c o m" (lambda () (interactive) (switch-to-buffer "*Messages*")))
+
 ;; A welcome message after startup
 (defun display-startup-echo-area-message ())
 (add-hook 'dashboard-mode-hook (lambda () (message "Welcome back")))
@@ -655,6 +662,8 @@ sequence of newlines."
   ;; Provides commands to highlight text
   )
 
+;;;; (start patch) A debounced replacement of built-in active region
+;;;;               highlighting.
 (defvar-local danylo/highlight-timer nil
   "Timer object for region highlighting function.")
 
@@ -691,7 +700,11 @@ not have to update when the cursor is moving quickly."
          (run-with-idle-timer
           0.02 t 'danylo/highlight-region-low-level window)))
       )))
-(advice-add 'redisplay--update-region-highlight :around 'danylo/highlight-region)
+
+;; The line below will activate the delayed highlight patch.
+;; (advice-add 'redisplay--update-region-highlight
+;;             :around 'danylo/highlight-region)
+;;;; (end patch)
 
 (use-package expand-region
   ;; https://github.com/magnars/expand-region.el
@@ -916,7 +929,15 @@ Source: http://steve.yegge.googlepages.com/my-dot-emacs-file"
          ("C-x C-," . back-button-global-backward)
          ("C-x C-." . back-button-global-forward)
          )
-  :init (back-button-mode 1))
+  :init (back-button-mode 1)
+  :config
+  (defhydra hydra-jump-history (global-map "C-z")
+    "Move forward/back in current buffer."
+    ("." back-button-local-forward)
+    ("," back-button-local-backward)
+    ("C-." back-button-local-forward)
+    ("C-," back-button-local-backward))
+  )
 
 (use-package revert-buffer-all
   ;; Revert all buffers after external changes have been made.
@@ -1154,19 +1175,17 @@ Patched to use original **window** instead of buffer."
                                   :inherit 'default)))
   :config
   (helm-mode 1)
-  (setq helm-boring-buffer-regexp-list
-        (append helm-boring-buffer-regexp-list
-                '("\\*lsp-" "\\*quelpa-" "\\*Flycheck" "\\*Help" "\\*Ilist"
-                  "\\*dashboard\\*" "\\*xref\\*" "\\*toc\\*"
-                  "\\*Compile-Log\\*" "\\*CPU-Profiler-Report.*\\*"
-                  "\\*TeX Help\\*" "\\*Buffer List\\*" "\\*Julia" "\\*Python"
-                  "magit.*:" "\\*Backtrace\\*" "\\*Process List\\*"
-                  "\\*Async-" "\\*Native-" "\\*.*output\\*" "\\*helm"
-                  "\\*eww\\*" "\\*timer-list\\*" "\\*Disabled Command\\*"
-                  "\\*Man .*\\*" "\\*wclock\\*" "\\*Warnings\\*" "\\*Bufler\\*"
-                  "\\*Ibuffer\\*" "\\*Flymake.*\\*" "\\*EGLOT.*\\*"
-                  "\\*pyright.*\\*" "\\*YASnippet.*\\*"
-                  ))))
+  (setq helm-boring-buffer-regexp-list (append helm-boring-buffer-regexp-list '("\\*.*\\*"))))
+
+(defun danylo/helm-ag-filter-extension ()
+  "Search with helm-ag inside files of a given extension."
+  (interactive)
+  (let ((user-file-extension (read-string "File type (without .): ")))
+    (let ((helm-ag-command-option (concat "-G .*\\." user-file-extension "$")))
+      (helm-do-ag default-directory))))
+
+(general-define-key
+ "C-c h a f" 'danylo/helm-ag-filter-extension)
 
 ;;;; (start patch) Ensure there are no duplicate buffers in the helm-buffer-list.
 (with-eval-after-load 'helm
@@ -1224,6 +1243,17 @@ Patched to use original **window** instead of buffer."
    helm-swoop-split-with-multiple-windows t
    helm-swoop-split-window-function 'danylo/helm-swoop-split-window-function
    helm-swoop-flash-region-function 'pulse-momentary-highlight-region))
+
+(use-package helm-bufler
+  ;; https://github.com/alphapapa/bufler.el
+  ;; To show Bufler’s grouped buffers in a Helm-specific command, a separate
+  ;; helm-bufler package is available.
+  ;; (Deprecated because it does not sort buffers by most recent used - which
+  ;;  is important for me).
+  :disabled
+  :after (helm)
+  :quelpa (helm-bufler :fetcher github :repo "alphapapa/bufler.el"
+                       :files ("helm-bufler.el")))
 
 (use-package helm-ag
   ;; https://github.com/emacsorphanage/helm-ag
@@ -1340,7 +1370,11 @@ active. Basically, any non-file-visiting buffer."
   :init (setq solaire-mode-themes-to-face-swap '("doom-one")
               solaire-mode-real-buffer-fn #'danylo/solaire-mode-inactive-buffer)
   :config
-  (solaire-global-mode +1))
+  (solaire-global-mode +1)
+  (with-eval-after-load 'treesit-fold-indicators
+    (set-face-attribute
+     'treesit-fold-fringe-face nil
+     :background (face-attribute 'solaire-default-face :background))))
 
 ;;; Highlight the current line.
 ;; All programming major modes.
@@ -1433,7 +1467,9 @@ window."
     ;; Redisplay to get rid of solaire mode post-change artifacts
     (when solaire-changed
       (redraw-display))))
-(add-hook 'window-configuration-change-hook 'danylo/smart-toggle-solaire)
+
+;; The line below will activate the solaire-mode toggle.
+;; (add-hook 'window-configuration-change-hook 'danylo/smart-toggle-solaire)
 
 ;;;; Region pulsing
 
@@ -1542,10 +1578,10 @@ is automatically turned on while the line numbers are displayed."
   ;; A fancy and fast mode-line inspired by minimalism design.
   :init (setq doom-modeline-height 10
               doom-modeline-bar-width 2
-              doom-modeline-major-mode-icon nil
-              doom-modeline-icon nil
-              doom-modeline-buffer-state-icon nil
-              doom-modeline-buffer-file-name-style 'truncate-upto-root
+              doom-modeline-major-mode-icon t
+              doom-modeline-icon t
+              doom-modeline-buffer-state-icon t
+              doom-modeline-buffer-file-name-style 'file-name-with-project
               doom-modeline-buffer-encoding nil
               inhibit-compacting-font-caches t
               find-file-visit-truename t
@@ -1708,6 +1744,12 @@ when there is another buffer printing out information."
    ("C-<" . mc/mark-previous-like-this)
    ("C-*" . mc/mark-all-like-this)))
 
+(general-define-key
+ :keymaps 'mc/keymap
+ "<return>" nil
+ "C-<return>" 'multiple-cursors-mode
+ )
+
 (use-package wgrep
   ;; https://github.com/mhayashi1120/Emacs-wgrep
   ;; Writable grep buffer and apply the changes to files.
@@ -1725,11 +1767,29 @@ when there is another buffer printing out information."
   ;;       to save changes
   )
 
+(use-package drag-stuff
+  ;; https://github.com/rejeep/drag-stuff.el
+  ;; Drag stuff around in Emacs.
+  :init
+  (drag-stuff-global-mode 1)
+  (drag-stuff-define-keys)
+  )
+
 (use-package move-text
   ;; https://github.com/emacsfodder/move-text
-  ;; Move current line or region up or down
+  ;; Move current line or region up or down.
+  ;; (Deprecated in favor of drag-stuff above)
+  :disabled
   :config
-  (move-text-default-bindings))
+  (move-text-default-bindings)
+  (defun indent-region-advice (&rest ignored)
+    (let ((deactivate deactivate-mark))
+      (if (region-active-p)
+          (indent-region (region-beginning) (region-end))
+        (indent-region (line-beginning-position) (line-end-position)))
+      (setq deactivate-mark deactivate)))
+  (advice-add 'move-text-up :after 'indent-region-advice)
+  (advice-add 'move-text-down :after 'indent-region-advice))
 
 (use-package undo-fu
   ;; Undo helper with redo
@@ -1758,11 +1818,17 @@ when there is another buffer printing out information."
 (use-package highlight-symbol
   ;; https://github.com/nschum/highlight-symbol.el
   ;; automatic and manual symbol highlighting
+  :hook ((prog-mode . highlight-symbol-mode)
+         (text-mode . highlight-symbol-mode))
   :bind ((:map prog-mode-map
-               ("C-." . highlight-symbol-at-point)))
+               ("C-." . highlight-symbol-at-point)
+               ("C-c C-." . highlight-symbol-remove-all)
+               ))
   :init (setq highlight-symbol-idle-delay 0.5
               highlight-symbol-highlight-single-occurrence nil
-              highlight-symbol-colors '(danylo/highlight-symbol-face)))
+              ;; highlight-symbol-colors '(danylo/highlight-symbol-face)
+              )
+  )
 
 (use-package rainbow-mode
   ;; https://github.com/emacsmirror/rainbow-mode
@@ -1804,15 +1870,35 @@ when there is another buffer printing out information."
   ;; https://github.com/emacsorphanage/git-gutter
   ;; Emacs port of GitGutter which is Sublime Text Plugin.
   :hook ((prog-mode . git-gutter-mode)
-         (text-mode . git-gutter-mode))
-  :bind (("C-{" . 'git-gutter:previous-diff)
-         ("C-}" . 'git-gutter:next-diff)
+         (text-mode . git-gutter-mode)
+         (fundamental-mode . git-gutter-mode))
+  :bind (("C-{" . 'git-gutter:previous-hunk)
+         ("C-}" . 'git-gutter:next-hunk)
+         ("C-c v G" . 'git-gutter:update-all-windows)
+         ("C-c v =" . 'git-gutter:popup-hunk)
+         ("C-c v ^" . 'git-gutter:set-start-revision)
          )
   :config
   (setq
    ;; Update on save.
    git-gutter:update-interval 0)
   )
+
+;;;; (start patch) Fix git-gutter navigation performance by conditionally
+;;;;               deleting the diff buffer.
+(with-eval-after-load 'git-gutter
+  (defun danylo/delete-popup-hunk-buffer-if-visible (arg)
+    "Kill the git-gutter hunk diff buffer if it exists but is not
+visible. This buffer is slow to update, so it significantly slows down
+git-gutter:next-hunk (and git-gutter:previous-hunk which uses it) since
+these functions update the hunk diff buffer."
+    (let* ((popup-buffer (get-buffer git-gutter:popup-buffer))
+           (popup-window (get-buffer-window popup-buffer)))
+      (when (and (buffer-live-p popup-buffer) (not popup-window))
+        (kill-buffer popup-buffer))))
+  (advice-add 'git-gutter:next-hunk
+              :before #'danylo/delete-popup-hunk-buffer-if-visible))
+;;;; (end patch)
 
 (use-package git-gutter-fringe
   ;; https://github.com/emacsorphanage/git-gutter-fringe
@@ -2067,15 +2153,26 @@ in the following cases:
 (advice-add 'filladapt--fill-paragraph :around
             #'danylo/filladapt--fill-paragraph)
 
+;; Display the fill indicator.
+;; All programming major modes.
+(add-hook 'prog-mode-hook #'display-fill-column-indicator-mode)
+;; All modes derived from text-mode.
+(add-hook 'text-mode-hook #'display-fill-column-indicator-mode)
+
 (general-define-key
- "M-q" 'danylo/smart-fill)
+ "M-q" 'danylo/smart-fill
+ "M-Q" 'global-display-fill-column-indicator-mode)
 
 (use-package minimap
   ;; https://github.com/dengste/minimap
   ;; Sidebar showing a "mini-map" of a buffer
   :init (setq minimap-width-fraction 0.1
               minimap-minimum-width 15
-              minimap-hide-fringes t))
+              minimap-hide-fringes t
+              minimap-always-recenter nil
+              minimap-recenter-type 'relative
+              minimap-display-semantic-overlays nil
+              minimap-window-location 'right))
 
 ;;;; Turbo mode for minimal-latency editing
 
@@ -2307,20 +2404,35 @@ Default is 80"
   :config
   (require 'bufler)
   (setq bufler-filter-buffer-modes
-        (append bufler-filter-buffer-modes
-                '(imenu-list-major-mode))
+        (append
+         (cl-set-difference bufler-filter-buffer-modes '(fundamental-mode special-mode))
+         '(imenu-list-major-mode))
         bufler-filter-buffer-name-regexps
         (append bufler-filter-buffer-name-regexps
                 `(,(rx "*Help*")
                   ,(rx "*Buffer List*")))))
 
+(use-package all-the-icons-ibuffer
+  ;; https://github.com/seagle0128/all-the-icons-ibuffer
+  ;; Display icons for all buffers in ibuffer.
+  :hook (ibuffer-mode . all-the-icons-ibuffer-mode)
+  )
+
+(use-package ibuffer-vc
+  ;; https://github.com/purcell/ibuffer-vc
+  ;; Let Emacs' ibuffer-mode group files by git project etc., and show file state.
+  :init
+  :hook ((ibuffer . (lambda ()
+                      (ibuffer-vc-set-filter-groups-by-vc-root)
+                      (unless (eq ibuffer-sorting-mode 'alphabetic)
+                        (ibuffer-do-sort-by-alphabetic))))))
+
 (defun danylo/buffer-list ()
-  "Run Bufler nominally, or the vanilla buffer-list if prefixed
-with C-u."
+  "Run bufler nominally, or ibuffer if prefixed with C-u."
   (interactive)
   (if current-prefix-arg
-      (bufler)
-    (ibuffer)))
+      (ibuffer)
+    (bufler)))
 
 (general-define-key
  "C-x C-b" 'danylo/buffer-list)
@@ -2405,7 +2517,8 @@ with C-u."
   (setq vterm-always-compile-module t
         vterm-kill-buffer-on-exit t
         vterm-max-scrollback 100000
-        vterm--prompt-tracking-enabled-p t)
+        vterm--prompt-tracking-enabled-p t
+        vterm-buffer-name "Terminal")
   ;; Add update-pwd to the list of commands that Emacs is allowed to execute from vterm.
   (add-to-list 'vterm-eval-cmds '("update-pwd" (lambda (path) (setq default-directory path)))))
 
@@ -2466,8 +2579,10 @@ to (vterm) with no argument will create a **new** vterm buffer."
 (use-package with-editor
   ;; Use the current Emacs instance as the $EDITOR of child processes.
   ;; https://github.com/magit/with-editor
+  :disabled
   :config
-  (add-hook 'vterm-mode-hook  'with-editor-export-editor))
+  (add-hook 'vterm-mode-hook  'with-editor-export-editor)
+  )
 
 ;;; ..:: Completion ::..
 
@@ -2817,9 +2932,38 @@ fill after inserting the link."
 (use-package magit
   ;; https://github.com/magit/magit
   ;; An interface to the version control system Git
-  :bind (("C-x g" . magit-status))
+  :bind (("C-c v s" . magit-status)
+         ("C-c v t r" . magit-toggle-verbose-refresh)
+         ("C-c v D" . danylo/magit-diff-range)
+         ("C-c v l" . magit-log)
+         ("C-c v t" . magit-log-current)
+         ("C-c v d" . magit-diff-buffer-file)
+         :map magit-file-section-map
+         ("RET" . magit-diff-visit-file-other-window)
+         :map magit-hunk-section-map
+         ("RET" . magit-diff-visit-file-other-window))
   :init (setq magit-display-buffer-function
-              #'magit-display-buffer-same-window-except-diff-v1))
+              #'magit-display-buffer-same-window-except-diff-v1
+              magit-refresh-status-buffer nil
+              magit-refresh-verbose nil
+              )
+  :config
+  ;; Turn off features that I won't miss when running magit-status.
+  (remove-hook 'magit-status-headers-hook 'magit-insert-tags-header)
+  (remove-hook 'magit-status-sections-hook 'magit-insert-unpushed-to-pushremote)
+  (remove-hook 'magit-status-sections-hook 'magit-insert-unpulled-from-pushremote)
+  (remove-hook 'magit-status-sections-hook 'magit-insert-unpulled-from-upstream)
+  (remove-hook 'magit-status-sections-hook 'magit-insert-unpushed-to-upstream-or-recent)
+
+  (defun danylo/magit-diff-range ()
+    "Custom function for diffing a commit range."
+    (interactive)
+    (let ((baseline-commit (read-string "Baseline: " "HEAD^"))
+          (compare-commit (read-string "Compare against: " "")))
+      (if (string-equal compare-commit "")
+          (magit-diff-working-tree baseline-commit)
+        (magit-diff-range (concat baseline-commit ".." compare-commit)))))
+  )
 
 (with-eval-after-load "magit"
   (set-face-attribute 'magit-branch-current nil
@@ -2830,7 +2974,12 @@ fill after inserting the link."
 (use-package why-this
   ;; https://codeberg.org/akib/emacs-why-this
   ;; Why the current line contains this?
-  )
+  :bind (("M-/" . why-this)
+         ("M-?" . why-this-mode))
+  :custom
+  (why-this-idle-delay 0.05)
+  :config
+  (set-face-attribute 'why-this-face nil :foreground "#5B6268"))
 
 ;;; ..:: Shell interaction ::..
 
@@ -3759,3 +3908,10 @@ Patched so that any new file by default is guessed as being its own master."
   ;; Jinja2 mode for emacs.
   :init
   (add-to-list 'auto-mode-alist '("\\.j2.*" . jinja2-mode)))
+
+;;; ..:: Load custom non-version-controlled init code ::..
+
+(use-package init_local
+  ;; Local non-version-controlled init file.
+  :load-path danylo/emacs-custom-lisp-dir
+  :if (locate-library "init_local.el"))

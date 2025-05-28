@@ -840,11 +840,14 @@ Source: https://emacs.stackexchange.com/a/50834/13661"
   :config
   (defun danylo/get-scroll-step (arg)
     "Get the scroll step."
-    (when (and arg (and (> arg 0) (<= arg 100)))
-      (setq danylo/scroll-fast-frac (/ (float arg) 100.0))
-      (message "New scroll fraction: %.2f" danylo/scroll-fast-frac))
-    (- (1- (danylo/window-height-fraction danylo/scroll-fast-frac))
-       next-screen-context-lines))
+    (if (eq arg 0)
+        1
+      (progn
+        (when (and (not (null arg)) (>= arg 0) (<= arg 100))
+          (setq danylo/scroll-fast-frac (/ (float arg) 100.0))
+          (message "New scroll fraction: %.2f" danylo/scroll-fast-frac))
+        (- (1- (danylo/window-height-fraction danylo/scroll-fast-frac))
+           next-screen-context-lines))))
 
   (defun danylo/scroll-down (&optional arg)
     "Scroll down."
@@ -862,21 +865,13 @@ Source: https://emacs.stackexchange.com/a/50834/13661"
     "Move point to previous line, keeping cursor in the same position on the
 screen."
     (interactive)
-    (if (not (memq last-command pager-keep-column-commands))
-        (setq pager-temporary-goal-column (current-column)))
-    (if (not (pos-visible-in-window-p (point-min)))
-        (scroll-down 1))
-    (move-to-column pager-temporary-goal-column))
+    (danylo/scroll-up 0))
 
   (defun danylo/scroll-row-down ()
     "Move point to next line, keeping cursor in the same position on the
 screen."
     (interactive)
-    (if (not (memq last-command pager-keep-column-commands))
-        (setq pager-temporary-goal-column (current-column)))
-    (if (not (pos-visible-in-window-p (point-max)))
-        (scroll-up 1))
-    (move-to-column pager-temporary-goal-column))
+    (danylo/scroll-down 0))
 
   (defhydra hydra-scroll-row (global-map "C-q")
     "Move up/rown one row keeping the cursor at the same position"
@@ -2961,7 +2956,7 @@ fill after inserting the link."
   ;; https://github.com/magit/magit
   ;; An interface to the version control system Git
   :bind (("C-c v s" . magit-status)
-         ("C-c v t r" . magit-toggle-verbose-refresh)
+         ("C-c v r" . magit-toggle-verbose-refresh)
          ("C-c v D" . danylo/magit-diff-range)
          ("C-c v l" . magit-log)
          ("C-c v t" . magit-log-current)

@@ -832,29 +832,57 @@ Source: https://emacs.stackexchange.com/a/50834/13661"
   (let ((frac (if frac frac 0.5)))
     (max 1 (round (* (1- (window-height (selected-window))) frac)))))
 
-(defun danylo/scroll-up-frac (&optional frac)
-  "Scroll up by FRAC of window's height, default is 0.5."
-  (let ((frac (if frac frac 0.5)))
-    (scroll-up-command (danylo/window-height-fraction frac))))
+(use-package pager
+  ;; https://github.com/emacsorphanage/pager
+  ;; Windows-scroll commands.
+  :bind (("C-v" . danylo/scroll-down)
+         ("M-v" . danylo/scroll-up))
+  :config
+  (defun danylo/get-scroll-step (arg)
+    "Get the scroll step."
+    (when (and arg (and (> arg 0) (<= arg 100)))
+      (setq danylo/scroll-fast-frac (/ (float arg) 100.0))
+      (message "New scroll fraction: %.2f" danylo/scroll-fast-frac))
+    (- (1- (danylo/window-height-fraction danylo/scroll-fast-frac))
+       next-screen-context-lines))
 
-(defun danylo/scroll-down-frac (&optional frac)
-  "Scroll down by FRAC of window's height, default is 0.5."
-  (let ((frac (if frac frac 0.5)))
-    (scroll-down-command (danylo/window-height-fraction frac))))
+  (defun danylo/scroll-down (&optional arg)
+    "Scroll down."
+    (interactive "P")
+    (if (not (pos-visible-in-window-p (point-max)))
+        (pager-scroll-screen (danylo/get-scroll-step arg))))
 
-(defun danylo/fast-scroll-up ()
-  "Scroll up in big steps."
-  (interactive)
-  (danylo/scroll-up-frac danylo/scroll-fast-frac))
+  (defun danylo/scroll-up (&optional arg)
+    "Scroll up."
+    (interactive "P")
+    (if (not (pos-visible-in-window-p (point-min)))
+        (pager-scroll-screen (- (danylo/get-scroll-step arg)))))
 
-(defun danylo/fast-scroll-down ()
-  "Scroll down in big steps."
-  (interactive)
-  (danylo/scroll-down-frac danylo/scroll-fast-frac))
+  (defun danylo/scroll-row-up ()
+    "Move point to previous line, keeping cursor in the same position on the
+screen."
+    (interactive)
+    (if (not (memq last-command pager-keep-column-commands))
+        (setq pager-temporary-goal-column (current-column)))
+    (if (not (pos-visible-in-window-p (point-min)))
+        (scroll-down 1))
+    (move-to-column pager-temporary-goal-column))
 
-(general-define-key
- "C-v" 'danylo/fast-scroll-up
- "M-v" 'danylo/fast-scroll-down)
+  (defun danylo/scroll-row-down ()
+    "Move point to next line, keeping cursor in the same position on the
+screen."
+    (interactive)
+    (if (not (memq last-command pager-keep-column-commands))
+        (setq pager-temporary-goal-column (current-column)))
+    (if (not (pos-visible-in-window-p (point-max)))
+        (scroll-up 1))
+    (move-to-column pager-temporary-goal-column))
+
+  (defhydra hydra-scroll-row (global-map "C-q")
+    "Move up/rown one row keeping the cursor at the same position"
+    ("n" danylo/scroll-row-down "down")
+    ("p" danylo/scroll-row-up "up"))
+  )
 
 ;;; Mouse wheel scroll behaviour
 (mouse-wheel-mode 't)
@@ -933,10 +961,10 @@ Source: http://steve.yegge.googlepages.com/my-dot-emacs-file"
   :config
   (defhydra hydra-jump-history (global-map "C-z")
     "Move forward/back in current buffer."
-    ("." back-button-local-forward)
-    ("," back-button-local-backward)
-    ("C-." back-button-local-forward)
-    ("C-," back-button-local-backward))
+    ("." back-button-local-forward "local fwd")
+    ("," back-button-local-backward "local back")
+    ("C-." back-button-local-forward "global fwd")
+    ("C-," back-button-local-backward "global back"))
   )
 
 (use-package revert-buffer-all

@@ -117,11 +117,6 @@ in a while."
   :type 'integer
   :group 'danylo)
 
-(defcustom danylo/scroll-fast-frac 0.15
-  "Fraction of window's height to fast scroll up/down by."
-  :type 'float
-  :group 'danylo)
-
 (defcustom danylo/treesit-verbose nil
   "Print in minibuffer the matched tree-sitter indentation rule."
   :type 'boolean

@@ -824,60 +824,19 @@ Source: https://emacs.stackexchange.com/a/50834/13661"
 
 ;;;; Scrolling behaviour
 
-(setq scroll-error-top-bottom t
-      scroll-preserve-screen-position 'always)
-
-(defun danylo/window-height-fraction (&optional frac)
-  "Get FRAC of the full window height, default is 0.5."
-  (let ((frac (if frac frac 0.5)))
-    (max 1 (round (* (1- (window-height (selected-window))) frac)))))
-
-(use-package pager
-  ;; https://github.com/emacsorphanage/pager
-  ;; Windows-scroll commands.
+(use-package danylo-scroll
+  ;; My custom scroll commands.
+  :load-path danylo/emacs-custom-lisp-dir
   :bind (("C-v" . danylo/scroll-down)
          ("M-v" . danylo/scroll-up))
+  :custom
+  (scroll-error-top-bottom t)
+  (scroll-preserve-screen-position 'always)
   :config
-  (defun danylo/get-scroll-step (arg)
-    "Get the scroll step."
-    (if (eq arg 0)
-        1
-      (progn
-        (when (and (not (null arg)) (>= arg 0) (<= arg 100))
-          (setq danylo/scroll-fast-frac (/ (float arg) 100.0))
-          (message "New scroll fraction: %.2f" danylo/scroll-fast-frac))
-        (- (1- (danylo/window-height-fraction danylo/scroll-fast-frac))
-           next-screen-context-lines))))
-
-  (defun danylo/scroll-down (&optional arg)
-    "Scroll down."
-    (interactive "P")
-    (if (not (pos-visible-in-window-p (point-max)))
-        (pager-scroll-screen (danylo/get-scroll-step arg))))
-
-  (defun danylo/scroll-up (&optional arg)
-    "Scroll up."
-    (interactive "P")
-    (if (not (pos-visible-in-window-p (point-min)))
-        (pager-scroll-screen (- (danylo/get-scroll-step arg)))))
-
-  (defun danylo/scroll-row-up ()
-    "Move point to previous line, keeping cursor in the same position on the
-screen."
-    (interactive)
-    (danylo/scroll-up 0))
-
-  (defun danylo/scroll-row-down ()
-    "Move point to next line, keeping cursor in the same position on the
-screen."
-    (interactive)
-    (danylo/scroll-down 0))
-
   (defhydra hydra-scroll-row (global-map "C-q")
     "Move up/rown one row keeping the cursor at the same position"
     ("n" danylo/scroll-row-down "down")
-    ("p" danylo/scroll-row-up "up"))
-  )
+    ("p" danylo/scroll-row-up "up")))
 
 ;;; Mouse wheel scroll behaviour
 (mouse-wheel-mode 't)

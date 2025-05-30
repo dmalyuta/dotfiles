@@ -21,6 +21,10 @@
 ;; (setq debug-on-message "Function .+ is already compiled")
 ;; (setq debug-on-message "Waiting for .*")
 
+;; Paste the following at the desired location to early-out from the init file.
+;; (with-current-buffer " *load*" (goto-char (point-max)))
+
+
 ;; Native compilation settings
 (when (fboundp 'native-compile-async)
   (setq comp-deferred-compilation t
@@ -379,34 +383,31 @@ directory."
   )
 
 ;;;; (start patch) Throttle the call rate to render treesit-fold fringe indicators.
-(defconst danylo/debounced-treesit-fold-indicators-refresh-idle-delay 0.25)
-(defvar danylo/debounced-treesit-fold-indicators-refresh-timer nil)
-(defvar danylo/debounced-treesit-fold-indicators-render-window nil)
+(defvar danylo/fold-indicators-refresh-idle-delay 0.25)
+(defvar danylo/fold-indicators-refresh-timer nil)
 (defun danylo/debounced-treesit-fold-indicators-refresh (orig-fun &rest args)
-  (if danylo/debounced-treesit-fold-indicators-render-window
+  (when danylo/fold-indicators-refresh-timer
+    (cancel-timer danylo/fold-indicators-refresh-timer))
+  (if (eq danylo/fold-indicators-refresh-idle-delay 0)
       (apply orig-fun args)
-    (progn
-      (when danylo/debounced-treesit-fold-indicators-refresh-timer
-        (cancel-timer danylo/debounced-treesit-fold-indicators-refresh-timer))
-      (setq danylo/debounced-treesit-fold-indicators-refresh-timer
-            (run-with-idle-timer
-             danylo/debounced-treesit-fold-indicators-refresh-idle-delay nil
-             (lambda (orig-fun &rest args)
-               (apply orig-fun args)) orig-fun args)))))
-(defun danylo/treesit-fold-indicators-render-on-split (orig-fun &rest args)
+    (setq
+     danylo/fold-indicators-refresh-timer
+     (run-with-idle-timer
+      danylo/fold-indicators-refresh-idle-delay nil
+      (lambda (orig-fun &rest args)
+        (apply orig-fun args)) orig-fun args))))
+(defun danylo/treesit-fold-indicators-render ()
   "Render indicators for all visible windows in the current frame after a window split."
-  (let ((new-window (apply orig-fun args)))
-    (setq danylo/debounced-treesit-fold-indicators-render-window t)
-    (treesit-fold--with-no-redisplay
-      (dolist (win (window-list (selected-frame)))
-        (treesit-fold-indicators--render-window win)))
-    (setq danylo/debounced-treesit-fold-indicators-render-window nil)
-    new-window))
+  (interactive)
+  (run-with-idle-timer
+   0 nil
+   (lambda ()
+     (let ((danylo/fold-indicators-refresh-idle-delay 0))
+       (treesit-fold-indicators--size-change)))))
 (with-eval-after-load 'treesit-fold
   (advice-add 'treesit-fold-indicators-refresh
               :around #'danylo/debounced-treesit-fold-indicators-refresh)
-  (advice-add 'split-window-below :around #'danylo/treesit-fold-indicators-render-on-split)
-  (advice-add 'split-window-right :around #'danylo/treesit-fold-indicators-render-on-split))
+  (add-hook 'window-configuration-change-hook #'danylo/treesit-fold-indicators-render))
 ;;;; (end patch)
 
 ;;; ..:: General usability ::..
@@ -1352,11 +1353,7 @@ active. Basically, any non-file-visiting buffer."
   :init (setq solaire-mode-themes-to-face-swap '("doom-one")
               solaire-mode-real-buffer-fn #'danylo/solaire-mode-inactive-buffer)
   :config
-  (solaire-global-mode +1)
-  (with-eval-after-load 'treesit-fold-indicators
-    (set-face-attribute
-     'treesit-fold-fringe-face nil
-     :background (face-attribute 'solaire-default-face :background))))
+  (solaire-global-mode +1))
 
 ;;; Highlight the current line.
 ;; All programming major modes.
@@ -1375,83 +1372,42 @@ active. Basically, any non-file-visiting buffer."
 ;;;; (end patch)
 
 ;;;; (start patch) Turn off solaire-mode in the minibuffer
-
 (defun danylo/solaire-mode-fix-minibuffer (orig-fun &rest args)
   "No minibuffer fix, I want solaire OFF in the minibuffer.")
-(advice-add 'solaire-mode-fix-minibuffer :around #'danylo/solaire-mode-fix-minibuffer)
-
 (defun danylo/minibuffer-no-solaire (orig-fun &rest args)
   "Do not turn on solaire in the minibuffer"
   (unless (minibufferp) (apply orig-fun args)))
+(advice-add 'solaire-mode-fix-minibuffer
+            :around #'danylo/solaire-mode-fix-minibuffer)
 (advice-add 'turn-on-solaire-mode :around #'danylo/minibuffer-no-solaire)
-
 ;;;; (end patch)
 
-(defun danylo/toggle-solaire (state)
-  "Turn Solaire mode on or off, only if STATE is opposite of what
-it is currently. Return T if solaire mode had to actually be
-turned on or off."
-  (let ((this-buffer (current-buffer))
-        (need-changing (not (eq state (bound-and-true-p solaire-mode)))))
-    (when need-changing
-      (if state
-          (progn
-            (turn-on-solaire-mode)
-            (set-face-attribute
-             'treesit-fold-fringe-face nil
-             :background (face-attribute 'solaire-default-face :background)))
-        (progn
-          (turn-off-solaire-mode)
-          (set-face-attribute
-           'treesit-fold-fringe-face nil
-           :background (face-attribute 'default :background)))))
-    need-changing))
+;;;; (start patch) Ensure that the fringe background matches the window
+;;;;               background.
+(defvar-local danylo/treesit-fold-fringe-remap-cookie nil
+  "Cookie for the remapped `treesit-fold-fringe-face` in this window.")
 
-(defun danylo/buffer-shown-in-multiple-windows ()
-  "Return T if the current buffer is displayed in >1 window, and
-NIL otherwise."
-  (let ((this-buffer (current-buffer))
-        (occur-count 0))
-    (mapc
-     ;; Loop through windows in all frames
-     (lambda (fr)
-       (mapc
-        (lambda (win)
-          (when (eq (window-buffer win) this-buffer)
-            ;; Found occurence of this buffer
-            (setq occur-count (1+ occur-count))))
-        (window-list fr)))
-     (frame-list))
-    ;; Return T if and only if more than 1 occurences in visible windows
-    (> occur-count 1)))
+(defun danylo/update-treesit-fold-fringe-face-for-window (window)
+  "Update `treesit-fold-fringe-face` in WINDOW to match its background."
+  (with-selected-window window
+    (let* ((bg (face-background 'solaire-default-face nil t))
+           (buffer (window-buffer window)))
+      (with-current-buffer buffer
+        ;; Remove old remap if it exists
+        (when danylo/treesit-fold-fringe-remap-cookie
+          (face-remap-remove-relative danylo/treesit-fold-fringe-remap-cookie))
+        ;; Add new remap
+        (setq danylo/treesit-fold-fringe-remap-cookie
+              (face-remap-add-relative 'treesit-fold-fringe-face
+                                       `(:background ,bg)))))))
+(defun danylo/update-all-treesit-fold-fringe-faces ()
+  "Update `treesit-fold-fringe-face` for all visible windows."
+  (dolist (window (window-list))
+    (danylo/update-treesit-fold-fringe-face-for-window window)))
 
-(defun danylo/smart-toggle-solaire ()
-  "Turn off Solaire mode when the buffer is being shown in >1
-window."
-  ;; Go through each buffer and turn on Solaire mode if and only if:
-  ;;  - It is a file-visiting buffer
-  ;;  - The buffer is current visible
-  ;;  - The buffer is not shown in more than one window
-  (let ((solaire-changed nil))
-    (mapc (lambda (buf)
-            (with-current-buffer buf
-              (when (buffer-file-name)
-                (if (danylo/buffer-shown-in-multiple-windows)
-                    ;; Turn off solaire mode
-                    (setq solaire-changed
-                          (or (danylo/toggle-solaire nil)
-                              solaire-changed))
-                  ;; Turn on solaire mode
-                  (setq solaire-changed
-                        (or (danylo/toggle-solaire t)
-                            solaire-changed))))))
-          (buffer-list))
-    ;; Redisplay to get rid of solaire mode post-change artifacts
-    (when solaire-changed
-      (redraw-display))))
-
-;; The line below will activate the solaire-mode toggle.
-;; (add-hook 'window-configuration-change-hook 'danylo/smart-toggle-solaire)
+;; Hooks to respond to layout or theme changes
+(add-hook 'window-configuration-change-hook #'danylo/update-all-treesit-fold-fringe-faces)
+;;;; (end patch)
 
 ;;;; Region pulsing
 
@@ -2640,7 +2596,14 @@ argument: number-or-marker-p, nil'."
   (lsp-completion-provider :capf)
   (lsp-session-file (expand-file-name ".lsp-session" user-emacs-directory))
   (lsp-log-io nil)
-  (lsp-document-sync-method 'lsp--sync-incremental)
+  ;; I thought the following would speed up LSP by not triggering a call to
+  ;; server on every key stroke, but ultimately it seems to just break clangd
+  ;; from tracking file changes properly...
+  ;; (lsp-document-sync-method 'lsp--sync-incremental)
+  ;; ... so instead just use the default option of letting the server decide
+  ;; how it wants to receive updates:
+  (lsp-document-sync-method nil)
+  (lsp-debounce-full-sync-notifications t)
   (lsp-keep-workspace-alive nil)
   (lsp-idle-delay 0.5)
   ;; core

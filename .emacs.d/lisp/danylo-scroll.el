@@ -29,10 +29,9 @@ keep the `danylo/scroll-temporary-goal-column'.")
 (defvar danylo/scroll-temporary-goal-column 0
   "Similar to temporary-goal-column but used by my custom scroll functions.")
 
-(defun danylo/window-height-fraction (&optional frac)
+(defun danylo/window-height-fraction (frac)
   "Get FRAC of the full window height, default is 0.5."
-  (let ((frac (if frac frac 0.5)))
-    (max 1 (round (* (1- (window-height (selected-window))) frac)))))
+  (ceiling (* (1- (window-height (selected-window))) frac)))
 
 (defun danylo/scroll-screen (lines)
   "Scroll screen by LINES visual lines, but keep the cursors position on
@@ -59,8 +58,7 @@ screen."
       (when (and (not (null arg)) (>= arg 0) (<= arg 100))
         (setq danylo/scroll-frac (/ (float arg) 100.0))
         (message "New scroll fraction: %.2f" danylo/scroll-frac))
-      (- (1- (danylo/window-height-fraction danylo/scroll-frac))
-         next-screen-context-lines))))
+      (danylo/window-height-fraction danylo/scroll-frac))))
 
 (defun danylo/scroll-down (&optional arg)
   "Scroll down."

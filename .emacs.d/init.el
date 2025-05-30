@@ -276,6 +276,28 @@ directory."
      danylo/mode-list-cache)
     (setq danylo/mode-list-cache remaining-modes)))
 
+;;;;; Profiling
+
+(defvar danylo/profiler-running nil
+  "Whether the CPU profiler is currently running.")
+
+(defun danylo/toggle-profiler ()
+  "Toggle Emacs CPU profiler. Start on first call, stop and report on second."
+  (interactive)
+  (if danylo/profiler-running
+      (progn
+        (profiler-stop)
+        (message "Profiler stopped")
+        (setq danylo/profiler-running nil)
+        (profiler-report-profile (profiler-cpu-profile))
+        (profiler-reset))
+    (profiler-start 'cpu)
+    (setq danylo/profiler-running t)
+    (message "Profiler started (CPU only)")))
+
+(general-define-key
+ "C-c P" 'danylo/toggle-profiler)
+
 ;;; ..:: Garbage collection ::..
 
 ;; 100MB of garbage collection space once running
@@ -333,6 +355,38 @@ directory."
 
 ;; Maximally colorful font coloring.
 (setq treesit-font-lock-level 4)
+
+;;;; (start patch) Throttle the redisplay rate of treesitter.
+(defconst danylo/treesitter-pre-redisplay-delay 0.25)
+(defvar-local danylo/treesitter-pre-redisplay-timer nil)
+(defun danylo/treesit-pre-redisplay (orig-fun &rest args)
+  "Debounce calls to ORIG-FUN such that they only occur when Emacs has been
+idle for the configured time period."
+  (when danylo/treesitter-pre-redisplay-timer
+    (cancel-timer danylo/treesitter-pre-redisplay-timer))
+  (setq
+   danylo/treesitter-pre-redisplay-timer
+   (run-with-idle-timer
+    danylo/treesitter-pre-redisplay-delay nil
+    (lambda (orig-fun &rest args)
+      (apply orig-fun args)) orig-fun args)))
+(advice-add 'treesit--pre-redisplay :around #'danylo/treesit-pre-redisplay)
+
+(defvar-local danylo/syntax-propertize-timer nil)
+(defun danylo/syntax-propertize (orig-fun &rest args)
+  "Debounce calls to ORIG-FUN such that they only occur when Emacs has been
+idle for the configured time period."
+  (when danylo/syntax-propertize-timer
+    (cancel-timer danylo/syntax-propertize-timer))
+  (setq
+   danylo/syntax-propertize-timer
+   (run-with-idle-timer
+    danylo/treesitter-pre-redisplay-delay nil
+    (lambda (orig-fun &rest args)
+      (save-excursion
+        (apply orig-fun (car args)))) orig-fun args)))
+(advice-add 'c-ts-mode--syntax-propertize :around #'danylo/syntax-propertize)
+;;;; (end patch)
 
 (add-hook 'c-mode-common-hook
           (lambda ()
@@ -443,22 +497,13 @@ directory."
 (defvar danylo/toggle-between-buffers-value -1
   "Switching variable that determines if we go to the previous or the next buffer.")
 
-(defun danylo/toggle-between-buffers (&optional arg)
+(defun danylo/toggle-between-buffers ()
   "Toggle between this and the last visited buffer in the current window."
-  (interactive "P")
-  (when (not (eq last-command 'danylo/toggle-between-buffers))
-    ;; Reset such that we go the previous buffer if user was doing other things
-    ;; than toggling between buffers.
-    (setq danylo/toggle-between-buffers-value -1))
-  (if (eq danylo/toggle-between-buffers-value -1)
-      (progn
-        (switch-to-prev-buffer)
-        (setq danylo/toggle-between-buffers-value 1))
-    (progn
-      (switch-to-next-buffer)
-      (setq danylo/toggle-between-buffers-value -1))))
+  (interactive)
+  (switch-to-buffer (other-buffer (current-buffer) 1)))
 
-(global-set-key (kbd "C-x /") 'danylo/toggle-between-buffers)
+(general-define-key
+ "C-x /" 'danylo/toggle-between-buffers)
 
 ;;;; Smart move cursor in large steps
 
@@ -1319,7 +1364,7 @@ Patched to use original **window** instead of buffer."
             (danylo/make-frame-title)))
 
 ;;;; Font
-;; (set-frame-font "CaskaydiaCove NF" nil t)
+(set-frame-font "CaskaydiaCove NF" nil t)
 
 (use-package rainbow-delimiters
   ;; https://github.com/Fanael/rainbow-delimiters

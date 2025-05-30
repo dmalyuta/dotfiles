@@ -31,7 +31,7 @@ keep the `danylo/scroll-temporary-goal-column'.")
 
 (defun danylo/window-height-fraction (frac)
   "Get FRAC of the full window height, default is 0.5."
-  (ceiling (* (1- (window-height (selected-window))) frac)))
+  (ceiling (* (window-height (selected-window)) frac)))
 
 (defun danylo/scroll-screen (lines)
   "Scroll screen by LINES visual lines, but keep the cursors position on

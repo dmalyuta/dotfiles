@@ -106,6 +106,13 @@ directory."
   ;; Make Emacs bindings that stick around
   )
 
+(general-define-key
+ :keymaps 'emacs-lisp-mode-map
+ "C-M-r" 'eval-region
+ "C-M-d" 'eval-defun
+ "C-M-x" 'eval-buffer
+ )
+
 ;;; ..:: General helper functions ::..
 
 (use-package s
@@ -356,38 +363,6 @@ directory."
 ;; Maximally colorful font coloring.
 (setq treesit-font-lock-level 4)
 
-;;;; (start patch) Throttle the redisplay rate of treesitter.
-(defconst danylo/treesitter-pre-redisplay-delay 0.25)
-(defvar-local danylo/treesitter-pre-redisplay-timer nil)
-(defun danylo/treesit-pre-redisplay (orig-fun &rest args)
-  "Debounce calls to ORIG-FUN such that they only occur when Emacs has been
-idle for the configured time period."
-  (when danylo/treesitter-pre-redisplay-timer
-    (cancel-timer danylo/treesitter-pre-redisplay-timer))
-  (setq
-   danylo/treesitter-pre-redisplay-timer
-   (run-with-idle-timer
-    danylo/treesitter-pre-redisplay-delay nil
-    (lambda (orig-fun &rest args)
-      (apply orig-fun args)) orig-fun args)))
-(advice-add 'treesit--pre-redisplay :around #'danylo/treesit-pre-redisplay)
-
-(defvar-local danylo/syntax-propertize-timer nil)
-(defun danylo/syntax-propertize (orig-fun &rest args)
-  "Debounce calls to ORIG-FUN such that they only occur when Emacs has been
-idle for the configured time period."
-  (when danylo/syntax-propertize-timer
-    (cancel-timer danylo/syntax-propertize-timer))
-  (setq
-   danylo/syntax-propertize-timer
-   (run-with-idle-timer
-    danylo/treesitter-pre-redisplay-delay nil
-    (lambda (orig-fun &rest args)
-      (save-excursion
-        (apply orig-fun (car args)))) orig-fun args)))
-(advice-add 'c-ts-mode--syntax-propertize :around #'danylo/syntax-propertize)
-;;;; (end patch)
-
 (add-hook 'c-mode-common-hook
           (lambda ()
             (c-ts-common-comment-setup)
@@ -413,6 +388,19 @@ idle for the configured time period."
 (add-hook 'c-ts-mode-hook #'c-ts-mode-call-hook)
 (defun python-ts-mode-call-hook () (run-hooks 'python-mode-hook))
 (add-hook 'python-ts-mode-hook #'python-ts-mode-call-hook)
+
+;;;; (start patch) Turn off traditional syntax propertization in chosen modes.
+(defconst danylo/disable-syntax-propertize-modes
+  '(c++-ts-mode c-ts-mode python-ts-mode)
+  "List of modes where `syntax-propertize-function` should be disabled.")
+
+;; Add the hook to all specified modes
+(dolist (mode danylo/disable-syntax-propertize-modes)
+  (let ((hook (intern (format "%s-hook" mode))))
+    (add-hook
+     hook
+     (lambda () (setq-local syntax-propertize-function nil)))))
+;;;; (end patch)
 
 (use-package fringe-helper
   ;; https://github.com/nschum/fringe-helper.el
@@ -502,8 +490,14 @@ idle for the configured time period."
   (interactive)
   (switch-to-buffer (other-buffer (current-buffer) 1)))
 
+(defhydra hydra-toggle-between-buffers
+  (:body-pre (danylo/toggle-between-buffers))
+  "Flip to last buffer"
+  ("/" danylo/toggle-between-buffers))
+(hydra-set-property 'hydra-toggle-between-buffers :verbosity 0)
+
 (general-define-key
- "C-x /" 'danylo/toggle-between-buffers)
+ "C-x /" 'hydra-toggle-between-buffers/body)
 
 ;;;; Smart move cursor in large steps
 
@@ -960,7 +954,7 @@ Source: http://steve.yegge.googlepages.com/my-dot-emacs-file"
   :init (back-button-mode 1)
   :config
   (defhydra hydra-jump-history (global-map "C-z")
-    "Move forward/back in current buffer."
+    "Move forward/back in current buffer"
     ("." back-button-local-forward "local fwd")
     ("," back-button-local-backward "local back")
     ("C-." back-button-local-forward "global fwd")
@@ -1203,7 +1197,9 @@ Patched to use original **window** instead of buffer."
                                   :inherit 'default)))
   :config
   (helm-mode 1)
-  (setq helm-boring-buffer-regexp-list (append helm-boring-buffer-regexp-list '("\\*.*\\*"))))
+  (setq helm-boring-buffer-regexp-list
+        (append helm-boring-buffer-regexp-list
+                '("\\*.*\\*" "magit-.*"))))
 
 (defun danylo/helm-ag-filter-extension ()
   "Search with helm-ag inside files of a given extension."
@@ -1535,6 +1531,7 @@ is automatically turned on while the line numbers are displayed."
               ;; smooth even with some heavy font locking (because the font
               ;; locking will occur during "idle" times)!
               jit-lock-defer-time 0.05 ; `,danylo/fontify-delay
+              jit-lock-context-time 0.05
               font-lock-maximum-decoration nil)
 
 ;;;; Font lock debug tools
@@ -1791,6 +1788,8 @@ when there is another buffer printing out information."
                                   :background `,danylo/yellow
                                   :weight 'bold
                                   :inherit 'default)))
+  :custom
+  (hl-todo-color-background nil)
   :config
   (global-hl-todo-mode)
   (add-to-list 'hl-todo-keyword-faces `("TODO" . ,danylo/black))
@@ -2679,7 +2678,10 @@ argument: number-or-marker-p, nil'."
   (lsp-modeline-code-actions-enable nil)
   (lsp-modeline-diagnostics-enable nil)
   (lsp-modeline-workspace-status-enable nil)
-  (lsp-signature-doc-lines 1)
+  ;; minibuffer
+  (setq lsp-signature-auto-activate nil)
+  (setq lsp-signature-doc-lines nil)
+  (setq lsp-signature-render-documentation nil)
   ;; lens
   (lsp-lens-enable nil)
   ;; C++
@@ -2700,7 +2702,7 @@ argument: number-or-marker-p, nil'."
   :after (lsp-mode)
   :custom
   (lsp-ui-sideline-enable t)
-  ;; (lsp-ui-doc-enable nil)
+  (lsp-ui-doc-enable nil)
   (lsp-ui-doc-delay 0.2)
   (lsp-ui-sideline-show-diagnostics t)
   (lsp-ui-sideline-diagnostic-max-line-length 80)
@@ -2764,7 +2766,14 @@ argument: number-or-marker-p, nil'."
 (use-package flycheck
   ;; https://github.com/flycheck/flycheck
   ;; On the fly syntax checking for GNU Emacs
-  )
+  :config
+  (defhydra hydra-flycheck (global-map "C-!")
+    "Flycheck commands"
+    ("e" flycheck-explain-error-at-point "explain")
+    ("d" flycheck-display-error-at-point "display")
+    ("n" flycheck-next-error "next")
+    ("p" flycheck-previous-error "previous")
+    ("l" flycheck-list-errors "list")))
 
 ;;; ..:: File management ::..
 

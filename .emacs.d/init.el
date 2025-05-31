@@ -2679,9 +2679,9 @@ argument: number-or-marker-p, nil'."
   (lsp-modeline-diagnostics-enable nil)
   (lsp-modeline-workspace-status-enable nil)
   ;; minibuffer
-  (setq lsp-signature-auto-activate nil)
-  (setq lsp-signature-doc-lines nil)
-  (setq lsp-signature-render-documentation nil)
+  (lsp-signature-auto-activate nil)
+  (lsp-signature-doc-lines nil)
+  (lsp-signature-render-documentation nil)
   ;; lens
   (lsp-lens-enable nil)
   ;; C++

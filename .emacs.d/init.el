@@ -107,7 +107,7 @@ directory."
   )
 
 (general-define-key
- :keymaps 'emacs-lisp-mode-map
+ :keymaps '(emacs-lisp-mode-map lisp-interaction-mode-map)
  "C-M-r" 'eval-region
  "C-M-d" 'eval-defun
  "C-M-x" 'eval-buffer
@@ -1199,7 +1199,7 @@ Patched to use original **window** instead of buffer."
   (helm-mode 1)
   (setq helm-boring-buffer-regexp-list
         (append helm-boring-buffer-regexp-list
-                '("\\*.*\\*" "magit-.*"))))
+                '("\\*.*\\*" "magit.*"))))
 
 (defun danylo/helm-ag-filter-extension ()
   "Search with helm-ag inside files of a given extension."
@@ -1380,13 +1380,7 @@ active. Basically, any non-file-visiting buffer."
 
 (use-package solaire-mode
   ;; https://github.com/hlissner/emacs-solaire-mode
-  ;; Distinguish file-visiting buffers with slightly different background
-  ;;
-  ;; Turns out that solaire-mode can cause significant slowdown, see
-  ;; https://github.com/hlissner/doom-emacs/issues/2217#issuecomment-792222313
-  ;;
-  ;; My workaround is to turn off solaire-mode whenever the buffer is displayed
-  ;; in >1 window
+  ;; Distinguish file-visiting buffers with slightly different background.
   :ensure t
   :after (doom-themes)
   :quelpa ((solaire-mode :fetcher github
@@ -1797,6 +1791,39 @@ when there is another buffer printing out information."
   (add-to-list 'hl-todo-keyword-faces `("DONE" . ,danylo/black))
   (add-to-list 'hl-todo-keyword-faces `("FIXME" . ,danylo/black)))
 
+;;;; (start patch) Make hl-todo highlights into overlays that are not hidden by
+;;;; hl-line.
+(defvar danylo/hl-todo-overlay-idle-delay 0.25)
+(defvar danylo/hl-todo-overlay-timer nil)
+(defun danylo/hl-todo-overlay (&rest _)
+  "Ensure hl-todo overlays are above hl-line overlays."
+  (when (bound-and-true-p hl-todo-mode)
+    (when danylo/hl-todo-overlay-timer
+      (cancel-timer danylo/hl-todo-overlay-timer))
+    (setq
+     danylo/hl-todo-overlay-timer
+     (run-with-idle-timer
+      danylo/hl-todo-overlay-idle-delay nil
+      (lambda (&rest _)
+        (remove-overlays nil nil 'hl-todo-overlay t)
+        (save-excursion
+          (let ((case-fold-search nil)
+                (start (window-start))
+                (end (window-end nil t)))
+            (goto-char start)
+            (while (re-search-forward (hl-todo--regexp) end t)
+              (let ((ov (make-overlay (match-beginning 0) (match-end 0))))
+                (overlay-put ov 'face (hl-todo--get-face))
+                (overlay-put ov 'priority 100) ;; Higher than hl-line (default -50)
+                (overlay-put ov 'hl-todo-overlay t)
+                )))))))))
+(add-hook 'after-change-functions #'danylo/hl-todo-overlay)
+(add-hook 'find-file-hook #'danylo/hl-todo-overlay)
+;; (add-hook 'post-command-hook #'danylo/hl-todo-overlay)
+(add-hook 'window-size-change-functions #'danylo/hl-todo-overlay)
+(add-hook 'window-scroll-functions #'danylo/hl-todo-overlay)
+;;;; (end patch)
+
 (use-package highlight-symbol
   ;; https://github.com/nschum/highlight-symbol.el
   ;; automatic and manual symbol highlighting
@@ -1813,11 +1840,27 @@ when there is another buffer printing out information."
   )
 
 (use-package rainbow-mode
-  ;; https://github.com/emacsmirror/rainbow-mode
-  ;; Colorize color names in buffers
+  ;; https://github.com/dmalyuta/rainbow-mode
+  ;; Colorize color names in buffers.
+  ;; (Superceded by colorful-mode)
+  :disabled
+  :quelpa ((rainbow-mode :fetcher url
+                         :url "https://raw.githubusercontent.com/dmalyuta/rainbow-mode/refs/heads/master/rainbow-mode.el"))
   :hook ((LaTeX-mode . (lambda () (rainbow-mode 1)))
          (emacs-lisp-mode . (lambda () (rainbow-mode 1))))
   )
+
+(use-package colorful-mode
+  ;; https://github.com/DevelopmentCool2449/colorful-mode
+  ;; Preview any color in your buffer.
+  :custom
+  (colorful-use-prefix t)
+  (colorful-prefix-string "● ")
+  (colorful-allow-mouse-clicks t)
+  (css-fontify-colors nil)
+  :config
+  (global-colorful-mode t)
+  (add-to-list 'global-colorful-modes 'helpful-mode))
 
 (use-package filladapt
   ;; https://elpa.gnu.org/packages/filladapt.html

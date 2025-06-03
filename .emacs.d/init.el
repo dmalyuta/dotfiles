@@ -113,6 +113,13 @@ directory."
  "C-M-x" 'eval-buffer
  )
 
+(advice-add 'eval-region
+            :after (lambda (&rest _) (message "Evaluated region")))
+(advice-add 'eval-defun
+            :after (lambda (&rest _) (message "Evaluated defun")))
+(advice-add 'eval-buffer
+            :after (lambda (&rest _) (message "Evaluated buffer")))
+
 ;;; ..:: General helper functions ::..
 
 (use-package s
@@ -1713,6 +1720,9 @@ when there is another buffer printing out information."
 (use-package multiple-cursors
   ;; https://github.com/magnars/multiple-cursors.el
   ;; Multiple cursors for emacs.
+  :custom
+  (mc/always-run-for-all t)
+  (mc/always-repeat-command t)
   :bind
   (("C->" . mc/mark-next-like-this)
    ("C-<" . mc/mark-previous-like-this)
@@ -1827,17 +1837,80 @@ when there is another buffer printing out information."
 (use-package highlight-symbol
   ;; https://github.com/nschum/highlight-symbol.el
   ;; automatic and manual symbol highlighting
-  :hook ((prog-mode . highlight-symbol-mode)
-         (text-mode . highlight-symbol-mode))
   :bind ((:map prog-mode-map
-               ("C-." . highlight-symbol-at-point)
+               ;; ("C-." . highlight-symbol-at-point)
                ("C-c C-." . highlight-symbol-remove-all)
                ))
-  :init (setq highlight-symbol-idle-delay 0.5
-              highlight-symbol-highlight-single-occurrence nil
-              ;; highlight-symbol-colors '(danylo/highlight-symbol-face)
-              )
+  :hook ((prog-mode . highlight-symbol-mode)
+         (text-mode . highlight-symbol-mode))
+  :custom
+  (highlight-symbol-idle-delay 1.0)
+  (highlight-symbol-highlight-single-occurrence nil)
+  ;; (highlight-symbol-colors '(danylo/highlight-symbol-face))
+  :config
+  (defhydra hydra-highlight-symbol-at-point
+    (:body-pre highlight-symbol-at-point)
+    "Highlight symbol"
+    ("." highlight-symbol-at-point "toggle")
+    ("k" highlight-symbol-remove-all "remove all")
+    ("n" highlight-symbol-next "next")
+    ("p" highlight-symbol-prev "prev"))
   )
+
+(general-define-key
+ :keymaps 'prog-mode-map
+ "C-." 'hydra-highlight-symbol-at-point/body)
+
+;;;; (start patch) Use overlays for symbol highlighting, which does not
+;;;;               interfere with hl-line-mode.
+(defun danylo/delete-overlay (overlay after beg end &optional len)
+  "Delete OVERLAY from buffer."
+  (when (and after (overlay-buffer overlay)) (delete-overlay overlay)))
+(defun danylo/check-point-is-in-comment ()
+  "Check if POINT is inside a comment using `treesit-node-at'."
+  (interactive)
+  (if (and (fboundp 'treesit-available-p)
+           (treesit-available-p))
+      (let ((node (treesit-node-at (point))))
+        (if (and node (string-equal (treesit-node-type node) "comment"))
+            t
+          nil))
+    nil))
+(with-eval-after-load 'highlight-symbol
+  (defun highlight-symbol-symbol-highlighted-p (symbol)
+    "Test is SYMBOL is current highlighted."
+    (catch 'found-overlay
+      (dolist (ov (overlays-at (point)))
+        (when (overlay-get ov 'highlight-symbol-overlay)
+          (throw 'found-overlay t)))
+      (throw 'found-overlay nil)))
+  (defun highlight-symbol-add-symbol-with-face (symbol face)
+    "Highlight SYMBOL with face FACE."
+    (unless (danylo/check-point-is-in-comment)
+      (save-excursion
+        (let ((case-fold-search nil))
+          (goto-char (point-min))
+          (while (re-search-forward `,symbol nil t)
+            (let ((ov (make-overlay (match-beginning 0) (match-end 0))))
+              (overlay-put ov 'face face)
+              (overlay-put ov 'priority 100) ;; Higher than hl-line (default -50)
+              (overlay-put ov 'highlight-symbol-overlay t)
+              (overlay-put ov 'modification-hooks (list #'danylo/delete-overlay))
+              ))))))
+  (defun highlight-symbol-remove-symbol (symbol)
+    "Un-highlight SYMBOL."
+    (save-excursion
+      (let ((case-fold-search nil))
+        (goto-char (point-min))
+        (while (re-search-forward `,symbol nil t)
+          (remove-overlays
+           (match-beginning 0) (match-end 0)
+           'highlight-symbol-overlay t)))))
+  (defun highlight-symbol-remove-all ()
+    "Remove symbol highlighting in buffer."
+    (interactive)
+    (remove-overlays nil nil 'highlight-symbol-overlay t)))
+;;;; (end patch)
 
 (use-package rainbow-mode
   ;; https://github.com/dmalyuta/rainbow-mode
@@ -1865,6 +1938,8 @@ when there is another buffer printing out information."
 (use-package filladapt
   ;; https://elpa.gnu.org/packages/filladapt.html
   ;; Enhance the behavior of Emacs' Auto Fill mode
+  :custom
+  (c-current-comment-prefix "///*")
   :hook ((c-mode-common . (lambda ()
                             (when (featurep 'filladapt)
                               (c-setup-filladapt))))
@@ -2676,13 +2751,13 @@ argument: number-or-marker-p, nil'."
   :ensure t
   :hook ((lsp-mode . lsp-diagnostics-mode)
          (lsp-mode . lsp-completion-mode)
-         (c-mode-common . lsp))
+         (c-mode-common . lsp)
+         (python-ts-mode . lsp))
   :custom
   (lsp-keymap-prefix "C-c l")
   (lsp-diagnostics-provider :auto)
   (lsp-completion-provider :capf)
   (lsp-session-file (expand-file-name ".lsp-session" user-emacs-directory))
-  (lsp-log-io nil)
   ;; I thought the following would speed up LSP by not triggering a call to
   ;; server on every key stroke, but ultimately it seems to just break clangd
   ;; from tracking file changes properly...
@@ -2693,7 +2768,10 @@ argument: number-or-marker-p, nil'."
   (lsp-debounce-full-sync-notifications t)
   (lsp-keep-workspace-alive nil)
   (lsp-idle-delay 0.5)
-  ;; core
+  ;; Verbose logging for debugging
+  (lsp-log-io nil)
+  (lsp-log-max 1000)
+  ;; Core
   (lsp-enable-xref t)
   (lsp-auto-configure t)
   (lsp-eldoc-enable-hover nil)
@@ -2707,25 +2785,25 @@ argument: number-or-marker-p, nil'."
   (lsp-enable-suggest-server-download nil)
   (lsp-enable-symbol-highlighting nil)
   (lsp-enable-text-document-color nil)
-  ;; completion
+  ;; Completion
   (lsp-completion-enable t)
   (lsp-completion-enable-additional-text-edit nil)
   (lsp-enable-snippet nil)
   (lsp-completion-show-kind nil)
-  ;; headerline
+  ;; Headerline
   (lsp-headerline-breadcrumb-enable t)
   (lsp-headerline-breadcrumb-enable-diagnostics nil)
   (lsp-headerline-breadcrumb-enable-symbol-numbers nil)
   (lsp-headerline-breadcrumb-icons-enable nil)
-  ;; modeline
+  ;; Modeline
   (lsp-modeline-code-actions-enable nil)
   (lsp-modeline-diagnostics-enable nil)
   (lsp-modeline-workspace-status-enable nil)
-  ;; minibuffer
+  ;; Minibuffer
   (lsp-signature-auto-activate nil)
   (lsp-signature-doc-lines nil)
   (lsp-signature-render-documentation nil)
-  ;; lens
+  ;; Lens
   (lsp-lens-enable nil)
   ;; C++
   (lsp-clients-clangd-args '("--header-insertion=never"))
@@ -3214,7 +3292,14 @@ find a definion."
               ;; Make indentation automatic, especially ensures correct
               ;; indentation in docstrings (see
               ;; https://emacs.stackexchange.com/a/28445/13661)
-              ("RET" . 'newline-and-indent))
+              ("RET" . 'newline-and-indent)
+              ;; The python-indent-dedent-line-backspace function causes
+              ;; unintuitive deletion of code via backspace. It's unnecessary
+              ;; headache since I de-indent with Shift+Tab.
+              ("<backspace>" . 'python-indent-dedent-line-backspace)
+              ("TAB" . 'python-indent-shift-right)
+              ("<backtab>" . 'python-indent-shift-left)
+              )
   :init (setq python-indent-guess-indent-offset t
               python-indent-guess-indent-offset-verbose nil
               python-fill-docstring-style 'pep-257-nn)
@@ -3244,11 +3329,11 @@ find a definion."
               ;; lsp-enable-file-watchers nil
               )
   :custom (lsp-pyright-langserver-command "pyright") ;; or basedpyright
-  :hook (python-mode . (lambda ()
-                         (require 'lsp-pyright)
-                         (lsp) ; or lsp-deferred
-                         (setq lsp-signature-auto-activate nil
-                               lsp-signature-render-documentation nil))))
+  :hook (python-ts-mode . (lambda ()
+                            (require 'lsp-pyright)
+                            (lsp) ; or lsp-deferred
+                            (setq lsp-signature-auto-activate nil
+                                  lsp-signature-render-documentation nil))))
 
 ;;;; Imenu setup
 
@@ -3268,7 +3353,7 @@ find a definion."
   (setq imenu-auto-rescan t)
   )
 
-(add-hook 'python-mode-hook 'danylo/python-imenu-hooks)
+(add-hook 'python-ts-mode-hook 'danylo/python-imenu-hooks)
 
 ;;;; Python shell interaction
 
@@ -3357,7 +3442,7 @@ lines according to the first line."
   (define-key python-ts-mode-map (kbd "C-c C-f") 'danylo/python-shell-run-file)
   (define-key python-ts-mode-map (kbd "C-c C-r") 'danylo/python-shell-run-region)
   (define-key python-ts-mode-map (kbd "C-c C-p") nil))
-(add-hook 'python-mode-hook (lambda () (danylo/python-config)))
+(add-hook 'python-ts-mode-hook (lambda () (danylo/python-config)))
 
 ;;; ..:: Julia ::..
 

@@ -47,21 +47,36 @@ sudo apt-get -y install jsonnet
 sudo apt-get -y install htop
 
 if not_installed btm; then
-    ( cd /tmp &&
-      curl -LO https://github.com/ClementTsang/bottom/releases/download/0.6.4/bottom_0.6.4_amd64.deb &&
-      sudo dpkg -i bottom_0.6.4_amd64.deb )
+    (cd /tmp &&
+        curl -LO https://github.com/ClementTsang/bottom/releases/download/0.6.4/bottom_0.6.4_amd64.deb &&
+        sudo dpkg -i bottom_0.6.4_amd64.deb)
 fi
 
 if not_installed zenith; then
     wget -4 https://github.com/bvaisvil/zenith/releases/download/0.12.0/zenith_0.12.0-1_amd64.deb -P /tmp/
-    ( cd /tmp && sudo dpkg -i zenith_0.12.0-1_amd64.deb )
+    (cd /tmp && sudo dpkg -i zenith_0.12.0-1_amd64.deb)
+fi
+
+# ..:: Bash ::..
+
+# Bash file formatter. Called by apheleia in Emacs.
+if not_installed shfmt; then
+    curl -sS https://webi.sh/shfmt | sh
 fi
 
 # ..:: Node.js ::..
 
 if not_installed node; then
-    curl -sL https://deb.nodesource.com/setup_14.x | sudo -E bash -
-    sudo apt-get -y install nodejs
+    # Install Node.js
+    (cd /tmp &&
+        curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash)
+    source ~/.bashrc
+    nvm install 22.0.0
+
+    # Install typescript and Astro language server
+    (cd /tmp &&
+        npm install -D typescript &&
+        npm i -g @astrojs/language-server)
 fi
 
 # ..:: Docker containers ::..
@@ -70,21 +85,21 @@ if not_installed docker; then
     # Install prerequisites
     sudo apt-get update
     sudo apt-get -y install apt-transport-https \
-	 ca-certificates \
-	 curl \
-	 gnupg-agent \
-	 software-properties-common
+        ca-certificates \
+        curl \
+        gnupg-agent \
+        software-properties-common
     # Get Docker repository
     curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
     if ! sudo apt-key fingerprint 0EBFCD88 | grep -q Docker; then
-	echo "Failed to install Docker!"
+        echo "Failed to install Docker!"
     else
-	sudo add-apt-repository -y \
-	     "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
+        sudo add-apt-repository -y \
+            "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
              $(lsb_release -cs) \
              stable"
-	sudo apt-get update
-	# Install Docker
-	sudo apt-get install -y docker-ce docker-ce-cli containerd.io
+        sudo apt-get update
+        # Install Docker
+        sudo apt-get install -y docker-ce docker-ce-cli containerd.io
     fi
 fi

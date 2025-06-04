@@ -399,13 +399,16 @@ directory."
       '((c++-mode . c++-ts-mode)
         (c-mode . c-ts-mode)
         (c-or-c++-mode . c-or-c++-ts-mode)
-        (python-mode . python-ts-mode)))
+        (python-mode . python-ts-mode)
+        (sh-mode . bash-ts-mode)))
 (defun c++-ts-mode-call-hook () (run-hooks 'c++-mode-hook) (run-hooks 'c-mode-common-hook))
 (add-hook 'c++-ts-mode-hook #'c++-ts-mode-call-hook)
 (defun c-ts-mode-call-hook () (run-hooks 'c-mode-hook) (run-hooks 'c-mode-common-hook))
 (add-hook 'c-ts-mode-hook #'c-ts-mode-call-hook)
 (defun python-ts-mode-call-hook () (run-hooks 'python-mode-hook))
 (add-hook 'python-ts-mode-hook #'python-ts-mode-call-hook)
+(defun bash-ts-mode-call-hook () (run-hooks 'sh-mode-hook))
+(add-hook 'bash-ts-mode-call-hook #'bash-ts-mode-call-hook)
 
 ;;;; (start patch) Turn off traditional syntax propertization in chosen modes.
 (defconst danylo/disable-syntax-propertize-modes
@@ -4006,6 +4009,17 @@ Patched so that any new file by default is guessed as being its own master."
   ;; Jinja2 mode for emacs.
   :init
   (add-to-list 'auto-mode-alist '("\\.j2.*" . jinja2-mode)))
+
+;;; ..:: Astro (web) ::..
+
+(use-package web-mode
+  ;; https://web-mode.org/
+  ;; Major-mode for editing web templates.
+  :ensure t)
+
+;; Astro major mode.
+(define-derived-mode astro-mode web-mode "Astro")
+(add-to-list 'auto-mode-alist '("\\.astro" . astro-mode))
 
 ;;; ..:: Load custom non-version-controlled init code ::..
 

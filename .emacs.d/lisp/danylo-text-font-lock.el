@@ -1,4 +1,4 @@
-;;; danylo-text-font-lock.el --- Font locking for Org and LaTeX files
+;;; danylo-text-font-lock.el --- Font locking for Org and LaTeX files. -*- lexical-binding: t; -*-
 ;;
 ;; Author: Danylo Malyuta
 ;;

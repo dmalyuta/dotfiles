@@ -1,5 +1,16 @@
-;;; init.el
-;; To byte-compile: [M-x byte-compile-init-dir]
+;;; init.el --- Emacs configuration. -*- lexical-binding: t; -*-
+;;
+;; Author: Danylo Malyuta
+;;
+;; Keywords: init
+;;
+;; This file is not part of GNU Emacs
+;;
+;;; Commentary:
+;;
+;;  To byte-compile: [M-x byte-compile-init-dir]
+;;
+;;; Code:
 
 ;; Frame size
 (setq default-frame-alist
@@ -1824,7 +1835,7 @@ when there is another buffer printing out information."
             (while (re-search-forward (hl-todo--regexp) end t)
               (let ((ov (make-overlay (match-beginning 0) (match-end 0))))
                 (overlay-put ov 'face (hl-todo--get-face))
-                (overlay-put ov 'priority 100) ;; Higher than hl-line (default -50)
+                (overlay-put ov 'priority 100) ;; Higher than hl-line-overlay-priority
                 (overlay-put ov 'hl-todo-overlay t)
                 )))))))))
 (add-hook 'after-change-functions #'danylo/hl-todo-overlay)
@@ -1861,56 +1872,11 @@ when there is another buffer printing out information."
  :keymaps 'prog-mode-map
  "C-." 'hydra-highlight-symbol-at-point/body)
 
-;;;; (start patch) Use overlays for symbol highlighting, which does not
-;;;;               interfere with hl-line-mode.
-(defun danylo/delete-overlay (overlay after beg end &optional len)
-  "Delete OVERLAY from buffer."
-  (when (and after (overlay-buffer overlay)) (delete-overlay overlay)))
-(defun danylo/check-point-is-in-comment ()
-  "Check if POINT is inside a comment using `treesit-node-at'."
-  (interactive)
-  (if (and (fboundp 'treesit-available-p)
-           (treesit-available-p))
-      (let ((node (treesit-node-at (point))))
-        (if (and node (string-equal (treesit-node-type node) "comment"))
-            t
-          nil))
-    nil))
-(with-eval-after-load 'highlight-symbol
-  (defun highlight-symbol-symbol-highlighted-p (symbol)
-    "Test is SYMBOL is current highlighted."
-    (catch 'found-overlay
-      (dolist (ov (overlays-at (point)))
-        (when (overlay-get ov 'highlight-symbol-overlay)
-          (throw 'found-overlay t)))
-      (throw 'found-overlay nil)))
-  (defun highlight-symbol-add-symbol-with-face (symbol face)
-    "Highlight SYMBOL with face FACE."
-    (unless (danylo/check-point-is-in-comment)
-      (save-excursion
-        (let ((case-fold-search nil))
-          (goto-char (point-min))
-          (while (re-search-forward `,symbol nil t)
-            (let ((ov (make-overlay (match-beginning 0) (match-end 0))))
-              (overlay-put ov 'face face)
-              (overlay-put ov 'priority 100) ;; Higher than hl-line (default -50)
-              (overlay-put ov 'highlight-symbol-overlay t)
-              (overlay-put ov 'modification-hooks (list #'danylo/delete-overlay))
-              ))))))
-  (defun highlight-symbol-remove-symbol (symbol)
-    "Un-highlight SYMBOL."
-    (save-excursion
-      (let ((case-fold-search nil))
-        (goto-char (point-min))
-        (while (re-search-forward `,symbol nil t)
-          (remove-overlays
-           (match-beginning 0) (match-end 0)
-           'highlight-symbol-overlay t)))))
-  (defun highlight-symbol-remove-all ()
-    "Remove symbol highlighting in buffer."
-    (interactive)
-    (remove-overlays nil nil 'highlight-symbol-overlay t)))
-;;;; (end patch)
+(use-package danylo-highlight-symbol
+  ;; Improvements to highlight-symbol.
+  :ensure nil
+  :after (highlight-symbol)
+  :load-path danylo/emacs-custom-lisp-dir)
 
 (use-package rainbow-mode
   ;; https://github.com/dmalyuta/rainbow-mode
@@ -2815,7 +2781,11 @@ argument: number-or-marker-p, nil'."
   ;; (define-key lsp-mode-map (kbd "C-c l") lsp-command-map)
   ;; WORKAROUND Hide mode-line of the lsp-ui-imenu buffer
   ;; See https://github.com/emacs-lsp/lsp-ui/issues/243
-  (advice-add 'lsp-ui-imenu :after #'hide-lsp-ui-imenu-mode-line))
+  (advice-add 'lsp-ui-imenu :after #'hide-lsp-ui-imenu-mode-line)
+  ;; Make sure that temporary symbol highlight does not stick around when
+  ;; renaming variables.
+  (advice-add 'lsp-rename :before (lambda (&rest args)
+                                    (highlight-symbol-mode-remove-temp))))
 
 (use-package lsp-ui
   ;; https://github.com/emacs-lsp/lsp-ui
@@ -2911,7 +2881,8 @@ argument: number-or-marker-p, nil'."
               projectile-indexing-method 'hybrid)
   :bind (:map projectile-mode-map
               ("C-c p" . projectile-command-map)
-              ("C-c p s g" . danylo/helm-projectile-ag-grep))
+              ("C-c p s g" . danylo/helm-projectile-ag-grep)
+              ("M-o" . projectile-find-other-file))
   :config
   (setq projectile-globally-ignored-directories
         (append '(".svn" ".git")

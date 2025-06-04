@@ -1,4 +1,4 @@
-;;; danylo-prog-font-lock.el --- Font locking for programming code files
+;;; danylo-prog-font-lock.el --- Font locking for programming code files. -*- lexical-binding: t; -*-
 ;;
 ;; Author: Danylo Malyuta
 ;;

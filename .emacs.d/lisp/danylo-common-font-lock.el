@@ -1,4 +1,4 @@
-;;; danylo-common-font-lock.el --- Font locking commong code
+;;; danylo-common-font-lock.el --- Font locking common code. -*- lexical-binding: t; -*-
 ;;
 ;; Author: Danylo Malyuta
 ;;

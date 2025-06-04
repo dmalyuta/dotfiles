@@ -1,4 +1,4 @@
-;;; danylo-scroll.el --- Better scrolling.
+;;; danylo-scroll.el --- Better scrolling. -*- lexical-binding: t; -*-
 ;;
 ;; Author: Danylo Malyuta
 ;;

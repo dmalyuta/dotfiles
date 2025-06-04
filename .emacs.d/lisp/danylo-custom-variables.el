@@ -1,4 +1,4 @@
-;;; danylo-custom-variables.el --- Emacs init file customization variables
+;;; danylo-custom-variables.el --- Emacs init file customization variables. -*- lexical-binding: t; -*-
 ;;
 ;; Author: Danylo Malyuta
 ;;

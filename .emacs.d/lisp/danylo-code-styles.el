@@ -1,4 +1,4 @@
-;;; danylo-code-styles.el --- Code styles.
+;;; danylo-code-styles.el --- Code styles. -*- lexical-binding: t; -*-
 ;;
 ;; Author: Danylo Malyuta
 ;;

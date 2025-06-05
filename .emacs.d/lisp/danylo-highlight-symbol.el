@@ -22,6 +22,7 @@
 ;;; Code:
 
 (require 'highlight-symbol)
+(require 'multiple-cursors)
 
 (defvar danylo/update-highlight-symbol nil)
 (make-variable-buffer-local 'danylo/update-highlight-symbol)
@@ -142,7 +143,9 @@ DIR has to be 1 or -1."
 
 (defun highlight-symbol-add-symbol-with-face (symbol face)
   "Highlight SYMBOL with face FACE."
-  (when (danylo/check-if-is-source (point))
+  (when (and (danylo/check-if-is-source (point))
+             (not (use-region-p))
+             (== (mc/num-cursors) 1))
     (save-excursion
       (let ((case-fold-search nil))
         (goto-char (point-min))

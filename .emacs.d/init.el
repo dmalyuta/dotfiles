@@ -1738,6 +1738,9 @@ when there is another buffer printing out information."
 (use-package multiple-cursors
   ;; https://github.com/magnars/multiple-cursors.el
   ;; Multiple cursors for emacs.
+  :custom
+  (mc/always-run-for-all t)
+  (mc/always-repeat-command t)
   :bind
   (("C->" . mc/mark-next-like-this)
    ("C-<" . mc/mark-previous-like-this)
@@ -1874,7 +1877,7 @@ when there is another buffer printing out information."
 (use-package danylo-highlight-symbol
   ;; Improvements to highlight-symbol.
   :ensure nil
-  :after (highlight-symbol)
+  :after (highlight-symbol multiple-cursors)
   :load-path danylo/emacs-custom-lisp-dir)
 
 (use-package rainbow-mode

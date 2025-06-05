@@ -31,36 +31,39 @@
 
 (defun danylo/delete-overlay (overlay after beg end &optional len)
   "Delete OVERLAY from buffer."
-  (let ((this-string (buffer-substring
-                      (overlay-start overlay)
-                      (overlay-end overlay))))
-    (if after
-        (progn
-          (when danylo/string-to-remove
-            (highlight-symbol-remove-symbol
-             `,(concat "\\_<" danylo/string-to-remove "\\_>"))
-            (setq danylo/string-to-remove nil))
-          (when danylo/update-highlight-symbol
-            (setq danylo/update-highlight-symbol nil)
-            (setq highlight-symbol this-string)))
-      (when (overlay-buffer overlay)
-        (when (equal highlight-symbol (highlight-symbol-get-symbol))
-          (setq danylo/update-highlight-symbol t))
-        (setq danylo/string-to-remove this-string)))))
+  (save-excursion
+    (let ((this-string (buffer-substring
+                        (overlay-start overlay)
+                        (overlay-end overlay))))
+      (if after
+          (progn
+            (when danylo/string-to-remove
+              (highlight-symbol-remove-symbol
+               `,(concat "\\_<" danylo/string-to-remove "\\_>"))
+              (setq danylo/string-to-remove nil))
+            (when danylo/update-highlight-symbol
+              (setq danylo/update-highlight-symbol nil)
+              (setq highlight-symbol this-string)))
+        (when (overlay-buffer overlay)
+          (when (equal highlight-symbol (highlight-symbol-get-symbol))
+            (setq danylo/update-highlight-symbol t))
+          (setq danylo/string-to-remove this-string))))))
 
 (defun danylo/has-treesitter ()
   "Check if major mode has treesitter parser available."
   (and (fboundp 'treesit-available-p) (treesit-available-p)))
 
-(defun danylo/check-if-in-comment (pos)
-  "Check if POS position is inside a comment using `treesit-node-at'."
+(defun danylo/check-if-is-source (pos)
+  "Check if POS position is source code and not something like a comment or
+a string, using `treesit-node-at'."
   (interactive)
   (if (danylo/has-treesitter)
       (let ((node (treesit-node-at pos)))
-        (if (and node (string-equal (treesit-node-type node) "comment"))
-            t
-          nil))
-    nil))
+        (if (and node (member (treesit-node-type node)
+                              '("comment" "string_content")))
+            nil
+          t))
+    t))
 
 (defun danylo/count-occurrences-not-in-comment (regexp beg end)
   "Count number of occurrences of REGEXP between BEG and END that are not
@@ -70,7 +73,7 @@ in a comment."
     (let ((case-fold-search nil)
           (count 0))
       (while (re-search-forward `,regexp end t)
-        (unless (danylo/check-if-in-comment (match-beginning 0))
+        (when (danylo/check-if-is-source (match-beginning 0))
           (setq count (1+ count))))
       count)))
 
@@ -81,7 +84,7 @@ direction DIR."
     (catch 'next-occurrence
       (save-excursion
         (while (re-search-forward `,regexp nil noerror dir)
-          (unless (danylo/check-if-in-comment (match-beginning 0))
+          (when (danylo/check-if-is-source (match-beginning 0))
             (throw 'next-occurrence
                    (if (< 0 dir) (match-end 0) (match-beginning 0))))))))
   )
@@ -139,14 +142,14 @@ DIR has to be 1 or -1."
 
 (defun highlight-symbol-add-symbol-with-face (symbol face)
   "Highlight SYMBOL with face FACE."
-  (unless (danylo/check-if-in-comment (point))
+  (when (danylo/check-if-is-source (point))
     (save-excursion
       (let ((case-fold-search nil))
         (goto-char (point-min))
         (while (re-search-forward `,symbol nil t)
           (let ((match-pos-start (match-beginning 0))
                 (match-pos-end (match-end 0)))
-            (unless (danylo/check-if-in-comment match-pos-start)
+            (when (danylo/check-if-is-source match-pos-start)
               (let ((ov (make-overlay match-pos-start match-pos-end)))
                 (overlay-put ov 'face face)
                 (overlay-put ov 'priority 100) ;; Higher than hl-line-overlay-priority
@@ -168,7 +171,8 @@ DIR has to be 1 or -1."
 (defun highlight-symbol-remove-all ()
   "Remove symbol highlighting in buffer."
   (interactive)
-  (remove-overlays nil nil 'highlight-symbol-overlay t))
+  (save-excursion
+    (remove-overlays nil nil 'highlight-symbol-overlay t)))
 
 (provide 'danylo-highlight-symbol)
 ;;; danylo-highlight-symbol.el ends here

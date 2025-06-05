@@ -59,7 +59,6 @@
   (package-refresh-contents)
   (package-install 'use-package))
 (require 'use-package-ensure)
-(setq use-package-always-ensure t)
 
 ;; Install Quelpa
 (setq quelpa-update-melpa-p nil
@@ -75,12 +74,15 @@
     (quelpa-self-upgrade)))
 (require 'quelpa)
 
+;; Quelpa recipe format: https://github.com/melpa/melpa#recipe-format
 (quelpa
  '(quelpa-use-package
    :fetcher git
-   :url "https://github.com/quelpa/quelpa-use-package.git")
- :upgrade nil)
+   :url "https://github.com/quelpa/quelpa-use-package.git"))
 (require 'quelpa-use-package)
+
+(setq use-package-always-ensure t)
+(quelpa-use-package-activate-advice)
 
 ;;; ..:: Customization variables ::..
 
@@ -202,9 +204,8 @@ directory."
   ;; https://github.com/alphapapa/ts.el
   ;; Emacs timestamp and date-time library
   ;; **Loading this just because unpackaged needs it**
-  :ensure nil
-  :quelpa ((ts :fetcher github
-               :repo "alphapapa/ts.el")))
+  :quelpa (ts :fetcher github
+              :repo "alphapapa/ts.el"))
 
 (defvar danylo/use-package-always-ensure
   "Memory variable for use-package-always-ensure")
@@ -351,32 +352,18 @@ directory."
   (gcmh-mode 1))
 
 ;;; ..:: Tree-sitter ::..
-
-;;;; Treesitter config.
+;;
+;; Getting started:
 ;; https://www.masteringemacs.org/article/how-to-get-started-tree-sitter
-;; Install with:
-;;   M-: (mapc #'treesit-install-language-grammar (mapcar #'car treesit-language-source-alist))
 
-(setq
- ;; Language grammars.
- treesit-language-source-alist
- '((bash "https://github.com/tree-sitter/tree-sitter-bash")
-   (cmake "https://github.com/uyha/tree-sitter-cmake")
-   (css "https://github.com/tree-sitter/tree-sitter-css")
-   (c "https://github.com/tree-sitter/tree-sitter-c")
-   (cpp "https://github.com/tree-sitter/tree-sitter-cpp")
-   (elisp "https://github.com/Wilfred/tree-sitter-elisp")
-   (go "https://github.com/tree-sitter/tree-sitter-go")
-   (html "https://github.com/tree-sitter/tree-sitter-html")
-   (javascript "https://github.com/tree-sitter/tree-sitter-javascript" "master" "src")
-   (json "https://github.com/tree-sitter/tree-sitter-json")
-   (make "https://github.com/alemuller/tree-sitter-make")
-   (markdown "https://github.com/ikatyang/tree-sitter-markdown")
-   (python "https://github.com/tree-sitter/tree-sitter-python")
-   (toml "https://github.com/tree-sitter/tree-sitter-toml")
-   (tsx "https://github.com/tree-sitter/tree-sitter-typescript" "master" "tsx/src")
-   (typescript "https://github.com/tree-sitter/tree-sitter-typescript" "master" "typescript/src")
-   (yaml "https://github.com/ikatyang/tree-sitter-yaml")))
+(use-package treesit-auto
+  ;; https://github.com/renzmann/treesit-auto
+  ;; Automatic installation, usage, and fallback for tree-sitter major modes.
+  :custom
+  (treesit-auto-install 'prompt)
+  :config
+  (treesit-auto-add-to-auto-mode-alist 'all)
+  (global-treesit-auto-mode))
 
 ;; Maximally colorful font coloring.
 (setq treesit-font-lock-level 4)
@@ -448,6 +435,16 @@ directory."
 ;;;; (start patch) Throttle the call rate to render treesit-fold fringe indicators.
 (defvar danylo/fold-indicators-refresh-idle-delay 0.25)
 (defvar danylo/fold-indicators-refresh-timer nil)
+(defvar danylo/last-num-windows nil)
+(defvar danylo/render-treesit-fold-indicators nil)
+(defun danylo/decide-to-render-treesit-fold-indicators ()
+  "Set danylo/render-treesit-fold-indicators to t if the number of windows has
+changed, and to nil otherwise."
+  (setq danylo/render-treesit-fold-indicators nil)
+  (let ((num-windows (count-windows)))
+    (unless (eq num-windows danylo/last-num-windows)
+      (setq danylo/last-num-windows num-windows)
+      (setq danylo/render-treesit-fold-indicators t))))
 (defun danylo/debounced-treesit-fold-indicators-refresh (orig-fun &rest args)
   (when danylo/fold-indicators-refresh-timer
     (cancel-timer danylo/fold-indicators-refresh-timer))
@@ -462,16 +459,48 @@ directory."
 (defun danylo/treesit-fold-indicators-render ()
   "Render indicators for all visible windows in the current frame after a window split."
   (interactive)
-  (run-with-idle-timer
-   0 nil
-   (lambda ()
-     (let ((danylo/fold-indicators-refresh-idle-delay 0))
-       (treesit-fold-indicators--size-change)))))
+  (when danylo/render-treesit-fold-indicators
+    (run-with-idle-timer
+     0 nil
+     (lambda ()
+       (let ((danylo/fold-indicators-refresh-idle-delay 0))
+         (treesit-fold-indicators--size-change))))))
+;;;; (end patch)
+
+;;;; (start patch) Ensure that the fringe background matches the window
+;;;;               background.
+(defvar-local danylo/treesit-fold-fringe-remap-cookie nil
+  "Cookie for the remapped `treesit-fold-fringe-face` in this window.")
+
+(defun danylo/update-treesit-fold-fringe-face-for-window (window)
+  "Update `treesit-fold-fringe-face` in WINDOW to match its background."
+  (with-selected-window window
+    (let* ((bg (face-background 'solaire-default-face nil t))
+           (buffer (window-buffer window)))
+      (with-current-buffer buffer
+        ;; Remove old remap if it exists
+        (when danylo/treesit-fold-fringe-remap-cookie
+          (face-remap-remove-relative danylo/treesit-fold-fringe-remap-cookie))
+        ;; Add new remap
+        (setq danylo/treesit-fold-fringe-remap-cookie
+              (face-remap-add-relative 'treesit-fold-fringe-face
+                                       `(:background ,bg)))))))
+(defun danylo/update-all-treesit-fold-fringe-faces ()
+  "Update `treesit-fold-fringe-face` for all visible windows."
+  (when danylo/render-treesit-fold-indicators
+    (dolist (window (window-list))
+      (danylo/update-treesit-fold-fringe-face-for-window window))))
+;;;; (end patch)
+
 (with-eval-after-load 'treesit-fold
   (advice-add 'treesit-fold-indicators-refresh
               :around #'danylo/debounced-treesit-fold-indicators-refresh)
-  (add-hook 'window-configuration-change-hook #'danylo/treesit-fold-indicators-render))
-;;;; (end patch)
+  (add-hook 'window-configuration-change-hook
+            #'danylo/decide-to-render-treesit-fold-indicators 1)
+  (add-hook 'window-configuration-change-hook
+            #'danylo/treesit-fold-indicators-render 1)
+  (add-hook 'window-configuration-change-hook
+            #'danylo/update-all-treesit-fold-fringe-faces 1))
 
 ;;; ..:: General usability ::..
 
@@ -511,14 +540,10 @@ directory."
   (interactive)
   (switch-to-buffer (other-buffer (current-buffer) 1)))
 
-(defhydra hydra-toggle-between-buffers
-  (:body-pre (danylo/toggle-between-buffers))
+(defhydra hydra-toggle-between-buffers (global-map "C-x")
   "Flip to last buffer"
   ("/" danylo/toggle-between-buffers))
 (hydra-set-property 'hydra-toggle-between-buffers :verbosity 0)
-
-(general-define-key
- "C-x /" 'hydra-toggle-between-buffers/body)
 
 ;;;; Smart move cursor in large steps
 
@@ -815,13 +840,19 @@ not have to update when the cursor is moving quickly."
 (setq auto-save-file-name-transforms `((".*" ,danylo/emacs-backup-dir t)))
 (setq auto-save-default nil) ;; Disable auto-save (I save myself)
 
-(defun danylo/byte-compile-init-dir (&optional force-recompile)
-  "Byte-compile Emacs config. If FORCE-RECOMPILE is t then
-recompile all the files (default is nil)."
+(defun danylo/byte-compile-init-dir-no-init (&optional force-recompile)
+  "Byte-compile Emacs config except for the init.el file itself. If
+FORCE-RECOMPILE is t then recompile all the files (default is nil)."
   (interactive)
-  (byte-recompile-file (danylo/make-path "init.el") force-recompile 0)
   (byte-recompile-file (danylo/make-path "early-init.el") force-recompile 0)
   (byte-recompile-directory danylo/emacs-custom-lisp-dir 0 force-recompile))
+
+(defun danylo/byte-compile-init-dir (&optional force-recompile)
+  "Byte-compile Emacs config. If FORCE-RECOMPILE is t then recompile all
+the files (default is nil)."
+  (interactive)
+  (byte-recompile-file (danylo/make-path "init.el") force-recompile 0)
+  (danylo/byte-compile-init-dir-no-init force-recompile))
 
 ;;;; Dired (directory listing)
 
@@ -1438,33 +1469,6 @@ active. Basically, any non-file-visiting buffer."
 (advice-add 'turn-on-solaire-mode :around #'danylo/minibuffer-no-solaire)
 ;;;; (end patch)
 
-;;;; (start patch) Ensure that the fringe background matches the window
-;;;;               background.
-(defvar-local danylo/treesit-fold-fringe-remap-cookie nil
-  "Cookie for the remapped `treesit-fold-fringe-face` in this window.")
-
-(defun danylo/update-treesit-fold-fringe-face-for-window (window)
-  "Update `treesit-fold-fringe-face` in WINDOW to match its background."
-  (with-selected-window window
-    (let* ((bg (face-background 'solaire-default-face nil t))
-           (buffer (window-buffer window)))
-      (with-current-buffer buffer
-        ;; Remove old remap if it exists
-        (when danylo/treesit-fold-fringe-remap-cookie
-          (face-remap-remove-relative danylo/treesit-fold-fringe-remap-cookie))
-        ;; Add new remap
-        (setq danylo/treesit-fold-fringe-remap-cookie
-              (face-remap-add-relative 'treesit-fold-fringe-face
-                                       `(:background ,bg)))))))
-(defun danylo/update-all-treesit-fold-fringe-faces ()
-  "Update `treesit-fold-fringe-face` for all visible windows."
-  (dolist (window (window-list))
-    (danylo/update-treesit-fold-fringe-face-for-window window)))
-
-;; Hooks to respond to layout or theme changes
-(add-hook 'window-configuration-change-hook #'danylo/update-all-treesit-fold-fringe-faces)
-;;;; (end patch)
-
 ;;;; Region pulsing
 
 ;; This setting makes the animation smoother
@@ -1547,7 +1551,7 @@ is automatically turned on while the line numbers are displayed."
               ;; locking will occur during "idle" times)!
               jit-lock-defer-time 0.05 ; `,danylo/fontify-delay
               jit-lock-context-time 0.05
-              font-lock-maximum-decoration nil)
+              font-lock-maximum-decoration t)
 
 ;;;; Font lock debug tools
 
@@ -1734,9 +1738,6 @@ when there is another buffer printing out information."
 (use-package multiple-cursors
   ;; https://github.com/magnars/multiple-cursors.el
   ;; Multiple cursors for emacs.
-  :custom
-  (mc/always-run-for-all t)
-  (mc/always-repeat-command t)
   :bind
   (("C->" . mc/mark-next-like-this)
    ("C-<" . mc/mark-previous-like-this)
@@ -1862,18 +1863,13 @@ when there is another buffer printing out information."
   (highlight-symbol-highlight-single-occurrence nil)
   ;; (highlight-symbol-colors '(danylo/highlight-symbol-face))
   :config
-  (defhydra hydra-highlight-symbol-at-point
-    (:body-pre highlight-symbol-at-point)
+  (defhydra hydra-highlight-symbol-at-point (global-map "C-s")
     "Highlight symbol"
     ("." highlight-symbol-at-point "toggle")
     ("k" highlight-symbol-remove-all "remove all")
     ("n" highlight-symbol-next "next")
     ("p" highlight-symbol-prev "prev"))
   )
-
-(general-define-key
- :keymaps 'prog-mode-map
- "C-." 'hydra-highlight-symbol-at-point/body)
 
 (use-package danylo-highlight-symbol
   ;; Improvements to highlight-symbol.
@@ -2721,7 +2717,8 @@ argument: number-or-marker-p, nil'."
   :hook ((lsp-mode . lsp-diagnostics-mode)
          (lsp-mode . lsp-completion-mode)
          (c-mode-common . lsp)
-         (python-ts-mode . lsp))
+         (python-ts-mode . lsp)
+         (astro-mode . lsp))
   :custom
   (lsp-keymap-prefix "C-c l")
   (lsp-diagnostics-provider :auto)
@@ -2751,7 +2748,7 @@ argument: number-or-marker-p, nil'."
   (lsp-enable-indentation nil)
   (lsp-enable-links nil)
   (lsp-enable-on-type-formatting nil)
-  (lsp-enable-suggest-server-download nil)
+  (lsp-enable-suggest-server-download t)
   (lsp-enable-symbol-highlighting nil)
   (lsp-enable-text-document-color nil)
   ;; Completion
@@ -4015,7 +4012,9 @@ Patched so that any new file by default is guessed as being its own master."
 (use-package web-mode
   ;; https://web-mode.org/
   ;; Major-mode for editing web templates.
-  :ensure t)
+  :quelpa (web-mode :fetcher github
+                    :repo "fxbois/web-mode"
+                    :branch "master"))
 
 ;; Astro major mode.
 (define-derived-mode astro-mode web-mode "Astro")

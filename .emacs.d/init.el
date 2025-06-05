@@ -1744,13 +1744,47 @@ when there is another buffer printing out information."
   :bind
   (("C->" . mc/mark-next-like-this)
    ("C-<" . mc/mark-previous-like-this)
-   ("C-*" . mc/mark-all-like-this)))
+   ("C-*" . mc/mark-all-like-this)
+   ("C-_" . mc/keyboard-quit)))
+
+(require 'multiple-cursors)
 
 (general-define-key
  :keymaps 'mc/keymap
  "<return>" nil
  "C-<return>" 'multiple-cursors-mode
  )
+
+;;;; (start patch) Temporarily disable hl-line-mode when using multiple
+;;;;               cursors. It seems to interact badly with keyboar-quit and
+;;;;               proper tracking to the cursor state.
+(defvar danylo/do-enable-hl-line-mode nil)
+(make-variable-buffer-local 'danylo/do-enable-hl-line-mode)
+(defun danylo/do-on-mc-start ()
+  "This code runs when the user creates 2 or more cusors in the buffer."
+  (when hl-line-mode
+    (hl-line-mode 0)
+    (setq danylo/do-enable-hl-line-mode t)))
+(defun danylo/do-on-mc-end ()
+  "This code runs when the user goes back to a single cusor."
+  (when danylo/do-enable-hl-line-mode
+    (hl-line-mode)
+    (setq danylo/do-enable-hl-line-mode nil)))
+(add-hook 'multiple-cursors-mode-enabled-hook #'danylo/do-on-mc-start)
+(add-hook 'multiple-cursors-mode-disabled-hook #'danylo/do-on-mc-end)
+;;;; (end patch)
+
+(defun danylo/keyboard-quit ()
+  "C-g binds to both `keyboard-quit' and `mc/keyboard-quit', and it seems
+like which command is executed behaves randomly. This function fixes
+that."
+  (interactive)
+  (if (> (mc/num-cursors) 1)
+      (mc/keyboard-quit)
+    (keyboard-quit)))
+(global-unset-key (kbd "C-g"))
+(general-define-key
+ "C-g" 'danylo/keyboard-quit)
 
 (use-package wgrep
   ;; https://github.com/mhayashi1120/Emacs-wgrep
@@ -1859,24 +1893,23 @@ when there is another buffer printing out information."
                ;; ("C-." . highlight-symbol-at-point)
                ("C-c C-." . highlight-symbol-remove-all)
                ))
-  :hook ((prog-mode . highlight-symbol-mode)
-         (text-mode . highlight-symbol-mode))
+  ;; :hook ((prog-mode . highlight-symbol-mode)
+  ;;        (text-mode . highlight-symbol-mode))
   :custom
   (highlight-symbol-idle-delay 1.0)
   (highlight-symbol-highlight-single-occurrence nil)
   ;; (highlight-symbol-colors '(danylo/highlight-symbol-face))
-  :config
-  (defhydra hydra-highlight-symbol-at-point (global-map "C-s")
-    "Highlight symbol"
-    ("." highlight-symbol-at-point "toggle")
-    ("k" highlight-symbol-remove-all "remove all")
-    ("n" highlight-symbol-next "next")
-    ("p" highlight-symbol-prev "prev"))
   )
+
+(defhydra hydra-highlight-symbol-at-point (global-map "C-s")
+  "Highlight symbol"
+  ("." highlight-symbol-at-point "toggle")
+  ("k" highlight-symbol-remove-all "remove all")
+  ("n" highlight-symbol-next "next")
+  ("p" highlight-symbol-prev "prev"))
 
 (use-package danylo-highlight-symbol
   ;; Improvements to highlight-symbol.
-  :ensure nil
   :after (highlight-symbol multiple-cursors)
   :load-path danylo/emacs-custom-lisp-dir)
 

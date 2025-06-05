@@ -145,7 +145,7 @@ DIR has to be 1 or -1."
   "Highlight SYMBOL with face FACE."
   (when (and (danylo/check-if-is-source (point))
              (not (use-region-p))
-             (== (mc/num-cursors) 1))
+             (= (mc/num-cursors) 1))
     (save-excursion
       (let ((case-fold-search nil))
         (goto-char (point-min))

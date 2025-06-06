@@ -28,13 +28,21 @@
       '((server)
         (comp)))
 
-;; Debug the appearance of certain startup messages
+;; Debug the appearance of certain startup messages.
 ;; (setq debug-on-message "Function .+ is already compiled")
 ;; (setq debug-on-message "Waiting for .*")
 
 ;; Paste the following at the desired location to early-out from the init file.
 ;; (with-current-buffer " *load*" (goto-char (point-max)))
 
+;; Error and signaling debugging.
+;; (defun danylo/signal-handler (err &rest data)
+;;   (when (eq err 'quit)
+;;     (when (> (mc/num-cursors) 1)
+;;       (message "signaled: %s" err)
+;;       (debug))))
+;; (add-hook 'after-init-hook
+;;           (lambda () (setq signal-hook-function #'danylo/signal-handler)))
 
 ;; Native compilation settings
 (when (fboundp 'native-compile-async)
@@ -993,7 +1001,22 @@ Source: http://steve.yegge.googlepages.com/my-dot-emacs-file"
 (general-define-key
  "C-c C-a" 'danylo/copy-file-absolute-path)
 
-;;;;; Move forward and backward in cursor history.
+(use-package revert-buffer-all
+  ;; Revert all buffers after external changes have been made.
+  )
+
+;; World clock.
+(setq world-clock-list
+      '(("America/Los_Angeles" "Seattle")
+        ("Europe/Kiev" "Odessa")
+        ("Australia/Sydney" "Sydney")
+        ("Europe/Zurich" "Zurich")))
+
+;;;; Mark ring
+
+(setq mark-ring-max 6
+      global-mark-ring-max 8
+      set-mark-command-repeat-pop t)
 
 (use-package back-button
   ;; https://github.com/rolandwalker/back-button
@@ -1005,7 +1028,7 @@ Source: http://steve.yegge.googlepages.com/my-dot-emacs-file"
          )
   :init (back-button-mode 1)
   :config
-  (defhydra hydra-jump-history (global-map "C-z")
+  (defhydra hydra-jump-history (global-map "M-g")
     "Move forward/back in current buffer"
     ("." back-button-local-forward "local fwd")
     ("," back-button-local-backward "local back")
@@ -1013,16 +1036,12 @@ Source: http://steve.yegge.googlepages.com/my-dot-emacs-file"
     ("C-," back-button-local-backward "global back"))
   )
 
-(use-package revert-buffer-all
-  ;; Revert all buffers after external changes have been made.
-  )
-
-;; World clock.
-(setq world-clock-list
-      '(("America/Los_Angeles" "Seattle")
-        ("Europe/Kiev" "Odessa")
-        ("Australia/Sydney" "Sydney")
-        ("Europe/Zurich" "Zurich")))
+(use-package consult
+  ;; https://github.com/minad/consult
+  ;; Consulting completing-read.
+  :bind (("M-g m" . consult-mark)
+         ("M-g k" . consult-global-mark)
+         ("M-g g" . consult-goto-line)))
 
 ;;; ..:: Searching ::..
 
@@ -1536,23 +1555,6 @@ is automatically turned on while the line numbers are displayed."
             (set-face-attribute 'default nil
                                 :height `,danylo/font-default-height)))
 
-;; Speed up font-lock mode speed (can causes laggy scrolling)
-(setq-default font-lock-support-mode 'jit-lock-mode
-              jit-lock-contextually 'syntax-driven
-              jit-lock-stealth-time 0.05
-              jit-lock-stealth-nice 0.05
-              jit-lock-chunk-size 1000
-              jit-lock-stealth-load 200
-              jit-lock-antiblink-grace 10
-              ;; Below: jit-lock-defer-time "pauses" fontification while the
-              ;; user is typing, as long as the time between successive
-              ;; keystrokes is <jit-lock-defer-time. This is what makes typing
-              ;; smooth even with some heavy font locking (because the font
-              ;; locking will occur during "idle" times)!
-              jit-lock-defer-time 0.05 ; `,danylo/fontify-delay
-              jit-lock-context-time 0.05
-              font-lock-maximum-decoration t)
-
 ;;;; Font lock debug tools
 
 (use-package highlight-refontification
@@ -1747,13 +1749,10 @@ when there is another buffer printing out information."
    ("C-*" . mc/mark-all-like-this)
    ("C-_" . mc/keyboard-quit)))
 
-(require 'multiple-cursors)
-
 (general-define-key
  :keymaps 'mc/keymap
  "<return>" nil
- "C-<return>" 'multiple-cursors-mode
- )
+ "C-<return>" 'multiple-cursors-mode)
 
 ;;;; (start patch) Temporarily disable hl-line-mode when using multiple
 ;;;;               cursors. It seems to interact badly with keyboar-quit and
@@ -1762,29 +1761,20 @@ when there is another buffer printing out information."
 (make-variable-buffer-local 'danylo/do-enable-hl-line-mode)
 (defun danylo/do-on-mc-start ()
   "This code runs when the user creates 2 or more cusors in the buffer."
-  (when hl-line-mode
-    (hl-line-mode 0)
-    (setq danylo/do-enable-hl-line-mode t)))
+  (let ((inhibit-quit t))
+    (when hl-line-mode
+      (hl-line-mode 0)
+      (setq danylo/do-enable-hl-line-mode t))))
 (defun danylo/do-on-mc-end ()
   "This code runs when the user goes back to a single cusor."
-  (when danylo/do-enable-hl-line-mode
-    (hl-line-mode)
-    (setq danylo/do-enable-hl-line-mode nil)))
+  (let ((inhibit-quit t))
+    (setq mark-ring nil)
+    (when danylo/do-enable-hl-line-mode
+      (hl-line-mode)
+      (setq danylo/do-enable-hl-line-mode nil))))
 (add-hook 'multiple-cursors-mode-enabled-hook #'danylo/do-on-mc-start)
 (add-hook 'multiple-cursors-mode-disabled-hook #'danylo/do-on-mc-end)
 ;;;; (end patch)
-
-(defun danylo/keyboard-quit ()
-  "C-g binds to both `keyboard-quit' and `mc/keyboard-quit', and it seems
-like which command is executed behaves randomly. This function fixes
-that."
-  (interactive)
-  (if (> (mc/num-cursors) 1)
-      (mc/keyboard-quit)
-    (keyboard-quit)))
-(global-unset-key (kbd "C-g"))
-(general-define-key
- "C-g" 'danylo/keyboard-quit)
 
 (use-package wgrep
   ;; https://github.com/mhayashi1120/Emacs-wgrep
@@ -1859,26 +1849,27 @@ that."
 (defvar danylo/hl-todo-overlay-timer nil)
 (defun danylo/hl-todo-overlay (&rest _)
   "Ensure hl-todo overlays are above hl-line overlays."
-  (when (bound-and-true-p hl-todo-mode)
-    (when danylo/hl-todo-overlay-timer
-      (cancel-timer danylo/hl-todo-overlay-timer))
-    (setq
-     danylo/hl-todo-overlay-timer
-     (run-with-idle-timer
-      danylo/hl-todo-overlay-idle-delay nil
-      (lambda (&rest _)
-        (remove-overlays nil nil 'hl-todo-overlay t)
-        (save-excursion
-          (let ((case-fold-search nil)
-                (start (window-start))
-                (end (window-end nil t)))
-            (goto-char start)
-            (while (re-search-forward (hl-todo--regexp) end t)
-              (let ((ov (make-overlay (match-beginning 0) (match-end 0))))
-                (overlay-put ov 'face (hl-todo--get-face))
-                (overlay-put ov 'priority 100) ;; Higher than hl-line-overlay-priority
-                (overlay-put ov 'hl-todo-overlay t)
-                )))))))))
+  (let ((inhibit-quit t))
+    (when (bound-and-true-p hl-todo-mode)
+      (when danylo/hl-todo-overlay-timer
+        (cancel-timer danylo/hl-todo-overlay-timer))
+      (setq
+       danylo/hl-todo-overlay-timer
+       (run-with-idle-timer
+        danylo/hl-todo-overlay-idle-delay nil
+        (lambda (&rest _)
+          (remove-overlays nil nil 'hl-todo-overlay t)
+          (save-excursion
+            (let ((case-fold-search nil)
+                  (start (window-start))
+                  (end (window-end nil t)))
+              (goto-char start)
+              (while (re-search-forward (hl-todo--regexp) end t)
+                (let ((ov (make-overlay (match-beginning 0) (match-end 0))))
+                  (overlay-put ov 'face (hl-todo--get-face))
+                  (overlay-put ov 'priority 100) ;; Higher than hl-line-overlay-priority
+                  (overlay-put ov 'hl-todo-overlay t)
+                  ))))))))))
 (add-hook 'after-change-functions #'danylo/hl-todo-overlay)
 (add-hook 'find-file-hook #'danylo/hl-todo-overlay)
 ;; (add-hook 'post-command-hook #'danylo/hl-todo-overlay)
@@ -3727,11 +3718,12 @@ Calls itself until the docstring has completed printing."
 ;;;; Imenu setup
 (defun danylo/lisp-imenu-hooks ()
   (setq imenu-generic-expression
-        '(("var " "^\s*(\\(def\\(?:c\\(?:onst\\(?:ant\\)?\\|ustom\\)\\|ine-symbol-macro\\|parameter\\)\\)\s+\\(\\(?:\\sw\\|\\s_\\|\\\\.\\)+\\)" 2)
-          ("var " "^\s*(defvar\\(?:-local\\)?\s+\\(\\(?:\\sw\\|\\s_\\|\\.\\)+\\)" 1)
-          ("f(x)" "^(defun\s+\\([a-zA-Z0-9/\\-]*?\\)\s+(.*$" 1)
-          ("pkg " "^\s*(use-package\s*\\([a-zA-Z0-9\\-]*\\)$" 1)
-          ("§   " "^[;]+\s+\\.\\.::\s+\\(.*\\)\s+::\\.\\." 1)))
+        '(("var   " "^\s*(\\(def\\(?:c\\(?:onst\\(?:ant\\)?\\|ustom\\)\\|ine-symbol-macro\\|parameter\\)\\)\s+\\(\\(?:\\sw\\|\\s_\\|\\\\.\\)+\\)" 2)
+          ("var   " "^\s*(defvar\\(?:-local\\)?\s+\\(\\(?:\\sw\\|\\s_\\|\\.\\)+\\)" 1)
+          ("f(x)  " "^(defun\s+\\([a-zA-Z0-9/\\-]*?\\)\s+(.*$" 1)
+          ("pkg   " "^\s*(use-package\s*\\([a-zA-Z0-9\\-]*\\)$" 1)
+          ("§     " "^[;]+\s+\\.\\.::\s+\\(.*\\)\s+::\\.\\." 1)
+          ("patch " "^;;;; (start patch)\s\\(.*\\)" 1)))
   (setq imenu-create-index-function
         (lambda () (imenu--generic-function imenu-generic-expression)))
   ;; Rescan the buffer as contents are added

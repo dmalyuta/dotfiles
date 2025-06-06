@@ -47,8 +47,7 @@ screen."
   ;; Move to the same column as before.
   (move-to-column
    (+ (save-excursion (beginning-of-visual-line) (current-column))
-      danylo/scroll-temporary-goal-column))
-  )
+      danylo/scroll-temporary-goal-column)))
 
 (defun danylo/get-scroll-step (arg)
   "Get the scroll step."
@@ -63,14 +62,16 @@ screen."
 (defun danylo/scroll-down (&optional arg)
   "Scroll down."
   (interactive "P")
-  (if (not (pos-visible-in-window-p (point-max)))
-      (danylo/scroll-screen (danylo/get-scroll-step arg))))
+  (let ((inhibit-quit t))
+    (if (not (pos-visible-in-window-p (point-max)))
+        (danylo/scroll-screen (danylo/get-scroll-step arg)))))
 
 (defun danylo/scroll-up (&optional arg)
   "Scroll up."
   (interactive "P")
-  (if (not (pos-visible-in-window-p (point-min)))
-      (danylo/scroll-screen (- (danylo/get-scroll-step arg)))))
+  (let ((inhibit-quit t))
+    (if (not (pos-visible-in-window-p (point-min)))
+        (danylo/scroll-screen (- (danylo/get-scroll-step arg))))))
 
 (defun danylo/scroll-row-up ()
   "Move point to previous line, keeping cursor in the same position on the

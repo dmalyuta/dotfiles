@@ -12,6 +12,17 @@
 ;;
 ;;; Code:
 
+;; C-g is used by Emacs at a very low-level to quit out of running code, and it
+;; is also used to execite `keyboard-quit'. See
+;; https://www.gnu.org/software/emacs/manual/html_node/elisp/Quitting.html. This
+;; duplicate use causes issues when the two ways that C-g behaves interact. For
+;; this reason, I leverage a key translation map to use C-/ instead for
+;; quitting out of user code. C-g continues to assume its duplicate role, but
+;; the user shouldn't use it.
+(define-key key-translation-map (kbd "C-/") (kbd "C-g"))
+(define-key key-translation-map (kbd "C-g") (kbd "<f20>"))
+(global-unset-key (kbd "<f20>"))
+
 ;; Frame size
 (setq default-frame-alist
       (append default-frame-alist '((height . 50) (width . 100))))
@@ -1469,10 +1480,21 @@ active. Basically, any non-file-visiting buffer."
   (solaire-global-mode +1))
 
 ;;; Highlight the current line.
+(setq hl-line-sticky-flag nil
+      global-hl-line-sticky-flag nil)
 ;; All programming major modes.
 (add-hook 'prog-mode-hook #'hl-line-mode)
 ;; All modes derived from text-mode.
 (add-hook 'text-mode-hook #'hl-line-mode)
+
+;;;; (start patch) Throttle hl-line-highlight when the user is jamming
+;;;;               `keyboard-quit'.
+(defun danylo/hl-line-highlight (orig-fun &rest args)
+  "Runs current line highlight update if certain conditions are met."
+  (unless (eq this-command 'keyboard-quit)
+    (apply orig-fun args)))
+(advice-add 'hl-line-highlight :around #'danylo/hl-line-highlight)
+;;;; (end patch)
 
 ;;;; (start patch) Make sure that line highlight is visible.
 (defun my/fix-hl-line-for-solaire-mode ()
@@ -1825,8 +1847,8 @@ when there is another buffer printing out information."
 (use-package undo-fu
   ;; Undo helper with redo
   ;; Simple, stable linear undo with redo for Emacs.
-  :bind (("C-/" . undo-fu-only-undo)
-         ("C-?" . undo-fu-only-redo))
+  :bind (("C-z" . undo-fu-only-undo)
+         ("C-S-z" . undo-fu-only-redo))
   )
 
 (use-package hl-todo

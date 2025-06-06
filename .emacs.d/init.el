@@ -1926,6 +1926,8 @@ when there is another buffer printing out information."
   ("n" highlight-symbol-next "next")
   ("p" highlight-symbol-prev "prev"))
 
+(require 'multiple-cursors)
+
 (use-package danylo-highlight-symbol
   ;; Improvements to highlight-symbol.
   :after (highlight-symbol multiple-cursors)

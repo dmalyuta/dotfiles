@@ -1012,6 +1012,13 @@ Source: http://steve.yegge.googlepages.com/my-dot-emacs-file"
         ("Australia/Sydney" "Sydney")
         ("Europe/Zurich" "Zurich")))
 
+;; Get the message to be printed for C-g.
+(put 'quit 'error-message
+     (propertize
+      (format "%s Quit" (danylo/fa-icon "stop-circle"))
+      'face '(:family ,(all-the-icons-faicon-family)
+                      :foreground danylo/faded)))
+
 ;;;; Mark ring
 
 (setq mark-ring-max 6
@@ -1746,8 +1753,7 @@ when there is another buffer printing out information."
   :bind
   (("C->" . mc/mark-next-like-this)
    ("C-<" . mc/mark-previous-like-this)
-   ("C-*" . mc/mark-all-like-this)
-   ("C-_" . mc/keyboard-quit)))
+   ("C-*" . mc/mark-all-like-this)))
 
 (general-define-key
  :keymaps 'mc/keymap
@@ -1768,7 +1774,6 @@ when there is another buffer printing out information."
 (defun danylo/do-on-mc-end ()
   "This code runs when the user goes back to a single cusor."
   (let ((inhibit-quit t))
-    (setq mark-ring nil)
     (when danylo/do-enable-hl-line-mode
       (hl-line-mode)
       (setq danylo/do-enable-hl-line-mode nil))))

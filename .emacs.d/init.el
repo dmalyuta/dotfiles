@@ -146,7 +146,9 @@ directory."
  )
 
 (advice-add 'eval-region
-            :after (lambda (&rest _) (message "Evaluated region")))
+            :after (lambda (&rest _)
+                     (message "Evaluated region")
+                     (deactivate-mark)))
 (advice-add 'eval-defun
             :after (lambda (&rest _) (message "Evaluated defun")))
 (advice-add 'eval-buffer
@@ -1027,7 +1029,7 @@ Source: http://steve.yegge.googlepages.com/my-dot-emacs-file"
 (put 'quit 'error-message
      (propertize
       (format "%s Quit" (danylo/fa-icon "stop-circle"))
-      'face '(:family ,(all-the-icons-faicon-family)
+      'face `(:family ,(all-the-icons-faicon-family)
                       :foreground danylo/faded)))
 
 ;;;; Mark ring
@@ -1039,11 +1041,6 @@ Source: http://steve.yegge.googlepages.com/my-dot-emacs-file"
 (use-package back-button
   ;; https://github.com/rolandwalker/back-button
   ;; Visual navigation through mark rings in Emacs.
-  :bind (("C-x ," . back-button-local-backward)
-         ("C-x ." . back-button-local-forward)
-         ("C-x C-," . back-button-global-backward)
-         ("C-x C-." . back-button-global-forward)
-         )
   :init (back-button-mode 1)
   :config
   (defhydra hydra-jump-history (global-map "M-g")
@@ -1060,6 +1057,10 @@ Source: http://steve.yegge.googlepages.com/my-dot-emacs-file"
   :bind (("M-g m" . consult-mark)
          ("M-g k" . consult-global-mark)
          ("M-g g" . consult-goto-line)))
+(global-unset-key (kbd "M-g M-g"))
+
+;;;; Improve performance of long lines.
+(global-so-long-mode 1)
 
 ;;; ..:: Searching ::..
 
@@ -2050,7 +2051,9 @@ these functions update the hunk diff buffer."
 (global-set-key (kbd "C-c C-g") 'danylo/diff-hl-set-reference)
 
 ;; Remove a significant contributor to line scan slowness
-(setq-default bidi-display-reordering nil)
+(setq-default bidi-display-reordering nil
+              bidi-paragraph-direction 'left-to-right
+              bidi-inhibit-bpa t)
 
 ;; Delete trailing whitespace
 (add-hook 'before-save-hook 'delete-trailing-whitespace)
@@ -3121,8 +3124,9 @@ fill after inserting the link."
 (use-package why-this
   ;; https://codeberg.org/akib/emacs-why-this
   ;; Why the current line contains this?
-  :bind (("M-/" . why-this)
-         ("M-?" . why-this-mode))
+  :bind (("C-c w /" . why-this)
+         ("C-c w ?" . why-this-mode)
+         ("C-c w a" . why-this-annotate))
   :custom
   (why-this-idle-delay 0.05)
   :config
@@ -3264,6 +3268,7 @@ find a definion."
   )
 
 ;;;; Indentation style.
+
 (use-package danylo-code-styles
   ;; Coding style definitions.
   :ensure nil
@@ -3314,7 +3319,8 @@ find a definion."
   ;; Emacs built-in
   ;; Python editing major mode
   :ensure nil
-  :hook ((python-mode . yas-minor-mode))
+  :hook ((python-mode . yas-minor-mode)
+         (python-mode . subword-mode))
   :bind (:map python-ts-mode-map
               ;; Make indentation automatic, especially ensures correct
               ;; indentation in docstrings (see
@@ -3324,8 +3330,8 @@ find a definion."
               ;; unintuitive deletion of code via backspace. It's unnecessary
               ;; headache since I de-indent with Shift+Tab.
               ("<backspace>" . 'python-indent-dedent-line-backspace)
-              ("TAB" . 'python-indent-shift-right)
-              ("<backtab>" . 'python-indent-shift-left)
+              ;; ("TAB" . 'python-indent-shift-right)
+              ;; ("<backtab>" . 'python-indent-shift-left)
               )
   :init (setq python-indent-guess-indent-offset t
               python-indent-guess-indent-offset-verbose nil
@@ -3936,13 +3942,18 @@ Patched so that any new file by default is guessed as being its own master."
   (autoload 'gnuplot-mode "gnuplot" "gnuplot major mode" t)
   (autoload 'gnuplot-make-buffer "gnuplot" "open a buffer in gnuplot mode" t))
 
-;;; ..:: YAML ::..
+;;; ..:: YAML, JSON, etc. ::..
 
 (use-package yaml-mode
   ;; https://github.com/yoshiki/yaml-mode
   ;; Major mode for editing files in the YAML data serialization format.
   :mode (("\\.yml$" . yaml-mode)
          ("\\.yaml$" . yaml-mode)))
+
+(use-package jsonnet-mode
+  ;; https://github.com/tminor/jsonnet-mode
+  ;; Emacs major mode for editing Jsonnet files.
+  )
 
 ;;; ..:: Markdown ::..
 
@@ -4076,6 +4087,16 @@ Patched so that any new file by default is guessed as being its own master."
 ;; Astro major mode.
 (define-derived-mode astro-mode web-mode "Astro")
 (add-to-list 'auto-mode-alist '("\\.astro" . astro-mode))
+
+;;; ..:: CSV ::..
+
+(use-package danylo-csv
+  ;; CSV file editing.
+  :load-path danylo/emacs-custom-lisp-dir
+  :config
+  ;; Highlight the current line, which makes the full CSV row obvious even when
+  ;; the line is wrapped.
+  (add-hook 'danylo-csv-mode-hook #'hl-line-mode))
 
 ;;; ..:: Load custom non-version-controlled init code ::..
 

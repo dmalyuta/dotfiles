@@ -37,6 +37,3 @@ if [[ "$INSIDE_EMACS" = 'vterm' ]] && [[ -f ~/.emacs.d/libvterm/etc/emacs-vterm-
         vterm_cmd message "%s" "$*"
     }
 fi
-
-# Start Emacs servers whenever any are not running.
-emacs_start

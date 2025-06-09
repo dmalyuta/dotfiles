@@ -57,11 +57,11 @@ if [ ! -f /usr/local/bin/tmux ]; then
 
     rm -rf /tmp/tmux
     git clone https://github.com/tmux/tmux.git /tmp/tmux
-    ( cd /tmp/tmux && \
-      sh autogen.sh && \
-      ./configure && \
-      make && \
-      sudo make install )
+    (cd /tmp/tmux &&
+        sh autogen.sh &&
+        ./configure &&
+        make &&
+        sudo make install)
 fi
 
 if [ ! -d ~/.tmux/plugins/tpm ]; then
@@ -73,10 +73,10 @@ fi
 # ..:: Search ::..
 
 sudo apt-get -y install recoll \
-     pdfgrep \
-     exo-utils \
-     tree \
-     fd-find
+    pdfgrep \
+    exo-utils \
+    tree \
+    fd-find
 
 # ..:: Wine ::..
 # Windows program emulation
@@ -103,12 +103,17 @@ fi
 sudo sed -i -e '/enabled=/s/1/0/' /etc/default/apport
 
 sudo apt-get -y install xcalib \
-     pdftk \
-     unrar \
-     xdotool \
-     simple-scan \
-     cpulimit \  # sudo cpulimit -p <PID> --limit <PERCENT (0 to 100)> --background
-     filelight  # Ringchart explorer of what's taking up disk space
+    pdftk \
+    unrar \
+    ttf-mscorefonts-installer \
+    xdotool \
+    simple-scan
+
+# sudo cpulimit -p <PID> --limit <PERCENT (0 to 100)> --background
+sudo apt-get -y install cpulimit
+
+# Ringchart explorer of what's taking up disk space
+sudo apt-get -y install filelight
 
 # Increase inotify to make sure Evince updates on PDF update
 # Source: https://superuser.com/a/1387905/512940

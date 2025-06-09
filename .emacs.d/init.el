@@ -4087,6 +4087,7 @@ Patched so that any new file by default is guessed as being its own master."
 ;; Astro major mode.
 (define-derived-mode astro-mode web-mode "Astro")
 (add-to-list 'auto-mode-alist '("\\.astro" . astro-mode))
+(add-to-list 'apheleia-mode-alist '(astro-mode . prettier-html))
 
 ;;; ..:: CSV ::..
 

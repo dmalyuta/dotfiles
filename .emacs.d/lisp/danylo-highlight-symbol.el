@@ -19,6 +19,10 @@
 ;;    highlight-symbol-remove-symbol
 ;;    highlight-symbol-remove-all
 ;;
+;;  The following functions are wrapped with advice:
+;;
+;;    highlight-symbol-temp-highlight
+;;
 ;;; Code:
 
 (require 'highlight-symbol)
@@ -151,22 +155,19 @@ DIR has to be 1 or -1."
 (defun highlight-symbol-add-symbol-with-face (symbol face)
   "Highlight SYMBOL with face FACE."
   (let ((inhibit-quit t))
-    (when (and (danylo/check-if-is-source (point))
-               (not (use-region-p))
-               (= (mc/num-cursors) 1))
-      (save-excursion
-        (let ((case-fold-search nil))
-          (goto-char (point-min))
-          (while (re-search-forward `,symbol nil t)
-            (let ((match-pos-start (match-beginning 0))
-                  (match-pos-end (match-end 0)))
-              (when (danylo/check-if-is-source match-pos-start)
-                (let ((ov (make-overlay match-pos-start match-pos-end)))
-                  (overlay-put ov 'face face)
-                  (overlay-put ov 'priority 100) ;; Higher than hl-line-overlay-priority
-                  (overlay-put ov 'highlight-symbol-overlay t)
-                  (overlay-put ov 'modification-hooks (list #'danylo/delete-overlay))
-                  )))))))))
+    (save-excursion
+      (let ((case-fold-search nil))
+        (goto-char (point-min))
+        (while (re-search-forward `,symbol nil t)
+          (let ((match-pos-start (match-beginning 0))
+                (match-pos-end (match-end 0)))
+            (when (danylo/check-if-is-source match-pos-start)
+              (let ((ov (make-overlay match-pos-start match-pos-end)))
+                (overlay-put ov 'face face)
+                (overlay-put ov 'priority 100) ;; Higher than hl-line-overlay-priority
+                (overlay-put ov 'highlight-symbol-overlay t)
+                (overlay-put ov 'modification-hooks (list #'danylo/delete-overlay))
+                ))))))))
 
 (defun highlight-symbol-remove-symbol (symbol)
   "Un-highlight SYMBOL."
@@ -186,6 +187,16 @@ DIR has to be 1 or -1."
   (let ((inhibit-quit t))
     (save-excursion
       (remove-overlays nil nil 'highlight-symbol-overlay t))))
+
+(defun danylo/highlight-symbol-temp-highlight (orig-fun &rest args)
+  "Temporarily highlight the symbol under certain conditions."
+  (when (and (danylo/check-if-is-source (point))
+             (not (use-region-p))
+             (= (mc/num-cursors) 1))
+    (apply orig-fun args)))
+
+(advice-add 'highlight-symbol-temp-highlight
+            :around #'danylo/highlight-symbol-temp-highlight)
 
 (provide 'danylo-highlight-symbol)
 ;;; danylo-highlight-symbol.el ends here

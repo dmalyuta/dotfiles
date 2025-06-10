@@ -40,7 +40,9 @@ SEPARATOR (, by default)."
 
 (defcustom csv-field-display-names t
   "When true, display both name and field number instead of
-just field number under `csv-field-index-mode'.")
+just field number under `csv-field-index-mode'."
+  :type 'boolean
+  :group 'danylo-csv)
 
 (defun csv-populate-header-fields ()
   (interactive)
@@ -115,8 +117,8 @@ just field number under `csv-field-index-mode'.")
   (let ((custom-fringe-indicator-alist '()))
     (dolist (indicator fringe-indicator-alist)
       (if (eq (car indicator) 'continuation)
-          (add-to-list 'custom-fringe-indicator-alist '(continuation nil nil))
-        (add-to-list 'custom-fringe-indicator-alist indicator)))
+          (push '(continuation nil nil) custom-fringe-indicator-alist)
+        (push indicator custom-fringe-indicator-alist)))
     (setq fringe-indicator-alist custom-fringe-indicator-alist))
   )
 

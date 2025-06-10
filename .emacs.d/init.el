@@ -16,10 +16,15 @@
 ;; is also used to execite `keyboard-quit'. See
 ;; https://www.gnu.org/software/emacs/manual/html_node/elisp/Quitting.html. This
 ;; duplicate use causes issues when the two ways that C-g behaves interact. For
-;; this reason, I leverage a key translation map to use C-/ instead for
-;; quitting out of user code. C-g continues to assume its duplicate role, but
-;; the user shouldn't use it.
-(define-key key-translation-map (kbd "C-/") (kbd "C-g"))
+;; this reason, I leverage a key translation map to use:
+;;   - C-/ in GUI;
+;;   - C-_ in terminal (unfortunately this is what C-/ maps to in terminal
+;;     emulators);
+;; instead for quitting out of user code. C-g continues to assume its duplicate
+;; role, but the user shouldn't use it.
+(if (window-system)
+    (define-key key-translation-map (kbd "C-/") (kbd "C-g"))
+  (define-key key-translation-map (kbd "C-_") (kbd "C-g")))
 (define-key key-translation-map (kbd "C-g") (kbd "<f20>"))
 (global-unset-key (kbd "<f20>"))
 
@@ -1633,6 +1638,14 @@ is automatically turned on while the line numbers are displayed."
          'face `(:family ,(all-the-icons-faicon-family)
                          :foreground ,(if (doom-modeline--active) danylo/green)))
       ""))
+  (doom-modeline-def-segment danylo/apheleia
+    "Displays if apheleia auto-formatting mode is on."
+    (if apheleia-mode
+        (propertize
+         (danylo/fa-icon "file-code-o")
+         'face `(:family ,(all-the-icons-faicon-family)
+                         :foreground ,(if (doom-modeline--active) danylo/blue)))
+      ""))
   (doom-modeline-def-segment danylo/time
     "Displays the current time."
     (when (and doom-modeline-time
@@ -1653,7 +1666,7 @@ is automatically turned on while the line numbers are displayed."
   ;; Default mode line
   (doom-modeline-def-modeline 'main
     '(bar window-number danylo/matches buffer-info remote-host buffer-position selection-info danylo/turbo)
-    '(input-method debug major-mode vcs process danylo/time))
+    '(input-method debug major-mode danylo/apheleia vcs process danylo/time))
   ;; Helm mode line
   (doom-modeline-def-modeline 'helm
     '(bar window-number helm-buffer-id helm-number helm-follow helm-prefix-argument) '())
@@ -1849,7 +1862,13 @@ when there is another buffer printing out information."
   ;; Undo helper with redo
   ;; Simple, stable linear undo with redo for Emacs.
   :bind (("C-z" . undo-fu-only-undo)
-         ("C-S-z" . undo-fu-only-redo))
+         ;; The reason why M-z and not C-S-z is that in terminal mode (i.e.,
+         ;; `emacs -nw'), C-S-z maps to the same command as C-z:
+         ;;   $ showkey -a
+         ;;     ^Z    26 0032 0x1a
+         ;; For consistency, use M-z so that I have a signal key combination
+         ;; to memorize.
+         ("M-z" . undo-fu-only-redo))
   )
 
 (use-package hl-todo
@@ -3121,6 +3140,10 @@ fill after inserting the link."
                       :box t
                       :weight 'bold))
 
+;; Make sure commit message open immediately in the Git commit mode.
+(require 'git-commit)
+(global-git-commit-mode)
+
 (use-package why-this
   ;; https://codeberg.org/akib/emacs-why-this
   ;; Why the current line contains this?
@@ -4098,6 +4121,13 @@ Patched so that any new file by default is guessed as being its own master."
   ;; Highlight the current line, which makes the full CSV row obvious even when
   ;; the line is wrapped.
   (add-hook 'danylo-csv-mode-hook #'hl-line-mode))
+
+;;; ..:: Bazel ::..
+
+(use-package bazel
+  ;; https://github.com/bazelbuild/emacs-bazel-mode
+  ;; Emacs mode for Bazel.
+  )
 
 ;;; ..:: Load custom non-version-controlled init code ::..
 

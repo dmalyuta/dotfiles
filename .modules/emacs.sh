@@ -33,7 +33,8 @@ if not_installed emacs; then
         libgccjit-14-dev \
         libjansson4 \
         libjansson-dev \
-        libgnutls28-dev
+        libgnutls28-dev \
+        libgpm-dev
 
     # Treesitter.
     # https://www.masteringemacs.org/article/how-to-get-started-tree-sitter

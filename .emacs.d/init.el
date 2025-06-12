@@ -3124,14 +3124,18 @@ project."
   :quelpa (org-auctex :fetcher github
                       :repo "karthink/org-auctex"))
 
+(defun danylo/math-preview-init ()
+  "Startup actions for math preview."
+  (math-preview-all))
+
 (use-package math-preview
   ;; https://gitlab.com/matsievskiysv/math-preview/
   ;; Emacs preview math inline
   :bind (("C-c m a" . math-preview-all)
          ("C-c m p" . math-preview-at-point)
          ("C-c m r" . math-preview-region))
-  :hook ((org-mode . (lambda ()
-                       (math-preview-all))))
+  :hook ((org-mode . danylo/math-preview-init)
+         (markdown-mode . danylo/math-preview-init))
   :config
   (set-face-attribute 'math-preview-face nil
                       :foreground `,danylo/yellow)

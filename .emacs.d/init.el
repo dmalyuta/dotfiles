@@ -864,7 +864,10 @@ not have to update when the cursor is moving quickly."
  "C-c <next>" 'next-buffer)      ; next: page down
 
 ;; Enable clipboard in emacs
-(xterm-mouse-mode t)
+
+(if (display-graphic-p)
+    (gpm-mouse-mode t)
+  (xterm-mouse-mode t))
 (mouse-wheel-mode t)
 (setq select-enable-clipboard t)
 

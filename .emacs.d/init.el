@@ -70,6 +70,18 @@
 
 ;;; ..:: Package management ::..
 
+(defun package-read-from-string (str)
+  "Read a Lisp expression from STR.
+Signal an error if the entire string was not used.
+NOTE: I have no idea why re-defining this function here works, but not having
+it causes a package-desc nil error."
+  (pcase-let ((`(,expr . ,offset) (read-from-string str)))
+    (condition-case ()
+        ;; The call to `ignore' suppresses a compiler warning.
+        (progn (ignore (read-from-string str offset))
+               (error "Can't read whole string"))
+      (end-of-file expr))))
+
 (require 'package)
 (setq package-enable-at-startup nil)
 (setq package-check-signature nil)
@@ -658,7 +670,7 @@ changed, and to nil otherwise."
 
 ;; A welcome message after startup
 (defun display-startup-echo-area-message ())
-(add-hook 'dashboard-mode-hook (lambda () (message "Welcome back")))
+(add-hook 'after-init-hook (lambda () (message "Welcome back")))
 
 (setq inhibit-splash-screen t)
 (setq initial-scratch-message ";; Change The World")
@@ -894,6 +906,22 @@ the files (default is nil)."
         diredp-hide-details-initially-flag nil)
   :config
   (diredp-toggle-find-file-reuse-dir t))
+
+(use-package dired-subtree
+  ;; https://github.com/Fuco1/dired-hacks
+  ;; Insert subdirectories in a tree-like fashion
+  :bind (:map dired-mode-map
+              ("." . dired-subtree-insert)
+              ("," . dired-subtree-remove)))
+
+(use-package cc-dired-sort-by
+  ;; https://github.com/kickingvegas/cclisp
+  ;; Emacs configuration files for Charles Choi
+  :quelpa (cc-dired-sort-by
+           :fetcher url
+           :url "https://raw.githubusercontent.com/kickingvegas/cclisp/e5397b5b08d9b96633a2cf13b230e71e02697b3f/cc-dired-sort-by.el")
+  :bind (:map dired-mode-map
+              ("s" . cc/dired-sort-by)))
 
 ;;;; Search Google
 
@@ -1630,21 +1658,31 @@ is automatically turned on while the line numbers are displayed."
     "Show the number of active cursors in the buffer from `multiple-cursors'."
     (let ((meta (concat (danylo/doom-modeline-multiple-cursors))))
       meta))
+  (defface danylo/doom-modeline-turbo
+    `((t (:family
+          (all-the-icons-faicon-family)
+          :foreground ,danylo/green)))
+    "Face used for the danylo/turbo segment in the mode-line."
+    :group 'doom-modeline-faces)
   (doom-modeline-def-segment danylo/turbo
     "Displays if turbo mode is on (low latency editing)."
     (if danylo/turbo-on
         (propertize
          (danylo/fa-icon "rocket")
-         'face `(:family ,(all-the-icons-faicon-family)
-                         :foreground ,(if (doom-modeline--active) danylo/green)))
+         'face (doom-modeline-face 'danylo/doom-modeline-turbo))
       ""))
+  (defface danylo/doom-modeline-apheleia
+    '((t (:family
+          (all-the-icons-faicon-family)
+          :inherit doom-modeline-buffer-major-mode)))
+    "Face used for the danylo/apheleia segment in the mode-line."
+    :group 'doom-modeline-faces)
   (doom-modeline-def-segment danylo/apheleia
     "Displays if apheleia auto-formatting mode is on."
     (if apheleia-mode
         (propertize
          (danylo/fa-icon "file-code-o")
-         'face `(:family ,(all-the-icons-faicon-family)
-                         :foreground ,(if (doom-modeline--active) danylo/blue)))
+         'face (doom-modeline-face 'danylo/doom-modeline-apheleia))
       ""))
   (doom-modeline-def-segment danylo/time
     "Displays the current time."
@@ -1839,7 +1877,12 @@ when there is another buffer printing out information."
   ;; Drag stuff around in Emacs.
   :init
   (drag-stuff-global-mode 1)
-  (drag-stuff-define-keys)
+  (defhydra hydra-drag-stuff (drag-stuff-mode-map "C-c C-d")
+    "Resize window"
+    ("<up>" drag-stuff-up "↑")
+    ("<down>" drag-stuff-down "↓")
+    ("<left>" drag-stuff-left "←")
+    ("<right>" drag-stuff-right "→"))
   )
 
 (use-package move-text
@@ -1989,6 +2032,19 @@ when there is another buffer printing out information."
          (org-mode . filladapt-mode)
          (text-mode . filladapt-mode))
   :bind (("M-r" . 'fill-region)))
+
+;;; Stefan Monnier <foo at acm.org>. It is the opposite of fill-paragraph
+;;; https://www.emacswiki.org/emacs/UnfillParagraph
+(defun unfill-paragraph (&optional region)
+  "Takes a multi-line paragraph and makes it into a single line of text."
+  (interactive (progn (barf-if-buffer-read-only) '(t)))
+  (let ((fill-column (point-max))
+        ;; This would override `fill-column' if it's an integer.
+        (emacs-lisp-docstring-fill-column t))
+    (fill-paragraph nil region)))
+
+;; Handy key definition
+(define-key global-map "\M-Q" 'unfill-paragraph)
 
 (use-package so-long
   ;; https://www.emacswiki.org/emacs/SoLong
@@ -2373,11 +2429,15 @@ in the following cases:
       (select-window win))))
 
 (general-define-key
- "C-<left>" 'windmove-left
- "C-<right>" 'windmove-right
- "C-<up>" 'windmove-up
- "C-<down>" 'windmove-down
+ "<left>" 'windmove-left
+ "<right>" 'windmove-right
+ "<up>" 'windmove-up
+ "<down>" 'windmove-down
  "C-x l" 'danylo/switch-to-last-window)
+(global-unset-key (kbd "C-<left>"))
+(global-unset-key (kbd "C-<right>"))
+(global-unset-key (kbd "C-<up>"))
+(global-unset-key (kbd "C-<down>"))
 
 (use-package window-numbering
   ;; https://github.com/nikolas/window-number
@@ -2488,11 +2548,12 @@ keys), and for the size of the resulting new window."
   (interactive "P")
   (danylo/windsize-smart-step 'right arg))
 
-(general-define-key
- "C-S-<up>" 'danylo/windsize-up-smart
- "C-S-<down>" 'danylo/windsize-down-smart
- "C-S-<left>" 'danylo/windsize-left-smart
- "C-S-<right>" 'danylo/windsize-right-smart)
+(defhydra hydra-resize-window (global-map "M-r")
+  "Resize window"
+  ("<up>" danylo/windsize-up-smart "↑")
+  ("<down>" danylo/windsize-down-smart "↓")
+  ("<left>" danylo/windsize-left-smart "←")
+  ("<right>" danylo/windsize-right-smart "→"))
 
 (defun danylo/set-window-width (width)
   "Set the selected window's width."
@@ -2518,14 +2579,22 @@ Default is 80"
 (use-package buffer-move
   ;; https://github.com/lukhas/buffer-move
   ;; Swap buffers between windows
-  :bind (("S-M-<up>" . buf-move-up)
-         ("S-M-<down>" . buf-move-down)
-         ("S-M-<left>" . buf-move-left)
-         ("S-M-<right>" . buf-move-right)))
+  )
+
+(defhydra hydra-move-buffer (global-map "C-c m")
+  "Move buffer to window"
+  ("<up>" buf-move-up "↑")
+  ("<down>" buf-move-down "↓")
+  ("<left>" buf-move-left "←")
+  ("<right>" buf-move-right "→"))
 
 ;; winner-mode, which lets you go back (C-c <left>) and forward (C-c <right>) in
 ;; window layout history
 (when (fboundp 'winner-mode) (winner-mode 1))
+(defhydra hydra-window-history (global-map "C-c l")
+  "Window layout history"
+  ("<left>" winner-undo "previous")
+  ("<right>" winner-redo "next"))
 
 ;;;; >> Transposing the window layout <<
 
@@ -2645,6 +2714,10 @@ Default is 80"
               ("C-<down>" . nil)
               ("C-<left>" . nil)
               ("C-<right>" . nil)
+              ("<up>" . nil)
+              ("<down>" . nil)
+              ("<left>" . nil)
+              ("<right>" . nil)
               ("C-x [" . vterm-copy-mode)
               ("C-c r" . rename-buffer)
               ("S-<return>" . vterm-send-tab)
@@ -2734,7 +2807,9 @@ to (vterm) with no argument will create a **new** vterm buffer."
   ;;  Modular in-buffer completion framework for Emacs
   :hook ((emacs-lisp-mode . company-mode)
          (LaTeX-mode . company-mode)
-         (sh-mode . company-mode))
+         (sh-mode . company-mode)
+         (prog-mode . company-mode)
+         (text-mode . company-mode))
   :bind (("S-<return>" . company-complete))
   :init
   (setq company-dabbrev-downcase 0
@@ -2796,7 +2871,13 @@ argument: number-or-marker-p, nil'."
          (lsp-mode . lsp-completion-mode)
          (c-mode-common . lsp)
          (python-ts-mode . lsp)
-         (astro-mode . lsp))
+         (astro-mode . lsp)
+         (lsp-completion-mode
+          . (lambda ()
+              ;; Ensure LSP backend retains the snippet completion.
+              (setq company-backends
+                    (mapcar #'company-mode/backend-with-yas
+                            company-backends)))))
   :custom
   (lsp-keymap-prefix "C-c l")
   (lsp-diagnostics-provider :auto)
@@ -2984,7 +3065,14 @@ project."
   "Configure org mode after loading it"
   (setq org-adapt-indentation nil
         org-hide-leading-stars nil)
-  (visual-line-mode t))
+  (visual-line-mode t)
+  (company-mode t)
+  (make-variable-buffer-local 'electric-pair-pairs)
+  (add-to-list 'electric-pair-pairs '(?~ . ?~))
+  ;; Do not fill source code blocks inside docstring
+  (make-variable-buffer-local 'filladapt-not-token-table)
+  (add-to-list 'filladapt-not-token-table "^$")
+  (add-to-list 'filladapt-not-token-table ".*\"\"\"$"))
 
 (use-package org
   ;; https://github.com/bzg/org-mode
@@ -3001,6 +3089,7 @@ project."
         org-src-preserve-indentation t
         ;; LaTeX options
         org-startup-with-latex-preview nil
+        org-preview-latex-default-process 'dvisvgm
         ;; minuted setup: https://emacs.stackexchange.com/a/27984/13661
         org-latex-listings 'minted
         org-latex-packages-alist '(("" "minted"))
@@ -3013,6 +3102,41 @@ project."
         org-imenu-depth 6
         ))
 
+(use-package org-modern
+  ;; https://github.com/minad/org-modern
+  ;; Modern Org Style.
+  :config
+  (with-eval-after-load 'org (global-org-modern-mode))
+  )
+
+(use-package org-modern-indent
+  ;; https://github.com/jdtsmith/org-modern-indent
+  ;; Modern block styling with org-indent.
+  :quelpa (org-modern-indent :fetcher github
+                             :repo "jdtsmith/org-modern-indent")
+  :config
+  (add-hook 'org-mode-hook #'org-modern-indent-mode 90))
+
+(use-package org-auctex
+  ;; https://github.com/karthink/org-auctex
+  ;; Better latex previews for org-mode
+  :disabled
+  :quelpa (org-auctex :fetcher github
+                      :repo "karthink/org-auctex"))
+
+(use-package math-preview
+  ;; https://gitlab.com/matsievskiysv/math-preview/
+  ;; Emacs preview math inline
+  :bind (("C-c m a" . math-preview-all)
+         ("C-c m p" . math-preview-at-point)
+         ("C-c m r" . math-preview-region))
+  :hook ((org-mode . (lambda ()
+                       (math-preview-all))))
+  :config
+  (set-face-attribute 'math-preview-face nil
+                      :foreground `,danylo/yellow)
+  )
+
 (with-eval-after-load "org"
   (define-key org-mode-map [remap fill-paragraph] nil)
   ;; Make sure buffer motion across windows keys are unaffected
@@ -3021,6 +3145,7 @@ project."
   (define-key org-mode-map (kbd "S-M-<left>") nil)
   (define-key org-mode-map (kbd "S-M-<right>") nil)
   ;; LaTeX equations preview style
+  (require 'danylo-custom-variables)
   (setq org-format-latex-options (plist-put org-format-latex-options
                                             :scale `,danylo/latex-preview-scale)
         org-format-latex-options (plist-put org-format-latex-options
@@ -3038,7 +3163,6 @@ project."
   (define-key org-mode-map (kbd "C-S-<left>") 'nil)
   (define-key org-mode-map (kbd "C-S-<right>") 'nil)
   ;; Text emphasis
-  (add-to-list 'org-emphasis-alist '("$" danylo/org-equation-face))
   (define-key org-mode-map (kbd "C-c f b")
               (lambda () (interactive) (danylo/org-emphasize "*")))
   (define-key org-mode-map (kbd "C-c f i")
@@ -3286,9 +3410,29 @@ find a definion."
   ;; A template system for Emacs
   :init
   (setq yas-snippet-dirs `(,(danylo/make-path "lisp/snippets")))
-  :config
-  ;;(yas-reload-all)
+  :bind (:map yas-minor-mode-map
+              ("C-c y" . company-yasnippet))
+  :hook ((prog-mode . yas-minor-mode)
+         (text-mode . yas-minor-mode))
   )
+
+(require 'yasnippet)
+(yas-reload-all)
+
+(defun company-mode/backend-with-yas (backend)
+  (if (and (listp backend) (member 'company-yasnippet backend))
+      backend
+    (append (if (consp backend) backend (list backend))
+            '(:with company-yasnippet))))
+
+;; helm-company choose from company completions with C-:
+(with-eval-after-load 'company
+  (define-key company-mode-map (kbd "C-:") 'helm-company)
+  (define-key company-active-map (kbd "C-:") 'helm-company))
+
+;; Set the global company backends.
+(setq company-backends
+      (mapcar #'company-mode/backend-with-yas company-backends))
 
 ;;;; Indentation style.
 

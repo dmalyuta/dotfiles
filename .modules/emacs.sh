@@ -10,7 +10,7 @@
 
 if not_installed emacs; then
     # Dependencies
-    sudo apt-get -y install libwebkit2gtk-4.1-dev \
+    sudo apt-get -y install \
         autoconf \
         texinfo \
         libncurses-dev \
@@ -19,6 +19,8 @@ if not_installed emacs; then
         libjpeg-dev \
         libpng-dev \
         libtiff-dev \
+        librsvg2-dev \
+        libmagick++-dev \
         libx11-dev \
         libncurses5-dev \
         automake \
@@ -51,8 +53,16 @@ if not_installed emacs; then
         ./autogen.sh &&
         # run `./configure --help > /tmp/emacs_configure_help.txt` to print out a file of
         # configuration options
-        ./configure --without-gpm --with-mailutils --with-native-compilation \
-            --with-json --with-x-toolkit=gtk3 --with-xinput2 --with-tree-sitter &&
+        ./configure \
+            --with-native-compilation \
+            --enable-link-time-optimization \
+            --with-tree-sitter \
+            --disable-gc-mark-trace \
+            --with-json \
+            --with-x-toolkit=gtk3 \
+            --with-xinput2 \
+            --with-imagemagick \
+            --with-rsvg &&
         make NATIVE_FULL_AOT=1 -j2 &&
         sudo make install)
 fi
@@ -85,6 +95,15 @@ if not_installed cargo; then
 fi
 # https://github.com/blahgeek/emacs-lsp-booster
 cargo install emacs-lsp-booster
+
+# ..:: Mathjax preview for Org mode ::..
+
+if not_installed math-preview; then
+    # https://gitlab.com/matsievskiysv/math-preview
+    npm install -g git+https://gitlab.com/matsievskiysv/math-preview
+    (cd /usr/local/bin &&
+        sudo ln -sf ~/.nvm/versions/node/v22.0.0/bin/math-preview .)
+fi
 
 # ..:: Other ::..
 

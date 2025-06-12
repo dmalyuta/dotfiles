@@ -9,7 +9,7 @@ alias which_venv='pip -V'
 alias ll='ls -l'
 alias lld='ll -d */'
 alias peek='tree -L 1'
-alias copy='DISPLAY=:0 xclip -sel clip'
+alias copy='DISPLAY=$DISPLAY xclip -sel clip'
 alias gitroot='cd $(git rev-parse --show-toplevel)'
 
 ################################################################################
@@ -81,15 +81,21 @@ EMACS_DEFAULT_SIZE="(set-frame-size (selected-frame) 100 40)"
 
 emacs_start() {
     local logfile=/tmp/emacs_servers_init.log
-    > $logfile
-    pgrep -f "emacs.*git-server" > /dev/null
+    >$logfile
+    pgrep -f "emacs.*git-server" >/dev/null
     if [ $? -ne 0 ]; then
-        (nohup emacs --daemon=git-server &>>$logfile </dev/null & disown) &> /dev/null
+        (
+            nohup emacs --daemon=git-server &>>$logfile </dev/null &
+            disown
+        ) &>/dev/null
         echo "✅ Started git-server"
     fi
-    pgrep -f "emacs.*${EMACS_DEFAULT_DAEMON}" > /dev/null
+    pgrep -f "emacs.*${EMACS_DEFAULT_DAEMON}" >/dev/null
     if [ $? -ne 0 ]; then
-        (nohup emacs --daemon=$EMACS_DEFAULT_DAEMON &>>$logfile </dev/null & disown) &> /dev/null
+        (
+            nohup emacs --daemon=$EMACS_DEFAULT_DAEMON &>>$logfile </dev/null &
+            disown
+        ) &>/dev/null
         echo "✅ Started $EMACS_DEFAULT_DAEMON"
     fi
 }
@@ -118,7 +124,7 @@ emacs_restart_all() {
 
 emacs_list_servers() {
     #ls -1 /run/user/1000/emacs
-    ps aux | grep -E "emacs.*--daemon=.*" | \
+    ps aux | grep -E "emacs.*--daemon=.*" |
         awk '/emacs / { match($0, /--daemon=([^ \(]+)/, m); if (m[1] != "") print m[1] }'
 }
 
@@ -130,9 +136,11 @@ emacs_connect_new() {
         file="$1"
     fi
     if [ -z "$file" ]; then
-        nohup emacsclient -c -s "$name" -e "$EMACS_DEFAULT_SIZE" > /dev/null 2>&1 & disown
+        nohup emacsclient -c -s "$name" -e "$EMACS_DEFAULT_SIZE" >/dev/null 2>&1 &
+        disown
     else
-        nohup emacsclient -c -s "$name" -e "$EMACS_DEFAULT_SIZE" "(find-file \"$file\")" > /dev/null 2>&1 & disown
+        nohup emacsclient -c -s "$name" -e "$EMACS_DEFAULT_SIZE" "(find-file \"$file\")" >/dev/null 2>&1 &
+        disown
     fi
 }
 
@@ -145,19 +153,23 @@ emacs_connect() {
         file="$1"
     fi
 
-    window_count=$( emacsclient -s $name -e "(length (frame-list))" )
+    window_count=$(emacsclient -s $name -e "(length (frame-list))")
 
     if [ -z "$file" ]; then
         if [ "$window_count" = "1" ]; then
-            nohup emacsclient -c -s "$name" -e "$EMACS_DEFAULT_SIZE" > /dev/null 2>&1 & disown
+            nohup emacsclient -c -s "$name" -e "$EMACS_DEFAULT_SIZE" >/dev/null 2>&1 &
+            disown
         else
-            nohup emacsclient -s "$name" > /dev/null 2>&1 & disown
+            nohup emacsclient -s "$name" >/dev/null 2>&1 &
+            disown
         fi
     else
         if [ "$window_count" = "1" ]; then
-            nohup emacsclient -c -s "$name" -e "$EMACS_DEFAULT_SIZE" "(find-file \"$file\")" > /dev/null 2>&1 & disown
+            nohup emacsclient -c -s "$name" -e "$EMACS_DEFAULT_SIZE" "(find-file \"$file\")" >/dev/null 2>&1 &
+            disown
         else
-            nohup emacsclient -s "$name" -e "(find-file \"$file\")" > /dev/null 2>&1 & disown
+            nohup emacsclient -s "$name" -e "(find-file \"$file\")" >/dev/null 2>&1 &
+            disown
         fi
     fi
 }

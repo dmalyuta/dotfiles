@@ -2360,6 +2360,14 @@ in the following cases:
 (advice-add 'filladapt--fill-paragraph :around
             #'danylo/filladapt--fill-paragraph)
 
+(use-package indent-bars
+  ;; https://github.com/jdtsmith/indent-bars
+  ;; Fast, configurable indentation guide-bars for Emacs.
+  ;;
+  ;; This package is also very useful because it builds correct stipple bitmaps
+  ;; via `invent-bars--stipple'.
+  )
+
 ;; Display the fill indicator.
 (defun danylo/update-fill-column-indicator ()
   "Adjust the stipple bitmap for the current font size, such that it
@@ -2367,23 +2375,20 @@ displays as a single thin vertical line. Inspired by
 https://emacs.stackexchange.com/a/81307 but makes sure that the vertical
 line is not repeated horizontally at certain text zoom levels."
   (let* ((char-width-pixels (frame-char-width))
-         (stipple-bitmap (apply
-                          'unibyte-string
-                          (let ((string-bytes '()))
-                            (dotimes (i (floor (/ (+ char-width-pixels 7) 8)))
-                              (setq string-bytes
-                                    (append
-                                     string-bytes
-                                     (list (if (eq i 0) #x01 #x00)))))
-                            string-bytes))))
+         (rot (indent-bars--stipple-rot (selected-window) char-width-pixels)))
     (set-face-attribute 'fill-column-indicator nil
                         :background 'unspecified
                         :foreground "#5a6167"
-                        :stipple `(,char-width-pixels 1 ,stipple-bitmap))))
+                        :stipple (indent-bars--stipple
+                                  char-width-pixels 1 rot nil 0.1 0 "." 0)))
+  )
 (when (display-graphic-p)
   (progn
     (setq-default display-fill-column-indicator-character ?\ )
     (add-hook 'after-init-hook 'danylo/update-fill-column-indicator)
+    (advice-add 'set-fill-column
+                :after (lambda (&rest _)
+                         (danylo/update-fill-column-indicator)))
     (advice-add 'default-text-scale-decrease
                 :after (lambda (&rest _)
                          (danylo/update-fill-column-indicator)))

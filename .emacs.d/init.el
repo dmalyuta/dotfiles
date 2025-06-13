@@ -2374,7 +2374,7 @@ line is not repeated horizontally at certain text zoom levels."
                               (setq string-bytes
                                     (append
                                      string-bytes
-                                     (list (if (eq i 0) #x80 #x00)))))
+                                     (list (if (eq i 0) #x01 #x00)))))
                             string-bytes))))
     (set-face-attribute 'fill-column-indicator nil
                         :background 'unspecified

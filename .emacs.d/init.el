@@ -32,6 +32,12 @@
 (setq default-frame-alist
       (append default-frame-alist '((height . 50) (width . 100))))
 
+;; Use GNU tar when using OSX.
+(defconst is-osx (string-equal system-type "darwin")
+  "Boolean if running under Mac OS X.")
+(when is-osx
+  (setenv "PATH" "/opt/homebrew/bin/:$PATH" t))
+
 ;; No garbage collection at startup
 (setq gc-cons-threshold most-positive-fixnum)
 
@@ -864,7 +870,6 @@ not have to update when the cursor is moving quickly."
  "C-c <next>" 'next-buffer)      ; next: page down
 
 ;; Enable clipboard in emacs
-
 (if (display-graphic-p)
     (gpm-mouse-mode t)
   (xterm-mouse-mode t))
@@ -2356,6 +2361,38 @@ in the following cases:
             #'danylo/filladapt--fill-paragraph)
 
 ;; Display the fill indicator.
+(defun danylo/update-fill-column-indicator ()
+  "Adjust the stipple bitmap for the current font size, such that it
+displays as a single thin vertical line. Inspired by
+https://emacs.stackexchange.com/a/81307 but makes sure that the vertical
+line is not repeated horizontally at certain text zoom levels."
+  (let* ((char-width-pixels (frame-char-width))
+         (stipple-bitmap (apply
+                          'unibyte-string
+                          (let ((string-bytes '()))
+                            (dotimes (i (floor (/ (+ char-width-pixels 7) 8)))
+                              (setq string-bytes
+                                    (append
+                                     string-bytes
+                                     (list (if (eq i 0) #x80 #x00)))))
+                            string-bytes))))
+    (set-face-attribute 'fill-column-indicator nil
+                        :background 'unspecified
+                        :foreground "#5a6167"
+                        :stipple `(,char-width-pixels 1 ,stipple-bitmap))))
+(when (display-graphic-p)
+  (progn
+    (setq-default display-fill-column-indicator-character ?\ )
+    (add-hook 'after-init-hook 'danylo/update-fill-column-indicator)
+    (advice-add 'default-text-scale-decrease
+                :after (lambda (&rest _)
+                         (danylo/update-fill-column-indicator)))
+    (advice-add 'default-text-scale-increase
+                :after (lambda (&rest _)
+                         (danylo/update-fill-column-indicator)))
+    (advice-add 'danylo/reset-font-size
+                :after (lambda (&rest _)
+                         (danylo/update-fill-column-indicator)))))
 ;; All programming major modes.
 (add-hook 'prog-mode-hook #'display-fill-column-indicator-mode)
 ;; All modes derived from text-mode.
@@ -2614,8 +2651,7 @@ Default is 80"
 (use-package bufler
   ;; https://github.com/alphapapa/bufler.el
   ;; Group buffers into workspaces with programmable rules
-  :quelpa (bufler :fetcher github :repo "alphapapa/bufler.el"
-                  :files (:defaults (:exclude "helm-bufler.el")))
+  :vc (:url "https://github.com/alphapapa/bufler.el" :branch "master")
   :config
   (require 'bufler)
   (setq bufler-filter-buffer-modes
@@ -3129,7 +3165,8 @@ project."
 
 (defun danylo/math-preview-init ()
   "Startup actions for math preview."
-  (math-preview-all))
+  (when (display-graphic-p)
+    (math-preview-all)))
 
 (use-package math-preview
   ;; https://gitlab.com/matsievskiysv/math-preview/

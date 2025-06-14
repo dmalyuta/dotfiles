@@ -101,6 +101,7 @@ fi
 
 # Disable the message "Sorry, Ubuntu xy.zw has experienced an internal error"
 sudo sed -i -e '/enabled=/s/1/0/' /etc/default/apport
+sudo systemctl disable apport
 
 sudo apt-get -y install xcalib \
     pdftk \

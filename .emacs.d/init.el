@@ -2406,6 +2406,7 @@ in the following cases:
   ;; Minimal dashed pattern.
   (indent-bars-color '(highlight :face-bg t :blend 0.2))
   (indent-bars-pattern "...   ")
+  (indent-bars-no-stipple-char ?┆)
   (indent-bars-width-frac 0.1)
   (indent-bars-pad-frac 0.1)
   (indent-bars-zigzag nil)

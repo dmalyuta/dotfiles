@@ -399,6 +399,8 @@ directory."
 ;;
 ;; Getting started:
 ;; https://www.masteringemacs.org/article/how-to-get-started-tree-sitter
+;;
+;; Check ABI version: (treesit-library-abi-version)
 
 (use-package treesit-auto
   ;; https://github.com/renzmann/treesit-auto
@@ -656,6 +658,12 @@ changed, and to nil otherwise."
   ;; https://github.com/emacs-dashboard/emacs-dashboard
   ;; An extensible emacs startup screen showing you what’s most important
   :diminish dashboard-mode
+  :bind (:map dashboard-mode-map
+              ("<up>" . nil)
+              ("<down>" . nil)
+              ("<left>" . nil)
+              ("<right>" . nil)
+              )
   :init
   (setq dashboard-banner-logo-title "Change the world, step by step"
         dashboard-startup-banner 'logo
@@ -1102,6 +1110,23 @@ Source: http://steve.yegge.googlepages.com/my-dot-emacs-file"
 
 ;;;; Improve performance of long lines.
 (global-so-long-mode 1)
+
+;;;; No-op command for keys that we want to disable.
+
+(defun danylo/disabled-command ()
+  "A no-op function that messages user that they are trying to use a
+disabled command."
+  (interactive)
+  (let ((message-log-max nil))
+    (danylo/print-in-minibuffer
+     (format "%s Disabled command"
+             (danylo/fancy-icon
+              'nerd-icons-faicon
+              'nerd-icons-faicon-family
+              "nf-fa-skull_crossbones")))))
+
+(general-define-key
+ "<f20>" 'danylo/disabled-command)
 
 ;;; ..:: Searching ::..
 
@@ -1920,6 +1945,10 @@ when there is another buffer printing out information."
          ;; For consistency, use M-z so that I have a signal key combination
          ;; to memorize.
          ("M-z" . undo-fu-only-redo))
+  :config
+  ;; Bind C-S-z to a key that does nothing, effectively disabling it so that we
+  ;; don't accidentally undo when we mean to redo (use M-z for that).
+  (define-key key-translation-map (kbd "C-S-z") (kbd "<f20>"))
   )
 
 (use-package hl-todo
@@ -2052,7 +2081,8 @@ when there is another buffer printing out information."
     (fill-paragraph nil region)))
 
 ;; Handy key definition
-(define-key global-map "\M-Q" 'unfill-paragraph)
+(general-define-key
+ "M-Q" 'unfill-paragraph)
 
 (use-package so-long
   ;; https://www.emacswiki.org/emacs/SoLong
@@ -2366,7 +2396,26 @@ in the following cases:
   ;;
   ;; This package is also very useful because it builds correct stipple bitmaps
   ;; via `invent-bars--stipple'.
+  :hook ((python-ts-mode . indent-bars-mode)
+         (c-mode-common . indent-bars-mode))
+  :custom
+  (indent-bars-treesit-support t)
+  (indent-bars-no-descend-string nil)
+  (indent-bars-no-descend-lists t)
+  (indent-bars-treesit-wrap '((cpp argument_list parameter_list init_declarator parenthesized_expression)))
+  ;; Minimal dashed pattern.
+  (indent-bars-color '(highlight :face-bg t :blend 0.2))
+  (indent-bars-pattern "...   ")
+  (indent-bars-width-frac 0.1)
+  (indent-bars-pad-frac 0.1)
+  (indent-bars-zigzag nil)
+  (indent-bars-color-by-depth nil)
+  (indent-bars-treesit-scope-min-lines 5)
+  (indent-bars-highlight-current-depth nil)
+  (indent-bars-display-on-blank-lines t)
   )
+
+(require 'indent-bars)
 
 ;; Display the fill indicator.
 (defun danylo/update-fill-column-indicator ()
@@ -2624,7 +2673,29 @@ Default is 80"
 (use-package buffer-move
   ;; https://github.com/lukhas/buffer-move
   ;; Swap buffers between windows
+  :custom
+  (buffer-move-behavior 'move)
   )
+
+(defmacro danylo/move-with-swap (fun-name move-fun)
+  "Swap the current buffer with a buffer in another window, the direction
+being set by MOVE-FUN."
+  `(defun ,fun-name ()
+     (interactive)
+     (let ((buffer-move-behavior 'swap))
+       (funcall ,move-fun))))
+
+(danylo/move-with-swap buf-swap-up #'buf-move-up)
+(danylo/move-with-swap buf-swap-down #'buf-move-down)
+(danylo/move-with-swap buf-swap-left #'buf-move-left)
+(danylo/move-with-swap buf-swap-right #'buf-move-right)
+
+(defhydra hydra-swap-buffer (global-map "C-c s")
+  "Swap buffer with window"
+  ("<up>" buf-swap-up "↑")
+  ("<down>" buf-swap-down "↓")
+  ("<left>" buf-swap-left "←")
+  ("<right>" buf-swap-right "→"))
 
 (defhydra hydra-move-buffer (global-map "C-c m")
   "Move buffer to window"
@@ -2863,6 +2934,16 @@ to (vterm) with no argument will create a **new** vterm buffer."
         company-auto-complete nil
         company-idle-delay nil
         company-auto-select-first-candidate nil)
+  )
+
+(use-package cape
+  ;; https://github.com/minad/cape
+  ;; cape.el - Completion At Point Extensions
+  :bind ("C-c p" . cape-prefix-map)
+  :config
+  (add-hook 'completion-at-point-functions #'cape-dabbrev)
+  (add-hook 'completion-at-point-functions #'cape-file)
+  (add-hook 'completion-at-point-functions #'cape-elisp-block)
   )
 
 (defun danylo/company--continue (orig-fun &rest args)
@@ -3282,8 +3363,10 @@ fill after inserting the link."
          ("C-c v d" . magit-diff-buffer-file)
          :map magit-file-section-map
          ("RET" . magit-diff-visit-file-other-window)
+         ("C-RET" . magit-diff-visit-file)
          :map magit-hunk-section-map
-         ("RET" . magit-diff-visit-file-other-window))
+         ("RET" . magit-diff-visit-file-other-window)
+         ("C-RET" . magit-diff-visit-file))
   :init (setq magit-display-buffer-function
               #'magit-display-buffer-same-window-except-diff-v1
               magit-refresh-status-buffer nil
@@ -3454,19 +3537,50 @@ find a definion."
   :disabled
   :hook ((c++-mode . modern-c++-font-lock-mode)))
 
+(use-package highlight-doxygen
+  ;; https://github.com/Lindydancer/highlight-doxygen
+  ;; Highlight Doxygen comments in Emacs, including code blocks
+  :config
+  (set-face-attribute 'highlight-doxygen-comment nil :background 'unspecified)
+  (set-face-attribute 'highlight-doxygen-code-block nil
+                      :background 'unspecified)
+  (highlight-doxygen-global-mode 1)
+  )
+
 (use-package yasnippet
   ;; https://github.com/joaotavora/yasnippet
   ;; A template system for Emacs
   :init
   (setq yas-snippet-dirs `(,(danylo/make-path "lisp/snippets")))
-  :bind (:map yas-minor-mode-map
-              ("C-c y" . company-yasnippet))
   :hook ((prog-mode . yas-minor-mode)
          (text-mode . yas-minor-mode))
   )
 
+(use-package helm-c-yasnippet
+  ;; https://github.com/emacs-jp/helm-c-yasnippet
+  ;; Helm source for yasnippet
+  :bind (:map yas-minor-mode-map
+              ("C-M-y" . helm-yas-complete))
+  :custom
+  (helm-yas-space-match-any-greedy t)
+  (helm-yas-display-key-on-candidate t)
+  )
+
+(use-package yasnippet-capf
+  ;; https://github.com/elken/yasnippet-capf
+  ;; Completion-At-Point Extension for YASnippet.
+  :after cape
+  :hook ((lsp-mode . danylo/yasnippet-capf-h)
+         (prog-mode . danylo/yasnippet-capf-h)
+         (text-mode . danylo/yasnippet-capf-h))
+  :init
+  (defun danylo/yasnippet-capf-h ()
+    (add-to-list 'completion-at-point-functions #'yasnippet-capf))
+  )
+
 (require 'yasnippet)
 (yas-reload-all)
+(add-to-list 'auto-mode-alist '("\\.yasnippet" . snippet-mode))
 
 (defun company-mode/backend-with-yas (backend)
   (if (and (listp backend) (member 'company-yasnippet backend))

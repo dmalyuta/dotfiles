@@ -2419,7 +2419,7 @@ in the following cases:
 (require 'indent-bars)
 
 ;; Display the fill indicator.
-(defun danylo/update-fill-column-indicator ()
+(defun danylo/update-fill-column-indicator (&rest _)
   "Adjust the stipple bitmap for the current font size, such that it
 displays as a single thin vertical line. Inspired by
 https://emacs.stackexchange.com/a/81307 but makes sure that the vertical
@@ -2437,21 +2437,19 @@ line is not repeated horizontally at certain text zoom levels."
     (setq-default display-fill-column-indicator-character ?\ )
     (add-hook 'after-init-hook 'danylo/update-fill-column-indicator)
     (advice-add 'set-fill-column
-                :after (lambda (&rest _)
-                         (danylo/update-fill-column-indicator)))
+                :after #'danylo/update-fill-column-indicator)
     (advice-add 'default-text-scale-decrease
-                :after (lambda (&rest _)
-                         (danylo/update-fill-column-indicator)))
+                :after #'danylo/update-fill-column-indicator)
     (advice-add 'default-text-scale-increase
-                :after (lambda (&rest _)
-                         (danylo/update-fill-column-indicator)))
+                :after #'danylo/update-fill-column-indicator)
     (advice-add 'danylo/reset-font-size
-                :after (lambda (&rest _)
-                         (danylo/update-fill-column-indicator)))))
-;; All programming major modes.
-(add-hook 'prog-mode-hook #'display-fill-column-indicator-mode)
-;; All modes derived from text-mode.
-(add-hook 'text-mode-hook #'display-fill-column-indicator-mode)
+                :after #'danylo/update-fill-column-indicator)))
+
+;; Activate fill indicator in programming and text major modes.
+(dolist (mode-hook '(prog-mode-hook text-mode-hook))
+  (add-hook mode-hook (lambda ()
+                        (display-fill-column-indicator-mode 1)
+                        (danylo/update-fill-column-indicator))))
 
 (general-define-key
  "M-q" 'danylo/smart-fill
@@ -4413,12 +4411,26 @@ Patched so that any new file by default is guessed as being its own master."
   ;; Major-mode for editing web templates.
   :quelpa (web-mode :fetcher github
                     :repo "fxbois/web-mode"
-                    :branch "master"))
+                    :branch "master")
+  :custom
+  (web-mode-enable-css-colorization nil))
 
 ;; Astro major mode.
 (define-derived-mode astro-mode web-mode "Astro")
 (add-to-list 'auto-mode-alist '("\\.astro" . astro-mode))
 (add-to-list 'apheleia-mode-alist '(astro-mode . prettier-html))
+
+(add-hook
+ 'astro-mode-hook
+ (lambda ()
+   (add-to-list
+    'colorful-extra-color-keyword-functions
+    '(astro-mode
+      . (colorful-add-css-variables-colors
+         colorful-add-rgb-colors
+         colorful-add-hsl-colors
+         colorful-add-oklab-oklch-colors
+         colorful-add-color-names)))))
 
 ;;; ..:: CSV ::..
 

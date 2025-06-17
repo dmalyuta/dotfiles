@@ -159,7 +159,9 @@ directory."
 (use-package hydra
   ;; https://github.com/abo-abo/hydra
   ;; Make Emacs bindings that stick around
-  )
+  :config
+  (require 'hydra)
+  (define-key hydra-base-map (kbd "q") 'keyboard-quit))
 
 (general-define-key
  :keymaps '(emacs-lisp-mode-map lisp-interaction-mode-map)
@@ -584,7 +586,13 @@ changed, and to nil otherwise."
 (defun danylo/toggle-between-buffers ()
   "Toggle between this and the last visited buffer in the current window."
   (interactive)
-  (switch-to-buffer (other-buffer (current-buffer) 1)))
+  (let* ((prev-view (nth 0 (window-prev-buffers)))
+         (prev-buffer (nth 0 prev-view))
+         (prev-window-start (nth 1 prev-view))
+         (prev-pos (nth 2 prev-view)))
+    (switch-to-buffer prev-buffer)
+    (set-window-start nil prev-window-start)
+    (goto-char prev-pos)))
 
 (defhydra hydra-toggle-between-buffers (global-map "C-x")
   "Flip to last buffer"
@@ -847,7 +855,18 @@ not have to update when the cursor is moving quickly."
 (use-package expand-region
   ;; https://github.com/magnars/expand-region.el
   ;; Increase selected region by semantic units
-  :bind ("C-=" . er/expand-region))
+  :bind ("C-=" . er/expand-region)
+  :config
+  (add-hook
+   'find-file-hook
+   (lambda ()
+     ;; If the current mode has treesitter support, do not use er/mark-defun
+     ;; expansion. I found that this can lead to slowness in some modes, such
+     ;; as bash-ts-mode.
+     (when (treesit-parser-list)
+       (setq-local er/try-expand-list
+                   (delete 'er/mark-defun er/try-expand-list)))))
+  )
 
 ;; Turn off Abbrev mode
 (setq-default abbrev-mode nil)
@@ -1060,9 +1079,6 @@ Source: http://steve.yegge.googlepages.com/my-dot-emacs-file"
   (interactive)
   (kill-new (buffer-file-name)))
 
-(general-define-key
- "C-c C-a" 'danylo/copy-file-absolute-path)
-
 (use-package revert-buffer-all
   ;; Revert all buffers after external changes have been made.
   )
@@ -1127,6 +1143,56 @@ disabled command."
 
 (general-define-key
  "<f20>" 'danylo/disabled-command)
+
+;;;; Delete without pushing content to the kill ring.
+;;;; Adapted from: http://xahlee.info/emacs/emacs/emacs_kill-ring.html
+
+(defun danylo/delete-word (arg)
+  "Delete characters forward until encountering the end of a word.
+With argument, do this that many times.
+This command does not push text to `kill-ring'."
+  (interactive "p")
+  (delete-region
+   (point)
+   (progn
+     (forward-word arg)
+     (point))))
+
+(defun danylo/backward-delete-word (arg)
+  "Delete characters backward until encountering the beginning of a word.
+With argument, do this that many times.
+This command does not push text to `kill-ring'."
+  (interactive "p")
+  (danylo/delete-word (- arg)))
+
+(defun danylo/delete-line ()
+  "Delete text from current position to end of line char.
+This command does not push text to `kill-ring'."
+  (interactive)
+  (delete-region
+   (point)
+   (progn (end-of-line 1) (point)))
+  (delete-char 1))
+
+(defun danylo/delete-line-backward ()
+  "Delete text between the beginning of the line to the cursor position.
+This command does not push text to `kill-ring'."
+  (interactive)
+  (let (p1 p2)
+    (setq p1 (point))
+    (beginning-of-line 1)
+    (setq p2 (point))
+    (delete-region p1 p2)))
+
+(global-set-key (kbd "C-S-k") 'danylo/delete-line-backward)
+(global-set-key (kbd "C-k") 'danylo/delete-line)
+(global-set-key (kbd "M-d") 'danylo/delete-word)
+(global-set-key (kbd "<M-backspace>") 'danylo/backward-delete-word)
+
+;; Clear minibuffer contents
+(general-define-key
+ :keymaps 'minibuffer-local-map
+ "C-k" 'helm-delete-minibuffer-contents)
 
 ;;; ..:: Searching ::..
 
@@ -1912,10 +1978,10 @@ when there is another buffer printing out information."
   (drag-stuff-global-mode 1)
   (defhydra hydra-drag-stuff (drag-stuff-mode-map "C-c C-d")
     "Resize window"
-    ("<up>" drag-stuff-up "↑")
-    ("<down>" drag-stuff-down "↓")
-    ("<left>" drag-stuff-left "←")
-    ("<right>" drag-stuff-right "→"))
+    ("p" drag-stuff-up "↑")
+    ("n" drag-stuff-down "↓")
+    ("b" drag-stuff-left "←")
+    ("f" drag-stuff-right "→"))
   )
 
 (use-package move-text
@@ -2338,16 +2404,13 @@ regions."
          t)
         (t nil)))
 
-(defvar danylo/fill-paragraph-line-width 80
-  "The line width to use for fill-paragraph.")
-
 (defun danylo/smart-fill ()
   "Smart select between regular filling and my own filling."
   (interactive)
   (if (and transient-mark-mode mark-active)
       (fill-region (region-beginning) (region-end) nil t)
     (unless (danylo/fill)
-      (let ((fill-column danylo/fill-paragraph-line-width)) (fill-paragraph)))
+      (fill-paragraph))
     ))
 
 (defun danylo/julia-docstring-fill-skip ()
@@ -2832,6 +2895,7 @@ being set by MOVE-FUN."
               ("<down>" . nil)
               ("<left>" . nil)
               ("<right>" . nil)
+              ("M-r" . nil)
               ("C-x [" . vterm-copy-mode)
               ("C-c r" . rename-buffer)
               ("S-<return>" . vterm-send-tab)
@@ -3182,6 +3246,21 @@ project."
   (if current-prefix-arg
       (helm-projectile-grep)
     (helm-projectile-ag)))
+
+;;; ..:: Common actions ::..
+
+(defhydra hydra-common-actions (:hint none)
+  "
+File operations
+_a_: Copy absolute path
+
+Essential commands
+_q_: Quit"
+  ("a" danylo/copy-file-absolute-path :exit t)
+  ("q" nil "cancel"))
+
+(general-define-key
+ "C-c a" 'hydra-common-actions/body)
 
 ;;; ..:: Org ::..
 

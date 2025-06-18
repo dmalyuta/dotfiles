@@ -1184,15 +1184,17 @@ This command does not push text to `kill-ring'."
     (setq p2 (point))
     (delete-region p1 p2)))
 
+(global-set-key (kbd "C-S-q") 'danylo/delete-line-backward)
+(global-set-key (kbd "C-q") 'danylo/delete-line)
 (global-set-key (kbd "C-S-k") 'danylo/delete-line-backward)
 (global-set-key (kbd "C-k") 'danylo/delete-line)
 (global-set-key (kbd "M-d") 'danylo/delete-word)
-(global-set-key (kbd "<M-backspace>") 'danylo/backward-delete-word)
+(global-set-key (kbd "M-DEL") 'danylo/backward-delete-word)
 
 ;; Clear minibuffer contents
 (general-define-key
  :keymaps 'minibuffer-local-map
- "C-k" 'helm-delete-minibuffer-contents)
+ "C-q" 'helm-delete-minibuffer-contents)
 
 ;;; ..:: Searching ::..
 
@@ -1923,10 +1925,19 @@ when there is another buffer printing out information."
   :custom
   (mc/always-run-for-all t)
   (mc/always-repeat-command t)
-  :bind
-  (("C->" . mc/mark-next-like-this)
-   ("C-<" . mc/mark-previous-like-this)
-   ("C-*" . mc/mark-all-like-this)))
+  :config
+  (require 'multiple-cursors)
+  (defhydra hydra-multiple-cursors (global-map "C-c m")
+    "Multiple cursors"
+    ("p" mc/mark-previous-like-this "↑")
+    ("n" mc/mark-next-like-this "↓")
+    ("*" mc/mark-all-like-this "all" :exit t))
+  (dolist (item '(hydra-multiple-cursors/mc/mark-previous-like-this
+                  hydra-multiple-cursors/mc/mark-next-like-this
+                  hydra-multiple-cursors/mc/mark-all-like-this-and-exit
+                  hydra-keyboard-quit))
+    (add-to-list 'mc/cmds-to-run-once item))
+  )
 
 (general-define-key
  :keymaps 'mc/keymap
@@ -1976,7 +1987,7 @@ when there is another buffer printing out information."
   ;; Drag stuff around in Emacs.
   :init
   (drag-stuff-global-mode 1)
-  (defhydra hydra-drag-stuff (drag-stuff-mode-map "C-c C-d")
+  (defhydra hydra-drag-stuff (global-map "C-c C-d")
     "Resize window"
     ("p" drag-stuff-up "↑")
     ("n" drag-stuff-down "↓")
@@ -2329,7 +2340,7 @@ With argument ARG, do this that many times."
 
 (general-define-key
  "M-d" 'danylo/forward-delete-word
- "M-<backspace>" 'danylo/backward-delete-word)
+ "M-DEL" 'danylo/backward-delete-word)
 
 ;;;; Fill column (line width)
 
@@ -3737,7 +3748,7 @@ find a definion."
               ;; The python-indent-dedent-line-backspace function causes
               ;; unintuitive deletion of code via backspace. It's unnecessary
               ;; headache since I de-indent with Shift+Tab.
-              ("<backspace>" . 'python-indent-dedent-line-backspace)
+              ("DEL" . 'python-indent-dedent-line-backspace)
               ;; ("TAB" . 'python-indent-shift-right)
               ;; ("<backtab>" . 'python-indent-shift-left)
               )
@@ -4245,7 +4256,7 @@ LaTeX document."
   (setq-default TeX-master nil)
   :bind (:map LaTeX-mode-map
               ("C-c i w" . ispell-word)
-              ("C-x C-<backspace>" . electric-pair-delete-pair)
+              ("C-x C-DEL" . electric-pair-delete-pair)
               ("C-c f e" . danylo/org-emphasize-equation)
               ("C-c x c" . reftex-citep)
               ("C-c s" . nil)

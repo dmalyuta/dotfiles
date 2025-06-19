@@ -112,11 +112,6 @@ in a while."
   :type 'integer
   :group 'danylo)
 
-(defcustom danylo/cursor-big-step 3
-  "Step amount for accelerated cursor motion."
-  :type 'integer
-  :group 'danylo)
-
 (defcustom danylo/treesit-verbose nil
   "Print in minibuffer the matched tree-sitter indentation rule."
   :type 'boolean

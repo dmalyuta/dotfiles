@@ -12,6 +12,12 @@
 ;;
 ;;; Code:
 
+(defun danylo/run-gui-conditional-code (user-func)
+  "Run USER-FUNC after the frame is create, passing to it a boolean that
+says whether this Emacs session is running as GUI (vs in a terminal)."
+  (mapc user-func (frame-list))
+  (add-hook 'after-make-frame-functions user-func))
+
 ;; C-g is used by Emacs at a very low-level to quit out of running code, and it
 ;; is also used to execite `keyboard-quit'. See
 ;; https://www.gnu.org/software/emacs/manual/html_node/elisp/Quitting.html. This
@@ -22,9 +28,11 @@
 ;;     emulators);
 ;; instead for quitting out of user code. C-g continues to assume its duplicate
 ;; role, but the user shouldn't use it.
-(if (window-system)
-    (define-key key-translation-map (kbd "C-/") (kbd "C-g"))
-  (define-key key-translation-map (kbd "C-_") (kbd "C-g")))
+(defun danylo/init-keyboard-quit-key (frame)
+  (if (display-graphic-p frame)
+      (define-key key-translation-map (kbd "C-/") (kbd "C-g"))
+    (define-key key-translation-map (kbd "C-_") (kbd "C-g"))))
+(danylo/run-gui-conditional-code #'danylo/init-keyboard-quit-key)
 (define-key key-translation-map (kbd "C-g") (kbd "<f20>"))
 (global-unset-key (kbd "<f20>"))
 
@@ -190,11 +198,11 @@ directory."
   ;; https://github.com/domtronn/all-the-icons.el
   ;; Pretty icons
   :config
-  (when (and (window-system)
+  (when (and (display-graphic-p)
              (not (member "all-the-icons" (font-family-list))))
     (all-the-icons-install-fonts t))
   ;; Fix MATLAB icon
-  (when (window-system)
+  (when (display-graphic-p)
     (setq all-the-icons-icon-alist
           (add-to-list 'all-the-icons-icon-alist
                        '("\\.m$" all-the-icons-fileicon "matlab"
@@ -205,7 +213,7 @@ directory."
   "Icon with proper formatting for minibuffer"
   (unless fg
     (setq fg `,(face-attribute 'default :foreground)))
-  (if (window-system)
+  (if (display-graphic-p)
       (propertize (funcall icon-lib icon)
                   'face `(:family ,(funcall icon-family)
                                   :height 0.95
@@ -599,41 +607,11 @@ changed, and to nil otherwise."
   ("/" danylo/toggle-between-buffers))
 (hydra-set-property 'hydra-toggle-between-buffers :verbosity 0)
 
-;;;; Smart move cursor in large steps
-
-(defvar danylo/cursor-current-step 1
-  "The step amount by which to move cursor.")
-
-(defvar danylo/cursor-timer nil
-  "Timer object for cursor motion amount resetting.")
-
-(defun danylo/cursor-smart-move (dir &optional arg)
-  (interactive "P")
-  (when arg
-    ;; Cancel existing timer
-    (when danylo/cursor-timer
-      (cancel-timer danylo/cursor-timer))
-    ;; Change step increment and create new timer
-    (setq danylo/cursor-current-step danylo/cursor-big-step
-          danylo/cursor-timer (run-with-idle-timer
-                               0.5 nil
-                               (lambda ()
-                                 (setq danylo/cursor-current-step 1)))))
-  (if (eq dir 'up)
-      (previous-line danylo/cursor-current-step)
-    (next-line danylo/cursor-current-step)))
-
-(defun danylo/cursor-up-smart (&optional arg)
-  (interactive "P")
-  (danylo/cursor-smart-move 'up arg))
-
-(defun danylo/cursor-down-smart (&optional arg)
-  (interactive "P")
-  (danylo/cursor-smart-move 'down arg))
-
-(general-define-key
- "C-p" 'danylo/cursor-up-smart
- "C-n" 'danylo/cursor-down-smart)
+(use-package danylo-cursor-motion
+  ;; Move cursor either one line at a time, or in large steps.
+  :load-path danylo/emacs-custom-lisp-dir
+  :bind (("C-p" . danylo/cursor-up-smart)
+         ("C-n" . danylo/cursor-down-smart)))
 
 ;; Show column number
 (setq-default column-number-mode t)
@@ -897,9 +875,12 @@ not have to update when the cursor is moving quickly."
  "C-c <next>" 'next-buffer)      ; next: page down
 
 ;; Enable clipboard in emacs
-(if (display-graphic-p)
-    (gpm-mouse-mode t)
-  (xterm-mouse-mode t))
+(defun danylo/init-mouse (frame)
+  (if (display-graphic-p frame)
+      (gpm-mouse-mode t)
+    (xterm-mouse-mode t)))
+(danylo/run-gui-conditional-code #'danylo/init-mouse)
+
 (mouse-wheel-mode t)
 (setq select-enable-clipboard t)
 
@@ -1584,7 +1565,9 @@ Patched to use original **window** instead of buffer."
             (danylo/make-frame-title)))
 
 ;;;; Font
-(set-frame-font "CaskaydiaCove NF" nil t)
+(add-hook
+ 'after-make-frame-functions
+ (lambda (frame) (set-frame-font "CaskaydiaCove NF" nil t)))
 
 (use-package rainbow-delimiters
   ;; https://github.com/Fanael/rainbow-delimiters
@@ -1769,7 +1752,7 @@ is automatically turned on while the line numbers are displayed."
     "Displays if turbo mode is on (low latency editing)."
     (if danylo/turbo-on
         (propertize
-         (danylo/fa-icon "rocket")
+         (if (display-graphic-p) (danylo/fa-icon "rocket") "Turbo")
          'face (doom-modeline-face 'danylo/doom-modeline-turbo))
       ""))
   (defface danylo/doom-modeline-apheleia
@@ -1782,7 +1765,7 @@ is automatically turned on while the line numbers are displayed."
     "Displays if apheleia auto-formatting mode is on."
     (if apheleia-mode
         (propertize
-         (danylo/fa-icon "file-code-o")
+         (if (display-graphic-p) (danylo/fa-icon "file-code-o") "⎘")
          'face (doom-modeline-face 'danylo/doom-modeline-apheleia))
       ""))
   (doom-modeline-def-segment danylo/time
@@ -1794,7 +1777,7 @@ is automatically turned on while the line numbers are displayed."
       (concat
        (doom-modeline-spc)
        (propertize
-        (danylo/fa-icon "clock-o")
+        (if (display-graphic-p) (danylo/fa-icon "clock-o") "⧗")
         'face (append `(:family ,(all-the-icons-faicon-family))
                       (doom-modeline-face 'doom-modeline-time)))
        (doom-modeline-spc)
@@ -1898,6 +1881,26 @@ when there is another buffer printing out information."
   :hook ((python-mode . danylo-prog-font-lock-mode)
          (julia-mode . danylo-prog-font-lock-mode)))
 
+(use-package yascroll
+  ;; https://github.com/emacsorphanage/yascroll
+  ;; Yet Another Scroll Bar Mode
+  :custom
+  (yascroll:priority 200)
+  (yascroll:disabled-modes '(image-mode
+                             dashboard-mode
+                             vterm-mode
+                             bufler-mode
+                             ibuffer-mode
+                             helm-mode
+                             help-mode
+                             magit-mode))
+  :config
+  (set-face-attribute 'yascroll:thumb-text-area nil :background "#5a6167")
+  (set-face-attribute 'yascroll:thumb-fringe nil :background "#5a6167")
+  (set-face-attribute 'yascroll:thumb-fringe nil :foreground "#5a6167")
+  (global-yascroll-bar-mode 1)
+  )
+
 ;;; ..:: Code editing ::..
 
 ;; Use spaces instead of tabs
@@ -1916,7 +1919,7 @@ when there is another buffer printing out information."
 
 ;; Commenting keybindings
 (general-define-key
- "C-x C-;" 'comment-dwim
+ "C-x ;" 'comment-dwim
  "M-;" 'comment-line)
 
 (use-package multiple-cursors
@@ -2014,19 +2017,47 @@ when there is another buffer printing out information."
 (use-package undo-fu
   ;; Undo helper with redo
   ;; Simple, stable linear undo with redo for Emacs.
-  :bind (("C-z" . undo-fu-only-undo)
-         ;; The reason why M-z and not C-S-z is that in terminal mode (i.e.,
-         ;; `emacs -nw'), C-S-z maps to the same command as C-z:
-         ;;   $ showkey -a
-         ;;     ^Z    26 0032 0x1a
-         ;; For consistency, use M-z so that I have a signal key combination
-         ;; to memorize.
-         ("M-z" . undo-fu-only-redo))
+  :bind (("C-z" . danylo/undo-redo))
   :config
   ;; Bind C-S-z to a key that does nothing, effectively disabling it so that we
   ;; don't accidentally undo when we mean to redo (use M-z for that).
   (define-key key-translation-map (kbd "C-S-z") (kbd "<f20>"))
   )
+
+(defvar danylo/undo-command '(undo 1)
+  "Memory for the undo direction (undo or redo). This makes C-u sticky to
+keep redoing once it is pressed, so user can do C-u C-z C-z
+C-z... instead of C-u C-z C-u C-z C-u C-z...")
+
+(defun danylo/undo-redo (&optional arg)
+  "Nominally undo, and if command is preceded with C-u then redo."
+  (interactive "P")
+  (if (or arg (not (memq last-command '(undo-fu-only-undo
+                                        undo-fu-only-redo
+                                        danylo/undo-redo))))
+      (if (not arg)
+          (setq danylo/undo-command '(undo-fu-only-undo 1))
+        (if (listp arg)
+            (setq danylo/undo-command '(undo-fu-only-redo 1))
+          (setq undo-steps arg)
+          (if (< undo-steps 0)
+              (setq danylo/undo-command `(undo-fu-only-redo ,(- arg)))
+            (setq danylo/undo-command `(undo-fu-only-undo ,arg))))))
+  (let ((undo-command (car danylo/undo-command))
+        (undo-steps (nth 1 danylo/undo-command)))
+    (let ((inhibit-message t)
+          (message-log-max nil))
+      (funcall undo-command undo-steps))
+    (danylo/print-in-minibuffer
+     (format "%s %s %d steps"
+             (danylo/fancy-icon
+              'nerd-icons-faicon
+              'nerd-icons-faicon-family
+              `,(if (eq undo-command 'undo-fu-only-undo)
+                    "nf-fa-step_backward"
+                  "nf-fa-step_forward"))
+             (if (eq undo-command 'undo-fu-only-undo) "Undo" "Redo")
+             undo-steps))))
 
 (use-package hl-todo
   ;; https://github.com/tarsius/hl-todo
@@ -2099,9 +2130,9 @@ when there is another buffer printing out information."
 (defhydra hydra-highlight-symbol-at-point (global-map "C-s")
   "Highlight symbol"
   ("." highlight-symbol-at-point "toggle")
-  ("k" highlight-symbol-remove-all "remove all")
   ("n" highlight-symbol-next "next")
-  ("p" highlight-symbol-prev "prev"))
+  ("p" highlight-symbol-prev "prev")
+  ("k" highlight-symbol-remove-all "remove all" :exit t))
 
 (require 'multiple-cursors)
 
@@ -2146,20 +2177,6 @@ when there is another buffer printing out information."
          (org-mode . filladapt-mode)
          (text-mode . filladapt-mode))
   :bind (("M-r" . 'fill-region)))
-
-;;; Stefan Monnier <foo at acm.org>. It is the opposite of fill-paragraph
-;;; https://www.emacswiki.org/emacs/UnfillParagraph
-(defun unfill-paragraph (&optional region)
-  "Takes a multi-line paragraph and makes it into a single line of text."
-  (interactive (progn (barf-if-buffer-read-only) '(t)))
-  (let ((fill-column (point-max))
-        ;; This would override `fill-column' if it's an integer.
-        (emacs-lisp-docstring-fill-column t))
-    (fill-paragraph nil region)))
-
-;; Handy key definition
-(general-define-key
- "M-Q" 'unfill-paragraph)
 
 (use-package so-long
   ;; https://www.emacswiki.org/emacs/SoLong
@@ -2506,18 +2523,20 @@ line is not repeated horizontally at certain text zoom levels."
                         :stipple (indent-bars--stipple
                                   char-width-pixels 1 rot nil 0.1 0 "." 0)))
   )
-(when (display-graphic-p)
-  (progn
-    (setq-default display-fill-column-indicator-character ?\ )
-    (add-hook 'after-init-hook 'danylo/update-fill-column-indicator)
-    (advice-add 'set-fill-column
-                :after #'danylo/update-fill-column-indicator)
-    (advice-add 'default-text-scale-decrease
-                :after #'danylo/update-fill-column-indicator)
-    (advice-add 'default-text-scale-increase
-                :after #'danylo/update-fill-column-indicator)
-    (advice-add 'danylo/reset-font-size
-                :after #'danylo/update-fill-column-indicator)))
+(defun danylo/init-fill-indicator-update (frame)
+  (when (display-graphic-p frame)
+    (progn
+      (setq-default display-fill-column-indicator-character ?\ )
+      (add-hook 'after-init-hook 'danylo/update-fill-column-indicator)
+      (advice-add 'set-fill-column
+                  :after #'danylo/update-fill-column-indicator)
+      (advice-add 'default-text-scale-decrease
+                  :after #'danylo/update-fill-column-indicator)
+      (advice-add 'default-text-scale-increase
+                  :after #'danylo/update-fill-column-indicator)
+      (advice-add 'danylo/reset-font-size
+                  :after #'danylo/update-fill-column-indicator))))
+(danylo/run-gui-conditional-code #'danylo/init-fill-indicator-update)
 
 ;; Activate fill indicator in programming and text major modes.
 (dolist (mode-hook '(prog-mode-hook text-mode-hook))
@@ -2525,9 +2544,19 @@ line is not repeated horizontally at certain text zoom levels."
                         (display-fill-column-indicator-mode 1)
                         (danylo/update-fill-column-indicator))))
 
+;;; Stefan Monnier <foo at acm.org>. It is the opposite of fill-paragraph
+;;; https://www.emacswiki.org/emacs/UnfillParagraph
+(defun unfill-paragraph (&optional region)
+  "Takes a multi-line paragraph and makes it into a single line of text."
+  (interactive (progn (barf-if-buffer-read-only) '(t)))
+  (let ((fill-column (point-max))
+        ;; This would override `fill-column' if it's an integer.
+        (emacs-lisp-docstring-fill-column t))
+    (fill-paragraph nil region)))
+
 (general-define-key
  "M-q" 'danylo/smart-fill
- "M-Q" 'global-display-fill-column-indicator-mode)
+ "M-Q" 'unfill-paragraph)
 
 (use-package minimap
   ;; https://github.com/dengste/minimap
@@ -3347,7 +3376,7 @@ _q_: Quit"
   ;; https://gitlab.com/matsievskiysv/math-preview/
   ;; Emacs preview math inline
   :bind (("C-c m a" . math-preview-all)
-         ("C-c m p" . math-preview-at-point)
+         ("C-c m ." . math-preview-at-point)
          ("C-c m r" . math-preview-region))
   :hook ((org-mode . danylo/math-preview-init)
          (markdown-mode . danylo/math-preview-init))
@@ -3648,8 +3677,7 @@ find a definion."
 (use-package helm-c-yasnippet
   ;; https://github.com/emacs-jp/helm-c-yasnippet
   ;; Helm source for yasnippet
-  :bind (:map yas-minor-mode-map
-              ("C-M-y" . helm-yas-complete))
+  :bind (("C-M-y" . helm-yas-complete))
   :custom
   (helm-yas-space-match-any-greedy t)
   (helm-yas-display-key-on-candidate t)

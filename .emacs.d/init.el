@@ -152,7 +152,6 @@ directory."
 
 (use-package danylo-custom-variables
   ;; Customization variables for init file.
-  :ensure nil
   :load-path danylo/emacs-custom-lisp-dir)
 
 ;;; ..:: Keybinding management ::..
@@ -1565,9 +1564,10 @@ Patched to use original **window** instead of buffer."
             (danylo/make-frame-title)))
 
 ;;;; Font
-(add-hook
- 'after-make-frame-functions
- (lambda (frame) (set-frame-font "CaskaydiaCove NF" nil t)))
+(defun danylo/set-frame-font (&rest _)
+  (set-frame-font "CaskaydiaCove NF" nil t))
+(danylo/set-frame-font)
+(add-hook 'after-make-frame-functions #'danylo/set-frame-font)
 
 (use-package rainbow-delimiters
   ;; https://github.com/Fanael/rainbow-delimiters
@@ -1604,6 +1604,8 @@ active. Basically, any non-file-visiting buffer."
 (add-hook 'prog-mode-hook #'hl-line-mode)
 ;; All modes derived from text-mode.
 (add-hook 'text-mode-hook #'hl-line-mode)
+;; Basic file editing.
+(add-hook 'fundamental-mode-hook #'hl-line-mode)
 
 ;;;; (start patch) Throttle hl-line-highlight when the user is jamming
 ;;;;               `keyboard-quit'.
@@ -1619,7 +1621,8 @@ active. Basically, any non-file-visiting buffer."
   "Ensure hl-line has a visible background in solaire-mode buffers."
   (when (and (bound-and-true-p solaire-mode) buffer-file-name)
     (let ((bg (face-background 'default)))
-      (set-face-background 'solaire-hl-line-face "#21242b" (selected-frame)))))
+      (set-face-background
+       'solaire-hl-line-face `,danylo/dark-gray (selected-frame)))))
 (add-hook 'solaire-mode-hook #'my/fix-hl-line-for-solaire-mode)
 (add-hook 'doom-load-theme-hook #'my/fix-hl-line-for-solaire-mode)
 ;;;; (end patch)
@@ -1765,7 +1768,7 @@ is automatically turned on while the line numbers are displayed."
     "Displays if apheleia auto-formatting mode is on."
     (if apheleia-mode
         (propertize
-         (if (display-graphic-p) (danylo/fa-icon "file-code-o") "⎘")
+         "𝛼"
          'face (doom-modeline-face 'danylo/doom-modeline-apheleia))
       ""))
   (doom-modeline-def-segment danylo/time
@@ -1881,25 +1884,52 @@ when there is another buffer printing out information."
   :hook ((python-mode . danylo-prog-font-lock-mode)
          (julia-mode . danylo-prog-font-lock-mode)))
 
-(use-package yascroll
-  ;; https://github.com/emacsorphanage/yascroll
-  ;; Yet Another Scroll Bar Mode
-  :custom
-  (yascroll:priority 200)
-  (yascroll:disabled-modes '(image-mode
-                             dashboard-mode
-                             vterm-mode
-                             bufler-mode
-                             ibuffer-mode
-                             helm-mode
-                             help-mode
-                             magit-mode))
+(use-package indicators
+  ;; https://github.com/Fuco1/indicators.el
+  ;; Display the buffer relative location of line in the fringe.
+  :hook ((prog-mode . danylo/create-indicators)
+         (text-mode . danylo/create-indicators))
+  :init
+  (setq ind-indicator-height 1)
   :config
-  (set-face-attribute 'yascroll:thumb-text-area nil :background "#5a6167")
-  (set-face-attribute 'yascroll:thumb-fringe nil :background "#5a6167")
-  (set-face-attribute 'yascroll:thumb-fringe nil :foreground "#5a6167")
-  (global-yascroll-bar-mode 1)
+  (defun danylo/create-indicators ()
+    (ind-create-indicator 'point
+                          :managed t
+                          :bitmap 'right-arrow
+                          :face 'danylo/scrollbar-face
+                          :priority 200)
+    (ind-show-indicators))
   )
+
+;;;; (start patch) Debounce the indicators update such that they don't slow
+;;;;               down cursor motion.
+;;;;               NOTE: the idle delay has to be set correctly for the OS's
+;;;;               configured delay for repeating keys. Otherwise you'll see an
+;;;;               initial flicker when the holding the scroll key before the
+;;;;               scrolling begins.
+(defvar danylo/ind-update-idle-delay 0.25)
+(defvar danylo/ind-update-timer nil)
+(defun danylo/debounced-ind-update (orig-fun &rest args)
+  (if danylo/ind-update-timer
+      (cancel-timer danylo/ind-update-timer)
+    (ind-hide-indicators))
+  (setq
+   danylo/ind-update-timer
+   (run-with-idle-timer
+    danylo/ind-update-idle-delay nil
+    (lambda (orig-fun &rest args)
+      (apply orig-fun args)
+      (setq danylo/ind-update-timer nil)) orig-fun args)))
+;; (advice-add 'ind-update-event-handler :around #'danylo/debounced-ind-update)
+;;;; (end patch)
+
+;;;; (start patch) Update scrollbar indicator on mouse scroll.
+(defun danylo/update-indicators-on-scroll (&rest _)
+  (when indicators-mode
+    (ind-update-event-handler)))
+(advice-add 'pixel-scroll-precision
+            :after #'danylo/update-indicators-on-scroll)
+;;;; (end patch)
 
 ;;; ..:: Code editing ::..
 
@@ -2240,9 +2270,9 @@ these functions update the hunk diff buffer."
   (define-fringe-bitmap 'git-gutter-fr:added [224] nil nil '(center repeated))
   (define-fringe-bitmap 'git-gutter-fr:modified [224] nil nil '(center repeated))
   (define-fringe-bitmap 'git-gutter-fr:deleted [128 192 224 240] nil nil 'bottom)
-  (set-face-foreground 'git-gutter-fr:modified "#eabc7a")
-  (set-face-foreground 'git-gutter-fr:added    "#95ba63")
-  (set-face-foreground 'git-gutter-fr:deleted  "#ff6655")
+  (set-face-foreground 'git-gutter-fr:modified `,danylo/orange)
+  (set-face-foreground 'git-gutter-fr:added    `,danylo/green)
+  (set-face-foreground 'git-gutter-fr:deleted  `,danylo/red)
   )
 
 (defun danylo/diff-hl-set-reference ()
@@ -2519,7 +2549,7 @@ line is not repeated horizontally at certain text zoom levels."
          (rot (indent-bars--stipple-rot (selected-window) char-width-pixels)))
     (set-face-attribute 'fill-column-indicator nil
                         :background 'unspecified
-                        :foreground "#5a6167"
+                        :foreground `,danylo/light-gray
                         :stipple (indent-bars--stipple
                                   char-width-pixels 1 rot nil 0.1 0 "." 0)))
   )
@@ -2976,7 +3006,7 @@ to (vterm) with no argument will create a **new** vterm buffer."
   (setq danylo/vterm~buf-num (nth 0 args))
   (if danylo/vterm~buf-num
       (apply orig-fun args)
-    (progn
+v    (progn
       ;; Create a new vterm buffer
       (setq danylo/vterm~buf-num 0)
       (mapc (lambda (buf)
@@ -3527,7 +3557,7 @@ fill after inserting the link."
   :custom
   (why-this-idle-delay 0.05)
   :config
-  (set-face-attribute 'why-this-face nil :foreground "#5B6268"))
+  (set-face-attribute 'why-this-face nil :foreground `,danylo/light-gray))
 
 ;;; ..:: Shell interaction ::..
 

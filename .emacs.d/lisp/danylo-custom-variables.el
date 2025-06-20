@@ -130,6 +130,8 @@ in a while."
 (defconst danylo/dark-blue  "#375c79")
 (defconst danylo/faded-blue "#31495d")
 (defconst danylo/green      "#98be65")
+(defconst danylo/light-gray "#5a6167")
+(defconst danylo/dark-gray  "#21242b")
 
 (defface danylo/highlight-symbol-face
   `((t (:foreground ,danylo/white
@@ -176,6 +178,11 @@ in a while."
 (defface danylo/imenu-export-face
   `((t (:foreground ,danylo/orange :weight bold :inherit default)))
   "Face for export statements in Imenu."
+  :group 'danylo)
+
+(defface danylo/scrollbar-face
+  `((t (:foreground ,danylo/light-gray :background ,danylo/light-gray)))
+  "Face for the scrollbar."
   :group 'danylo)
 
 ;;;; Fringe objects

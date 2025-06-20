@@ -1958,19 +1958,21 @@ when there is another buffer printing out information."
   :custom
   (mc/always-run-for-all t)
   (mc/always-repeat-command t)
-  :config
-  (require 'multiple-cursors)
-  (defhydra hydra-multiple-cursors (global-map "C-c m")
-    "Multiple cursors"
-    ("p" mc/mark-previous-like-this "↑")
-    ("n" mc/mark-next-like-this "↓")
-    ("*" mc/mark-all-like-this "all" :exit t))
-  (dolist (item '(hydra-multiple-cursors/mc/mark-previous-like-this
-                  hydra-multiple-cursors/mc/mark-next-like-this
-                  hydra-multiple-cursors/mc/mark-all-like-this-and-exit
-                  hydra-keyboard-quit))
-    (add-to-list 'mc/cmds-to-run-once item))
   )
+
+(require 'multiple-cursors)
+
+(defhydra hydra-multiple-cursors (global-map "C-c m")
+  "Multiple cursors"
+  ("p" mc/mark-previous-like-this "↑")
+  ("n" mc/mark-next-like-this "↓")
+  ("*" mc/mark-all-like-this "all" :exit t))
+
+(dolist (item '(hydra-multiple-cursors/mc/mark-previous-like-this
+                hydra-multiple-cursors/mc/mark-next-like-this
+                hydra-multiple-cursors/mc/mark-all-like-this-and-exit
+                hydra-keyboard-quit))
+  (add-to-list 'mc/cmds-to-run-once item))
 
 (general-define-key
  :keymaps 'mc/keymap

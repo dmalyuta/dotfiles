@@ -3006,7 +3006,7 @@ to (vterm) with no argument will create a **new** vterm buffer."
   (setq danylo/vterm~buf-num (nth 0 args))
   (if danylo/vterm~buf-num
       (apply orig-fun args)
-v    (progn
+    (progn
       ;; Create a new vterm buffer
       (setq danylo/vterm~buf-num 0)
       (mapc (lambda (buf)

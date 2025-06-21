@@ -181,7 +181,10 @@ in a while."
   :group 'danylo)
 
 (defface danylo/scrollbar-face
-  `((t (:foreground ,danylo/light-gray :background ,danylo/light-gray)))
+  `((t (:foreground
+        ,(face-attribute 'region :background nil t)
+        :background
+        ,(face-attribute 'region :background nil t))))
   "Face for the scrollbar."
   :group 'danylo)
 

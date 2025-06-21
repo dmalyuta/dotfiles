@@ -15,8 +15,11 @@
 (defun danylo/run-gui-conditional-code (user-func)
   "Run USER-FUNC after the frame is create, passing to it a boolean that
 says whether this Emacs session is running as GUI (vs in a terminal)."
-  (mapc user-func (frame-list))
-  (add-hook 'after-make-frame-functions user-func))
+  (if (not (daemonp))
+      ;; Apply the function immediately
+      (funcall user-func)
+    ;; Apply the function on creating a new emacsclient frame.
+    (add-hook 'server-after-make-frame-hook user-func)))
 
 ;; C-g is used by Emacs at a very low-level to quit out of running code, and it
 ;; is also used to execite `keyboard-quit'. See
@@ -28,8 +31,8 @@ says whether this Emacs session is running as GUI (vs in a terminal)."
 ;;     emulators);
 ;; instead for quitting out of user code. C-g continues to assume its duplicate
 ;; role, but the user shouldn't use it.
-(defun danylo/init-keyboard-quit-key (frame)
-  (if (display-graphic-p frame)
+(defun danylo/init-keyboard-quit-key ()
+  (if (display-graphic-p)
       (define-key key-translation-map (kbd "C-/") (kbd "C-g"))
     (define-key key-translation-map (kbd "C-_") (kbd "C-g"))))
 (danylo/run-gui-conditional-code #'danylo/init-keyboard-quit-key)
@@ -212,13 +215,11 @@ directory."
   "Icon with proper formatting for minibuffer"
   (unless fg
     (setq fg `,(face-attribute 'default :foreground)))
-  (if (display-graphic-p)
-      (propertize (funcall icon-lib icon)
-                  'face `(:family ,(funcall icon-family)
-                                  :height 0.95
-                                  :foreground ,fg)
-                  'display '(raise -0.05))
-    ""))
+  (propertize (funcall icon-lib icon)
+              'face `(:family ,(funcall icon-family)
+                              :height 0.95
+                              :foreground ,fg)
+              'display '(raise -0.05)))
 
 (defun danylo/fa-icon (icon &optional fg)
   "Fontawesome icon with proper formatting."
@@ -874,10 +875,17 @@ not have to update when the cursor is moving quickly."
  "C-c <next>" 'next-buffer)      ; next: page down
 
 ;; Enable clipboard in emacs
-(defun danylo/init-mouse (frame)
-  (if (display-graphic-p frame)
-      (gpm-mouse-mode t)
-    (xterm-mouse-mode t)))
+(defun danylo/init-mouse ()
+  (unless (display-graphic-p)
+    (condition-case err
+        (gpm-mouse-mode t)
+      (error
+       (message "%s" (error-message-string err))
+       (message
+        "%s gpm-mouse-mode not activated, falling back to xterm-mouse-mode"
+        (danylo/fa-icon "exclamation-triangle"))
+       (xterm-mouse-mode t)))
+    ))
 (danylo/run-gui-conditional-code #'danylo/init-mouse)
 
 (mouse-wheel-mode t)
@@ -1604,8 +1612,6 @@ active. Basically, any non-file-visiting buffer."
 (add-hook 'prog-mode-hook #'hl-line-mode)
 ;; All modes derived from text-mode.
 (add-hook 'text-mode-hook #'hl-line-mode)
-;; Basic file editing.
-(add-hook 'fundamental-mode-hook #'hl-line-mode)
 
 ;;;; (start patch) Throttle hl-line-highlight when the user is jamming
 ;;;;               `keyboard-quit'.
@@ -1755,7 +1761,7 @@ is automatically turned on while the line numbers are displayed."
     "Displays if turbo mode is on (low latency editing)."
     (if danylo/turbo-on
         (propertize
-         (if (display-graphic-p) (danylo/fa-icon "rocket") "Turbo")
+         (danylo/fa-icon "rocket")
          'face (doom-modeline-face 'danylo/doom-modeline-turbo))
       ""))
   (defface danylo/doom-modeline-apheleia
@@ -1780,7 +1786,7 @@ is automatically turned on while the line numbers are displayed."
       (concat
        (doom-modeline-spc)
        (propertize
-        (if (display-graphic-p) (danylo/fa-icon "clock-o") "⧗")
+        (danylo/fa-icon "clock-o")
         'face (append `(:family ,(all-the-icons-faicon-family))
                       (doom-modeline-face 'doom-modeline-time)))
        (doom-modeline-spc)
@@ -1884,6 +1890,8 @@ when there is another buffer printing out information."
   :hook ((python-mode . danylo-prog-font-lock-mode)
          (julia-mode . danylo-prog-font-lock-mode)))
 
+;;;; Scrollbar and position indication
+
 (use-package indicators
   ;; https://github.com/Fuco1/indicators.el
   ;; Display the buffer relative location of line in the fringe.
@@ -1931,6 +1939,18 @@ when there is another buffer printing out information."
             :after #'danylo/update-indicators-on-scroll)
 ;;;; (end patch)
 
+(use-package mlscroll
+  ;; https://github.com/jdtsmith/mlscroll
+  ;; Lightweight scrollbar for the Emacs mode line.
+  :after doom-modeline
+  :ensure t
+  :hook ((doom-modeline-mode . (lambda ()
+                                 (unless (daemonp) (mlscroll-mode 1))))
+         (server-after-make-frame . mlscroll-mode))
+  :custom
+  (mlscroll-shortfun-min-width 11) ; truncate which-func
+  )
+
 ;;; ..:: Code editing ::..
 
 ;; Use spaces instead of tabs
@@ -1962,15 +1982,39 @@ when there is another buffer printing out information."
 
 (require 'multiple-cursors)
 
+(defun mc/mark-all-previous-like-this (arg)
+  "Mark all previous occurrences of word at point."
+  (interactive "p")
+  (condition-case nil
+      (while t (mc/mark-previous-like-this arg))
+    (user-error (throw 'break t))))
+
+(defun mc/mark-all-next-like-this (arg)
+  "Mark all next occurrences of word at point."
+  (interactive "p")
+  (condition-case nil
+      (while t (mc/mark-next-like-this arg))
+    (user-error (throw 'break t)))
+  )
+
 (defhydra hydra-multiple-cursors (global-map "C-c m")
   "Multiple cursors"
   ("p" mc/mark-previous-like-this "↑")
+  ("P" mc/mark-all-previous-like-this "↑*" :exit t)
   ("n" mc/mark-next-like-this "↓")
-  ("*" mc/mark-all-like-this "all" :exit t))
+  ("N" mc/mark-all-next-like-this "↓*" :exit t)
+  ("*" mc/mark-all-like-this "all" :exit t)
+  ("r" mc/mark-all-in-region "region" :exit t)
+  ("l" mc/edit-lines "lines" :exit t)
+  )
 
 (dolist (item '(hydra-multiple-cursors/mc/mark-previous-like-this
+                hydra-multiple-cursors/mc/mark-all-previous-like-this-and-exit
                 hydra-multiple-cursors/mc/mark-next-like-this
+                hydra-multiple-cursors/mc/mark-all-next-like-this-and-exit
                 hydra-multiple-cursors/mc/mark-all-like-this-and-exit
+                hydra-multiple-cursors/mc/mark-all-in-region-and-exit
+                hydra-multiple-cursors/mc/edit-lines-and-exit
                 hydra-keyboard-quit))
   (add-to-list 'mc/cmds-to-run-once item))
 
@@ -2231,8 +2275,7 @@ C-z... instead of C-u C-z C-u C-z C-u C-z...")
   ;; https://github.com/emacsorphanage/git-gutter
   ;; Emacs port of GitGutter which is Sublime Text Plugin.
   :hook ((prog-mode . git-gutter-mode)
-         (text-mode . git-gutter-mode)
-         (fundamental-mode . git-gutter-mode))
+         (text-mode . git-gutter-mode))
   :bind (("C-{" . 'git-gutter:previous-hunk)
          ("C-}" . 'git-gutter:next-hunk)
          ("C-c v G" . 'git-gutter:update-all-windows)
@@ -2555,8 +2598,8 @@ line is not repeated horizontally at certain text zoom levels."
                         :stipple (indent-bars--stipple
                                   char-width-pixels 1 rot nil 0.1 0 "." 0)))
   )
-(defun danylo/init-fill-indicator-update (frame)
-  (when (display-graphic-p frame)
+(defun danylo/init-fill-indicator-update ()
+  (when (display-graphic-p)
     (progn
       (setq-default display-fill-column-indicator-character ?\ )
       (add-hook 'after-init-hook 'danylo/update-fill-column-indicator)
@@ -3344,6 +3387,7 @@ _q_: Quit"
   (company-mode t)
   (make-variable-buffer-local 'electric-pair-pairs)
   (add-to-list 'electric-pair-pairs '(?~ . ?~))
+  (add-to-list 'electric-pair-pairs '(?$ . ?$))
   ;; Do not fill source code blocks inside docstring
   (make-variable-buffer-local 'filladapt-not-token-table)
   (add-to-list 'filladapt-not-token-table "^$")
@@ -3402,7 +3446,8 @@ _q_: Quit"
 (defun danylo/math-preview-init ()
   "Startup actions for math preview."
   (when (display-graphic-p)
-    (math-preview-all)))
+    ;; (math-preview-all)
+    ))
 
 (use-package math-preview
   ;; https://gitlab.com/matsievskiysv/math-preview/
@@ -3801,6 +3846,8 @@ find a definion."
   :hook ((python-mode . yas-minor-mode)
          (python-mode . subword-mode))
   :bind (:map python-ts-mode-map
+              ;; Disabled keybindings.
+              ("C-c C-d" . nil)
               ;; Make indentation automatic, especially ensures correct
               ;; indentation in docstrings (see
               ;; https://emacs.stackexchange.com/a/28445/13661)
@@ -4224,6 +4271,8 @@ Calls itself until the docstring has completed printing."
 
 ;;; ..:: Lisp ::..
 
+(add-to-list 'auto-mode-alist '("\\.el" . emacs-lisp-mode))
+
 ;; Turn off (by default) function signatures popping up in minibuffer
 (add-hook 'emacs-lisp-mode-hook
           (lambda ()
@@ -4551,6 +4600,10 @@ Patched so that any new file by default is guessed as being its own master."
 (use-package jinja2-mode
   ;; https://github.com/paradoxxxzero/jinja2-mode
   ;; Jinja2 mode for emacs.
+  :bind (:map jinja2-mode-map
+              ;; Disabled keybindings.
+              ("C-c C-d" . nil)
+              ("C-c t" . nil))
   :init
   (add-to-list 'auto-mode-alist '("\\.j2.*" . jinja2-mode)))
 

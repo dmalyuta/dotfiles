@@ -582,12 +582,14 @@ changed, and to nil otherwise."
 ;; Default directory
 (setq default-directory "~/")
 
-(defun advise-once (symbol where function &optional props)
-  "Add advice FUNCTION for SYMBOL and remove it after the function has been
-called exactly once. Obtained from
-https://emacs.stackexchange.com/a/26260/13661"
-  (advice-add symbol :after (lambda (&rest _) (advice-remove symbol function)))
-  (advice-add symbol where function props))
+(defmacro without-yes-or-no (auto-answer &rest body)
+  "Override `yes-or-no-p' and `y-or-n-p' to not to prompt for input and
+return AUTO-ANSWER. This solution is taken from
+https://stackoverflow.com/a/59509250."
+  (declare (indent 1))
+  `(cl-letf (((symbol-function 'yes-or-no-p) (lambda (&rest _) ,auto-answer))
+             ((symbol-function 'y-or-n-p) (lambda (&rest _) ,auto-answer)))
+     ,@body))
 
 ;; Directory to save state into via `desktop-save'
 (require 'desktop)
@@ -601,12 +603,9 @@ reload it."
        (progn
          ;; `desktop-save' will ask if desktop should be saved if the current
          ;; Emacs session has not loaded a desktop session. We always want to
-         ;; answer NO, hence we add an advice that does this for us
-         ;; automatically (only this one time).
-         (defun danylo/answer-no (&rest _) nil)
-         (advise-once 'yes-or-no-p :around #'danylo/answer-no)
-         (desktop-save danylo/desktop-save-dir)
-         (advice-remove 'yes-or-no-p #'danylo/answer-no)
+         ;; answer NO, hence we replace the yes-or-no-p function to return NIL
+         ;; for just this one call.
+         (without-yes-or-no nil (desktop-save danylo/desktop-save-dir))
          (format "%s Saved desktop" (danylo/nerd-fa-icon "nf-fa-save")))
      (error
       (format "%s Did not save desktop (%s)"

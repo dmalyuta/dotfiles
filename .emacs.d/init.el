@@ -582,6 +582,13 @@ changed, and to nil otherwise."
 ;; Default directory
 (setq default-directory "~/")
 
+(defun advise-once (symbol where function &optional props)
+  "Add advice FUNCTION for SYMBOL and remove it after the function has been
+called exactly once. Obtained from
+https://emacs.stackexchange.com/a/26260/13661"
+  (advice-add symbol :after (lambda (&rest _) (advice-remove symbol function)))
+  (advice-add symbol where function props))
+
 ;; Directory to save state into via `desktop-save'
 (require 'desktop)
 (add-to-list 'desktop-path danylo/desktop-save-dir)
@@ -592,7 +599,14 @@ reload it."
   (danylo/print-in-minibuffer
    (condition-case err
        (progn
+         ;; `desktop-save' will ask if desktop should be saved if the current
+         ;; Emacs session has not loaded a desktop session. We always want to
+         ;; answer NO, hence we add an advice that does this for us
+         ;; automatically (only this one time).
+         (defun danylo/answer-no (&rest _) nil)
+         (advise-once 'yes-or-no-p :around #'danylo/answer-no)
          (desktop-save danylo/desktop-save-dir)
+         (advice-remove 'yes-or-no-p #'danylo/answer-no)
          (format "%s Saved desktop" (danylo/nerd-fa-icon "nf-fa-save")))
      (error
       (format "%s Did not save desktop (%s)"

@@ -65,9 +65,9 @@ find_folder() {
 
 find_string() {
     if [ $# -eq 2 ]; then
-        ag --hidden -G "$1" "$2"
+        ag --follow --hidden -G "$1" "$2"
     else
-        ag --hidden "$1"
+        ag --follow --hidden "$1"
     fi
 }
 

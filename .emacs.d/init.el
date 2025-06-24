@@ -151,7 +151,11 @@ directory."
 
   (defconst danylo/emacs-backup-dir
     `,(danylo/make-path "backups/")
-    "Location where backup files are saved."))
+    "Location where backup files are saved.")
+
+  (defconst danylo/desktop-save-dir
+    `,(danylo/make-path "desktop-save/")
+    "Location where desktop (i.e. Emacs state) files are saved."))
 
 (use-package danylo-custom-variables
   ;; Customization variables for init file.
@@ -224,6 +228,11 @@ directory."
 (defun danylo/fa-icon (icon &optional fg)
   "Fontawesome icon with proper formatting."
   (danylo/fancy-icon 'all-the-icons-faicon 'all-the-icons-faicon-family
+                     icon fg))
+
+(defun danylo/nerd-fa-icon (icon &optional fg)
+  "Nerd-icons fontawesome icon with proper formatting."
+  (danylo/fancy-icon 'nerd-icons-faicon 'nerd-icons-faicon-family
                      icon fg))
 
 (defun danylo/octicon (icon &optional fg)
@@ -572,6 +581,23 @@ changed, and to nil otherwise."
 
 ;; Default directory
 (setq default-directory "~/")
+
+;; Directory to save state into via `desktop-save'
+(require 'desktop)
+(add-to-list 'desktop-path danylo/desktop-save-dir)
+(defun danylo/desktop-save ()
+  "Save Emacs state to file, so that later we can start Emacs again and
+reload it."
+  (interactive)
+  (danylo/print-in-minibuffer
+   (condition-case err
+       (progn
+         (desktop-save danylo/desktop-save-dir)
+         (format "%s Saved desktop" (danylo/nerd-fa-icon "nf-fa-save")))
+     (error
+      (format "%s Did not save desktop (%s)"
+              (danylo/nerd-fa-icon "nf-fa-skull_crossbones")
+              (error-message-string err))))))
 
 ;; Remove warnings like: ad-handle-definition: ‘ansi-term’ got redefined
 (setq ad-redefinition-action 'accept)
@@ -969,13 +995,16 @@ When called with C-u prefix, force kill Emacs (all frames).
 Source: https://emacs.stackexchange.com/a/50834/13661"
   (interactive "P")
   (if arg
-      ;; Force kill Emacs (all frames), traditional C-x C-c style
-      (save-buffers-kill-terminal)
+      (progn
+        ;; Force kill Emacs (all frames), traditional C-x C-c style
+        (danylo/desktop-save)
+        (save-buffers-kill-terminal))
     ;; Kill only the current frame, if there is more than one
     (if (> (length (frame-list)) 1)
         ;; Just delete the current frame
         (condition-case nil (delete-frame) (error (save-buffers-kill-terminal)))
       ;; Traditional C-x C-c (kill Emacs)
+      (danylo/desktop-save)
       (save-buffers-kill-terminal))))
 
 (defun danylo/make-new-frame ()
@@ -1124,10 +1153,7 @@ disabled command."
   (let ((message-log-max nil))
     (danylo/print-in-minibuffer
      (format "%s Disabled command"
-             (danylo/fancy-icon
-              'nerd-icons-faicon
-              'nerd-icons-faicon-family
-              "nf-fa-skull_crossbones")))))
+             (danylo/nerd-fa-icon "nf-fa-skull_crossbones")))))
 
 (general-define-key
  "<f20>" 'danylo/disabled-command)
@@ -1281,22 +1307,42 @@ line number to the string."
                 mode-line-end-spaces))
   (require 'imenu-list))
 
+(use-package imenu-anywhere
+  ;; https://github.com/vspinu/imenu-anywhere
+  ;; ido/ivy/helm imenu tag selection across buffers with the same
+  ;; mode/project etc.
+  :bind (("C-x c I" . helm-imenu-anywhere))
+  )
+
 (defvar danylo/imenu-list--displayed-window nil
   "The **window** who owns the saved imenu entries.")
 
-(with-eval-after-load "imenu-list"
+(with-eval-after-load 'lsp-ui
+  (defun danylo/check-if-update-imenu ()
+    "Return t if imenu should be refreshed."
+    (or (not (get-buffer-window lsp-ui-imenu-buffer-name))
+        (not (equal (current-buffer) lsp-ui-imenu--origin))))
+
   (defun danylo/imenu-list-jump ()
     "Smart open imenu-list side window."
     (interactive)
     (setq danylo/imenu-list--displayed-window (selected-window))
-    (danylo/side-window-jump 'imenu-list imenu-list-buffer-name))
+    (danylo/side-window-jump
+     (lambda ()
+       ;; Update the imenu if it's not the current buffer and the buffer has
+       ;; changed.
+       (if (danylo/check-if-update-imenu)
+           (lsp-ui-imenu)
+         (select-window (get-buffer-window lsp-ui-imenu-buffer-name))))
+     lsp-ui-imenu-buffer-name))
 
   (defun danylo/imenu-update (&rest args)
     "Update Imenu list to reflect the current window's content."
-    (when (and (get-buffer-window imenu-list-buffer-name t)
-               (not (string= (format "%s" (current-buffer)) imenu-list-buffer-name)))
+    (when (and (get-buffer-window lsp-ui-imenu-buffer-name t)
+               (not (string= (format "%s" (current-buffer)) lsp-ui-imenu-buffer-name)))
       (with-current-buffer (current-buffer)
-        (imenu-list-update t))))
+        (when (danylo/check-if-update-imenu)
+          (lsp-ui-imenu--refresh)))))
 
   ;; Update Imenu automatically when window layout state changes
   (mapc (lambda (func)
@@ -1354,7 +1400,7 @@ Patched to use original **window** instead of buffer."
   :after company
   :bind (("M-i" . helm-swoop)
          ("C-x b" . helm-buffers-list)
-         ("C-c q" . danylo/helm-imenu)
+         ("C-x c i" . danylo/helm-imenu)
          ("C-x C-f" . helm-find-files)
          ("C-h f" . helm-apropos)
          ("C-h v" . helm-apropos)
@@ -1907,6 +1953,7 @@ when there is another buffer printing out information."
                           :face 'danylo/scrollbar-face
                           :priority 200)
     (ind-show-indicators))
+  (add-hook 'after-save-hook #'danylo/update-indicators)
   )
 
 ;;;; (start patch) Debounce the indicators update such that they don't slow
@@ -1932,11 +1979,10 @@ when there is another buffer printing out information."
 ;;;; (end patch)
 
 ;;;; (start patch) Update scrollbar indicator on mouse scroll.
-(defun danylo/update-indicators-on-scroll (&rest _)
+(defun danylo/update-indicators (&rest _)
   (when indicators-mode
     (ind-update-event-handler)))
-(advice-add 'pixel-scroll-precision
-            :after #'danylo/update-indicators-on-scroll)
+(advice-add 'pixel-scroll-precision :after #'danylo/update-indicators)
 ;;;; (end patch)
 
 (use-package mlscroll
@@ -2008,15 +2054,16 @@ when there is another buffer printing out information."
   ("l" mc/edit-lines "lines" :exit t)
   )
 
-(dolist (item '(hydra-multiple-cursors/mc/mark-previous-like-this
-                hydra-multiple-cursors/mc/mark-all-previous-like-this-and-exit
-                hydra-multiple-cursors/mc/mark-next-like-this
-                hydra-multiple-cursors/mc/mark-all-next-like-this-and-exit
-                hydra-multiple-cursors/mc/mark-all-like-this-and-exit
-                hydra-multiple-cursors/mc/mark-all-in-region-and-exit
-                hydra-multiple-cursors/mc/edit-lines-and-exit
-                hydra-keyboard-quit))
-  (add-to-list 'mc/cmds-to-run-once item))
+(with-eval-after-load 'multiple-cursors
+  (dolist (item '(hydra-multiple-cursors/mc/mark-previous-like-this
+                  hydra-multiple-cursors/mc/mark-all-previous-like-this-and-exit
+                  hydra-multiple-cursors/mc/mark-next-like-this
+                  hydra-multiple-cursors/mc/mark-all-next-like-this-and-exit
+                  hydra-multiple-cursors/mc/mark-all-like-this-and-exit
+                  hydra-multiple-cursors/mc/mark-all-in-region-and-exit
+                  hydra-multiple-cursors/mc/edit-lines-and-exit
+                  hydra-keyboard-quit))
+    (add-to-list 'mc/cmds-to-run-once item)))
 
 (general-define-key
  :keymaps 'mc/keymap
@@ -2126,9 +2173,7 @@ C-z... instead of C-u C-z C-u C-z C-u C-z...")
       (funcall undo-command undo-steps))
     (danylo/print-in-minibuffer
      (format "%s %s %d steps"
-             (danylo/fancy-icon
-              'nerd-icons-faicon
-              'nerd-icons-faicon-family
+             (danylo/nerd-fa-icon
               `,(if (eq undo-command 'undo-fu-only-undo)
                     "nf-fa-step_backward"
                   "nf-fa-step_forward"))
@@ -2245,10 +2290,7 @@ C-z... instead of C-u C-z C-u C-z C-u C-z...")
   ;; Enhance the behavior of Emacs' Auto Fill mode
   :custom
   (c-current-comment-prefix "///*")
-  :hook ((c-mode-common . (lambda ()
-                            (when (featurep 'filladapt)
-                              (c-setup-filladapt))))
-         (python-mode . filladapt-mode)
+  :hook ((python-mode . filladapt-mode)
          (julia-mode . filladapt-mode)
          (org-mode . filladapt-mode)
          (text-mode . filladapt-mode))
@@ -2514,7 +2556,8 @@ regions."
       (fill-region (region-beginning) (region-end) nil t)
     (unless (danylo/fill)
       (fill-paragraph))
-    ))
+    )
+  (danylo/update-indicators))
 
 (defun danylo/julia-docstring-fill-skip ()
   "Return T if this block of text should not be filled. This occurs
@@ -2987,6 +3030,11 @@ being set by MOVE-FUN."
   (popper-echo-mode +1)
   )
 
+(use-package hide-mode-line
+  ;; https://github.com/hlissner/emacs-hide-mode-line
+  ;; An Emacs plugin that hides (or masks) the current buffer's mode-line
+  )
+
 ;;; ..:: Terminal emulator ::..
 
 (defun danylo/run-terminal-here ()
@@ -3240,10 +3288,9 @@ argument: number-or-marker-p, nil'."
   :init
   (setq lsp-use-plists t)
   :config
-  ;; (define-key lsp-mode-map (kbd "C-c l") lsp-command-map)
   ;; WORKAROUND Hide mode-line of the lsp-ui-imenu buffer
   ;; See https://github.com/emacs-lsp/lsp-ui/issues/243
-  (advice-add 'lsp-ui-imenu :after #'hide-lsp-ui-imenu-mode-line)
+  (advice-add 'lsp-ui-imenu :after #'hide-mode-line-mode)
   ;; Make sure that temporary symbol highlight does not stick around when
   ;; renaming variables.
   (advice-add 'lsp-rename :before (lambda (&rest args)
@@ -3253,6 +3300,13 @@ argument: number-or-marker-p, nil'."
   ;; https://github.com/emacs-lsp/lsp-ui
   ;; UI integrations for lsp-mode.
   :after (lsp-mode)
+  :bind (:map lsp-ui-imenu-mode-map
+              ("<left>" . nil)
+              ("<right>" . nil)
+              ("C-c t i" . danylo/imenu-list-jump)
+              ("DEL" . danylo/imenu-list-jump)
+              ("SPC" . lsp-ui-imenu--view)
+              ("<return>" . lsp-ui-imenu--visit))
   :custom
   (lsp-ui-sideline-enable t)
   (lsp-ui-doc-enable nil)
@@ -3260,6 +3314,7 @@ argument: number-or-marker-p, nil'."
   (lsp-ui-sideline-show-diagnostics t)
   (lsp-ui-sideline-diagnostic-max-line-length 80)
   (lsp-ui-imenu-auto-refresh nil)
+  (lsp-ui-imenu-buffer-position 'left)
   )
 
 ;;;;;;;;;; lsp-booster for more performant LSP mode.
@@ -3806,9 +3861,19 @@ find a definion."
   :after (danylo-code-styles)
   :bind (:map c-mode-base-map
               ("C-c f o" . ff-find-other-file)
-              )
+              :map c++-ts-mode-map
+              ("M-q" . nil))
   :hook ((c-mode-common . yas-minor-mode)
-         (c-mode-common . subword-mode))
+         (c-mode-common . subword-mode)
+         (c-mode-common
+          . (lambda ()
+              (filladapt-mode)
+              (c-ts-mode-set-style 'danylo/cpp-ts-style)
+              ;; Take the following from `c-comment-prefix-regexp', otherwise
+              ;; the filladapt-token-table will have a (nil c-comment) entry
+              ;; that results in an error when trying to fill paragraphs.
+              (setq-local c-current-comment-prefix "//+\\|\\**")
+              (c-setup-filladapt))))
   :init
   ;; (add-to-list 'c-ts-mode-indent-style)
   (setq
@@ -4272,6 +4337,7 @@ Calls itself until the docstring has completed printing."
 ;;; ..:: Lisp ::..
 
 (add-to-list 'auto-mode-alist '("\\.el" . emacs-lisp-mode))
+(add-to-list 'auto-mode-alist '("\\.el.gz" . emacs-lisp-mode))
 
 ;; Turn off (by default) function signatures popping up in minibuffer
 (add-hook 'emacs-lisp-mode-hook

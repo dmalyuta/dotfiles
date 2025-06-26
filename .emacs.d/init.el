@@ -3436,10 +3436,12 @@ project."
   "
 File operations
 _a_: Copy absolute path
+_c_: Copy buffer to clipboard
 
 Essential commands
 _q_: Quit"
   ("a" danylo/copy-file-absolute-path :exit t)
+  ("c" danylo/copy-whole-file :exit t)
   ("q" nil "cancel"))
 
 (general-define-key
@@ -4694,6 +4696,8 @@ Patched so that any new file by default is guessed as being its own master."
   :quelpa (web-mode :fetcher github
                     :repo "fxbois/web-mode"
                     :branch "master")
+  :bind (:map web-mode-map
+              ("C-c C-d n" . nil))
   :custom
   (web-mode-enable-css-colorization nil))
 

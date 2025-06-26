@@ -1217,11 +1217,27 @@ This command does not push text to `kill-ring'."
 (global-set-key (kbd "C-k") 'danylo/delete-line)
 (global-set-key (kbd "M-d") 'danylo/delete-word)
 (global-set-key (kbd "M-DEL") 'danylo/backward-delete-word)
+(global-set-key (kbd "C-DEL") 'danylo/backward-delete-word)
+(global-set-key (kbd "C-<backspace>") 'danylo/backward-delete-word)
 
 ;; Clear minibuffer contents
 (general-define-key
  :keymaps 'minibuffer-local-map
  "C-q" 'helm-delete-minibuffer-contents)
+
+;;;; (start patch) Apply filtering to messages.
+(defun danylo/message (orig-fun &rest args)
+  (when args
+    (let* ((desired-msg (apply 'format args))
+           (inhibit-message
+            (or
+             inhibit-message
+             (string-equal
+              desired-msg
+              "LSP :: Error from the Language Server: Request cancelled because the document was modified (Unknown error)"))))
+      (apply orig-fun args))))
+(advice-add 'message :around #'danylo/message)
+;;;; (end patch)
 
 ;;; ..:: Searching ::..
 
@@ -2067,16 +2083,20 @@ when there is another buffer printing out information."
   ("l" mc/edit-lines "lines" :exit t)
   )
 
-(with-eval-after-load 'multiple-cursors
-  (dolist (item '(hydra-multiple-cursors/mc/mark-previous-like-this
-                  hydra-multiple-cursors/mc/mark-all-previous-like-this-and-exit
-                  hydra-multiple-cursors/mc/mark-next-like-this
-                  hydra-multiple-cursors/mc/mark-all-next-like-this-and-exit
-                  hydra-multiple-cursors/mc/mark-all-like-this-and-exit
-                  hydra-multiple-cursors/mc/mark-all-in-region-and-exit
-                  hydra-multiple-cursors/mc/edit-lines-and-exit
-                  hydra-keyboard-quit))
-    (add-to-list 'mc/cmds-to-run-once item)))
+(add-hook
+ 'after-init-hook
+ (lambda ()
+   ;; The following commands are run once rather than for each cursor (when
+   ;; there's more than one via multiple-cursors).
+   (dolist (item '(hydra-multiple-cursors/mc/mark-previous-like-this
+                   hydra-multiple-cursors/mc/mark-all-previous-like-this-and-exit
+                   hydra-multiple-cursors/mc/mark-next-like-this
+                   hydra-multiple-cursors/mc/mark-all-next-like-this-and-exit
+                   hydra-multiple-cursors/mc/mark-all-like-this-and-exit
+                   hydra-multiple-cursors/mc/mark-all-in-region-and-exit
+                   hydra-multiple-cursors/mc/edit-lines-and-exit
+                   hydra-keyboard-quit))
+     (add-to-list 'mc/cmds-to-run-once item))))
 
 (general-define-key
  :keymaps 'mc/keymap
@@ -2566,10 +2586,9 @@ regions."
   "Smart select between regular filling and my own filling."
   (interactive)
   (if (and transient-mark-mode mark-active)
-      (fill-region (region-beginning) (region-end) nil t)
+      (fill-paragraph nil t)
     (unless (danylo/fill)
-      (fill-paragraph))
-    )
+      (fill-paragraph nil t)))
   (danylo/update-indicators))
 
 (defun danylo/julia-docstring-fill-skip ()
@@ -2960,7 +2979,8 @@ being set by MOVE-FUN."
 (use-package bufler
   ;; https://github.com/alphapapa/bufler.el
   ;; Group buffers into workspaces with programmable rules
-  :vc (:url "https://github.com/alphapapa/bufler.el" :branch "master")
+  :quelpa (bufler :fetcher github
+                  :repo "alphapapa/bufler.el")
   :config
   (require 'bufler)
   (setq bufler-filter-buffer-modes
@@ -3626,6 +3646,7 @@ fill after inserting the link."
          ("C-c v l" . magit-log)
          ("C-c v t" . magit-log-current)
          ("C-c v d" . magit-diff-buffer-file)
+         ("C-c v f" . magit-file-dispatch)
          :map magit-file-section-map
          ("RET" . magit-diff-visit-file-other-window)
          ("C-RET" . magit-diff-visit-file)

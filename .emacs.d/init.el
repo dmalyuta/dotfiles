@@ -2338,62 +2338,35 @@ C-z... instead of C-u C-z C-u C-z C-u C-z...")
 (use-package diff-hl
   ;; https://github.com/dgutov/diff-hl
   ;; Emacs package for highlighting uncommitted changes.
-  ;; DEPRECATED: use git-gutter below.
+  ;; :hook ((prog-mode . diff-hl-flydiff-mode)
+  ;;        (text-mode . diff-hl-flydiff-mode))
   :disabled
-  :hook ((prog-mode . diff-hl-flydiff-mode)
-         (text-mode . diff-hl-flydiff-mode))
-  :init (setq diff-hl-flydiff-delay 2.0)
+  :bind (("C-c v =" . 'diff-hl-diff-goto-hunk)
+         ("C-c v *" . 'diff-hl-show-hunk)
+         ("C-c v ^" . 'diff-hl-set-reference-rev))
+  :custom
+  (diff-hl-command-prefix (kbd "C-c v"))
+  (diff-hl-flydiff-delay 2.0)
+  (diff-hl-side 'right)
+  :init
+  (let* ((width 2)
+         (bitmap (vector (1- (expt 2 width)))))
+    (define-fringe-bitmap 'my:diff-hl-bitmap bitmap 1 width '(top t)))
+  (setq diff-hl-fringe-bmp-function (lambda (type pos) 'my:diff-hl-bitmap))
   :config
-  (global-diff-hl-mode))
-
-(use-package git-gutter
-  ;; https://github.com/emacsorphanage/git-gutter
-  ;; Emacs port of GitGutter which is Sublime Text Plugin.
-  :hook ((prog-mode . git-gutter-mode)
-         (text-mode . git-gutter-mode))
-  :bind (("C-{" . 'git-gutter:previous-hunk)
-         ("C-}" . 'git-gutter:next-hunk)
-         ("C-c v G" . 'git-gutter:update-all-windows)
-         ("C-c v =" . 'git-gutter:popup-hunk)
-         ("C-c v ^" . 'git-gutter:set-start-revision)
-         )
-  :config
-  (setq
-   ;; Update on save.
-   git-gutter:update-interval 0)
-  )
-
-;;;; (start patch) Fix git-gutter navigation performance by conditionally
-;;;;               deleting the diff buffer.
-(with-eval-after-load 'git-gutter
-  (defun danylo/delete-popup-hunk-buffer-if-visible (arg)
-    "Kill the git-gutter hunk diff buffer if it exists but is not
-visible. This buffer is slow to update, so it significantly slows down
-git-gutter:next-hunk (and git-gutter:previous-hunk which uses it) since
-these functions update the hunk diff buffer."
-    (let* ((popup-buffer (get-buffer git-gutter:popup-buffer))
-           (popup-window (get-buffer-window popup-buffer)))
-      (when (and (buffer-live-p popup-buffer) (not popup-window))
-        (kill-buffer popup-buffer))))
-  (advice-add 'git-gutter:next-hunk
-              :before #'danylo/delete-popup-hunk-buffer-if-visible))
-;;;; (end patch)
-
-(use-package git-gutter-fringe
-  ;; https://github.com/emacsorphanage/git-gutter-fringe
-  ;; Fringe version of git-gutter.el
-  :after (git-gutter)
-  :config
-  (setq git-gutter-fr:side 'right-fringe)
-  ;; Gutter indicators.
-  ;; https://ianyepan.github.io/posts/emacs-git-gutter/
-  (define-fringe-bitmap 'git-gutter-fr:added [224] nil nil '(center repeated))
-  (define-fringe-bitmap 'git-gutter-fr:modified [224] nil nil '(center repeated))
-  (define-fringe-bitmap 'git-gutter-fr:deleted [128 192 224 240] nil nil 'bottom)
-  (set-face-foreground 'git-gutter-fr:modified `,danylo/orange)
-  (set-face-foreground 'git-gutter-fr:added    `,danylo/green)
-  (set-face-foreground 'git-gutter-fr:deleted  `,danylo/red)
-  )
+  ;; Match fringe background with buffer background.
+  (dolist (item '(diff-hl-change diff-hl-insert diff-hl-delete))
+    (set-face-attribute
+     item nil :background (face-background 'solaire-default-face nil t)))
+  (diff-hl-set-reference-rev "HEAD")
+  (global-diff-hl-mode)
+  (defhydra hydra-diff-hl (diff-hl-mode-map "C-c v")
+    "Diff"
+    ("[" diff-hl-previous-hunk "↑")
+    ("]" diff-hl-next-hunk "↑")
+    ("{" diff-hl-show-hunk-previous "↑*")
+    ("}" diff-hl-show-hunk-next "↑*")
+    ("*" diff-hl-show-hunk "show" :exit t)))
 
 (defun danylo/diff-hl-set-reference ()
   "Set the reference revision for showing diff-hl changes. Do so buffer-locally."
@@ -2761,6 +2734,30 @@ line is not repeated horizontally at certain text zoom levels."
         (append (alist-get 'black apheleia-formatters) '("--required-version" "24.10.0")))
   )
 
+;;;; Gray out false #if preprocessor fences in C-like languages.
+(setq hide-ifdef-shadow t
+      hide-ifdef-initially t)
+(defvar danylo/hif-idle-delay 0.25)
+(defvar danylo/hif-update-timer nil)
+(add-hook
+ 'c-mode-common-hook
+ (lambda ()
+   (add-hook 'hide-ifdef-mode-hook
+             (lambda ()
+	       (unless hide-ifdef-define-alist
+	         (setq hide-ifdef-define-alist
+		       '((c-default-defines
+                          (false . 0)
+                          (true . 1)))))
+	       (hide-ifdef-use-define-alist 'c-default-defines)))
+   (hide-ifdef-mode t)
+   (run-with-idle-timer
+    danylo/hif-idle-delay t
+    (lambda ()
+      (when hide-ifdef-mode
+        (hide-ifdefs))
+      ))))
+
 ;;; ..:: Window management ::..
 
 ;;;; >> Movement across windows <<
@@ -2779,7 +2776,8 @@ line is not repeated horizontally at certain text zoom levels."
  "<right>" 'windmove-right
  "<up>" 'windmove-up
  "<down>" 'windmove-down
- "C-x l" 'danylo/switch-to-last-window)
+ "C-x l" 'danylo/switch-to-last-window
+ "C-x C-l" 'danylo/switch-to-last-window)
 (global-unset-key (kbd "C-<left>"))
 (global-unset-key (kbd "C-<right>"))
 (global-unset-key (kbd "C-<up>"))

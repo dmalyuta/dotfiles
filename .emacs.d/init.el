@@ -1042,12 +1042,25 @@ Source: https://emacs.stackexchange.com/a/50834/13661"
          ("M-v" . danylo/scroll-up))
   :custom
   (scroll-error-top-bottom t)
-  (scroll-preserve-screen-position 'always)
-  :config
-  (defhydra hydra-scroll-row (global-map "C-q")
-    "Move up/rown one row keeping the cursor at the same position"
-    ("n" danylo/scroll-row-down "down")
-    ("p" danylo/scroll-row-up "up")))
+  (scroll-preserve-screen-position 'always))
+
+(defun danylo/debounce-scrollbar ()
+  (message "hydra-scroll-row :pre")
+  (advice-add 'ind-update-event-handler
+              :around #'danylo/debounced-ind-update))
+
+(defun danylo/undo-debounce-scrollbar ()
+  (message "hydra-scroll-row :pre")
+  (advice-remove 'ind-update-event-handler #'danylo/debounced-ind-update))
+
+(defhydra hydra-scroll-row
+  (:pre danylo/debounce-scrollbar :post danylo/unfo-debounce-scrollbar)
+  "Move up/rown one row keeping the cursor at the same position"
+  ("n" danylo/scroll-row-down "down")
+  ("p" danylo/scroll-row-up "up"))
+
+(general-define-key
+ "C-q" 'hydra-scroll-row/body)
 
 ;;; Mouse wheel scroll behaviour
 (mouse-wheel-mode 't)
@@ -1211,8 +1224,6 @@ This command does not push text to `kill-ring'."
     (setq p2 (point))
     (delete-region p1 p2)))
 
-(global-set-key (kbd "C-S-q") 'danylo/delete-line-backward)
-(global-set-key (kbd "C-q") 'danylo/delete-line)
 (global-set-key (kbd "C-S-k") 'danylo/delete-line-backward)
 (global-set-key (kbd "C-k") 'danylo/delete-line)
 (global-set-key (kbd "M-d") 'danylo/delete-word)
@@ -1227,7 +1238,7 @@ This command does not push text to `kill-ring'."
 
 ;;;; (start patch) Apply filtering to messages.
 (defun danylo/message (orig-fun &rest args)
-  (when args
+  (when (and args (listp args) (> (length args) 0))
     (let* ((desired-msg (apply 'format args))
            (inhibit-message
             (or
@@ -1630,6 +1641,13 @@ Patched to use original **window** instead of buffer."
       (avy-pop-mark)
     (avy-goto-word-1 (read-char "char: " t))))
 
+;;; Ivy completion framework
+
+(use-package ivy
+  ;; https://github.com/abo-abo/swiper
+  ;; Ivy is a generic completion mechanism for Emacs
+  )
+
 ;;; ..:: Theming and code aesthetics ::..
 
 ;; Set frame title
@@ -1991,7 +2009,7 @@ when there is another buffer printing out information."
 ;;;;               configured delay for repeating keys. Otherwise you'll see an
 ;;;;               initial flicker when the holding the scroll key before the
 ;;;;               scrolling begins.
-(defvar danylo/ind-update-idle-delay 0.25)
+(defvar danylo/ind-update-idle-delay 0.2)
 (defvar danylo/ind-update-timer nil)
 (defun danylo/debounced-ind-update (orig-fun &rest args)
   (if danylo/ind-update-timer
@@ -2340,10 +2358,10 @@ C-z... instead of C-u C-z C-u C-z C-u C-z...")
   ;; Emacs package for highlighting uncommitted changes.
   ;; :hook ((prog-mode . diff-hl-flydiff-mode)
   ;;        (text-mode . diff-hl-flydiff-mode))
-  :disabled
-  :bind (("C-c v =" . 'diff-hl-diff-goto-hunk)
-         ("C-c v *" . 'diff-hl-show-hunk)
-         ("C-c v ^" . 'diff-hl-set-reference-rev))
+  :bind (:map diff-hl-mode-map
+              ("C-c v =" . 'diff-hl-diff-goto-hunk)
+              ("C-c v *" . 'diff-hl-show-hunk)
+              ("C-c v ^" . 'diff-hl-set-reference-rev))
   :custom
   (diff-hl-command-prefix (kbd "C-c v"))
   (diff-hl-flydiff-delay 2.0)
@@ -2736,9 +2754,8 @@ line is not repeated horizontally at certain text zoom levels."
 
 ;;;; Gray out false #if preprocessor fences in C-like languages.
 (setq hide-ifdef-shadow t
-      hide-ifdef-initially t)
-(defvar danylo/hif-idle-delay 0.25)
-(defvar danylo/hif-update-timer nil)
+      hide-ifdef-initially t
+      hide-ifdef-verbose nil)
 (add-hook
  'c-mode-common-hook
  (lambda ()
@@ -2750,13 +2767,25 @@ line is not repeated horizontally at certain text zoom levels."
                           (false . 0)
                           (true . 1)))))
 	       (hide-ifdef-use-define-alist 'c-default-defines)))
-   (hide-ifdef-mode t)
-   (run-with-idle-timer
-    danylo/hif-idle-delay t
-    (lambda ()
-      (when hide-ifdef-mode
-        (hide-ifdefs))
-      ))))
+   (hide-ifdef-mode t)))
+(defvar danylo/hif-idle-delay 0.25)
+(defvar danylo/hif-update-timer nil)
+(defun danylo/hide-ifdefs-debounced (&rest _)
+  (if danylo/hif-update-timer
+      (cancel-timer danylo/hif-update-timer))
+  (setq
+   danylo/hif-update-timer
+   (run-with-idle-timer danylo/hif-idle-delay nil #'hide-ifdefs)))
+(defun danylo/hide-ifdef-extra-hooks (&rest _)
+  "Add extra functionality when hide-ifdef-mode is active, and remove it
+otherwise."
+  (if hide-ifdef-mode
+      (progn
+        (add-hook 'after-change-functions #'danylo/hide-ifdefs-debounced nil t)
+        (add-hook 'after-save-hook #'danylo/hide-ifdefs-debounced nil t))
+    (remove-hook 'after-change-functions #'danylo/hide-ifdefs-debounced)
+    (remove-hook 'after-save-hook #'danylo/hide-ifdefs-debounced)))
+(advice-add 'hide-ifdef-mode :after #'danylo/hide-ifdef-extra-hooks)
 
 ;;; ..:: Window management ::..
 
@@ -2978,7 +3007,8 @@ being set by MOVE-FUN."
   ;; https://github.com/alphapapa/bufler.el
   ;; Group buffers into workspaces with programmable rules
   :quelpa (bufler :fetcher github
-                  :repo "alphapapa/bufler.el")
+                  :repo "alphapapa/bufler.el"
+                  :files ("*.el" (:exclude "helm-bufler.el")))
   :config
   (require 'bufler)
   (setq bufler-filter-buffer-modes
@@ -4752,6 +4782,22 @@ Patched so that any new file by default is guessed as being its own master."
 (use-package bazel
   ;; https://github.com/bazelbuild/emacs-bazel-mode
   ;; Emacs mode for Bazel.
+  )
+
+;;; ..:: PDF viewing ::..
+
+(use-package pdf-tools
+  ;; https://github.com/vedang/pdf-tools
+  ;; Emacs support library for PDF files.
+  :hook ((pdf-view-mode . pdf-view-midnight-minor-mode))
+  :bind (:map pdf-view-mode-map
+              ("C-s" . isearch-forward))
+  :custom
+  (pdf-view-resize-factor 1.1)
+  (pdf-view-display-size 'fit-page)
+  :init
+  (pdf-tools-install)
+  (pdf-loader-install)
   )
 
 ;;; ..:: Load custom non-version-controlled init code ::..

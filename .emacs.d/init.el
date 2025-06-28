@@ -1235,15 +1235,19 @@ This command does not push text to `kill-ring'."
 
 ;;;; (start patch) Apply filtering to messages.
 (defun danylo/message (orig-fun &rest args)
-  (when (and args (listp args) (> (length args) 0))
-    (let* ((desired-msg (apply 'format args))
-           (inhibit-message
-            (or
-             inhibit-message
-             (string-equal
-              desired-msg
-              "LSP :: Error from the Language Server: Request cancelled because the document was modified (Unknown error)"))))
-      (apply orig-fun args))))
+  (condition-case nil
+      (when (and args (listp args) (> (length args) 0))
+        (let* ((desired-msg (apply 'format args))
+               (inhibit-message
+                (or
+                 inhibit-message
+                 (string-equal
+                  desired-msg
+                  "LSP :: Error from the Language Server: Request cancelled because the document was modified (Unknown error)"))))
+          (apply orig-fun args)))
+    (error
+     ;; If an error happens, suppress it and just show the message.
+     (apply orig-fun args))))
 (advice-add 'message :around #'danylo/message)
 ;;;; (end patch)
 

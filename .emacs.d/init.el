@@ -1045,16 +1045,13 @@ Source: https://emacs.stackexchange.com/a/50834/13661"
   (scroll-preserve-screen-position 'always))
 
 (defun danylo/debounce-scrollbar ()
-  (message "hydra-scroll-row :pre")
-  (advice-add 'ind-update-event-handler
-              :around #'danylo/debounced-ind-update))
+  (advice-add 'ind-update-event-handler :around #'danylo/debounced-ind-update))
 
 (defun danylo/undo-debounce-scrollbar ()
-  (message "hydra-scroll-row :pre")
   (advice-remove 'ind-update-event-handler #'danylo/debounced-ind-update))
 
 (defhydra hydra-scroll-row
-  (:pre danylo/debounce-scrollbar :post danylo/unfo-debounce-scrollbar)
+  (:pre danylo/debounce-scrollbar :post danylo/undo-debounce-scrollbar)
   "Move up/rown one row keeping the cursor at the same position"
   ("n" danylo/scroll-row-down "down")
   ("p" danylo/scroll-row-up "up"))
@@ -3571,6 +3568,7 @@ _q_: Quit"
   ;; https://gitlab.com/matsievskiysv/math-preview/
   ;; Emacs preview math inline
   :bind (("C-c m a" . math-preview-all)
+         ("C-c m c" . math-preview-clear-all)
          ("C-c m ." . math-preview-at-point)
          ("C-c m r" . math-preview-region))
   :hook ((org-mode . danylo/math-preview-init)

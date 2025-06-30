@@ -12,13 +12,13 @@ sudo update-alternatives --install /usr/bin/python python /usr/bin/python3 100
 
 if not_installed conda; then
     wget -4 https://repo.anaconda.com/archive/Anaconda3-2021.11-Linux-x86_64.sh \
-	 -O /tmp/anaconda.sh
+        -O /tmp/anaconda.sh
     chmod +x /tmp/anaconda.sh
     /tmp/anaconda.sh
 
     # Update conda
     . ~/.bashrc
-    export PATH="/home/danylo/anaconda3/bin:$PATH"
+    export PATH="/home/$USER/anaconda3/bin:$PATH"
     conda install -y anaconda
     conda update -y -n base -c defaults conda
 fi
@@ -37,7 +37,7 @@ if ! (conda info --envs | grep -q $PYENV_NAME); then
     conda install -y ipython
 
     # Make it the default virtualenv on bash startup
-    cat << EOF >> ~/.bashrc
+    cat <<EOF >>~/.bashrc
 conda activate $PYENV_NAME
 EOF
 
@@ -61,7 +61,7 @@ sudo apt-get -y install pyprof2calltree
 
 # Add the virtualenv path to the PATH
 if ! echo "$PATH" | grep -q virtualenv; then
-    echo export PATH="$PATH":"$(command -v virtualenv)" >> ~/.bashrc
+    echo export PATH="$PATH":"$(command -v virtualenv)" >>~/.bashrc
 fi
 
 # Update to make sure that the new Python is loaded
@@ -70,5 +70,5 @@ source ~/.bashrc
 # ..:: Jupyter notebook ::..
 
 sudo apt-get -y install jupyter \
-     jupyter-notebook
+    jupyter-notebook
 pip install jupyterlab

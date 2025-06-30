@@ -14,8 +14,8 @@ fi
 if not_installed google-chrome; then
     sudo apt-get -y install apt-transport-https gnupg
     wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb -P /tmp/
-    ( cd /tmp/ && \
-          sudo apt-get -y install ./google-chrome-stable_current_amd64.deb )
+    (cd /tmp/ &&
+        sudo apt-get -y install ./google-chrome-stable_current_amd64.deb)
 
     # Make `browser` command launch Chrome.
     sudo ln -sf /usr/bin/google-chrome /usr/bin/browser
@@ -38,6 +38,36 @@ if not_installed libreoffice || ! (libreoffice --version | grep -Eq ".*7.*"); th
     sudo apt-get -y update
     sudo apt-get -y dist-upgrade
     sudo apt-get -y install libreoffice
+fi
+
+# ..:: PDF ::..
+
+if not_installed sioyek; then
+    sudo apt-get -y install \
+        qt5-qmake \
+        qtbase5-dev \
+        qt3d5-dev \
+        libglfw3-dev \
+        libfuse3-3 \
+        libfuse3-dev \
+        libfuse2 \
+        libharfbuzz-dev
+    git clone --recursive https://github.com/ahrm/sioyek /tmp/sioyek
+    (
+        cd /tmp/sioyek &&
+            ./build_linux.sh &&
+            # If the command below fails, add -unsupported-allow-new-glibc to the
+            # end of the line that starts with
+            # ./linuxdeployqt-continuous-x86_64.AppImage...
+            # (see https://forum.qt.io/post/585565)
+            ./build_and_release.sh &&
+            mkdir -p ~/Documents/software &&
+            mv sioyek-release $HOME/Documents/software/sioyek &&
+            cd $HOME/Documents/software/sioyek &&
+            sudo cp usr/share/applications/sioyek.desktop /usr/share/applications/ &&
+            sudo cp usr/share/pixmaps/sioyek-icon-linux.png /usr/share/pixmaps/ &&
+            sudo ln -sf $HOME/Documents/software/sioyek/AppRun /usr/local/bin/sioyek
+    )
 fi
 
 # ..:: Enpass password manager ::..
@@ -76,7 +106,7 @@ if [[ ! -d ~/.config/inkscape/extensions/textext ]]; then
     sudo apt-get -y install gir1.2-gtksource-3.0
     wget -4 https://github.com/textext/textext/releases/download/1.3.0/TexText-Linux-1.3.0.tar.gz -P /tmp/
     (cd /tmp/ && tar -zxvf /tmp/TexText-Linux-1.3.0.tar.gz ./textext-1.3.0)
-    ( cd /tmp/textext-1.3.0/ && python3 setup.py )
+    (cd /tmp/textext-1.3.0/ && python3 setup.py)
 fi
 
 # ..:: Screen capture ::..

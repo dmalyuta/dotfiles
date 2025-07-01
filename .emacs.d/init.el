@@ -897,9 +897,14 @@ not have to update when the cursor is moving quickly."
 
 ;;;; Working with buffers
 
-;; Update buffers when files on disk change.
-(global-auto-revert-mode)
+;; Update buffers when files on disk change. Do not do this for remote files.
 (setq auto-revert-verbose nil)
+(defun danylo/auto-revert-file-not-remote ()
+  "Turn on auto-revert-mode for file-visiting buffers of local files."
+  (if (and buffer-file-name
+           (not (file-remote-p buffer-file-name)))
+      (auto-revert-mode)))
+(add-hook 'find-file-hook #'danylo/auto-revert-file-not-remote)
 
 (defun danylo/revert-buffer-no-confirm ()
   "Revert buffer without confirmation."
@@ -2788,6 +2793,24 @@ otherwise."
     (remove-hook 'after-change-functions #'danylo/hide-ifdefs-debounced)
     (remove-hook 'after-save-hook #'danylo/hide-ifdefs-debounced)))
 (advice-add 'hide-ifdef-mode :after #'danylo/hide-ifdef-extra-hooks)
+
+;;; ..:: Remote development ::..
+
+(use-package tramp
+  ;; https://elpa.gnu.org/packages/tramp.html
+  ;; Transparent Remote Access, Multiple Protocol
+  :init
+  (setq tramp-verbose 0
+        tramp-chunksize 2000
+        tramp-use-ssh-controlmaster-options nil
+        tramp-default-method "ssh"
+        tramp-verbose 1
+        tramp-default-remote-shell "/bin/sh"
+        tramp-connection-local-default-shell-variables
+        '((shell-file-name . "/bin/bash")
+          (shell-command-switch . "-c")))
+  (add-to-list 'tramp-remote-path 'tramp-own-remote-path)
+  )
 
 ;;; ..:: Window management ::..
 

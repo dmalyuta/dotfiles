@@ -1465,7 +1465,8 @@ Patched to use original **window** instead of buffer."
               helm-buffers-fuzzy-matching t
               helm-ff-file-name-history-use-recentf t
               helm-recentf-matching t
-              history-delete-duplicates t)
+              history-delete-duplicates t
+              helm-buffer-skip-remote-checking t)
   (setq helm-imenu-type-faces
         '(("^\\(f(x)\\)\s*$" . danylo/imenu-function-face)
           ("^\\(var\\)\s*$" . danylo/imenu-var-face)

@@ -2799,17 +2799,24 @@ otherwise."
 (use-package tramp
   ;; https://elpa.gnu.org/packages/tramp.html
   ;; Transparent Remote Access, Multiple Protocol
+  ;;
+  ;; Performance advice:
+  ;; - https://www.reddit.com/r/emacs/comments/1jatdse/im_trying_to_troubleshoot_extremely_slow_tramp/
   :init
-  (setq tramp-verbose 0
+  (setq tramp-verbose 3
         tramp-chunksize 2000
-        tramp-use-ssh-controlmaster-options nil
         tramp-default-method "ssh"
         tramp-verbose 1
         tramp-default-remote-shell "/bin/sh"
         tramp-connection-local-default-shell-variables
         '((shell-file-name . "/bin/bash")
-          (shell-command-switch . "-c")))
+          (shell-command-switch . "-c"))
+        tramp-backup-directory-alist nil
+        tramp-auto-save-directory "~/.emacs.d/tramp-autosave")
   (add-to-list 'tramp-remote-path 'tramp-own-remote-path)
+  ;; Turn off vc, which makes Tramp slow.
+  (setq vc-handled-backends '()
+        vc-ignore-dir-regexp ".+")
   )
 
 ;;; ..:: Window management ::..

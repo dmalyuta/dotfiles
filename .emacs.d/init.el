@@ -193,6 +193,50 @@ directory."
 (advice-add 'eval-buffer
             :after (lambda (&rest _) (message "Evaluated buffer")))
 
+;;; ..:: Remote development ::..
+
+(use-package tramp
+  ;; https://elpa.gnu.org/packages/tramp.html
+  ;; Transparent Remote Access, Multiple Protocol
+  ;;
+  ;; Performance advice:
+  ;; - https://www.reddit.com/r/emacs/comments/1jatdse/im_trying_to_troubleshoot_extremely_slow_tramp/
+  :init
+  (setq tramp-verbose 1
+        tramp-chunksize 2000
+        tramp-default-method "ssh"
+        tramp-archive-enabled nil
+        tramp-default-remote-shell "/bin/sh"
+        tramp-use-ssh-controlmaster-options nil
+        tramp-connection-local-default-shell-variables
+        '((shell-file-name . "/bin/bash")
+          (shell-command-switch . "-c"))
+        tramp-backup-directory-alist nil
+        tramp-auto-save-directory "~/.emacs.d/tramp-autosave"
+        tramp-copy-size-limit 10000
+        tramp-inline-compress-start-size 1000
+        tramp-completion-use-cache t)
+  ;; Don't use version control on remote files (speeds up opening)
+  (setq vc-ignore-dir-regexp
+        (format "\\(%s\\)\\|\\(%s\\)"
+                vc-ignore-dir-regexp
+                tramp-file-name-regexp))
+  ;; Enable persistent connections
+  (setq tramp-connection-timeout 10) ;; faster failure if host unreachable
+  (setq dired-async-mode t)
+  :config
+  (setq tramp-remote-path '(tramp-own-remote-path)) ;; disables GIO/glib features
+  )
+
+;;;; (start patch) Don't keep remote files in recent file list.
+(defun danylo/recentf-keep-default-predicate (file)
+  "Return non-nil if FILE should be kept in the recent list.
+Remote files are ommitted."
+  (and (recentf-keep-default-predicate file)
+       (not (string-match vc-ignore-dir-regexp (file-name-directory file)))))
+(setq recentf-keep '(danylo/recentf-keep-default-predicate))
+;;;; (end patch)
+
 ;;; ..:: General helper functions ::..
 
 (use-package s
@@ -496,6 +540,15 @@ directory."
   (global-treesit-fold-mode)
   (global-treesit-fold-indicators-mode)
   )
+
+;;;; (start patch) Do not use treesit-fold indicators in remote buffers, in
+;;;;               causes a major slowdown.
+(defun danylo/treesit-fold-usable-mode-p (orig-fun &rest args)
+  (unless (file-remote-p buffer-file-name)
+    (apply orig-fun args)))
+(advice-add 'treesit-fold-usable-mode-p
+            :around #'danylo/treesit-fold-usable-mode-p)
+;;;; (end patch)
 
 ;;;; (start patch) Throttle the call rate to render treesit-fold fringe indicators.
 (defvar danylo/fold-indicators-refresh-idle-delay 0.25)
@@ -981,6 +1034,18 @@ the files (default is nil)."
               ("." . dired-subtree-insert)
               ("," . dired-subtree-remove)))
 
+;;;; (start patch) Modify dired-subtree regex for checking if thing under point
+;;;;               is a directory. The default version rigidly requires two
+;;;;               space indentation, which is not always the case.
+(defun danylo/dired-subtree--dired-line-is-directory-or-link-p (&rest _)
+  "Return non-nil if line under point is a directory or symlink."
+  (save-excursion
+    (beginning-of-line)
+    (looking-at "[ ]*[dl]")))
+(advice-add 'dired-subtree--dired-line-is-directory-or-link-p
+            :around #'danylo/dired-subtree--dired-line-is-directory-or-link-p)
+;;;; (end patch)
+
 (use-package cc-dired-sort-by
   ;; https://github.com/kickingvegas/cclisp
   ;; Emacs configuration files for Charles Choi
@@ -1123,6 +1188,11 @@ Source: http://steve.yegge.googlepages.com/my-dot-emacs-file"
   "Copy the absolute path of the file to clipboard."
   (interactive)
   (kill-new (buffer-file-name)))
+
+(defun danylo/show-file-absolute-path ()
+  "SHow the absolute path of the file."
+  (interactive)
+  (message (buffer-file-name)))
 
 (use-package revert-buffer-all
   ;; Revert all buffers after external changes have been made.
@@ -1506,6 +1576,23 @@ Patched to use original **window** instead of buffer."
         (append helm-boring-buffer-regexp-list
                 '("\\*.*\\*" "magit.*"))))
 
+(with-eval-after-load 'helm-files
+  (setq helm-ff-auto-update-initial-value nil ;; disable auto expansion
+        helm-ff-lynx-style-map nil            ;; disables auto-preview map
+        helm-follow-mode-persistent nil
+        ))
+
+;;;; (start patch) Disable sorting of `helm-find-files` candidates if using
+;;;;               TRAMP.
+(defun danylo/helm-ff-maybe-disable-sorting (orig-fun &rest args)
+  "Disable sorting of `helm-find-files` candidates if using TRAMP."
+  (if (file-remote-p helm-ff-default-directory)
+      (car args) ;; candidate
+    (apply orig-fun args)))
+(advice-add 'helm-ff-sort-candidates
+            :around #'danylo/helm-ff-maybe-disable-sorting)
+;;;; (end patch)
+
 (defun danylo/helm-ag-filter-extension ()
   "Search with helm-ag inside files of a given extension."
   (interactive)
@@ -1654,6 +1741,36 @@ Patched to use original **window** instead of buffer."
   ;; https://github.com/abo-abo/swiper
   ;; Ivy is a generic completion mechanism for Emacs
   )
+
+(use-package fzf
+  ;; https://github.com/bling/fzf.el
+  ;; A front-end for fzf.
+  :bind (("C-c f f" . danylo/fzf-find-file)
+         ("C-c f g" . fzf-grep-with-narrowing)
+         ("C-c f b" . fzf-switch-buffer)
+         )
+  :config
+  (setq fzf/args "-x --color bw --print-query --margin=1,0 --no-hscroll"
+        fzf/executable "fzf"
+        fzf/git-grep-args "-i --line-number %s"
+        ;; command used for `fzf-grep-*` functions
+        ;; example usage for ripgrep:
+        ;; fzf/grep-command "rg --no-heading -nH"
+        fzf/grep-command "grep -nrH"
+        ;; If nil, the fzf buffer will appear at the top of the window
+        fzf/position-bottom t
+        fzf/window-height 15))
+
+(require 'fzf)
+(defun danylo/fzf-find-file ()
+  "Find file in current directory, including hidden files."
+  (interactive)
+  (fzf-with-command
+   "ag --hidden --ignore .git -l -g \"\""
+   (lambda (selected)
+     (when selected
+       (find-file selected)))
+   (fzf--resolve-directory)))
 
 ;;; ..:: Theming and code aesthetics ::..
 
@@ -2010,13 +2127,18 @@ when there is another buffer printing out information."
   (add-hook 'after-save-hook #'danylo/update-indicators)
   )
 
+;;;; (start patch) Disable the indicators update.
+(defun danylo/disable-ind-update (orig-fun &rest args)
+  (ind-hide-indicators))
+;;;; (end patch)
+
 ;;;; (start patch) Debounce the indicators update such that they don't slow
 ;;;;               down cursor motion.
 ;;;;               NOTE: the idle delay has to be set correctly for the OS's
 ;;;;               configured delay for repeating keys. Otherwise you'll see an
 ;;;;               initial flicker when the holding the scroll key before the
 ;;;;               scrolling begins.
-(defvar danylo/ind-update-idle-delay 0.2)
+(defvar danylo/ind-update-idle-delay 0.25)
 (defvar danylo/ind-update-timer nil)
 (defun danylo/debounced-ind-update (orig-fun &rest args)
   (if danylo/ind-update-timer
@@ -2373,6 +2495,7 @@ C-z... instead of C-u C-z C-u C-z C-u C-z...")
   (diff-hl-command-prefix (kbd "C-c v"))
   (diff-hl-flydiff-delay 2.0)
   (diff-hl-side 'right)
+  (diff-hl-update-async t)
   :init
   (let* ((width 2)
          (bitmap (vector (1- (expt 2 width)))))
@@ -2584,7 +2707,7 @@ regions."
   "Smart select between regular filling and my own filling."
   (interactive)
   (if (and transient-mark-mode mark-active)
-      (fill-paragraph nil t)
+      (fill-region (region-beginning) (region-end))
     (unless (danylo/fill)
       (fill-paragraph nil t)))
   (danylo/update-indicators))
@@ -2793,31 +2916,6 @@ otherwise."
     (remove-hook 'after-change-functions #'danylo/hide-ifdefs-debounced)
     (remove-hook 'after-save-hook #'danylo/hide-ifdefs-debounced)))
 (advice-add 'hide-ifdef-mode :after #'danylo/hide-ifdef-extra-hooks)
-
-;;; ..:: Remote development ::..
-
-(use-package tramp
-  ;; https://elpa.gnu.org/packages/tramp.html
-  ;; Transparent Remote Access, Multiple Protocol
-  ;;
-  ;; Performance advice:
-  ;; - https://www.reddit.com/r/emacs/comments/1jatdse/im_trying_to_troubleshoot_extremely_slow_tramp/
-  :init
-  (setq tramp-verbose 3
-        tramp-chunksize 2000
-        tramp-default-method "ssh"
-        tramp-verbose 1
-        tramp-default-remote-shell "/bin/sh"
-        tramp-connection-local-default-shell-variables
-        '((shell-file-name . "/bin/bash")
-          (shell-command-switch . "-c"))
-        tramp-backup-directory-alist nil
-        tramp-auto-save-directory "~/.emacs.d/tramp-autosave")
-  (add-to-list 'tramp-remote-path 'tramp-own-remote-path)
-  ;; Turn off vc, which makes Tramp slow.
-  (setq vc-handled-backends '()
-        vc-ignore-dir-regexp ".+")
-  )
 
 ;;; ..:: Window management ::..
 
@@ -3340,6 +3438,10 @@ argument: number-or-marker-p, nil'."
   ;; Verbose logging for debugging
   (lsp-log-io nil)
   (lsp-log-max 1000)
+  ;; Progress
+  (lsp-progress-via-spinner t)
+  (lsp-progress-spinner-type 'vertical-breathing)
+  (lsp-progress-function #'lsp-on-progress-legacy)
   ;; Core
   (lsp-enable-xref t)
   (lsp-auto-configure t)
@@ -3488,14 +3590,25 @@ argument: number-or-marker-p, nil'."
   ;; https://github.com/bbatsov/projectile
   ;; Project interaction library offering tools to operate on a project level
   :init (setq projectile-enable-caching 'persistent
-              projectile-indexing-method 'hybrid)
+              projectile-indexing-method 'hybrid
+              projectile-file-exists-remote-cache-expire nil)
   :bind (:map projectile-mode-map
               ("C-c p" . projectile-command-map)
               ("C-c p s g" . danylo/helm-projectile-ag-grep)
               ("M-o" . projectile-find-other-file))
   :config
   (setq projectile-globally-ignored-directories
-        (append '(".svn" ".git")
+        (append '(".idea"
+                  ".eunit"
+                  ".git"
+                  ".hg"
+                  ".svn"
+                  ".fslckout"
+                  ".bzr"
+                  "_darcs"
+                  ".tox"
+                  "build"
+                  "target")
                 projectile-globally-ignored-directories)
         projectile-globally-ignored-files
         (append '(".DS_Store" ".gitignore")
@@ -3515,12 +3628,14 @@ project."
 (defhydra hydra-common-actions (:hint none)
   "
 File operations
-_a_: Copy absolute path
+_A_: Copy absolute path
+_a_: Show absolute path
 _c_: Copy buffer to clipboard
 
 Essential commands
 _q_: Quit"
-  ("a" danylo/copy-file-absolute-path :exit t)
+  ("A" danylo/copy-file-absolute-path :exit t)
+  ("a" danylo/show-file-absolute-path :exit t)
   ("c" danylo/copy-whole-file :exit t)
   ("q" nil "cancel"))
 
@@ -3701,6 +3816,9 @@ fill after inserting the link."
 (use-package magit
   ;; https://github.com/magit/magit
   ;; An interface to the version control system Git
+  ;;
+  ;; Useful commands:
+  ;;   j : in diff view, jump to diff for file at cursor and back up.
   :bind (("C-c v s" . magit-status)
          ("C-c v r" . magit-toggle-verbose-refresh)
          ("C-c v D" . danylo/magit-diff-range)

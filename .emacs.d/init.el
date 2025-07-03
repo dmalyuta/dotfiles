@@ -925,7 +925,7 @@ not have to update when the cursor is moving quickly."
 (use-package expand-region
   ;; https://github.com/magnars/expand-region.el
   ;; Increase selected region by semantic units
-  :bind ("C-=" . er/expand-region)
+  :bind ("C-=" . danylo/er/expand-region)
   :config
   (add-hook
    'find-file-hook
@@ -937,6 +937,19 @@ not have to update when the cursor is moving quickly."
        (setq-local er/try-expand-list
                    (delete 'er/mark-defun er/try-expand-list)))))
   )
+
+;;;; (start patch) Remove blinking highlight artifacts when expanding region.
+(defun danylo/er/expand-region (arg)
+  "Expand region, but making sure that there is no blinking artifacts."
+  (interactive "p")
+  (if (and (eq major-mode 'org-mode) org-modern-mode)
+      (progn
+        (remove-from-invisibility-spec 'org-modern)
+        (er/expand-region arg)
+        (add-to-invisibility-spec 'org-modern))
+    (er/expand-region arg))
+  )
+;;;; (end patch)
 
 ;; Turn off Abbrev mode
 (setq-default abbrev-mode nil)
@@ -3664,7 +3677,8 @@ _q_: Quit"
   :hook ((org-mode . danylo/org-mode-setup))
   :bind (:map org-mode-map
               ("M-." . org-open-at-point)
-              ("M-," . org-mark-ring-goto))
+              ("M-," . org-mark-ring-goto)
+              ("C-c C-d" . nil))
   :init
   (setq org-startup-folded nil
         ;;org-ellipsis "..." ;; " ▾"
@@ -3707,6 +3721,29 @@ _q_: Quit"
   :disabled
   :quelpa (org-auctex :fetcher github
                       :repo "karthink/org-auctex"))
+
+(use-package org-download
+  ;; https://github.com/abo-abo/org-download
+  ;; Drag and drop images to Emacs org-mode.
+  :hook ((dired-mode . org-download-enable)))
+
+(require 'org-download)
+(defhydra hydra-org-download (:hint none)
+  "
+Org image download
+_v_: paste from clipboard
+_s_: take screenshot
+_k_: delete
+
+Essential commands
+_q_: Quit"
+  ("v" org-download-clipboard :exit t)
+  ("s" org-download-screenshot :exit t)
+  ("k" org-download-delete :exit t)
+  ("q" nil "cancel"))
+(general-define-key
+ :keymaps 'org-mode-map
+ "C-c o i" 'hydra-org-download/body)
 
 (defun danylo/math-preview-init ()
   "Startup actions for math preview."

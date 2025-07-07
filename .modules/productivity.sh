@@ -43,6 +43,7 @@ fi
 # ..:: PDF ::..
 
 if not_installed sioyek; then
+    # Install qt6 libraries: for main branch
     sudo apt-get -y install \
         qt5-qmake \
         qtbase5-dev \
@@ -52,21 +53,37 @@ if not_installed sioyek; then
         libfuse3-dev \
         libfuse2 \
         libharfbuzz-dev
-    git clone --recursive https://github.com/ahrm/sioyek /tmp/sioyek
+
+    # Install qt6 libraries: for developmen branch
+    sudo apt-get -y install \
+        qt6-base-dev \
+        qt6-declarative-dev \
+        qt6-speech-dev \
+        qt6-quickcontrols2-dev
+
+    # Make qt6 qmake available
+    qtchooser -install qt6 /usr/bin/qmake6
+
+    git clone --recursive --branch development \
+        https://github.com/ahrm/sioyek /tmp/sioyek
     (
         cd /tmp/sioyek &&
+            export QT_SELECT=qt6 &&
             ./build_linux.sh &&
             # If the command below fails, add -unsupported-allow-new-glibc to the
             # end of the line that starts with
             # ./linuxdeployqt-continuous-x86_64.AppImage...
             # (see https://forum.qt.io/post/585565)
+            sed -i \
+                '/\.\/linuxdeployqt-continuous-x86_64\.AppImage/ {/ -unsupported-allow-new-glibc/! s/$/ -unsupported-allow-new-glibc/}' \
+                build_and_release.sh &&
             ./build_and_release.sh &&
             mkdir -p ~/Documents/software &&
             mv sioyek-release $HOME/Documents/software/sioyek &&
             cd $HOME/Documents/software/sioyek &&
             sudo cp usr/share/applications/sioyek.desktop /usr/share/applications/ &&
             sudo cp usr/share/pixmaps/sioyek-icon-linux.png /usr/share/pixmaps/ &&
-            sudo ln -sf $HOME/Documents/software/sioyek/AppRun /usr/local/bin/sioyek
+            sudo ln -sf $HOME/Documents/software/sioyek/usr/bin/sioyek /usr/local/bin/sioyek
     )
 fi
 

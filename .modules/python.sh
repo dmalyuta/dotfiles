@@ -46,6 +46,7 @@ EOF
     pip install flake8 pdbpp
     pip install scipy numpy nptyping
     pip install pandas pytest black pyfzf
+    pip install ipython-ctrlr-fzf
     pip install virtualenv
 
     # Add virtualenv to Jupyter

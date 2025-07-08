@@ -465,6 +465,11 @@ Remote files are ommitted."
 ;;
 ;; Check ABI version: (treesit-library-abi-version)
 
+;; Jit font lock settings. The function `jit-lock-function' has a big effect on
+;; performance, as I perceived especially in the fontification of narrowed
+;; buffers (such as via `narrow-to-defun').
+(setq jit-lock-defer-time (/ 1.0 30.0))
+
 (use-package treesit-auto
   ;; https://github.com/renzmann/treesit-auto
   ;; Automatic installation, usage, and fallback for tree-sitter major modes.
@@ -2794,18 +2799,20 @@ in the following cases:
 (require 'indent-bars)
 
 ;; Display the fill indicator.
+(require 'display-fill-column-indicator)
 (defun danylo/update-fill-column-indicator (&rest _)
   "Adjust the stipple bitmap for the current font size, such that it
 displays as a single thin vertical line. Inspired by
 https://emacs.stackexchange.com/a/81307 but makes sure that the vertical
 line is not repeated horizontally at certain text zoom levels."
-  (let* ((char-width-pixels (frame-char-width))
-         (rot (indent-bars--stipple-rot (selected-window) char-width-pixels)))
-    (set-face-attribute 'fill-column-indicator nil
-                        :background 'unspecified
-                        :foreground `,danylo/light-gray
-                        :stipple (indent-bars--stipple
-                                  char-width-pixels 1 rot nil 0.1 0 "." 0)))
+  (when display-fill-column-indicator-mode
+    (let* ((char-width-pixels (frame-char-width))
+           (rot (indent-bars--stipple-rot (selected-window) char-width-pixels)))
+      (set-face-attribute 'fill-column-indicator nil
+                          :background 'unspecified
+                          :foreground `,danylo/light-gray
+                          :stipple (indent-bars--stipple
+                                    char-width-pixels 1 rot nil 0.1 0 "." 0))))
   )
 (defun danylo/init-fill-indicator-update ()
   (when (display-graphic-p)
@@ -3638,18 +3645,36 @@ project."
 
 ;;; ..:: Common actions ::..
 
+(defhydra hydra-byte-compile (:hint none)
+  "
+Compile actions
+---------------
+_i_: Compile init directory, except the init.el file
+_I_: Compile the whole init directory
+
+Essential commands
+------------------
+_q_: Quit"
+  ("i" danylo/byte-compile-init-dir-no-init :exit t)
+  ("I" danylo/byte-compile-init-dir :exit t)
+  ("q" nil "cancel"))
+
 (defhydra hydra-common-actions (:hint none)
   "
 File operations
+---------------
 _A_: Copy absolute path
 _a_: Show absolute path
 _c_: Copy buffer to clipboard
+_b_: Byte-compile files
 
 Essential commands
+------------------
 _q_: Quit"
   ("A" danylo/copy-file-absolute-path :exit t)
   ("a" danylo/show-file-absolute-path :exit t)
   ("c" danylo/copy-whole-file :exit t)
+  ("b" hydra-byte-compile/body :exit t)
   ("q" nil "cancel"))
 
 (general-define-key

@@ -40,10 +40,10 @@ cp -f "$DIR"/.gitconfig ~
 ln -sf "$DIR"/.gitk ~
 
 # Python
-mkdir -p ~/.ipython/profile_default/startup
+mkdir -p ~/.ipython/profile_default
 cp -r "$DIR"/.jupyter ~
 ln -sf "$DIR"/.config/flake8 ~/.config
-ln -sf "$DIR"/.ipython/profile_default/startup/fzf_history.py \
+ln -sf "$DIR"/.ipython/profile_default/startup \
     ~/.ipython/profile_default/startup
 
 # Julia
@@ -52,6 +52,10 @@ ln -sf "$DIR"/.config/startup.jl ~/.julia/config
 
 # Prompt
 ln -sf "$DIR"/.config/.blue-owl-custom.omp.json ~/.blue-owl-custom.omp.json
+
+# Default applications.
+ln -sf "$DIR"/.local/share/applications/mimeapps.list \
+    ~/.local/share/applications/mimeapps.list
 
 # ..:: Install modules ::..
 

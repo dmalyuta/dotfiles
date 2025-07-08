@@ -33,10 +33,11 @@ sudo apt-get -y install gitk \
     jq
 
 if not_installed batcat; then
-    sudo apt-get -y install -o Dpkg::Options::=--force-overwrite bat ripgrep
+    sudo apt-get -y install bat ripgrep
 
     # Make the command for bat to be 'bat', not 'batcat'
-    sudo dpkg-divert --package batcat --add --rename --divert /usr/bin/bat /usr/bin/batcat
+    mkdir -p ~/.local/bin
+    ln -s /usr/bin/batcat ~/.local/bin/bat
 fi
 
 # Jsonnet commandline interpreter

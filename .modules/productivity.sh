@@ -43,7 +43,7 @@ fi
 # ..:: PDF ::..
 
 if not_installed sioyek; then
-    # Install qt6 libraries: for main branch
+    # Install qt6 libraries: for main branch.
     sudo apt-get -y install \
         qt5-qmake \
         qtbase5-dev \
@@ -54,10 +54,22 @@ if not_installed sioyek; then
         libfuse2 \
         libharfbuzz-dev
 
-    # Install qt6 libraries: for developmen branch
+    # Install qt6 libraries: for development branch.
+    #
+    # For more flexibility in customization and Qt version, you can skip the
+    # apt-get command below and instead install Qt6 community edition from
+    # https://www.qt.io/download-qt-installer-oss. Make sure to:
+    #  - Select "Custom Installation" in the installer,
+    #  - Select Qt -> Qt 6.8.x (e.g. 6.8.3)
+    #  - Install all the available Additional Libraries,
+    #  - Install Desktop, Sources, and Build Tools -> CMake.
+    # Then in the shell do:
+    #   export QMAKE=$HOME/Qt/6.8.3/gcc_64/bin/qmake
+    # before running build_linux.sh.
     sudo apt-get -y install \
         qt6-base-dev \
         qt6-declarative-dev \
+        qt6-svg-dev \
         qt6-speech-dev \
         qt6-quickcontrols2-dev
 

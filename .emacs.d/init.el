@@ -763,7 +763,8 @@ reload it."
 (general-define-key
  "C-c o s" 'scratch-buffer
  "C-c o d" 'dashboard-open
- "C-c o m" (lambda () (interactive) (switch-to-buffer "*Messages*")))
+ "C-c o m" (lambda () (interactive) (switch-to-buffer "*Messages*"))
+ "C-c o i" (lambda () (interactive) (find-file user-init-file)))
 
 ;; A welcome message after startup
 (defun display-startup-echo-area-message ())

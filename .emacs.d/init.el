@@ -4049,6 +4049,31 @@ find a definion."
 (advice-add 'xref-find-definitions :around
             #'danylo/xref-find-definition-with-ag-fallback)
 
+;;; ..:: Calculator ::..
+
+(use-package literate-calc-mode
+  ;; https://github.com/sulami/literate-calc-mode.el
+  ;; Literate programming for M-x calc.
+  :config
+  (add-to-list 'auto-mode-alist '("\\.calc" . literate-calc-mode)))
+
+(defhydra hydra-literate-calc (:hint none)
+  "
+Literate calc:
+_i_: insert results
+_d_: delete results
+_c_: copy result to clipboard
+
+Essential commands
+_q_: Quit"
+  ("i" literate-calc-insert-results :exit t)
+  ("d" literate-calc-remove-results :exit t)
+  ("c" literate-calc-kill-result :exit t)
+  ("q" nil "cancel"))
+(general-define-key
+ :keymaps 'literate-calc-mode-map
+ "C-c l c" 'hydra-literate-calc/body)
+
 ;;; ..:: C/C++ ::..
 
 (add-hook 'c-mode-common-hook

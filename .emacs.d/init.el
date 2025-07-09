@@ -931,7 +931,7 @@ not have to update when the cursor is moving quickly."
 (use-package expand-region
   ;; https://github.com/magnars/expand-region.el
   ;; Increase selected region by semantic units
-  :bind ("C-=" . danylo/er/expand-region)
+  :bind ("C-=" . er/expand-region)
   :config
   (add-hook
    'find-file-hook
@@ -945,16 +945,17 @@ not have to update when the cursor is moving quickly."
   )
 
 ;;;; (start patch) Remove blinking highlight artifacts when expanding region.
-(defun danylo/er/expand-region (arg)
+(defun danylo/er/expand-region (orig-fun &rest args)
   "Expand region, but making sure that there is no blinking artifacts."
-  (interactive "p")
-  (if (and (eq major-mode 'org-mode) org-modern-mode)
-      (progn
-        (remove-from-invisibility-spec 'org-modern)
-        (er/expand-region arg)
-        (add-to-invisibility-spec 'org-modern))
-    (er/expand-region arg))
-  )
+  (let ((out))
+    (if (and (eq major-mode 'org-mode) org-modern-mode)
+        (progn
+          (remove-from-invisibility-spec 'org-modern)
+          (setq out (apply orig-fun args))
+          (add-to-invisibility-spec 'org-modern))
+      (setq out (apply orig-fun args)))
+    out))
+(advice-add 'er/expand-region :around #'danylo/er/expand-region)
 ;;;; (end patch)
 
 ;; Turn off Abbrev mode

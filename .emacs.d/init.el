@@ -3228,6 +3228,8 @@ being set by MOVE-FUN."
   :bind (("C-`"   . popper-toggle)
          ("M-`"   . popper-cycle)
          ("C-M-`" . popper-toggle-type))
+  :custom
+  (popper-display-function #'display-buffer-in-side-window)
   :init
   (setq popper-reference-buffers
         '("\\*Messages\\*"
@@ -3525,7 +3527,7 @@ argument: number-or-marker-p, nil'."
               ("<return>" . lsp-ui-imenu--visit))
   :custom
   (lsp-ui-sideline-enable t)
-  (lsp-ui-doc-enable nil)
+  (lsp-ui-doc-enable t)
   (lsp-ui-doc-delay 0.2)
   (lsp-ui-sideline-show-diagnostics t)
   (lsp-ui-sideline-diagnostic-max-line-length 80)

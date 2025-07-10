@@ -1346,6 +1346,10 @@ This command does not push text to `kill-ring'."
 (advice-add 'message :around #'danylo/message)
 ;;;; (end patch)
 
+(general-define-key
+ :keymaps 'prog-mode-map
+ "M-RET" 'default-indent-new-line)
+
 ;;; ..:: Searching ::..
 
 ;;;; Neotree: view the source code file tree
@@ -2516,8 +2520,6 @@ C-z... instead of C-u C-z C-u C-z C-u C-z...")
 (use-package filladapt
   ;; https://elpa.gnu.org/packages/filladapt.html
   ;; Enhance the behavior of Emacs' Auto Fill mode
-  :custom
-  (c-current-comment-prefix "///*")
   :hook ((prog-mode . filladapt-mode)
          (org-mode . filladapt-mode)
          (text-mode . filladapt-mode))
@@ -2753,10 +2755,15 @@ regions."
 (defun danylo/smart-fill ()
   "Smart select between regular filling and my own filling."
   (interactive)
-  (if (and transient-mark-mode mark-active)
-      (fill-region (region-beginning) (region-end))
-    (unless (danylo/fill)
-      (fill-paragraph nil t)))
+  (let ((original-fill-prefix fill-prefix))
+    (if (and transient-mark-mode mark-active)
+        (let ((selection-end (region-end)))
+          (fill-region
+           (save-excursion (danylo/goto-visual-line-start)) selection-end))
+      (unless (danylo/fill)
+        (fill-paragraph nil t)))
+    ;; Restore the fill-prefix.
+    (setq fill-prefix original-fill-prefix))
   (danylo/update-indicators))
 
 (defun danylo/julia-docstring-fill-skip ()
@@ -4237,13 +4244,13 @@ _q_: Quit"
          (c-mode-common . subword-mode)
          (c-mode-common
           . (lambda ()
-              (filladapt-mode)
               (c-ts-mode-set-style 'danylo/cpp-ts-style)
               ;; Take the following from `c-comment-prefix-regexp', otherwise
               ;; the filladapt-token-table will have a (nil c-comment) entry
               ;; that results in an error when trying to fill paragraphs.
               (setq-local c-current-comment-prefix "//+\\|\\**")
-              (c-setup-filladapt))))
+              (c-setup-filladapt)
+              (filladapt-mode))))
   :init
   ;; (add-to-list 'c-ts-mode-indent-style)
   (setq

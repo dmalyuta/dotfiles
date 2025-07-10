@@ -11,6 +11,7 @@ alias lsd='ll -d */'
 alias peek='tree -L 1'
 alias copy='DISPLAY=$DISPLAY xclip -sel clip'
 alias gitroot='cd $(git rev-parse --show-toplevel)'
+alias sleep='systemctl suspend'
 
 ################################################################################
 # Process management.

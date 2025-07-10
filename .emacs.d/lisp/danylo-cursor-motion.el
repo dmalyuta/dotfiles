@@ -32,6 +32,12 @@ keep the `danylo/cursor-goal-visual-column' value.")
 (defvar danylo/cursor-goal-visual-column 0
   "Goal column for the cursor.")
 
+(defun danylo/goto-visual-line-start ()
+  "Go to the start of the visual line and return the position."
+  (if truncate-lines
+      (move-beginning-of-line nil)
+    (beginning-of-visual-line)))
+
 (defun danylo/cursor-smart-move (dir &optional arg)
   (interactive "P")
   (when arg
@@ -46,14 +52,14 @@ keep the `danylo/cursor-goal-visual-column' value.")
                                  (setq danylo/cursor-current-step 1)))))
   (unless (memq last-command danylo/cursor-keep-column-commands)
     (setq danylo/cursor-goal-visual-column
-          (- (point) (save-excursion (beginning-of-visual-line)))))
+          (- (point) (save-excursion (danylo/goto-visual-line-start)))))
   (if (eq dir 'up)
       (previous-line danylo/cursor-current-step)
     (next-line danylo/cursor-current-step))
   (let ((line-length (- (line-end-position) (line-beginning-position))))
     ;; Move to the same column as before.
     (move-to-column
-     (+ (save-excursion (beginning-of-visual-line) (current-column))
+     (+ (save-excursion (danylo/goto-visual-line-start) (current-column))
         (min danylo/cursor-goal-visual-column line-length)))
     )
   )

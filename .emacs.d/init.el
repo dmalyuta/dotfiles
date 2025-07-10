@@ -1535,7 +1535,7 @@ Patched to use original **window** instead of buffer."
   :ensure t
   :after company
   :bind (("M-i" . helm-swoop)
-         ("C-x b" . helm-buffers-list)
+         ("C-x b" . danylo/helm-buffer-selector)
          ("C-x c i" . danylo/helm-imenu)
          ("C-x C-f" . helm-find-files)
          ("C-h f" . helm-apropos)
@@ -1638,7 +1638,7 @@ Patched to use original **window** instead of buffer."
 ;; Make Helm window taller for the following Helm functions
 (mapc (lambda (func)
         (advice-add func :around #'danylo/set-helm-window-height))
-      '(helm-imenu helm-imenu-in-all-buffers helm-buffers-list
+      '(helm-imenu helm-imenu-in-all-buffers danylo/helm-buffer-selector
                    helm-projectile-ag helm-projectile-grep
                    helm-find-files))
 
@@ -1686,10 +1686,16 @@ Patched to use original **window** instead of buffer."
   ;; helm-bufler package is available.
   ;; (Deprecated because it does not sort buffers by most recent used - which
   ;;  is important for me).
-  :disabled
   :after (helm)
   :quelpa (helm-bufler :fetcher github :repo "alphapapa/bufler.el"
                        :files ("helm-bufler.el")))
+
+(defun danylo/helm-buffer-selector ()
+  "Run bufler nominally, or ibuffer if prefixed with C-u."
+  (interactive)
+  (if current-prefix-arg
+      (helm :sources '(helm-bufler-source))
+    (helm-buffers-list)))
 
 (use-package helm-ag
   ;; https://github.com/emacsorphanage/helm-ag
@@ -2239,6 +2245,26 @@ when there is another buffer printing out information."
     (user-error (throw 'break t)))
   )
 
+(defvar-local danylo/mc/unmark-direction nil
+  "Direction in which to unmark cursor, stores the most recent mark
+direction. Either 'previous or 'next.")
+(defun mc/unmark-last ()
+  "Unmark last mark."
+  (interactive)
+  (cond ((eq last-command 'mc/mark-previous-like-this)
+         (mc/unmark-previous-like-this)
+         (setq-local danylo/mc/unmark-direction 'previous))
+        ((eq last-command 'mc/mark-next-like-this)
+         (mc/unmark-next-like-this)
+         (setq-local danylo/mc/unmark-direction 'next))
+        ((eq last-command 'mc/unmark-last)
+         (cond ((eq danylo/mc/unmark-direction 'previous)
+                (mc/unmark-previous-like-this))
+               ((eq danylo/mc/unmark-direction 'next)
+                (mc/unmark-next-like-this))
+               (t nil)))
+        (t (setq-local danylo/mc/unmark-direction nil))))
+
 (defhydra hydra-multiple-cursors (global-map "C-c m")
   "Multiple cursors"
   ("p" mc/mark-previous-like-this "↑")
@@ -2247,6 +2273,7 @@ when there is another buffer printing out information."
   ("N" mc/mark-all-next-like-this "↓*" :exit t)
   ("*" mc/mark-all-like-this "all" :exit t)
   ("r" mc/mark-all-in-region "region" :exit t)
+  ("u" mc/unmark-last "undo")
   ("l" mc/edit-lines "lines" :exit t)
   )
 
@@ -2261,6 +2288,7 @@ when there is another buffer printing out information."
                    hydra-multiple-cursors/mc/mark-all-next-like-this-and-exit
                    hydra-multiple-cursors/mc/mark-all-like-this-and-exit
                    hydra-multiple-cursors/mc/mark-all-in-region-and-exit
+                   hydra-multiple-cursors/mc/unmark-last
                    hydra-multiple-cursors/mc/edit-lines-and-exit
                    hydra-keyboard-quit))
      (add-to-list 'mc/cmds-to-run-once item))))
@@ -2490,8 +2518,7 @@ C-z... instead of C-u C-z C-u C-z C-u C-z...")
   ;; Enhance the behavior of Emacs' Auto Fill mode
   :custom
   (c-current-comment-prefix "///*")
-  :hook ((python-mode . filladapt-mode)
-         (julia-mode . filladapt-mode)
+  :hook ((prog-mode . filladapt-mode)
          (org-mode . filladapt-mode)
          (text-mode . filladapt-mode))
   :bind (("M-r" . 'fill-region)))
@@ -2904,6 +2931,18 @@ line is not repeated horizontally at certain text zoom levels."
         (append (alist-get 'black apheleia-formatters) '("--required-version" "24.10.0")))
   )
 
+;;;; (start patch) Colorize/fontify the visible window after apheleia runs
+;;;;               formatting.
+(defun danylo/fontify-after-format ()
+  "Fontify visible part of the current window."
+  (run-with-idle-timer
+   0.1 nil
+   (lambda ()
+     (save-excursion
+       (font-lock-fontify-region (window-start) (window-end))))))
+(add-hook 'apheleia-post-format-hook #'danylo/fontify-after-format)
+;;;; (end patch)
+
 ;;;; Gray out false #if preprocessor fences in C-like languages.
 (setq hide-ifdef-shadow t
       hide-ifdef-initially t
@@ -3162,15 +3201,40 @@ being set by MOVE-FUN."
                   :repo "alphapapa/bufler.el"
                   :files ("*.el" (:exclude "helm-bufler.el")))
   :config
-  (require 'bufler)
+  ;; Filter out imenu buffers, but keep fundamental-mode and special-mode
+  ;; buffers.
   (setq bufler-filter-buffer-modes
         (append
          (cl-set-difference bufler-filter-buffer-modes '(fundamental-mode special-mode))
-         '(imenu-list-major-mode))
-        bufler-filter-buffer-name-regexps
+         '(imenu-list-major-mode)))
+
+  ;; Filter out buffers by regexp.
+  (setq bufler-filter-buffer-name-regexps
         (append bufler-filter-buffer-name-regexps
                 `(,(rx "*Help*")
-                  ,(rx "*Buffer List*")))))
+                  ,(rx "*Buffer List*"))))
+
+  ;; Customize the "Name" column to should file icons.
+  (bufler-define-column "Name" (:max-width nil)
+    (ignore depth)
+    (let ((indentation (make-string (* 2 bufler-indent-per-level) ? ))
+          (mode-annotation (when (cl-loop for fn in bufler-buffer-mode-annotate-preds
+                                          thereis (funcall fn buffer))
+                             (propertize (concat (replace-regexp-in-string
+                                                  (rx "-mode" eos) ""
+                                                  (symbol-name (buffer-local-value 'major-mode buffer))
+                                                  t t)
+                                                 " ")
+                                         'face 'bufler-mode)))
+          (buffer-name (buffer-name buffer))
+          (buffer-icon (with-current-buffer buffer
+                         (doom-modeline--buffer-mode-icon)))
+          (modified (when (and (buffer-file-name buffer)
+                               (buffer-modified-p buffer))
+                      (propertize bufler-column-name-modified-buffer-sigil
+                                  'face 'font-lock-warning-face))))
+      (concat indentation mode-annotation buffer-icon buffer-name modified)))
+  (setq bufler-columns '("Name" "Size" "VC" "Path")))
 
 (use-package all-the-icons-ibuffer
   ;; https://github.com/seagle0128/all-the-icons-ibuffer
@@ -3230,7 +3294,7 @@ being set by MOVE-FUN."
          ("M-`"   . popper-cycle)
          ("C-M-`" . popper-toggle-type))
   :custom
-  (popper-display-function #'display-buffer-in-side-window)
+  (popper-display-function #'popper-select-popup-at-bottom)
   :init
   (setq popper-reference-buffers
         '("\\*Messages\\*"

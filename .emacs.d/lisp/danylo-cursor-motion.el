@@ -58,11 +58,17 @@ keep the `danylo/cursor-goal-visual-column' value.")
     (next-line danylo/cursor-current-step))
   (let ((line-length (- (line-end-position) (line-beginning-position))))
     ;; Move to the same column as before.
-    (move-to-column
-     (+ (save-excursion (danylo/goto-visual-line-start) (current-column))
-        (min danylo/cursor-goal-visual-column line-length)))
-    )
-  )
+    (goto-char (min (+ (danylo/goto-visual-line-start)
+                       danylo/cursor-goal-visual-column)
+                    (line-end-position)))
+    (when (if (eq dir 'up)
+              (> (current-column) danylo/cursor-goal-visual-column)
+            (< (current-column) danylo/cursor-goal-visual-column))
+      (danylo/goto-visual-line-start)
+      (move-to-column
+       (+ (current-column)
+          (min danylo/cursor-goal-visual-column line-length))))
+    ))
 
 (defun danylo/cursor-up-smart (&optional arg)
   (interactive "P")

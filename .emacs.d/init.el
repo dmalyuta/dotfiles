@@ -1454,6 +1454,8 @@ line number to the string."
   :bind (("C-x c I" . helm-imenu-anywhere))
   )
 
+(setq imenu-max-item-length "Unlimited")
+
 (defvar danylo/imenu-list--displayed-window nil
   "The **window** who owns the saved imenu entries.")
 
@@ -1475,6 +1477,7 @@ line number to the string."
            (lsp-ui-imenu)
          (select-window (get-buffer-window lsp-ui-imenu-buffer-name))))
      lsp-ui-imenu-buffer-name))
+  (add-hook 'lsp-ui-imenu-mode-hook (lambda () (toggle-truncate-lines 1)))
 
   (defun danylo/imenu-update (&rest args)
     "Update Imenu list to reflect the current window's content."
@@ -1482,7 +1485,9 @@ line number to the string."
                (not (string= (format "%s" (current-buffer)) lsp-ui-imenu-buffer-name)))
       (with-current-buffer (current-buffer)
         (when (danylo/check-if-update-imenu)
-          (lsp-ui-imenu--refresh)))))
+          (condition-case nil
+              (lsp-ui-imenu--refresh)
+            (imenu-unavailable nil))))))
 
   ;; Update Imenu automatically when window layout state changes
   (mapc (lambda (func)
@@ -1554,7 +1559,8 @@ Patched to use original **window** instead of buffer."
               helm-comp-read-mode-line ""
               helm-buffer-max-length 30
               helm-candidate-number-limit 200
-              helm-buffers-truncate-lines nil
+              helm-truncate-lines t
+              helm-buffers-truncate-lines t
               helm-buffer-details-flag nil
               helm-source-buffer-not-found nil
               helm-split-window-inside-p t
@@ -1698,7 +1704,8 @@ Patched to use original **window** instead of buffer."
   "Run bufler nominally, or ibuffer if prefixed with C-u."
   (interactive)
   (if current-prefix-arg
-      (helm :sources '(helm-bufler-source))
+      (helm :sources '(helm-bufler-source)
+            :truncate-lines nil)
     (helm-buffers-list)))
 
 (use-package helm-ag
@@ -2755,16 +2762,25 @@ regions."
 (defun danylo/smart-fill ()
   "Smart select between regular filling and my own filling."
   (interactive)
-  (let ((original-fill-prefix fill-prefix))
-    (if (and transient-mark-mode mark-active)
-        (let ((selection-end (region-end)))
-          (fill-region
-           (save-excursion (danylo/goto-visual-line-start)) selection-end))
-      (unless (danylo/fill)
-        (fill-paragraph nil t)))
-    ;; Restore the fill-prefix.
-    (setq fill-prefix original-fill-prefix))
+  (if (and transient-mark-mode mark-active)
+      (let ((selection-start (region-beginning))
+            (selection-end (region-end)))
+        (deactivate-mark)
+        (fill-region
+         (save-excursion
+           (goto-char selection-start)
+           (danylo/goto-visual-line-start))
+         selection-end))
+    (unless (danylo/fill)
+      (fill-paragraph nil t)))
   (danylo/update-indicators))
+
+;;;; (start patch) Unset fill-prefix when evaluating indent-region.
+(defun danylo/indent-region (orig-fun &rest args)
+  (let ((fill-prefix nil))
+    (apply orig-fun args)))
+(advice-add 'indent-region :around #'danylo/indent-region)
+;;;; (end patch)
 
 (defun danylo/julia-docstring-fill-skip ()
   "Return T if this block of text should not be filled. This occurs
@@ -3605,6 +3621,8 @@ argument: number-or-marker-p, nil'."
   (lsp-ui-sideline-diagnostic-max-line-length 80)
   (lsp-ui-imenu-auto-refresh nil)
   (lsp-ui-imenu-buffer-position 'left)
+  (lsp-ui-imenu-window-width 30)
+  (lsp-ui-imenu-window-fix-width t)
   )
 
 ;;;;;;;;;; lsp-booster for more performant LSP mode.
@@ -4129,6 +4147,8 @@ find a definion."
 (use-package literate-calc-mode
   ;; https://github.com/sulami/literate-calc-mode.el
   ;; Literate programming for M-x calc.
+  :custom
+  (literate-calc-usimplify-results t)
   :config
   (add-to-list 'auto-mode-alist '("\\.calc" . literate-calc-mode)))
 

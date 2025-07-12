@@ -46,9 +46,15 @@ EOF
     pip install flake8 pdbpp
     pip install scipy numpy nptyping
     pip install pandas pytest black pyfzf
+    # To get a horizontal layout in fzf for ipython command history, add:
+    #   --preview-window=up,wrap
+    # to the fzf.prompt() call's fzf_options argument in __init__.py. The
+    # location of this file can be found by running in the terminal:
+    #   python -c "import ipython_ctrlr_fzf; print(ipython_ctrlr_fzf.__path__[0])"
+    # You can view the file in the terminal like this:
+    #   bat $(python -c "import ipython_ctrlr_fzf; print(ipython_ctrlr_fzf.__path__[0])")/__init__.py
     pip install ipython-ctrlr-fzf
     pip install virtualenv
-
     # Add virtualenv to Jupyter
     # https://gist.github.com/swedishmike/902fb27d627313c31a95e31c44e302ac
     pip install --user ipykernel

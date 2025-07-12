@@ -470,6 +470,24 @@ Remote files are ommitted."
 ;; buffers (such as via `narrow-to-defun').
 (setq jit-lock-defer-time (/ 1.0 30.0))
 
+;;;; (start patch) Fontify any buffer on load.
+(defcustom danylo/buffers-to-auto-contify
+  `(,(rx "*Bufler*"))
+  "List of buffers to not auto-fontify on opening.")
+(defun danylo/fontify (&rest args)
+  "Fontify visible part of the buffer."
+  (run-with-idle-timer
+   0.05 nil
+   (lambda ()
+     (save-excursion
+       (unless
+           (cl-loop
+            for regexp in danylo/buffers-to-auto-contify
+            thereis (string-match regexp (buffer-name)))
+         (font-lock-fontify-region (window-start) (window-end)))))))
+(add-hook 'window-configuration-change-hook 'danylo/fontify)
+;;;; (end patch)
+
 (use-package treesit-auto
   ;; https://github.com/renzmann/treesit-auto
   ;; Automatic installation, usage, and fallback for tree-sitter major modes.
@@ -501,7 +519,8 @@ Remote files are ommitted."
         (c-mode . c-ts-mode)
         (c-or-c++-mode . c-or-c++-ts-mode)
         (python-mode . python-ts-mode)
-        (sh-mode . bash-ts-mode)))
+        (sh-mode . bash-ts-mode)
+        (yaml-mode . yaml-ts-mode)))
 (defun c++-ts-mode-call-hook () (run-hooks 'c++-mode-hook) (run-hooks 'c-mode-common-hook))
 (add-hook 'c++-ts-mode-hook #'c++-ts-mode-call-hook)
 (defun c-ts-mode-call-hook () (run-hooks 'c-mode-hook) (run-hooks 'c-mode-common-hook))
@@ -509,7 +528,9 @@ Remote files are ommitted."
 (defun python-ts-mode-call-hook () (run-hooks 'python-mode-hook))
 (add-hook 'python-ts-mode-hook #'python-ts-mode-call-hook)
 (defun bash-ts-mode-call-hook () (run-hooks 'sh-mode-hook))
-(add-hook 'bash-ts-mode-call-hook #'bash-ts-mode-call-hook)
+(add-hook 'bash-ts-mode-hook #'bash-ts-mode-call-hook)
+(defun yaml-ts-mode-call-hook () (run-hooks 'yaml-mode-hook))
+(add-hook 'yaml-ts-mode-hook #'yaml-ts-mode-call-hook)
 
 ;;;; (start patch) Turn off traditional syntax propertization in chosen modes.
 (defconst danylo/disable-syntax-propertize-modes
@@ -1434,6 +1455,8 @@ line number to the string."
   :bind (:map prog-mode-map
               ("C-c t i" . danylo/imenu-list-jump)
               :map org-mode-map
+              ("C-c t i" . danylo/imenu-list-jump)
+              :map yaml-ts-mode-map
               ("C-c t i" . danylo/imenu-list-jump)
               :map imenu-list-major-mode-map
               ("C-c t i" . danylo/imenu-list-jump)
@@ -3178,10 +3201,25 @@ being set by MOVE-FUN."
      (let ((buffer-move-behavior 'swap))
        (funcall ,move-fun))))
 
+(defmacro danylo/move-window (fun-name move-fun)
+  "Move current window to another window, the direction being set by MOVE-FUN.
+Unlike `buf-move-*', the original window is removed."
+  `(defun ,fun-name ()
+     (interactive)
+     (let ((win (funcall ,move-fun)))
+       (danylo/switch-to-last-window)
+       (delete-window)
+       (select-window win))))
+
 (danylo/move-with-swap buf-swap-up #'buf-move-up)
 (danylo/move-with-swap buf-swap-down #'buf-move-down)
 (danylo/move-with-swap buf-swap-left #'buf-move-left)
 (danylo/move-with-swap buf-swap-right #'buf-move-right)
+
+(danylo/move-window win-move-up #'buf-move-up)
+(danylo/move-window win-move-down #'buf-move-down)
+(danylo/move-window win-move-left #'buf-move-left)
+(danylo/move-window win-move-right #'buf-move-right)
 
 (defhydra hydra-swap-buffer (global-map "C-c s")
   "Swap buffer with window"
@@ -3196,6 +3234,13 @@ being set by MOVE-FUN."
   ("<down>" buf-move-down "↓")
   ("<left>" buf-move-left "←")
   ("<right>" buf-move-right "→"))
+
+(defhydra hydra-move-window (global-map "C-c w")
+  "Move buffer to window"
+  ("<up>" win-move-up "↑")
+  ("<down>" win-move-down "↓")
+  ("<left>" win-move-left "←")
+  ("<right>" win-move-right "→"))
 
 ;; winner-mode, which lets you go back (C-c <left>) and forward (C-c <right>) in
 ;; window layout history
@@ -3754,12 +3799,11 @@ _q_: Quit"
 
 (defhydra hydra-common-actions (:hint none)
   "
-File operations
----------------
-_A_: Copy absolute path
-_a_: Show absolute path
-_c_: Copy buffer to clipboard
-_b_: Byte-compile files
+File operations                  Session config
+---------------                  --------------
+_A_: Copy absolute path            _b_: Byte-compile files
+_a_: Show absolute path            _l_: Load last saved state
+_c_: Copy buffer to clipboard      _s_: Save state
 
 Essential commands
 ------------------
@@ -3768,6 +3812,8 @@ _q_: Quit"
   ("a" danylo/show-file-absolute-path :exit t)
   ("c" danylo/copy-whole-file :exit t)
   ("b" hydra-byte-compile/body :exit t)
+  ("l" desktop-read :exit t)
+  ("s" danylo/desktop-save :exit t)
   ("q" nil "cancel"))
 
 (general-define-key
@@ -4940,6 +4986,33 @@ Patched so that any new file by default is guessed as being its own master."
   ;; Major mode for editing files in the YAML data serialization format.
   :mode (("\\.yml$" . yaml-mode)
          ("\\.yaml$" . yaml-mode)))
+
+(use-package yaml-imenu
+  ;; https://github.com/emacsmirror/yaml-imenu
+  ;; Enhancement of the imenu support in yaml-mode.
+  :config
+  (yaml-imenu-enable))
+
+(defun which-function-from-imenu-index ()
+  "Call the imenu-index part in `which-function'.
+
+It is a fallback for when which-func-functions and `add-log-current-defun' return nil."
+  (let (which-func-functions)
+    (letf (((symbol-function 'add-log-current-defun)
+            (lambda () nil)))
+          (which-function))))
+
+;; `add-log-current-defun' returns a not so meaningful result in some
+;; major modes when the default `add-log-current-defun-function'
+;; happens to match a random line that is not really a function
+;; definition.  It is often much more desirable to find a function
+;; name from an imenu index in those modes.  Results are also used by
+;; `which-function-mode'.
+(defun enable-add-log-current-defun-using-which-function ()
+  (setq-local add-log-current-defun-function 'which-function-from-imenu-index))
+
+(add-hook 'yaml-mode-hook
+          'enable-add-log-current-defun-using-which-function)
 
 (use-package jsonnet-mode
   ;; https://github.com/tminor/jsonnet-mode

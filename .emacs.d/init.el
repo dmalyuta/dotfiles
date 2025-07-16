@@ -1266,10 +1266,10 @@ Source: http://steve.yegge.googlepages.com/my-dot-emacs-file"
   :config
   (defhydra hydra-jump-history (global-map "M-g")
     "Move forward/back in current buffer"
-    ("." back-button-local-forward "local fwd")
-    ("," back-button-local-backward "local back")
-    ("C-." back-button-local-forward "global fwd")
-    ("C-," back-button-local-backward "global back"))
+    ("." back-button-local-forward "→")
+    ("," back-button-local-backward "←")
+    ("C-." back-button-global-forward "global →")
+    ("C-," back-button-global-backward "global ←"))
   )
 
 (use-package consult
@@ -1456,8 +1456,6 @@ line number to the string."
               ("C-c t i" . danylo/imenu-list-jump)
               :map org-mode-map
               ("C-c t i" . danylo/imenu-list-jump)
-              :map yaml-ts-mode-map
-              ("C-c t i" . danylo/imenu-list-jump)
               :map imenu-list-major-mode-map
               ("C-c t i" . danylo/imenu-list-jump)
               ("DEL" . danylo/imenu-list-jump))
@@ -1564,7 +1562,6 @@ Patched to use original **window** instead of buffer."
 (use-package helm
   ;; https://emacs-helm.github.io/helm/
   ;; Emacs incremental completion and selection narrowing framework
-  :ensure t
   :after company
   :bind (("M-i" . helm-swoop)
          ("C-x b" . danylo/helm-buffer-selector)
@@ -1726,10 +1723,18 @@ Patched to use original **window** instead of buffer."
 (defun danylo/helm-buffer-selector ()
   "Run bufler nominally, or ibuffer if prefixed with C-u."
   (interactive)
-  (if current-prefix-arg
-      (helm :sources '(helm-bufler-source)
-            :truncate-lines nil)
-    (helm-buffers-list)))
+  (message "current-prefix-arg = %s" current-prefix-arg)
+  (cond ((equal current-prefix-arg '(4))
+         ;; C-u
+         (helm :sources '(helm-bufler-source)
+               :truncate-lines nil))
+        ((equal current-prefix-arg '(16))
+         ;; C-u C-u
+         (read-buffer-to-switch "Switch to buffer: "))
+        (t
+         ;; No C-u passed in (this is the default).
+         (helm-buffers-list))
+        ))
 
 (use-package helm-ag
   ;; https://github.com/emacsorphanage/helm-ag
@@ -1850,7 +1855,7 @@ Patched to use original **window** instead of buffer."
 
 ;;;; Font
 (defun danylo/set-frame-font (&rest _)
-  (set-frame-font "CaskaydiaCove NF" nil t))
+  (set-frame-font "CaskaydiaCove NF" t t))
 (danylo/set-frame-font)
 (add-hook 'after-make-frame-functions #'danylo/set-frame-font)
 
@@ -2409,7 +2414,7 @@ direction. Either 'previous or 'next.")
   (define-key key-translation-map (kbd "C-S-z") (kbd "<f20>"))
   )
 
-(defvar danylo/undo-command '(undo 1)
+(defvar danylo/undo-command '(undo-fu-only-undo 1)
   "Memory for the undo direction (undo or redo). This makes C-u sticky to
 keep redoing once it is pressed, so user can do C-u C-z C-z
 C-z... instead of C-u C-z C-u C-z C-u C-z...")
@@ -2552,8 +2557,7 @@ C-z... instead of C-u C-z C-u C-z C-u C-z...")
   ;; Enhance the behavior of Emacs' Auto Fill mode
   :hook ((prog-mode . filladapt-mode)
          (org-mode . filladapt-mode)
-         (text-mode . filladapt-mode))
-  :bind (("M-r" . 'fill-region)))
+         (text-mode . filladapt-mode)))
 
 (use-package so-long
   ;; https://www.emacswiki.org/emacs/SoLong
@@ -2789,11 +2793,13 @@ regions."
       (let ((selection-start (region-beginning))
             (selection-end (region-end)))
         (deactivate-mark)
-        (fill-region
-         (save-excursion
-           (goto-char selection-start)
-           (danylo/goto-visual-line-start))
-         selection-end))
+        (cl-letf
+            (;; Let fill-paragrpah do the work, because I find that the
+             ;; treesitter C++ comment filling function does not work very well
+             ;; for filling regions.
+             ((symbol-function 'c-ts-common--fill-paragraph)
+              (lambda (&rest _) nil)))
+          (fill-region selection-start selection-end nil t nil)))
     (unless (danylo/fill)
       (fill-paragraph nil t)))
   (danylo/update-indicators))
@@ -2844,6 +2850,8 @@ in the following cases:
         (t (apply orig-fun args))))
 (advice-add 'filladapt--fill-paragraph :around
             #'danylo/filladapt--fill-paragraph)
+(advice-remove 'filladapt--fill-paragraph
+               #'danylo/filladapt--fill-paragraph)
 
 (use-package indent-bars
   ;; https://github.com/jdtsmith/indent-bars
@@ -2868,7 +2876,10 @@ in the following cases:
   (indent-bars-color-by-depth nil)
   (indent-bars-treesit-scope-min-lines 5)
   (indent-bars-highlight-current-depth nil)
-  (indent-bars-display-on-blank-lines t)
+  ;; indent-bars-display-on-blank-lines interacts badly with lsp-ui-sideline
+  ;; (https://github.com/jdtsmith/indent-bars/issues/14#issuecomment-1685103354),
+  ;; the is a way for them to co-exist but this hasn't been implemented.
+  (indent-bars-display-on-blank-lines nil)
   )
 
 (require 'indent-bars)
@@ -2905,10 +2916,13 @@ line is not repeated horizontally at certain text zoom levels."
 (danylo/run-gui-conditional-code #'danylo/init-fill-indicator-update)
 
 ;; Activate fill indicator in programming and text major modes.
-(dolist (mode-hook '(prog-mode-hook text-mode-hook))
-  (add-hook mode-hook (lambda ()
-                        (display-fill-column-indicator-mode 1)
-                        (danylo/update-fill-column-indicator))))
+(add-hook 'find-file-hook
+          (lambda ()
+            (when (cl-loop
+                   for parent-mode in '(prog-mode text-mode)
+                   thereis (derived-mode-p 'prog-mode))
+              (display-fill-column-indicator-mode 1)
+              (danylo/update-fill-column-indicator))))
 
 ;;; Stefan Monnier <foo at acm.org>. It is the opposite of fill-paragraph
 ;;; https://www.emacswiki.org/emacs/UnfillParagraph
@@ -3804,6 +3818,8 @@ File operations                  Session config
 _A_: Copy absolute path            _b_: Byte-compile files
 _a_: Show absolute path            _l_: Load last saved state
 _c_: Copy buffer to clipboard      _s_: Save state
+_d_: Diff with saved file
+_n_: Copy file name
 
 Essential commands
 ------------------
@@ -3811,6 +3827,13 @@ _q_: Quit"
   ("A" danylo/copy-file-absolute-path :exit t)
   ("a" danylo/show-file-absolute-path :exit t)
   ("c" danylo/copy-whole-file :exit t)
+  ("d" (lambda ()
+         (interactive)
+         (select-window
+          (diff-buffer-with-file (current-buffer)))) :exit t)
+  ("n" (lambda ()
+         (interactive)
+         (kill-new (buffer-name))) :exit t)
   ("b" hydra-byte-compile/body :exit t)
   ("l" desktop-read :exit t)
   ("s" danylo/desktop-save :exit t)
@@ -4316,7 +4339,7 @@ _q_: Quit"
               ;; that results in an error when trying to fill paragraphs.
               (setq-local c-current-comment-prefix "//+\\|\\**")
               (c-setup-filladapt)
-              (filladapt-mode))))
+              )))
   :init
   ;; (add-to-list 'c-ts-mode-indent-style)
   (setq
@@ -4984,12 +5007,15 @@ Patched so that any new file by default is guessed as being its own master."
 (use-package yaml-mode
   ;; https://github.com/yoshiki/yaml-mode
   ;; Major mode for editing files in the YAML data serialization format.
+  :bind (:map yaml-ts-mode-map
+              ("C-c t i" . danylo/imenu-list-jump))
   :mode (("\\.yml$" . yaml-mode)
          ("\\.yaml$" . yaml-mode)))
 
 (use-package yaml-imenu
   ;; https://github.com/emacsmirror/yaml-imenu
   ;; Enhancement of the imenu support in yaml-mode.
+  :after yaml-mode
   :config
   (yaml-imenu-enable))
 

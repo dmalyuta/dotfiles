@@ -33,7 +33,12 @@ ln -sf "$DIR"/.config/kitty/kitty.conf ~/.config/kitty
 ln -sf "$DIR"/.config/kitty/default-kitty ~/.config/kitty
 
 # Tmux
+mkdir -p ~/.config/tmux-powerline/themes
 ln -sf "$DIR"/.tmux.conf ~
+ln -sf "$DIR"/.config/tmux-powerline/config.sh \
+   ~/.config/tmux-powerline/config.sh
+ln -sf "$DIR"/.config/tmux-powerline/themes/danylo-theme.sh \
+   ~/.config/tmux-powerline/themes/danylo-theme.sh
 
 # Git
 cp -f "$DIR"/.gitconfig ~

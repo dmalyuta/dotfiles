@@ -3038,6 +3038,13 @@ otherwise."
     (remove-hook 'after-save-hook #'danylo/hide-ifdefs-debounced)))
 (advice-add 'hide-ifdef-mode :after #'danylo/hide-ifdef-extra-hooks)
 
+(use-package dtrt-indent
+  ;; https://github.com/jscheid/dtrt-indent
+  ;; Guess the indentation offset and transparently adjust the corresponding
+  ;; settings in Emacs.
+  :config
+  (dtrt-indent-global-mode))
+
 ;;; ..:: Window management ::..
 
 ;;;; >> Movement across windows <<

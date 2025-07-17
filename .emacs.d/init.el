@@ -106,12 +106,22 @@ it causes a package-desc nil error."
                          ("org" . "https://orgmode.org/elpa/")
                          ("elpa" . "https://elpa.gnu.org/packages/")))
 
-;; Install use-package
+;; Initialize packages.
+;;
+;; The helm-related definitions get around "undefined" errors in
+;; helm-bufler-autoloads which uses some Helm functionality before it gets
+;; loaded.
+(defun helm-make-source (&rest _) nil)
+(setq helm-type-buffer-actions nil)
 (package-initialize)
+(makunbound 'helm-type-buffer-actions)
+(fmakunbound 'helm-make-source)
+(makunbound 'helm-bufler-source)
+
+;; Install use-package
 (unless (package-installed-p 'use-package)
   (package-refresh-contents)
   (package-install 'use-package))
-(require 'use-package-ensure)
 
 ;; Install Quelpa
 (setq quelpa-update-melpa-p nil
@@ -125,7 +135,6 @@ it causes a package-desc nil error."
      "https://raw.githubusercontent.com/quelpa/quelpa/master/quelpa.el")
     (eval-buffer)
     (quelpa-self-upgrade)))
-(require 'quelpa)
 
 ;; Quelpa recipe format: https://github.com/melpa/melpa#recipe-format
 (quelpa
@@ -952,7 +961,7 @@ not have to update when the cursor is moving quickly."
 (use-package expand-region
   ;; https://github.com/magnars/expand-region.el
   ;; Increase selected region by semantic units
-  :bind ("C-=" . er/expand-region)
+  :bind (("M-=" . er/expand-region))
   :config
   (add-hook
    'find-file-hook
@@ -1723,7 +1732,6 @@ Patched to use original **window** instead of buffer."
 (defun danylo/helm-buffer-selector ()
   "Run bufler nominally, or ibuffer if prefixed with C-u."
   (interactive)
-  (message "current-prefix-arg = %s" current-prefix-arg)
   (cond ((equal current-prefix-arg '(4))
          ;; C-u
          (helm :sources '(helm-bufler-source)
@@ -1855,7 +1863,7 @@ Patched to use original **window** instead of buffer."
 
 ;;;; Font
 (defun danylo/set-frame-font (&rest _)
-  (set-frame-font "CaskaydiaCove NF" t t))
+  (set-frame-font "CaskaydiaCove NF" nil t))
 (danylo/set-frame-font)
 (add-hook 'after-make-frame-functions #'danylo/set-frame-font)
 
@@ -2850,8 +2858,6 @@ in the following cases:
         (t (apply orig-fun args))))
 (advice-add 'filladapt--fill-paragraph :around
             #'danylo/filladapt--fill-paragraph)
-(advice-remove 'filladapt--fill-paragraph
-               #'danylo/filladapt--fill-paragraph)
 
 (use-package indent-bars
   ;; https://github.com/jdtsmith/indent-bars
@@ -2876,10 +2882,12 @@ in the following cases:
   (indent-bars-color-by-depth nil)
   (indent-bars-treesit-scope-min-lines 5)
   (indent-bars-highlight-current-depth nil)
-  ;; indent-bars-display-on-blank-lines interacts badly with lsp-ui-sideline
-  ;; (https://github.com/jdtsmith/indent-bars/issues/14#issuecomment-1685103354),
-  ;; the is a way for them to co-exist but this hasn't been implemented.
-  (indent-bars-display-on-blank-lines nil)
+  ;; indent-bars on blank lines interact badly with lsp-ui-sideline:
+  ;; https://github.com/jdtsmith/indent-bars/issues/14#issuecomment-1685103354.
+  ;; I implemented a patch in the form of `danylo/indent-bars-watcher' below in
+  ;; order to turn off display of the indent guides on blank lines whenever
+  ;; lsp-ui-sideline information is displayed.
+  (indent-bars-display-on-blank-lines t)
   )
 
 (require 'indent-bars)
@@ -3042,6 +3050,8 @@ otherwise."
   ;; https://github.com/jscheid/dtrt-indent
   ;; Guess the indentation offset and transparently adjust the corresponding
   ;; settings in Emacs.
+  :custom
+  (dtrt-indent-verbosity 0)
   :config
   (dtrt-indent-global-mode))
 
@@ -3690,6 +3700,25 @@ argument: number-or-marker-p, nil'."
   (lsp-ui-imenu-window-width 30)
   (lsp-ui-imenu-window-fix-width t)
   )
+
+;;;; (start patch)
+(defvar-local danylo/indent-bars-display-on-blank-lines-prev nil
+  "Value of indent-bars-display-on-blank-lines the last time that
+`danylo/indent-bars-watcher' ran.")
+(defun danylo/indent-bars-watcher (symbol newval operation where)
+  (when (and indent-bars-mode lsp-ui-mode)
+    (setq indent-bars-display-on-blank-lines (equal newval nil))
+    (unless (equal indent-bars-display-on-blank-lines
+                   danylo/indent-bars-display-on-blank-lines-prev)
+      (setq danylo/indent-bars-display-on-blank-lines-prev
+            indent-bars-display-on-blank-lines)
+      (save-excursion
+        ;; Add back or remove indent-bars guides on blank lines.
+        (indent-bars--setup-font-lock)
+        (indent-bars--window-change)
+        (font-lock-fontify-region (window-start) (window-end))))))
+(add-variable-watcher 'lsp-ui-sideline--ovs #'danylo/indent-bars-watcher)
+;;;; (end patch)
 
 ;;;;;;;;;; lsp-booster for more performant LSP mode.
 ;; Emacs LSP performance booster

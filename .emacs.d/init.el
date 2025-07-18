@@ -477,11 +477,14 @@ Remote files are ommitted."
 ;; Jit font lock settings. The function `jit-lock-function' has a big effect on
 ;; performance, as I perceived especially in the fontification of narrowed
 ;; buffers (such as via `narrow-to-defun').
-(setq jit-lock-defer-time (/ 1.0 30.0))
+(setq jit-lock-defer-time (/ 1.0 30.0)
+      jit-lock-stealth-time 0.1
+      jit-lock-chunk-size 1500)
 
 ;;;; (start patch) Fontify any buffer on load.
-(defcustom danylo/buffers-to-auto-contify
-  `(,(rx "*Bufler*"))
+(defcustom danylo/buffers-to-skip-auto-fontify
+  `(,(rx "*Bufler*")
+    ".*magit.*")
   "List of buffers to not auto-fontify on opening.")
 (defun danylo/fontify (&rest args)
   "Fontify visible part of the buffer."
@@ -491,7 +494,7 @@ Remote files are ommitted."
      (save-excursion
        (unless
            (cl-loop
-            for regexp in danylo/buffers-to-auto-contify
+            for regexp in danylo/buffers-to-skip-auto-fontify
             thereis (string-match regexp (buffer-name)))
          (font-lock-fontify-region (window-start) (window-end)))))))
 (add-hook 'window-configuration-change-hook 'danylo/fontify)
@@ -1738,7 +1741,7 @@ Patched to use original **window** instead of buffer."
                :truncate-lines nil))
         ((equal current-prefix-arg '(16))
          ;; C-u C-u
-         (read-buffer-to-switch "Switch to buffer: "))
+         (switch-to-buffer (read-buffer-to-switch "Switch to buffer: ")))
         (t
          ;; No C-u passed in (this is the default).
          (helm-buffers-list))
@@ -2928,7 +2931,7 @@ line is not repeated horizontally at certain text zoom levels."
           (lambda ()
             (when (cl-loop
                    for parent-mode in '(prog-mode text-mode)
-                   thereis (derived-mode-p 'prog-mode))
+                   thereis (derived-mode-p parent-mode))
               (display-fill-column-indicator-mode 1)
               (danylo/update-fill-column-indicator))))
 
@@ -3054,6 +3057,12 @@ otherwise."
   (dtrt-indent-verbosity 0)
   :config
   (dtrt-indent-global-mode))
+
+(defun danylo/set-c-indent ()
+  "Set the indent offset for C/C++ in treesitter."
+  (interactive)
+  (setq c-ts-mode-indent-offset
+        (string-to-number (read-string "Set C-language indent to: "))))
 
 ;;; ..:: Window management ::..
 
@@ -3902,6 +3911,10 @@ _q_: Quit"
               ("M-." . org-open-at-point)
               ("M-," . org-mark-ring-goto)
               ("C-c C-d" . nil))
+  :custom
+  (org-image-actual-width nil)
+  (org-image-max-width 'fill-column)
+  (org-startup-with-inline-images nil)
   :init
   (setq org-startup-folded nil
         ;;org-ellipsis "..." ;; " ▾"
@@ -4124,6 +4137,49 @@ fill after inserting the link."
 ;; Make sure commit message open immediately in the Git commit mode.
 (require 'git-commit)
 (global-git-commit-mode)
+
+;;;; (start patch) Fontify magit buffers. These seem to have trouble fontifying
+;;;;               due to jit-lock-deter-time non-nil.
+(defconst danylo/magit-fontify-time-interval 0.1
+  "Number of seconds between fontification calls.")
+(defvar danylo/magit-fontify-current-window nil
+  "The window to check repeatedly for fontification.")
+(defconst danylo/magit-fontify-max-call-count 15
+  "Number of calls for which to fontify matching magit buffers. This
+value times `danylo/magit-fontify-time-interval' gives the total
+duration of time for which to repeat fontification when the list of
+visible buffers changes.")
+(defconst danylo/magit-buffer-regexp
+  "COMMIT_EDITMSG\\|git-.*"
+  "Regexp to match magit buffers that we want to fontify.")
+(defvar danylo/magit-fontify-call-count 0
+  "Counter from 0 to `danylo/magit-fontify-max-call-count'.")
+(defun danylo/magit-fontify ()
+  "Find magit buffers that we want to fontify, and fontify them."
+  (when (and danylo/magit-fontify-current-window
+             (< danylo/magit-fontify-call-count
+                danylo/magit-fontify-max-call-count))
+    (setq danylo/magit-fontify-call-count
+          (1+ danylo/magit-fontify-call-count))
+    (with-selected-window danylo/magit-fontify-current-window
+      (let ((buffer (current-buffer)))
+        (when (string-match danylo/magit-buffer-regexp (buffer-name buffer))
+          (save-excursion
+            (condition-case nil
+                (font-lock-fontify-region (window-start) (window-end))
+              (error nil))))))))
+(defun danylo/magit-fontify-reset (frame)
+  (unless (minibuffer-window-active-p (selected-window))
+    (setq danylo/magit-fontify-call-count 0
+          danylo/magit-fontify-current-window (selected-window))))
+(defvar danylo/magit-fontify-timer
+  (run-with-timer
+   danylo/magit-fontify-time-interval
+   danylo/magit-fontify-time-interval
+   #'danylo/magit-fontify)
+  "Periodic timer to fontify desired magit buffers")
+(add-hook 'window-buffer-change-functions #'danylo/magit-fontify-reset)
+;;;; (end patch)
 
 (use-package why-this
   ;; https://codeberg.org/akib/emacs-why-this
@@ -5274,3 +5330,4 @@ It is a fallback for when which-func-functions and `add-log-current-defun' retur
   ;; Local non-version-controlled init file.
   :load-path danylo/emacs-custom-lisp-dir
   :if (locate-library "init_local.el"))
+(put 'list-timers 'disabled nil)

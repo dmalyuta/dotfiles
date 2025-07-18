@@ -9,6 +9,12 @@ if [[ "$TERM" != "dumb" ]]; then
     eval "$(oh-my-posh init bash --config ~/.blue-owl-custom.omp.json)"
 fi
 
+##### Fuzzy search.
+
+export FZF_DEFAULT_OPTS="--multi --height=50% --preview 'echo {} |
+sed \"s/ @@ /\\n/g\" | bat --color=always --style=numbers -l sh -'
+--preview-window=up,5,wrap"
+
 ################################################################################
 # Emacs.
 ################################################################################

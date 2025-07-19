@@ -477,9 +477,7 @@ Remote files are ommitted."
 ;; Jit font lock settings. The function `jit-lock-function' has a big effect on
 ;; performance, as I perceived especially in the fontification of narrowed
 ;; buffers (such as via `narrow-to-defun').
-(setq jit-lock-defer-time (/ 1.0 30.0)
-      jit-lock-stealth-time 0.1
-      jit-lock-chunk-size 1500)
+(setq jit-lock-defer-time (/ 1.0 30.0))
 
 ;;;; (start patch) Fontify any buffer on load.
 (defcustom danylo/buffers-to-skip-auto-fontify
@@ -2895,6 +2893,58 @@ in the following cases:
 
 (require 'indent-bars)
 
+;; Define a column marker that will serve to indicate the fill column on lines
+;; that go beyond it. Otherwise, the fill column ruler would be absent on those
+;; lines.
+;; (defvar fill-column-indicator-face-for-marker 'fill-column-indicator
+;;   "Face used for marking the fill column, where there is actual text.")
+;; (column-marker-create column-marker-fill fill-column-indicator-face-for-marker)
+(defvar danylo/fill-column-marker nil
+  "Variable storing the column marker.")
+(defun danylo/fill-column-marker (show)
+  "Marker that indicates the fill column on lines with text that exceeds
+it. If SHOW is nil, remove the marker."
+  ;; Remove the marker.
+  (when danylo/fill-column-marker
+    (font-lock-remove-keywords nil danylo/fill-column-marker)
+    (setq danylo/fill-column-marker nil))
+  ;; Show the marker, if requested.
+  (when (and show fill-column)
+    (setq
+     danylo/fill-column-marker
+     ;; See `font-lock-keywords' for documentation of how below is structured.
+     '((
+        ;; MATCHER
+        (lambda (end)
+          (let ((start (point))
+                (col (1+ fill-column)))
+            (when (> end (point-max)) (setq end (point-max)))
+            ;; Try to keep `move-to-column' from going backward, though it
+            ;; still can.
+            (unless (< (current-column) col) (forward-line 1))
+            ;; Again, don't go backward.  Try to move to correct column.
+            (when (< (current-column) col) (move-to-column col))
+            ;; If not at target column, try to move to it.
+            (while (and (< (current-column) col)
+                        (< (point) end)
+                        (= 0 (+ (forward-line 1) (current-column)))) ; Should be bol.
+              (move-to-column col))
+            ;; If at target column, not past end, and not prior to start, then
+            ;; set match data and return t.  Otherwise go to start and return
+            ;; nil.
+            (if (and (= col (current-column))
+                     (<= (point) end)
+                     (> (point) start))
+                (progn
+                  (set-match-data (list (1- (point)) (point)))
+                  t) ; Return t.
+              (goto-char start)
+              nil)))
+        ;; MATCH-HIGHLIGHT
+        (0 'fill-column-indicator nil t)
+        )))
+    (font-lock-add-keywords nil danylo/fill-column-marker)))
+
 ;; Display the fill indicator.
 (require 'display-fill-column-indicator)
 (defun danylo/update-fill-column-indicator (&rest _)
@@ -2902,14 +2952,17 @@ in the following cases:
 displays as a single thin vertical line. Inspired by
 https://emacs.stackexchange.com/a/81307 but makes sure that the vertical
 line is not repeated horizontally at certain text zoom levels."
-  (when display-fill-column-indicator-mode
-    (let* ((char-width-pixels (frame-char-width))
-           (rot (indent-bars--stipple-rot (selected-window) char-width-pixels)))
-      (set-face-attribute 'fill-column-indicator nil
-                          :background 'unspecified
-                          :foreground `,danylo/light-gray
-                          :stipple (indent-bars--stipple
-                                    char-width-pixels 1 rot nil 0.1 0 "." 0))))
+  (if display-fill-column-indicator-mode
+      (progn
+        (let* ((char-width-pixels (frame-char-width))
+               (rot (indent-bars--stipple-rot (selected-window) char-width-pixels)))
+          (set-face-attribute 'fill-column-indicator nil
+                              :background 'unspecified
+                              :foreground `,danylo/light-gray
+                              :stipple (indent-bars--stipple
+                                        char-width-pixels 1 rot nil 0.1 0 "." 0)))
+        (danylo/fill-column-marker t))
+    (danylo/fill-column-marker nil))
   )
 (defun danylo/init-fill-indicator-update ()
   (when (display-graphic-p)
@@ -2932,8 +2985,10 @@ line is not repeated horizontally at certain text zoom levels."
             (when (cl-loop
                    for parent-mode in '(prog-mode text-mode)
                    thereis (derived-mode-p parent-mode))
-              (display-fill-column-indicator-mode 1)
-              (danylo/update-fill-column-indicator))))
+              (display-fill-column-indicator-mode 1))))
+(add-hook 'display-fill-column-indicator-mode-hook
+          (lambda ()
+            (danylo/update-fill-column-indicator)))
 
 ;;; Stefan Monnier <foo at acm.org>. It is the opposite of fill-paragraph
 ;;; https://www.emacswiki.org/emacs/UnfillParagraph
@@ -3059,7 +3114,7 @@ otherwise."
   (dtrt-indent-global-mode))
 
 (defun danylo/set-c-indent ()
-  "Set the indent offset for C/C++ in treesitter."
+  "Set the indent offset fopr C/C++ in treesitter."
   (interactive)
   (setq c-ts-mode-indent-offset
         (string-to-number (read-string "Set C-language indent to: "))))
@@ -4154,30 +4209,37 @@ visible buffers changes.")
   "Regexp to match magit buffers that we want to fontify.")
 (defvar danylo/magit-fontify-call-count 0
   "Counter from 0 to `danylo/magit-fontify-max-call-count'.")
+(defvar danylo/magit-fontify-timer nil
+  "Periodic timer to fontify desired magit buffers")
 (defun danylo/magit-fontify ()
   "Find magit buffers that we want to fontify, and fontify them."
-  (when (and danylo/magit-fontify-current-window
-             (< danylo/magit-fontify-call-count
-                danylo/magit-fontify-max-call-count))
-    (setq danylo/magit-fontify-call-count
-          (1+ danylo/magit-fontify-call-count))
-    (with-selected-window danylo/magit-fontify-current-window
-      (let ((buffer (current-buffer)))
-        (when (string-match danylo/magit-buffer-regexp (buffer-name buffer))
-          (save-excursion
-            (condition-case nil
-                (font-lock-fontify-region (window-start) (window-end))
-              (error nil))))))))
+  (if (and danylo/magit-fontify-current-window
+           (< danylo/magit-fontify-call-count
+              danylo/magit-fontify-max-call-count))
+      (progn
+        (setq danylo/magit-fontify-call-count
+              (1+ danylo/magit-fontify-call-count))
+        (with-selected-window danylo/magit-fontify-current-window
+          (let ((buffer (current-buffer)))
+            (when (string-match danylo/magit-buffer-regexp (buffer-name buffer))
+              (save-excursion
+                (condition-case nil
+                    (font-lock-fontify-region (window-start) (window-end))
+                  (error nil)))))))
+    ;; Cancel the timer.
+    (cancel-timer danylo/magit-fontify-timer)))
 (defun danylo/magit-fontify-reset (frame)
   (unless (minibuffer-window-active-p (selected-window))
     (setq danylo/magit-fontify-call-count 0
-          danylo/magit-fontify-current-window (selected-window))))
-(defvar danylo/magit-fontify-timer
-  (run-with-timer
-   danylo/magit-fontify-time-interval
-   danylo/magit-fontify-time-interval
-   #'danylo/magit-fontify)
-  "Periodic timer to fontify desired magit buffers")
+          danylo/magit-fontify-current-window (selected-window))
+    ;; Start the repeating timer that fontifies the window.
+    (when danylo/magit-fontify-timer
+      (cancel-timer danylo/magit-fontify-timer))
+    (setq danylo/magit-fontify-timer
+          (run-with-timer
+           danylo/magit-fontify-time-interval
+           danylo/magit-fontify-time-interval
+           #'danylo/magit-fontify))))
 (add-hook 'window-buffer-change-functions #'danylo/magit-fontify-reset)
 ;;;; (end patch)
 

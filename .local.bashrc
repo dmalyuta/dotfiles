@@ -13,7 +13,7 @@ fi
 
 export FZF_DEFAULT_OPTS="--multi --height=50% --preview 'echo {} |
 sed \"s/ @@ /\\n/g\" | bat --color=always --style=numbers -l sh -'
---preview-window=up,5,wrap"
+--preview-window=bottom,5,wrap"
 
 ################################################################################
 # Emacs.

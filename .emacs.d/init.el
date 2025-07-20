@@ -1002,7 +1002,11 @@ not have to update when the cursor is moving quickly."
 ;;;; Working with buffers
 
 ;; Update buffers when files on disk change. Do not do this for remote files.
-(setq auto-revert-verbose nil)
+(require 'autorevert)
+(setq auto-revert-verbose nil
+      ;; Don't poll for file changes when file system notifications are
+      ;; available.
+      auto-revert-avoid-polling auto-revert-use-notify)
 (defun danylo/auto-revert-file-not-remote ()
   "Turn on auto-revert-mode for file-visiting buffers of local files."
   (if (and buffer-file-name
@@ -1917,9 +1921,8 @@ active. Basically, any non-file-visiting buffer."
 (defun my/fix-hl-line-for-solaire-mode ()
   "Ensure hl-line has a visible background in solaire-mode buffers."
   (when (and (bound-and-true-p solaire-mode) buffer-file-name)
-    (let ((bg (face-background 'default)))
-      (set-face-background
-       'solaire-hl-line-face `,danylo/dark-gray (selected-frame)))))
+    (set-face-background
+     'solaire-hl-line-face `,danylo/dark-gray (selected-frame))))
 (add-hook 'solaire-mode-hook #'my/fix-hl-line-for-solaire-mode)
 (add-hook 'doom-load-theme-hook #'my/fix-hl-line-for-solaire-mode)
 ;;;; (end patch)
@@ -2896,12 +2899,12 @@ in the following cases:
 ;; Define a column marker that will serve to indicate the fill column on lines
 ;; that go beyond it. Otherwise, the fill column ruler would be absent on those
 ;; lines.
-;; (defvar fill-column-indicator-face-for-marker 'fill-column-indicator
-;;   "Face used for marking the fill column, where there is actual text.")
-;; (column-marker-create column-marker-fill fill-column-indicator-face-for-marker)
-(defvar danylo/fill-column-marker nil
+(defvar-local danylo/fill-column-marker nil
   "Variable storing the column marker.")
-(defun danylo/fill-column-marker (show)
+;; (defface danylo/fill-column-whitespace-face
+;;   `((t (:background "red")))
+;;   "Face used for the danylo/turbo segment in the mode-line.")
+(defun danylo/fill-column-marker-create (show)
   "Marker that indicates the fill column on lines with text that exceeds
 it. If SHOW is nil, remove the marker."
   ;; Remove the marker.
@@ -2910,40 +2913,46 @@ it. If SHOW is nil, remove the marker."
     (setq danylo/fill-column-marker nil))
   ;; Show the marker, if requested.
   (when (and show fill-column)
+    ;; The matcher finds the next position where the line exceeds fill-column
+    ;; and the character at the threshold is a blank character.
     (setq
-     danylo/fill-column-marker
-     ;; See `font-lock-keywords' for documentation of how below is structured.
-     '((
-        ;; MATCHER
-        (lambda (end)
-          (let ((start (point))
-                (col (1+ fill-column)))
-            (when (> end (point-max)) (setq end (point-max)))
-            ;; Try to keep `move-to-column' from going backward, though it
-            ;; still can.
-            (unless (< (current-column) col) (forward-line 1))
-            ;; Again, don't go backward.  Try to move to correct column.
-            (when (< (current-column) col) (move-to-column col))
-            ;; If not at target column, try to move to it.
-            (while (and (< (current-column) col)
-                        (< (point) end)
-                        (= 0 (+ (forward-line 1) (current-column)))) ; Should be bol.
-              (move-to-column col))
-            ;; If at target column, not past end, and not prior to start, then
-            ;; set match data and return t.  Otherwise go to start and return
-            ;; nil.
-            (if (and (= col (current-column))
-                     (<= (point) end)
-                     (> (point) start))
-                (progn
-                  (set-match-data (list (1- (point)) (point)))
-                  t) ; Return t.
-              (goto-char start)
-              nil)))
-        ;; MATCH-HIGHLIGHT
-        (0 'fill-column-indicator nil t)
-        )))
-    (font-lock-add-keywords nil danylo/fill-column-marker)))
+     matcher
+     (lambda (end)
+       (let ((found nil)
+             (col fill-column))
+         (while (and (not found) (< (point) end))
+           (let ((bol (point))
+                 (eol (line-end-position)))
+             (when (> (- eol bol) col)
+               (let ((char (char-after (+ bol col))))
+                 ;; Match only blank characters.
+                 (when (and char (memq char '(?\s ?\t)))
+                   (goto-char (+ bol col))
+                   (set-match-data (list (point) (1+ (point))))
+                   (font-lock-ensure bol eol)
+                   (setq found t))))
+             (forward-line 1)))
+         found)
+       ))
+    ;; See `font-lock-keywords' for documentation of how below is structured.
+    (setq danylo/fill-column-marker
+          (if (display-graphic-p)
+              `((,matcher (0 'fill-column-indicator prepend t)))
+            `((,matcher
+               (0 (progn
+                    (put-text-property
+                     (match-beginning 0)
+                     (match-end 0)
+                     'display (format "%c" display-fill-column-indicator-character))
+                    (put-text-property
+                     (match-beginning 0)
+                     (match-end 0)
+                     'face 'fill-column-indicator)) nil)))))
+    (font-lock-add-keywords nil danylo/fill-column-marker)
+    ;; Make sure that the whole buffer is fontified, so that no lines are
+    ;; lazily "skipped".
+    (font-lock-flush)
+    ))
 
 ;; Display the fill indicator.
 (require 'display-fill-column-indicator)
@@ -2954,6 +2963,7 @@ https://emacs.stackexchange.com/a/81307 but makes sure that the vertical
 line is not repeated horizontally at certain text zoom levels."
   (if display-fill-column-indicator-mode
       (progn
+        (add-to-list 'font-lock-extra-managed-props 'display)
         (let* ((char-width-pixels (frame-char-width))
                (rot (indent-bars--stipple-rot (selected-window) char-width-pixels)))
           (set-face-attribute 'fill-column-indicator nil
@@ -2961,22 +2971,21 @@ line is not repeated horizontally at certain text zoom levels."
                               :foreground `,danylo/light-gray
                               :stipple (indent-bars--stipple
                                         char-width-pixels 1 rot nil 0.1 0 "." 0)))
-        (danylo/fill-column-marker t))
-    (danylo/fill-column-marker nil))
+        (danylo/fill-column-marker-create t))
+    (danylo/fill-column-marker-create nil))
   )
 (defun danylo/init-fill-indicator-update ()
   (when (display-graphic-p)
-    (progn
-      (setq-default display-fill-column-indicator-character ?\ )
-      (add-hook 'after-init-hook 'danylo/update-fill-column-indicator)
-      (advice-add 'set-fill-column
-                  :after #'danylo/update-fill-column-indicator)
-      (advice-add 'default-text-scale-decrease
-                  :after #'danylo/update-fill-column-indicator)
-      (advice-add 'default-text-scale-increase
-                  :after #'danylo/update-fill-column-indicator)
-      (advice-add 'danylo/reset-font-size
-                  :after #'danylo/update-fill-column-indicator))))
+    (setq-default display-fill-column-indicator-character ?\ ))
+  (add-hook 'after-init-hook 'danylo/update-fill-column-indicator)
+  (advice-add 'set-fill-column
+              :after #'danylo/update-fill-column-indicator)
+  (advice-add 'default-text-scale-decrease
+              :after #'danylo/update-fill-column-indicator)
+  (advice-add 'default-text-scale-increase
+              :after #'danylo/update-fill-column-indicator)
+  (advice-add 'danylo/reset-font-size
+              :after #'danylo/update-fill-column-indicator))
 (danylo/run-gui-conditional-code #'danylo/init-fill-indicator-update)
 
 ;; Activate fill indicator in programming and text major modes.

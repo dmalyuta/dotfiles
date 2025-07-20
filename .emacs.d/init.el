@@ -49,6 +49,10 @@ says whether this Emacs session is running as GUI (vs in a terminal)."
 (when is-osx
   (setenv "PATH" "/opt/homebrew/bin/:$PATH" t))
 
+;; Also us Alt as meta key in OSX.
+(when is-osx
+  (setq mac-option-modifier 'meta))
+
 ;; No garbage collection at startup
 (setq gc-cons-threshold most-positive-fixnum)
 

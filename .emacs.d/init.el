@@ -220,7 +220,7 @@ directory."
         tramp-default-method "ssh"
         tramp-archive-enabled nil
         tramp-default-remote-shell "/bin/sh"
-        tramp-use-ssh-controlmaster-options nil
+        tramp-use-connection-share t
         tramp-connection-local-default-shell-variables
         '((shell-file-name . "/bin/bash")
           (shell-command-switch . "-c"))
@@ -248,6 +248,19 @@ Remote files are ommitted."
   (and (recentf-keep-default-predicate file)
        (not (string-match vc-ignore-dir-regexp (file-name-directory file)))))
 (setq recentf-keep '(danylo/recentf-keep-default-predicate))
+;;;; (end patch)
+
+;;;; (start patch) Optimize doom-modeline for remote files.
+(defun danylo/doom-modeline-disable-in-remote ()
+  (when (file-remote-p default-directory)
+    (setq-local file-name-handler-alist
+                (cl-remove-if-not
+                 (lambda (x) (eq (cdr x) 'tramp-file-name-handler))
+                 file-name-handler-alist))
+    (setq-local doom-modeline-enable-word-count nil
+                doom-modeline-project-root nil
+                doom-modeline-buffer-file-name-style 'auto)))
+(add-hook 'find-file-hook #'danylo/doom-modeline-disable-in-remote)
 ;;;; (end patch)
 
 ;;; ..:: General helper functions ::..
@@ -1299,7 +1312,7 @@ Source: http://steve.yegge.googlepages.com/my-dot-emacs-file"
 (global-unset-key (kbd "M-g M-g"))
 
 ;;;; Improve performance of long lines.
-(global-so-long-mode 1)
+;; (global-so-long-mode 1)
 
 ;;;; No-op command for keys that we want to disable.
 
@@ -2575,12 +2588,6 @@ C-z... instead of C-u C-z C-u C-z C-u C-z...")
          (org-mode . filladapt-mode)
          (text-mode . filladapt-mode)))
 
-(use-package so-long
-  ;; https://www.emacswiki.org/emacs/SoLong
-  ;; Improve performance for long lines
-  :config
-  (global-so-long-mode 1))
-
 (use-package diff-hl
   ;; https://github.com/dgutov/diff-hl
   ;; Emacs package for highlighting uncommitted changes.
@@ -3124,7 +3131,8 @@ otherwise."
   :custom
   (dtrt-indent-verbosity 0)
   :config
-  (dtrt-indent-global-mode))
+  ;; (dtrt-indent-global-mode)
+  )
 
 (defun danylo/set-c-indent ()
   "Set the indent offset fopr C/C++ in treesitter."
@@ -3876,7 +3884,8 @@ argument: number-or-marker-p, nil'."
   ;; Project interaction library offering tools to operate on a project level
   :init (setq projectile-enable-caching 'persistent
               projectile-indexing-method 'hybrid
-              projectile-file-exists-remote-cache-expire nil)
+              projectile-file-exists-remote-cache-expire nil
+              projectile-auto-update-cache nil)
   :bind (:map projectile-mode-map
               ("C-c p" . projectile-command-map)
               ("C-c p s g" . danylo/helm-projectile-ag-grep)

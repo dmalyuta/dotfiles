@@ -265,21 +265,6 @@ Remote files are ommitted."
 (setq recentf-keep '(danylo/recentf-keep-default-predicate))
 ;;;; (end patch)
 
-;;;; (start patch) Optimize doom-modeline for remote files.
-(defun danylo/doom-modeline-disable-in-remote ()
-  (when (file-remote-p default-directory)
-    (setq-local file-name-handler-alist
-                (cl-remove-if-not
-                 (lambda (x) (eq (cdr x) 'tramp-file-name-handler))
-                 file-name-handler-alist))
-    (setq-local doom-modeline-enable-word-count nil
-                doom-modeline-project-root nil
-                doom-modeline-buffer-encoding nil
-                doom-modeline-lsp nil
-                doom-modeline-buffer-file-name-style 'buffer-name)))
-(add-hook 'find-file-hook #'danylo/doom-modeline-disable-in-remote)
-;;;; (end patch)
-
 ;;;; (start patch) Memoize TRAMP outputs.
 (defun memoize-remote (key cache orig-fn &rest args)
   "Memoize a value if the key is a remote path."
@@ -487,7 +472,6 @@ Remote files are ommitted."
     rainbow-delimiters-mode
     projectile-mode
     window-numbering-mode
-    doom-modeline-mode
     global-hl-todo-mode
     hl-todo-mode
     shell-dirtrack-mode
@@ -2168,123 +2152,68 @@ is automatically turned on while the line numbers are displayed."
       '((format-time-string (or display-time-format "%H:%M") now)))
 (display-time-mode)
 
-(use-package doom-modeline
-  ;; https://github.com/seagle0128/doom-modeline
-  ;; A fancy and fast mode-line inspired by minimalism design.
-  :init (setq doom-modeline-height 10
-              doom-modeline-bar-width 2
-              doom-modeline-major-mode-icon t
-              doom-modeline-icon t
-              doom-modeline-buffer-state-icon t
-              doom-modeline-buffer-file-name-style 'file-name-with-project
-              doom-modeline-buffer-encoding nil
-              inhibit-compacting-font-caches t
-              find-file-visit-truename t
-              doom-modeline-project-detection 'project
-              doom-modeline-enable-word-count nil
-              doom-modeline-time t)
-  :config
-  ;;;; Custom segment definitions
-  (doom-modeline-def-segment danylo/matches
-    "Show the number of active cursors in the buffer from `multiple-cursors'."
-    (let ((meta (concat (danylo/doom-modeline-multiple-cursors))))
-      meta))
-  (defface danylo/doom-modeline-turbo
-    `((t (:family
-          (all-the-icons-faicon-family)
-          :foreground ,danylo/green)))
-    "Face used for the danylo/turbo segment in the mode-line."
-    :group 'doom-modeline-faces)
-  (doom-modeline-def-segment danylo/turbo
-    "Displays if turbo mode is on (low latency editing)."
-    (if danylo/turbo-on
-        (propertize
-         (danylo/fa-icon "rocket")
-         'face (doom-modeline-face 'danylo/doom-modeline-turbo))
-      ""))
-  (defface danylo/doom-modeline-apheleia
-    '((t (:family
-          (all-the-icons-faicon-family)
-          :inherit doom-modeline-buffer-major-mode)))
-    "Face used for the danylo/apheleia segment in the mode-line."
-    :group 'doom-modeline-faces)
-  (doom-modeline-def-segment danylo/apheleia
-    "Displays if apheleia auto-formatting mode is on."
-    (if apheleia-mode
-        (propertize
-         "𝛼"
-         'face (doom-modeline-face 'danylo/doom-modeline-apheleia))
-      ""))
-  (doom-modeline-def-segment danylo/time
-    "Displays the current time."
-    (when (and doom-modeline-time
-               (bound-and-true-p display-time-mode)
-               (doom-modeline--segment-visible 'danylo/time)
-               )
+(use-package moody
+  ;; https://github.com/tarsius/moody
+  ;; Tabs and ribbons for the mode-line.
+  :init
+  (setq moody-mode-line-height (window-mode-line-height))
+  (setq
+   moody-mode-line-buffer-identification
+   '(:eval
+     (moody-tab
       (concat
-       (doom-modeline-spc)
-       (propertize
-        (danylo/fa-icon "clock-o")
-        'face (append `(:family ,(all-the-icons-faicon-family))
-                      (doom-modeline-face 'doom-modeline-time)))
-       (doom-modeline-spc)
-       (propertize display-time-string
-                   'face (doom-modeline-face 'doom-modeline-time))
-       (doom-modeline-spc))))
-  ;;;; Custom modeline definitions
-  ;; Default mode line
-  (doom-modeline-def-modeline 'main
-    '(bar window-number danylo/matches buffer-info remote-host buffer-position selection-info danylo/turbo)
-    '(input-method debug major-mode danylo/apheleia vcs process danylo/time))
-  ;; Helm mode line
-  (doom-modeline-def-modeline 'helm
-    '(bar window-number helm-buffer-id helm-number helm-follow helm-prefix-argument) '())
-  ;; Dashboard mode line
-  (doom-modeline-def-modeline 'dashboard
-    '(bar window-number window-number buffer-default-directory-simple) '())
-  ;; Magit
-  (doom-modeline-def-modeline 'vcs
-    '(bar window-number danylo/matches buffer-info buffer-position selection-info)
-    '(gnus github debug minor-modes buffer-encoding major-mode process))
-  ;; Messages and scratch buffer mode line
-  (doom-modeline-def-modeline 'danylo/bare-modeline
-    '(bar window-number window-number buffer-info-simple) '())
-  ;;;; Set modeline
-  (add-hook 'after-init-hook 'doom-modeline-mode)
-  (add-hook 'doom-modeline-mode-hook
-            (lambda ()
-              (let ((doom-modeline-on (bound-and-true-p doom-modeline-mode)))
-                (when doom-modeline-on (danylo/doom-modeline-set-special)))
-              (force-mode-line-update t)))
+       (nerd-icons-icon-for-buffer)
+       " "
+       (car (propertized-buffer-identification (format-mode-line "%b")))))
+     20 'down))
+  (setq-default
+   mode-line-format
+   '("%e" mode-line-front-space
+     (:propertize
+      (""
+       ;; mode-line-mule-info
+       mode-line-client
+       mode-line-modified
+       mode-line-remote
+       mode-line-window-dedicated)
+      display (min-width (6.0)))
+     mode-line-frame-identification
+     ;; (:eval (nerd-icons-icon-for-buffer))
+     (project-mode-line project-mode-line-format)
+     mode-line-buffer-identification
+     " %l:%c "
+     mode-line-position
+     " "
+     mode-line-percent-position
+     " "
+     smartrep-mode-line-string
+     mode-line-format-right-align
+     (vc-mode vc-mode)
+     ))
+  :config
+  (moody-replace-mode-line-front-space)
+  (moody-replace-mode-line-buffer-identification)
+  (moody-replace-vc-mode)
+  (set-face-attribute 'mode-line-active nil :box 'unspecified)
+  (set-face-attribute 'mode-line-inactive nil :box 'unspecified)
+  (setq x-underline-at-descent-line t)
   )
 
-(defun danylo/doom-modeline-set-special ()
-  "Set the doom modeline for special buffers."
-  (dolist (bname '("*Messages*"))
-    (if (buffer-live-p (get-buffer bname))
-        (with-current-buffer bname
-          (doom-modeline-set-modeline 'danylo/bare-modeline)))))
+(use-package mlscroll
+  ;; https://github.com/jdtsmith/mlscroll
+  ;; Lightweight scrollbar for the Emacs mode line.
+  :ensure t
+  :hook ((after-init-hook . (lambda ()
+                              (unless (daemonp) (mlscroll-mode 1))))
+         (server-after-make-frame . mlscroll-mode))
+  :custom
+  (mlscroll-shortfun-min-width 11) ; truncate which-func
+  (mlscroll-alter-percent-position 'replace)
+  (mlscroll-right-align nil)
+  )
 
-(defun danylo/doom-modeline-multiple-cursors ()
-  "Show the number of multiple cursors."
-  (cl-destructuring-bind (count . face)
-      (cond ((bound-and-true-p multiple-cursors-mode)
-             (cons (mc/num-cursors)
-                   (if (doom-modeline--active)
-                       'doom-modeline-panel
-                     'mode-line-inactive)))
-            ((bound-and-true-p evil-mc-cursor-list)
-             (cons (length evil-mc-cursor-list)
-                   (cond ((not (doom-modeline--active)) 'mode-line-inactive)
-                         (evil-mc-frozen 'doom-modeline-bar)
-                         ('doom-modeline-panel))))
-            ((cons nil nil)))
-    (when count
-      (concat (propertize " mc:" 'face face)
-              (propertize (format "%d " count) 'face face)))))
-
-;;;; (start patch) Patch so that doom-modeline maintains highlight focus on active buffer
-
+;;;; (start patch) Patch so that modeline maintains highlight focus on active
+;;;;               buffer
 (defun danylo/internal--after-save-selected-window (orig-fun &rest args)
   "Patch to remove select-window modification in ansi-term redisplay."
   (advice-remove 'select-window #'danylo/select-window)
@@ -2306,7 +2235,6 @@ when there is another buffer printing out information."
   (advice-remove 'internal--after-save-selected-window
                  #'danylo/internal--after-save-selected-window))
 (advice-add 'term-emulate-terminal :around #'danylo/term-emulate-terminal)
-
 ;;;; (end patch)
 
 (use-package danylo-common-font-lock
@@ -2381,18 +2309,6 @@ when there is another buffer printing out information."
     (ind-update-event-handler)))
 (advice-add 'pixel-scroll-precision :after #'danylo/update-indicators)
 ;;;; (end patch)
-
-(use-package mlscroll
-  ;; https://github.com/jdtsmith/mlscroll
-  ;; Lightweight scrollbar for the Emacs mode line.
-  :after doom-modeline
-  :ensure t
-  :hook ((doom-modeline-mode . (lambda ()
-                                 (unless (daemonp) (mlscroll-mode 1))))
-         (server-after-make-frame . mlscroll-mode))
-  :custom
-  (mlscroll-shortfun-min-width 11) ; truncate which-func
-  )
 
 ;;; ..:: Code editing ::..
 
@@ -3539,12 +3455,13 @@ Unlike `buf-move-*', the original window is removed."
                                          'face 'bufler-mode)))
           (buffer-name (buffer-name buffer))
           (buffer-icon (with-current-buffer buffer
-                         (doom-modeline--buffer-mode-icon)))
+                         (nerd-icons-icon-for-buffer)))
           (modified (when (and (buffer-file-name buffer)
                                (buffer-modified-p buffer))
                       (propertize bufler-column-name-modified-buffer-sigil
                                   'face 'font-lock-warning-face))))
-      (concat indentation mode-annotation buffer-icon buffer-name modified)))
+      (concat indentation ; mode-annotation
+              buffer-icon " " buffer-name modified)))
   (setq bufler-columns '("Name" "Size" "VC" "Path")))
 
 (use-package all-the-icons-ibuffer

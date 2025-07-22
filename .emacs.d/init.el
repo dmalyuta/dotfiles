@@ -2152,52 +2152,71 @@ is automatically turned on while the line numbers are displayed."
       '((format-time-string (or display-time-format "%H:%M") now)))
 (display-time-mode)
 
+(use-package mood-line
+  ;; https://git.tty.dog/hpet_dog/mood-line
+  ;; Minimal mode line configuration for Emacs, inspired by doom-modeline.
+  :custom
+  (mood-line-glyph-alist mood-line-glyphs-fira-code))
+
 (use-package moody
   ;; https://github.com/tarsius/moody
   ;; Tabs and ribbons for the mode-line.
-  :init
-  (setq moody-mode-line-height (window-mode-line-height))
-  (setq
-   moody-mode-line-buffer-identification
-   '(:eval
-     (moody-tab
-      (concat
-       (nerd-icons-icon-for-buffer)
-       " "
-       (car (propertized-buffer-identification (format-mode-line "%b")))))
-     20 'down))
-  (setq-default
-   mode-line-format
-   '("%e" mode-line-front-space
-     (:propertize
-      (""
-       ;; mode-line-mule-info
-       mode-line-client
-       mode-line-modified
-       mode-line-remote
-       mode-line-window-dedicated)
-      display (min-width (6.0)))
-     mode-line-frame-identification
-     ;; (:eval (nerd-icons-icon-for-buffer))
-     (project-mode-line project-mode-line-format)
-     mode-line-buffer-identification
-     " %l:%c "
-     mode-line-position
-     " "
-     mode-line-percent-position
-     " "
-     smartrep-mode-line-string
-     mode-line-format-right-align
-     (vc-mode vc-mode)
-     ))
+  :custom
+  (moody-mode-line-height (window-mode-line-height))
+  (x-underline-at-descent-line t)
   :config
   (moody-replace-mode-line-front-space)
   (moody-replace-mode-line-buffer-identification)
   (moody-replace-vc-mode)
   (set-face-attribute 'mode-line-active nil :box 'unspecified)
   (set-face-attribute 'mode-line-inactive nil :box 'unspecified)
-  (setq x-underline-at-descent-line t)
   )
+
+(defface danylo/doom-modeline-apheleia
+  '((t (:family
+        (all-the-icons-faicon-family)
+        :inherit default)))
+  "Face used for the danylo/apheleia segment in the mode-line."
+  :group 'doom-modeline-faces)
+
+;; Modeline format.
+(setq-default
+ mode-line-format
+ '(;; --------- Left side ---------
+   "%e"
+   mode-line-front-space
+   (:eval (or (mood-line-segment-buffer-status) " "))
+   ;; (:propertize
+   ;;  (""
+   ;;   ;; mode-line-mule-info
+   ;;   mode-line-client
+   ;;   mode-line-modified
+   ;;   mode-line-remote
+   ;;   mode-line-window-dedicated)
+   ;;  display (min-width (6.0)))
+   mode-line-frame-identification
+   ;; (:eval (nerd-icons-icon-for-buffer))
+   (project-mode-line project-mode-line-format)
+   (:eval
+    (moody-tab
+     (concat
+      (nerd-icons-icon-for-buffer)
+      " "
+      (car (propertized-buffer-identification (format-mode-line "%b"))))
+     20 'down))
+   " %l:%c "
+   mode-line-position
+   " "
+   mode-line-percent-position
+   " "
+   (:eval (mood-line-segment-multiple-cursors))
+   ;; --------- Right side ---------
+   mode-line-format-right-align
+   (:eval (if apheleia-mode "𝛼" " "))
+   (:eval (moody-tab (car mode-name) nil 'down))
+   (vc-mode vc-mode)
+   "  "
+   ))
 
 (use-package mlscroll
   ;; https://github.com/jdtsmith/mlscroll

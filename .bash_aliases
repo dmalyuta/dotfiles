@@ -6,12 +6,13 @@
 
 alias refresh='source ~/.bashrc'
 alias which_venv='pip -V'
-alias ll='ls -l'
+alias ll='ls -al'
 alias lsd='ll -d */'
 alias peek='tree -L 1'
 alias copy='DISPLAY=$DISPLAY xclip -sel clip'
 alias gitroot='cd $(git rev-parse --show-toplevel)'
 alias sleep='systemctl suspend'
+alias dotfiles='cd ~/Documents/dotfiles && ll'
 
 ################################################################################
 # Process management.

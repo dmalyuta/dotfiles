@@ -215,20 +215,35 @@ directory."
   ;; Performance advice:
   ;; - https://www.reddit.com/r/emacs/comments/1jatdse/im_trying_to_troubleshoot_extremely_slow_tramp/
   :init
-  (setq tramp-verbose 1
+  (setq tramp-verbose 3
         tramp-chunksize 2000
-        tramp-default-method "ssh"
+        tramp-default-method "rsync"
         tramp-archive-enabled nil
-        tramp-default-remote-shell "/bin/sh"
-        tramp-use-connection-share t
-        tramp-connection-local-default-shell-variables
-        '((shell-file-name . "/bin/bash")
-          (shell-command-switch . "-c"))
         tramp-backup-directory-alist nil
         tramp-auto-save-directory "~/.emacs.d/tramp-autosave"
-        tramp-copy-size-limit 10000
-        tramp-inline-compress-start-size 1000
-        tramp-completion-use-cache t)
+        enable-remote-dir-locals t
+        tramp-inhibit-errors-if-setting-file-attributes-fail t
+        projectile-file-exists-remote-cache-expire most-positive-fixnum)
+  ;;;;;;; Apply recommendations from
+  ;;;;;;; https://coredumped.dev/2025/06/18/making-tramp-go-brrrr./
+  (setq remote-file-name-inhibit-locks t
+        tramp-use-scp-direct-remote-copying t
+        remote-file-name-inhibit-auto-save-visited t)
+  (setq tramp-copy-size-limit (* 1024 1024) ;; 1MB
+        tramp-verbose 2)
+  ;; Enable direct async
+  (connection-local-set-profile-variables
+   'remote-direct-async-process
+   '((tramp-direct-async-process . t)))
+  (connection-local-set-profiles
+   '(:application tramp :protocol "scp")
+   'remote-direct-async-process)
+  (setq magit-tramp-pipe-stty-settings 'pty)
+  ;; Fix remote compile
+  (with-eval-after-load 'tramp
+    (with-eval-after-load 'compile
+      (remove-hook 'compilation-mode-hook
+                   #'tramp-compile-disable-ssh-controlmaster-options)))
   ;; Don't use version control on remote files (speeds up opening)
   (setq vc-ignore-dir-regexp
         (format "\\(%s\\)\\|\\(%s\\)"
@@ -259,9 +274,91 @@ Remote files are ommitted."
                  file-name-handler-alist))
     (setq-local doom-modeline-enable-word-count nil
                 doom-modeline-project-root nil
-                doom-modeline-buffer-file-name-style 'auto)))
+                doom-modeline-buffer-encoding nil
+                doom-modeline-lsp nil
+                doom-modeline-buffer-file-name-style 'buffer-name)))
 (add-hook 'find-file-hook #'danylo/doom-modeline-disable-in-remote)
 ;;;; (end patch)
+
+;;;; (start patch) Memoize TRAMP outputs.
+(defun memoize-remote (key cache orig-fn &rest args)
+  "Memoize a value if the key is a remote path."
+  (if (and key
+           (file-remote-p key))
+      (if-let ((current (assoc key (symbol-value cache))))
+          (cdr current)
+        (let ((current (apply orig-fn args)))
+          (set cache (cons (cons key current) (symbol-value cache)))
+          current))
+    (apply orig-fn args)))
+
+;; Memoize current project
+(defvar project-current-cache nil)
+(defun memoize-project-current (orig &optional prompt directory)
+  (memoize-remote (or directory
+                      project-current-directory-override
+                      default-directory)
+                  'project-current-cache orig prompt directory))
+(advice-add 'project-current :around #'memoize-project-current)
+
+;; Memoize magit top level
+(defvar magit-toplevel-cache nil)
+(defun memoize-magit-toplevel (orig &optional directory)
+  (memoize-remote (or directory default-directory)
+                  'magit-toplevel-cache orig directory))
+(advice-add 'magit-toplevel :around #'memoize-magit-toplevel)
+
+;; Memoize file attributes.
+(defvar file-readable-cache nil)
+(defvar file-exists-cache nil)
+(defvar file-symlink-cache nil)
+(defvar file-attributes-cache nil)
+(defun memoize-file-readable (orig &optional filename)
+  ;; (memoize-remote filename 'file-readable-cache orig filename)
+  t
+  )
+(defun memoize-file-exists (orig &optional filename)
+  (memoize-remote filename 'file-exists-cache orig filename))
+(defun memoize-file-symlink (orig &optional filename)
+  (memoize-remote filename 'file-symlink-cache orig filename))
+(defun memoize-file-attributes (orig &optional filename)
+  (memoize-remote filename 'file-attributes-cache orig filename))
+(advice-add 'tramp-sh-handle-file-readable-p :around #'memoize-file-readable)
+(advice-add 'tramp-sh-handle-file-exists-p :around #'memoize-file-exists)
+(advice-add 'tramp-sh-handle-file-symlink-p :around #'memoize-file-symlink)
+(advice-add 'tramp-sh-handle-file-attributes-p :around #'memoize-file-attributes)
+
+;; memoize vc-git-root
+(defvar vc-git-root-cache nil)
+(defun memoize-vc-git-root (orig file)
+  (let ((value (memoize-remote (file-name-directory file) 'vc-git-root-cache orig file)))
+    ;; sometimes vc-git-root returns nil even when there is a root there
+    (when (null (cdr (car vc-git-root-cache)))
+      (setq vc-git-root-cache (cdr vc-git-root-cache)))
+    value))
+(advice-add 'vc-git-root :around #'memoize-vc-git-root)
+
+(defun danylo/clear-tramp-caches ()
+  "Clear all caches for TRAMP."
+  (interactive)
+  (setq project-current-cache nil
+        magit-toplevel-cache nil
+        file-readable-cache nil
+        file-exists-cache nil
+        file-symlink-cache nil
+        file-attributes-cache nil
+        vc-git-root-cache nil
+        )
+  (danylo/print-in-minibuffer "Cleared TRAMP cache"))
+;;;; (end patch)
+
+(use-package clipetty
+  ;; https://github.com/spudlyo/clipetty
+  ;; Manipulate the system (clip)board with (e)macs from a (tty).
+  :ensure t
+  :hook (after-init . global-clipetty-mode)
+  :init
+  (setenv "SSH_TTY"))
 
 ;;; ..:: General helper functions ::..
 
@@ -499,7 +596,8 @@ Remote files are ommitted."
 ;;;; (start patch) Fontify any buffer on load.
 (defcustom danylo/buffers-to-skip-auto-fontify
   `(,(rx "*Bufler*")
-    ".*magit.*")
+    ".*magit.*"
+    ".*Profiler-Report.*")
   "List of buffers to not auto-fontify on opening.")
 (defun danylo/fontify (&rest args)
   "Fontify visible part of the buffer."
@@ -1035,6 +1133,36 @@ not have to update when the cursor is moving quickly."
   "Revert buffer without confirmation."
   (interactive)
   (revert-buffer :ignore-auto :noconfirm))
+
+(defun danylo/revert-all-buffers ()
+  "Refreshes all buffers if they have been modified outside of this Emacs
+session."
+  (interactive)
+  (let ((externally-modified-buffers '()))
+    (dolist (buffer (buffer-list))
+      (let ((file-name (buffer-file-name buffer)))
+        (when (and file-name
+                   (file-exists-p file-name)
+                   (not (verify-visited-file-modtime buffer)))
+          (add-to-list 'externally-modified-buffers buffer))))
+    (let ((iter 0)
+          (num-buffers (length externally-modified-buffers)))
+      (while (< iter num-buffers)
+        (let ((buffer (nth iter externally-modified-buffers)))
+          (danylo/print-in-minibuffer
+           (format "%s Refreshing [%d/%d, %d%%]: %s"
+                   (danylo/nerd-fa-icon "nf-fa-refresh")
+                   (1+ iter)
+                   num-buffers
+                   (/ (* (1+ iter) 100) num-buffers)
+                   (buffer-file-name buffer)))
+          (set-buffer buffer)
+          (revert-buffer t t t))
+        (setq iter (1+ iter)))
+      (if (> num-buffers 0)
+          (danylo/print-in-minibuffer
+           (format "Refreshed %d buffers" num-buffers))
+        (danylo/print-in-minibuffer "No buffers require refreshing")))))
 
 (general-define-key
  "C-c b r" 'danylo/revert-buffer-no-confirm
@@ -1663,8 +1791,7 @@ Patched to use original **window** instead of buffer."
         helm-follow-mode-persistent nil
         ))
 
-;;;; (start patch) Disable sorting of `helm-find-files` candidates if using
-;;;;               TRAMP.
+;;;; (start patch) Disable sorting of `helm-find-files` candidates under TRAMP.
 (defun danylo/helm-ff-maybe-disable-sorting (orig-fun &rest args)
   "Disable sorting of `helm-find-files` candidates if using TRAMP."
   (if (file-remote-p helm-ff-default-directory)
@@ -3681,11 +3808,11 @@ argument: number-or-marker-p, nil'."
 
 (use-package lsp-mode
   :ensure t
-  :hook ((lsp-mode . lsp-diagnostics-mode)
+  :hook ((c-mode-common . danylo/activate-lsp)
+         (python-ts-mode . danylo/activate-lsp)
+         (astro-mode . danylo/activate-lsp)
+         (lsp-mode . lsp-diagnostics-mode)
          (lsp-mode . lsp-completion-mode)
-         (c-mode-common . lsp)
-         (python-ts-mode . lsp)
-         (astro-mode . lsp)
          (lsp-completion-mode
           . (lambda ()
               ;; Ensure LSP backend retains the snippet completion.
@@ -3786,12 +3913,26 @@ argument: number-or-marker-p, nil'."
   (lsp-ui-imenu-window-fix-width t)
   )
 
+(defun toggle-lsp ()
+  "Toggle LSP activation."
+  (interactive)
+  (if lsp-managed-mode
+      (lsp-managed-mode -1)
+    (lsp)))
+
+(defun danylo/activate-lsp ()
+  "Activate LSP by default in non-remote buffers, and not in remote
+buffers."
+  (when (not (file-remote-p default-directory))
+    (lsp)))
+
 ;;;; (start patch)
 (defvar-local danylo/indent-bars-display-on-blank-lines-prev nil
   "Value of indent-bars-display-on-blank-lines the last time that
 `danylo/indent-bars-watcher' ran.")
 (defun danylo/indent-bars-watcher (symbol newval operation where)
-  (when (and indent-bars-mode lsp-ui-mode)
+  (when (and indent-bars-mode
+             (memq 'lsp-ui-mode minor-mode-list))
     (setq indent-bars-display-on-blank-lines (equal newval nil))
     (unless (equal indent-bars-display-on-blank-lines
                    danylo/indent-bars-display-on-blank-lines-prev)
@@ -3885,7 +4026,8 @@ argument: number-or-marker-p, nil'."
   :init (setq projectile-enable-caching 'persistent
               projectile-indexing-method 'hybrid
               projectile-file-exists-remote-cache-expire nil
-              projectile-auto-update-cache nil)
+              projectile-auto-update-cache nil
+              projectile-dynamic-mode-line nil)
   :bind (:map projectile-mode-map
               ("C-c p" . projectile-command-map)
               ("C-c p s g" . danylo/helm-projectile-ag-grep)
@@ -3935,13 +4077,14 @@ _q_: Quit"
 
 (defhydra hydra-common-actions (:hint none)
   "
-File operations                  Session config
----------------                  --------------
-_A_: Copy absolute path            _b_: Byte-compile files
-_a_: Show absolute path            _l_: Load last saved state
-_c_: Copy buffer to clipboard      _s_: Save state
+^^File operations                ^^Session config              ^^Coding                     ^^Remote
+^^---------------------------    ^^------------------------    ^^-----------------------    ^^--------------
+_A_: Copy absolute path          _b_: Byte-compile files       _L_: toggle LSP              _$_: clear cache
+_a_: Show absolute path          _l_: Load last saved state    _TAB_: detect indentation
+_c_: Copy buffer to clipboard    _s_: Save state               _p_: toggle Projectile
 _d_: Diff with saved file
 _n_: Copy file name
+_R_: Refresh changed buffers
 
 Essential commands
 ------------------
@@ -3956,9 +4099,14 @@ _q_: Quit"
   ("n" (lambda ()
          (interactive)
          (kill-new (buffer-name))) :exit t)
+  ("R" danylo/revert-all-buffers :exit t)
   ("b" hydra-byte-compile/body :exit t)
   ("l" desktop-read :exit t)
   ("s" danylo/desktop-save :exit t)
+  ("L" toggle-lsp :exit t)
+  ("TAB" dtrt-indent-mode :exit t)
+  ("p" projectile-mode :exit t)
+  ("$" danylo/clear-tramp-caches :exit t)
   ("q" nil "cancel"))
 
 (general-define-key
@@ -4067,16 +4215,18 @@ _q_: Quit"
 (use-package math-preview
   ;; https://gitlab.com/matsievskiysv/math-preview/
   ;; Emacs preview math inline
-  :bind (("C-c m a" . math-preview-all)
-         ("C-c m c" . math-preview-clear-all)
-         ("C-c m ." . math-preview-at-point)
-         ("C-c m r" . math-preview-region))
   :hook ((org-mode . danylo/math-preview-init)
          (markdown-mode . danylo/math-preview-init))
   :config
   (set-face-attribute 'math-preview-face nil
-                      :foreground `,danylo/yellow)
-  )
+                      :foreground `,danylo/yellow))
+
+(general-define-key
+ :keymaps '(org-mode-map markdown-mode-map)
+ "C-c m a" 'math-preview-all
+ "C-c m c" 'math-preview-clear-all
+ "C-c m ." 'math-preview-at-point
+ "C-c m r" 'math-preview-region)
 
 (with-eval-after-load "org"
   (define-key org-mode-map [remap fill-paragraph] nil)
@@ -4170,12 +4320,13 @@ fill after inserting the link."
   ;; Useful commands:
   ;;   j : in diff view, jump to diff for file at cursor and back up.
   :bind (("C-c v s" . magit-status)
+         ("C-c v g" . magit-dispatch)
+         ("C-c v f" . magit-file-dispatch)
          ("C-c v r" . magit-toggle-verbose-refresh)
          ("C-c v D" . danylo/magit-diff-range)
          ("C-c v l" . magit-log)
          ("C-c v t" . magit-log-current)
          ("C-c v d" . magit-diff-buffer-file)
-         ("C-c v f" . magit-file-dispatch)
          :map magit-file-section-map
          ("RET" . magit-diff-visit-file-other-window)
          ("C-RET" . magit-diff-visit-file)
@@ -4194,6 +4345,7 @@ fill after inserting the link."
   (remove-hook 'magit-status-sections-hook 'magit-insert-unpulled-from-pushremote)
   (remove-hook 'magit-status-sections-hook 'magit-insert-unpulled-from-upstream)
   (remove-hook 'magit-status-sections-hook 'magit-insert-unpushed-to-upstream-or-recent)
+  (remove-hook 'magit-status-sections-hook 'magit-insert-untracked-files)
 
   (defun danylo/magit-diff-range ()
     "Custom function for diffing a commit range."
@@ -4595,11 +4747,11 @@ _q_: Quit"
               ;; lsp-enable-file-watchers nil
               )
   :custom (lsp-pyright-langserver-command "pyright") ;; or basedpyright
-  :hook (python-ts-mode . (lambda ()
-                            (require 'lsp-pyright)
-                            (lsp) ; or lsp-deferred
-                            (setq lsp-signature-auto-activate nil
-                                  lsp-signature-render-documentation nil))))
+  :hook (python-ts-mode
+         . (lambda ()
+             (require 'lsp-pyright)
+             (setq-local lsp-signature-auto-activate nil
+                         lsp-signature-render-documentation nil))))
 
 ;;;; Imenu setup
 
@@ -4977,6 +5129,9 @@ Calls itself until the docstring has completed printing."
   "Insert inline or display math delimiters.")
 
 ;;; ..:: Lisp ::..
+
+;; Source directory of Emacs core C runtime code.
+(setq source-directory "~/Documents/software/emacs/src")
 
 (add-to-list 'auto-mode-alist '("\\.el" . emacs-lisp-mode))
 (add-to-list 'auto-mode-alist '("\\.el.gz" . emacs-lisp-mode))

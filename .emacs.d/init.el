@@ -2366,10 +2366,12 @@ otherwise use the current value.")
             (ml-remote-host-name
              (when default-directory
                (when-let* ((host (file-remote-p default-directory 'host)))
-                 (propertize
-                  (concat "@" host)
-                  'face (when (moody-window-active-p)
-                          `(:foreground ,danylo/green))))))
+                 (moody-ribbon
+                  (propertize
+                   (concat "@" host)
+                   'face (when (moody-window-active-p)
+                           `(:foreground ,danylo/green)))
+                  nil 'down))))
             (ml-buffer-file-name
              (moody-tab
               (car (propertized-buffer-identification
@@ -2406,8 +2408,8 @@ otherwise use the current value.")
                                " "
                                display-time-string)
                        'face (if (moody-window-active-p)
-                                 'mode-line
-                               'mode-line-inactive))))
+                                 'solaire-mode-line-active-face
+                               'solaire-mode-line-inactive-face))))
         (let* ((ml-left `(,ml-current-window
                           ,ml-window-number
                           ,ml-space
@@ -3281,6 +3283,8 @@ line is not repeated horizontally at certain text zoom levels."
   ;; https://github.com/radian-software/apheleia
   ;; Run code formatter on buffer contents without moving point, using RCS
   ;; patches and dynamic programming.
+  :custom
+  (apheleia-remote-algorithm 'remote)
   :config
   (apheleia-global-mode +1)
   (setf (alist-get 'black apheleia-formatters)
@@ -3886,9 +3890,9 @@ argument: number-or-marker-p, nil'."
 
 (use-package lsp-mode
   :ensure t
-  :hook ((c-mode-common . danylo/activate-lsp)
-         (python-ts-mode . danylo/activate-lsp)
-         (astro-mode . danylo/activate-lsp)
+  :hook ((c-mode-common . lsp)
+         (python-ts-mode . lsp)
+         (astro-mode . lsp)
          (lsp-mode . lsp-diagnostics-mode)
          (lsp-mode . lsp-completion-mode)
          (lsp-completion-mode
@@ -3996,12 +4000,6 @@ argument: number-or-marker-p, nil'."
   (interactive)
   (if lsp-managed-mode
       (lsp-managed-mode -1)
-    (lsp)))
-
-(defun danylo/activate-lsp ()
-  "Activate LSP by default in non-remote buffers, and not in remote
-buffers."
-  (when (not (file-remote-p default-directory))
     (lsp)))
 
 ;;;; (start patch)

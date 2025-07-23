@@ -180,14 +180,6 @@ in a while."
   "Face for export statements in Imenu."
   :group 'danylo)
 
-(defface danylo/scrollbar-face
-  `((t (:foreground
-        ,(face-attribute 'region :background nil t)
-        :background
-        ,(face-attribute 'region :background nil t))))
-  "Face for the scrollbar."
-  :group 'danylo)
-
 ;;;; Fringe objects
 
 ;; Flycheck fringe indicator, from Spacemacs

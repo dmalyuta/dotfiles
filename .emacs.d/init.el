@@ -579,7 +579,7 @@ Remote files are ommitted."
 
 ;;;; (start patch) Fontify any buffer on load.
 (defcustom danylo/buffers-to-skip-auto-fontify
-  `(,(rx "*Bufler*")
+  '("\\*.*\\*"
     ".*magit.*"
     ".*Profiler-Report.*")
   "List of buffers to not auto-fontify on opening.")
@@ -1747,22 +1747,20 @@ Patched to use original **window** instead of buffer."
           ("^\\(::\\)\s*$" . danylo/imenu-section-face)
           ("^\\(pkg\\)\s*$" . danylo/imenu-import-face))
         helm-imenu-delimiter " ")
-  (add-hook 'helm-find-files-after-init-hook
-            (lambda ()
-              (set-face-attribute 'helm-ff-directory nil
-                                  :foreground `,danylo/yellow
-                                  :weight 'bold
-                                  :extend nil)
-              (set-face-attribute 'helm-candidate-number nil
-                                  :foreground `,danylo/black
-                                  :background `,danylo/yellow)
-              (set-face-attribute 'helm-selection nil
-                                  :extend nil)
-              (set-face-attribute 'helm-match nil
-                                  :background `,danylo/orange
-                                  :foreground `,danylo/black
-                                  :weight 'normal
-                                  :inherit 'default)))
+  (set-face-attribute 'helm-ff-directory nil
+                      :foreground `,danylo/yellow
+                      :weight 'bold
+                      :extend nil)
+  (set-face-attribute 'helm-candidate-number nil
+                      :foreground `,danylo/black
+                      :background `,danylo/yellow)
+  (set-face-attribute 'helm-selection nil
+                      :extend nil)
+  (set-face-attribute 'helm-match nil
+                      :background `,danylo/orange
+                      :foreground `,danylo/black
+                      :weight 'normal
+                      :inherit 'default)
   :config
   (helm-mode 1)
   (setq helm-boring-buffer-regexp-list
@@ -2152,110 +2150,6 @@ is automatically turned on while the line numbers are displayed."
       '((format-time-string (or display-time-format "%H:%M") now)))
 (display-time-mode)
 
-(use-package mood-line
-  ;; https://git.tty.dog/hpet_dog/mood-line
-  ;; Minimal mode line configuration for Emacs, inspired by doom-modeline.
-  :custom
-  (mood-line-glyph-alist mood-line-glyphs-fira-code))
-
-(use-package moody
-  ;; https://github.com/tarsius/moody
-  ;; Tabs and ribbons for the mode-line.
-  :custom
-  (moody-mode-line-height (window-mode-line-height))
-  (x-underline-at-descent-line t)
-  :config
-  (moody-replace-mode-line-front-space)
-  (moody-replace-mode-line-buffer-identification)
-  (moody-replace-vc-mode)
-  (set-face-attribute 'mode-line-active nil :box 'unspecified)
-  (set-face-attribute 'mode-line-inactive nil :box 'unspecified)
-  )
-
-(defface danylo/doom-modeline-apheleia
-  '((t (:family
-        (all-the-icons-faicon-family)
-        :inherit default)))
-  "Face used for the danylo/apheleia segment in the mode-line."
-  :group 'doom-modeline-faces)
-
-;; Modeline format.
-(setq-default
- mode-line-format
- '(;; --------- Left side ---------
-   "%e"
-   mode-line-front-space
-   (:eval (or (mood-line-segment-buffer-status) " "))
-   ;; (:propertize
-   ;;  (""
-   ;;   ;; mode-line-mule-info
-   ;;   mode-line-client
-   ;;   mode-line-modified
-   ;;   mode-line-remote
-   ;;   mode-line-window-dedicated)
-   ;;  display (min-width (6.0)))
-   mode-line-frame-identification
-   ;; (:eval (nerd-icons-icon-for-buffer))
-   (project-mode-line project-mode-line-format)
-   (:eval
-    (moody-tab
-     (concat
-      (nerd-icons-icon-for-buffer)
-      " "
-      (car (propertized-buffer-identification (format-mode-line "%b"))))
-     20 'down))
-   " %l:%c "
-   mode-line-position
-   " "
-   mode-line-percent-position
-   " "
-   (:eval (mood-line-segment-multiple-cursors))
-   ;; --------- Right side ---------
-   mode-line-format-right-align
-   (:eval (if apheleia-mode "𝛼" " "))
-   (:eval (moody-tab (car mode-name) nil 'down))
-   (vc-mode vc-mode)
-   "  "
-   ))
-
-(use-package mlscroll
-  ;; https://github.com/jdtsmith/mlscroll
-  ;; Lightweight scrollbar for the Emacs mode line.
-  :ensure t
-  :hook ((after-init-hook . (lambda ()
-                              (unless (daemonp) (mlscroll-mode 1))))
-         (server-after-make-frame . mlscroll-mode))
-  :custom
-  (mlscroll-shortfun-min-width 11) ; truncate which-func
-  (mlscroll-alter-percent-position 'replace)
-  (mlscroll-right-align nil)
-  )
-
-;;;; (start patch) Patch so that modeline maintains highlight focus on active
-;;;;               buffer
-(defun danylo/internal--after-save-selected-window (orig-fun &rest args)
-  "Patch to remove select-window modification in ansi-term redisplay."
-  (advice-remove 'select-window #'danylo/select-window)
-  (apply orig-fun args))
-
-(defun danylo/select-window (orig-fun &rest args)
-  "Patch to modify select-window so that modeline is not
-activated on output into a buffer, e.g. ansi-term."
-  (setq args `(,(nth 0 args) t))
-  (apply orig-fun args))
-
-(defun danylo/term-emulate-terminal (orig-fun &rest args)
-  "Patch so that doom-modeline does not lose focus of active buffer
-when there is another buffer printing out information."
-  (advice-add 'select-window :around #'danylo/select-window)
-  (advice-add 'internal--after-save-selected-window :around
-              #'danylo/internal--after-save-selected-window)
-  (apply orig-fun args)
-  (advice-remove 'internal--after-save-selected-window
-                 #'danylo/internal--after-save-selected-window))
-(advice-add 'term-emulate-terminal :around #'danylo/term-emulate-terminal)
-;;;; (end patch)
-
 (use-package danylo-common-font-lock
   ;; Common code for custom fontification
   :ensure nil
@@ -2276,6 +2170,14 @@ when there is another buffer printing out information."
          (julia-mode . danylo-prog-font-lock-mode)))
 
 ;;;; Scrollbar and position indication
+
+(defface danylo/scrollbar-face
+  `((t (:foreground
+        ,(face-attribute 'region :background nil t)
+        :background
+        ,(face-attribute 'region :background nil t))))
+  "Face for the scrollbar."
+  :group 'danylo)
 
 (use-package indicators
   ;; https://github.com/Fuco1/indicators.el
@@ -2329,10 +2231,256 @@ when there is another buffer printing out information."
 (advice-add 'pixel-scroll-precision :after #'danylo/update-indicators)
 ;;;; (end patch)
 
+;;; ..:: Modeline ::..
+
+(use-package mood-line
+  ;; https://git.tty.dog/hpet_dog/mood-line
+  ;; Minimal mode line configuration for Emacs, inspired by doom-modeline.
+  :custom
+  (mood-line-glyph-alist mood-line-glyphs-fira-code)
+  :config
+  (cl-loop for (update-fn . hooks) in mood-line--hooks-alist
+           do (dolist (hook hooks)
+                (add-hook hook update-fn)))
+  (cl-loop for (update-fn . advised-fns) in mood-line--advice-alist
+           do (dolist (advised-fn advised-fns)
+                (advice-add advised-fn :after update-fn))))
+
+;;;; (apply patch) Truncate the modeline version control string.
+(defun danylo/truncate-mood-line-segment-vc (orig-fun &rest args)
+  (let ((str (apply orig-fun args))
+        (maxlen 10))
+    (if (length> str maxlen)
+        (concat (substring str 0 (1- maxlen)) "…")
+      str)))
+(advice-add 'mood-line-segment-vc--rev
+            :around #'danylo/truncate-mood-line-segment-vc)
+;;;; (end patch)
+
+;;;; (start patch) Remove modeline boundary outlines while doing a Helm search.
+(defun danylo/modeline-add-outline ()
+  (when (display-graphic-p)
+    (set-face-attribute 'solaire-mode-line-face nil :overline `,danylo/faded-blue)
+    (set-face-attribute 'solaire-mode-line-face nil
+                        :underline `(:color ,danylo/faded-blue :position t))
+    (set-face-attribute 'mode-line-active nil :overline `,danylo/faded-blue)
+    (set-face-attribute 'mode-line-active nil
+                        :underline `(:color ,danylo/faded-blue :position t))))
+(defun danylo/modeline-remove-outline ()
+  (when (display-graphic-p)
+    (set-face-attribute 'solaire-mode-line-face nil :overline '())
+    (set-face-attribute 'solaire-mode-line-face nil :underline '())
+    (set-face-attribute 'mode-line-active nil :overline '())
+    (set-face-attribute 'mode-line-active nil :underline '())))
+(defun danylo/modeline-add-outline-on-helm-quit (orig-func &rest args)
+  (danylo/modeline-add-outline)
+  (apply orig-func args))
+(add-hook 'helm-after-initialize-hook #'danylo/modeline-remove-outline)
+(add-hook 'helm-exit-minibuffer-hook #'danylo/modeline-add-outline)
+(advice-add 'helm-keyboard-quit :around #'danylo/modeline-add-outline-on-helm-quit)
+;;;; (end patch)
+
+(use-package moody
+  ;; https://github.com/tarsius/moody
+  ;; Tabs and ribbons for the mode-line.
+  :custom
+  (moody-mode-line-height (window-mode-line-height))
+  (moody-ribbon-background '(base :background))
+  :config
+  (moody-replace-mode-line-front-space)
+  (moody-replace-mode-line-buffer-identification)
+  (moody-replace-vc-mode)
+  (unless (display-graphic-p)
+    (setq moody-slant-placeholder " "))
+  ;; Outline for the modeline border.
+  (set-face-attribute 'solaire-mode-line-face nil :box 'unspecified)
+  (set-face-attribute 'solaire-mode-line-inactive-face nil :box 'unspecified)
+  (when (display-graphic-p)
+    (set-face-attribute 'solaire-mode-line-inactive-face nil :overline '())
+    (set-face-attribute 'solaire-mode-line-inactive-face nil :underline '())
+    (set-face-attribute 'mode-line-inactive nil :overline '())
+    (set-face-attribute 'mode-line-inactive nil :underline '())
+    (set-face-attribute 'mode-line nil :overline '())
+    (set-face-attribute 'mode-line nil :underline '())
+    (danylo/modeline-add-outline)))
+(require 'moody)
+
+;;;; (apply patch) Fix moody modeline slant colors for solaire-mode.
+(defun danylo/moody-wrap-color-fix
+    (orig-fun string &optional width direction type face-active face-inactive)
+  (let ((face-active (or face-active 'solaire-mode-line-face))
+        (face-inactive (or face-inactive 'solaire-mode-line-inactive-face)))
+    (funcall orig-fun string width direction type face-active face-inactive)))
+(advice-add 'moody-wrap :around #'danylo/moody-wrap-color-fix)
+;;;; (end patch)
+
+(use-package window-numbering
+  ;; https://github.com/nikolas/window-number
+  ;; Allows you to select windows by numbers.
+  :config
+  (window-numbering-mode 1))
+
+(use-package mlscroll
+  ;; https://github.com/jdtsmith/mlscroll
+  ;; Lightweight scrollbar for the Emacs mode line.
+  :custom
+  (mlscroll-shortfun-min-width 11) ; truncate which-func
+  (mlscroll-alter-percent-position nil)
+  (mlscroll-right-align nil))
+
+;; Mode line format.
+(defvar-local mode-line/current-project-cache nil
+  "The project associated with the file. Accept new value when nil,
+otherwise use the current value.")
+(setq-default
+ mode-line-format
+ '((:eval
+    (progn
+      (let ((ml-space " ")
+            (ml-current-window
+             (if (moody-window-active-p)
+                 (propertize "▶" 'face `(:foreground ,danylo/blue))
+               " "))
+            (ml-window-number
+             (let ((winum (window-numbering-get-number-string)))
+               (concat
+                " "
+                (propertize winum 'face (when (moody-window-active-p)
+                                          `(:foreground ,danylo/green)))
+                " ")))
+            (ml-buffer-mod-status
+             (or (mood-line-segment-buffer-status) " "))
+            (ml-project-name
+             (let ((project (progn
+                              (when (null mode-line/current-project-cache)
+                                (setq mode-line/current-project-cache
+                                      (mood-line-segment-project)))
+                              mode-line/current-project-cache)))
+               (when (and project (not (string-equal project "-")))
+                 (moody-tab
+                  (propertize
+                   (format "(%s)" project)
+                   'face (when (moody-window-active-p)
+                           `(:foreground ,danylo/blue)))
+                  nil 'up))))
+            (ml-remote-host-name
+             (when default-directory
+               (when-let* ((host (file-remote-p default-directory 'host)))
+                 (propertize
+                  (concat "@" host)
+                  'face (when (moody-window-active-p)
+                          `(:foreground ,danylo/green))))))
+            (ml-buffer-file-name
+             (moody-tab
+              (car (propertized-buffer-identification
+                    (concat
+                     (nerd-icons-icon-for-buffer)
+                     "  "
+                     (format-mode-line "%b"))))
+              nil 'down))
+            (ml-line-column " %l:%c ")
+            (ml-scrollbar
+             (progn
+               (unless mlscroll-mode
+                 (mlscroll-mode 1))
+               (mlscroll-mode-line)))
+            (ml-percent-position mode-line-percent-position)
+            (ml-region-selection (when (use-region-p)
+                                   (let ((num-selected
+                                          (abs (- (region-end)
+                                                  (region-beginning)))))
+                                     (when num-selected
+                                       (propertize
+                                        (format "%d chars " num-selected)
+                                        'face `(:foreground ,danylo/yellow))))))
+            (ml-multiple-cursors (mood-line-segment-multiple-cursors))
+            (ml-process-indicator (or (mood-line-segment-process) " "))
+            (ml-auto-format (if apheleia-mode "𝛼" " "))
+            (ml-major-mode (moody-tab (mood-line-segment-major-mode) nil 'down))
+            (ml-vc (let ((vc-seg (mood-line-segment-vc)))
+                     (if vc-seg
+                         (moody-tab vc-seg nil 'up)
+                       "")))
+            (ml-clock (propertize
+                       (concat (danylo/nerd-fa-icon "nf-fa-clock")
+                               " "
+                               display-time-string)
+                       'face (if (moody-window-active-p)
+                                 'mode-line
+                               'mode-line-inactive))))
+        (let* ((ml-left `(,ml-current-window
+                          ,ml-window-number
+                          ,ml-space
+                          ,ml-buffer-mod-status
+                          ,ml-space
+                          ,ml-project-name
+                          ,ml-remote-host-name
+                          ,ml-buffer-file-name
+                          ,ml-line-column
+                          ,ml-scrollbar
+                          ,ml-space
+                          ,ml-percent-position
+                          ,ml-space
+                          ,ml-region-selection
+                          ,ml-multiple-cursors))
+               (ml-right `(,ml-process-indicator
+                           ,ml-space
+                           ,ml-auto-format
+                           ,ml-space
+                           ,ml-major-mode
+                           ,ml-vc
+                           ,ml-space
+                           ,ml-clock
+                           ,ml-space))
+               (ml-left-length 0)
+               (ml-right-length 0)
+               (ml-center-space ""))
+          (dolist (seg ml-left)
+            (setq ml-left-length (+ ml-left-length
+                                    (string-width (format-mode-line seg)))))
+          (dolist (seg ml-right)
+            (setq ml-right-length (+ ml-right-length
+                                     (string-width (format-mode-line seg)))))
+          (setq ml-center-space
+                (propertize
+                 " "
+                 'display
+                 `((space :align-to
+                          (- right (- 0 right-margin) ,ml-right-length)))))
+          (append ml-left `(,ml-center-space) ml-right)))))))
+
+;;;; (start patch) Patch so that modeline maintains highlight focus on active
+;;;;               buffer
+(defun danylo/internal--after-save-selected-window (orig-fun &rest args)
+  "Patch to remove select-window modification in ansi-term redisplay."
+  (advice-remove 'select-window #'danylo/select-window)
+  (apply orig-fun args))
+
+(defun danylo/select-window (orig-fun &rest args)
+  "Patch to modify select-window so that modeline is not
+activated on output into a buffer, e.g. ansi-term."
+  (setq args `(,(nth 0 args) t))
+  (apply orig-fun args))
+
+(defun danylo/term-emulate-terminal (orig-fun &rest args)
+  "Patch so that doom-modeline does not lose focus of active buffer
+when there is another buffer printing out information."
+  (advice-add 'select-window :around #'danylo/select-window)
+  (advice-add 'internal--after-save-selected-window :around
+              #'danylo/internal--after-save-selected-window)
+  (apply orig-fun args)
+  (advice-remove 'internal--after-save-selected-window
+                 #'danylo/internal--after-save-selected-window))
+(advice-add 'term-emulate-terminal :around #'danylo/term-emulate-terminal)
+;;;; (end patch)
+
 ;;; ..:: Code editing ::..
 
 ;; Use spaces instead of tabs
 (setq-default indent-tabs-mode nil)
+
+;; Follow symlinks automatically.
+(setq vc-follow-symlinks t)
 
 ;; Disable secondary selection
 ;; (https://www.reddit.com/r/emacs/comments/3c61zl/abolish_the_secondary_selection_quick_and_easy/)
@@ -3227,12 +3375,6 @@ otherwise."
 (global-unset-key (kbd "C-<up>"))
 (global-unset-key (kbd "C-<down>"))
 
-(use-package window-numbering
-  ;; https://github.com/nikolas/window-number
-  ;; Allows you to select windows by numbers.
-  :config
-  (window-numbering-mode 1))
-
 ;;;; >> Splitting windows <<
 
 (general-define-key
@@ -4067,7 +4209,8 @@ _q_: Quit"
 (use-package org
   ;; https://github.com/bzg/org-mode
   ;; Your life in plain text
-  :hook ((org-mode . danylo/org-mode-setup))
+  :hook ((org-mode . danylo/org-mode-setup)
+         (org-mode . subword-mode))
   :bind (:map org-mode-map
               ("M-." . org-open-at-point)
               ("M-," . org-mark-ring-goto)
@@ -5065,9 +5208,6 @@ Calls itself until the docstring has completed printing."
   "Insert inline or display math delimiters.")
 
 ;;; ..:: Lisp ::..
-
-;; Source directory of Emacs core C runtime code.
-(setq source-directory "~/Documents/software/emacs/src")
 
 (add-to-list 'auto-mode-alist '("\\.el" . emacs-lisp-mode))
 (add-to-list 'auto-mode-alist '("\\.el.gz" . emacs-lisp-mode))

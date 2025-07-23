@@ -1,6 +1,11 @@
+;;; --- Code styles. -*- lexical-binding: t; -*-
+
 ;; Put use-package in control of when packages are loaded.
 ;; https://www.gnu.org/software/emacs/manual/html_node/use-package/Deferring-loading.html
 (setq package-enable-at-startup nil)
+
+;; Source directory of Emacs core C runtime code.
+(setq source-directory "~/Documents/software/emacs/")
 
 ;; Lisp deprecation
 ;; https://github.com/kiwanami/emacs-epc/issues/35#issuecomment-773420321

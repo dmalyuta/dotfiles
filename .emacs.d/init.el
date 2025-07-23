@@ -2434,12 +2434,8 @@ otherwise use the current value.")
                            ,ml-space
                            ,ml-clock
                            ,ml-space))
-               (ml-left-length 0)
                (ml-right-length 0)
                (ml-center-space ""))
-          (dolist (seg ml-left)
-            (setq ml-left-length (+ ml-left-length
-                                    (string-width (format-mode-line seg)))))
           (dolist (seg ml-right)
             (setq ml-right-length (+ ml-right-length
                                      (string-width (format-mode-line seg)))))

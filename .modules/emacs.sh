@@ -63,6 +63,7 @@ if not_installed emacs; then
             --with-x-toolkit=gtk3 \
             --with-xinput2 \
             --with-imagemagick \
+            --without-toolkit-scroll-bars \
             --with-rsvg &&
         make NATIVE_FULL_AOT=1 -j2 &&
         sudo make install)

@@ -206,6 +206,9 @@ directory."
 (advice-add 'eval-buffer
             :after (lambda (&rest _) (message "Evaluated buffer")))
 
+;; No email composition.
+(global-unset-key (kbd "C-x m"))
+
 ;;; ..:: Remote development ::..
 
 (use-package tramp
@@ -385,6 +388,11 @@ Remote files are ommitted."
 (defun danylo/nerd-fa-icon (icon &optional fg)
   "Nerd-icons fontawesome icon with proper formatting."
   (danylo/fancy-icon 'nerd-icons-faicon 'nerd-icons-faicon-family
+                     icon fg))
+
+(defun danylo/nerd-md-icon (icon &optional fg)
+  "Nerd-icons material design icon with proper formatting."
+  (danylo/fancy-icon 'nerd-icons-mdicon 'nerd-icons-mdicon-family
                      icon fg))
 
 (defun danylo/octicon (icon &optional fg)
@@ -583,6 +591,11 @@ Remote files are ommitted."
     ".*magit.*"
     ".*Profiler-Report.*")
   "List of buffers to not auto-fontify on opening.")
+(defun danylo/is-narrowed ()
+  "Check if current buffer is narrowed."
+  (or (buffer-narrowed-p)
+      (fancy-narrow-active-p)
+      (bound-and-true-p dired-narrow-mode)))
 (defun danylo/fontify (&rest args)
   "Fontify visible part of the buffer."
   (run-with-idle-timer
@@ -590,9 +603,11 @@ Remote files are ommitted."
    (lambda ()
      (save-excursion
        (unless
-           (cl-loop
-            for regexp in danylo/buffers-to-skip-auto-fontify
-            thereis (string-match regexp (buffer-name)))
+           (or (cl-loop
+                for regexp in danylo/buffers-to-skip-auto-fontify
+                thereis (string-match regexp (buffer-name)))
+               (danylo/is-narrowed)
+               (derived-mode-p 'image-mode))
          (font-lock-fontify-region (window-start) (window-end)))))))
 (add-hook 'window-configuration-change-hook 'danylo/fontify)
 ;;;; (end patch)
@@ -1105,7 +1120,8 @@ not have to update when the cursor is moving quickly."
 (setq auto-revert-verbose nil
       ;; Don't poll for file changes when file system notifications are
       ;; available.
-      auto-revert-avoid-polling auto-revert-use-notify)
+      auto-revert-avoid-polling auto-revert-use-notify
+      revert-without-query '(".*"))
 (defun danylo/auto-revert-file-not-remote ()
   "Turn on auto-revert-mode for file-visiting buffers of local files."
   (if (and buffer-file-name
@@ -1298,20 +1314,10 @@ Source: https://emacs.stackexchange.com/a/50834/13661"
   (scroll-error-top-bottom t)
   (scroll-preserve-screen-position 'always))
 
-(defun danylo/debounce-scrollbar ()
-  (advice-add 'ind-update-event-handler :around #'danylo/debounced-ind-update))
-
-(defun danylo/undo-debounce-scrollbar ()
-  (advice-remove 'ind-update-event-handler #'danylo/debounced-ind-update))
-
-(defhydra hydra-scroll-row
-  (:pre danylo/debounce-scrollbar :post danylo/undo-debounce-scrollbar)
+(defhydra hydra-scroll-row (global-map "C-q")
   "Move up/rown one row keeping the cursor at the same position"
   ("n" danylo/scroll-row-down "down")
   ("p" danylo/scroll-row-up "up"))
-
-(general-define-key
- "C-q" 'hydra-scroll-row/body)
 
 ;;; Mouse wheel scroll behaviour
 (mouse-wheel-mode 't)
@@ -1321,6 +1327,16 @@ Source: https://emacs.stackexchange.com/a/50834/13661"
 
 ;;; Pixel-precision scrolling
 (pixel-scroll-precision-mode 1)
+
+(use-package ultra-scroll
+  ;; https://github.com/jdtsmith/ultra-scroll
+  ;; scroll Emacs like lightning
+  :init
+  (setq scroll-conservatively 3 ; or whatever value you prefer, since v0.4
+        scroll-margin 0)        ; important: scroll-margin>0 not yet supported
+  :config
+  (add-hook 'ultra-scroll-hide-functions 'hl-line-mode)
+  (ultra-scroll-mode 1))
 
 ;;;; eval-buffer default directory fix
 
@@ -2169,68 +2185,6 @@ is automatically turned on while the line numbers are displayed."
   :hook ((python-mode . danylo-prog-font-lock-mode)
          (julia-mode . danylo-prog-font-lock-mode)))
 
-;;;; Scrollbar and position indication
-
-(defface danylo/scrollbar-face
-  `((t (:foreground
-        ,(face-attribute 'region :background nil t)
-        :background
-        ,(face-attribute 'region :background nil t))))
-  "Face for the scrollbar."
-  :group 'danylo)
-
-(use-package indicators
-  ;; https://github.com/Fuco1/indicators.el
-  ;; Display the buffer relative location of line in the fringe.
-  :hook ((prog-mode . danylo/create-indicators)
-         (text-mode . danylo/create-indicators))
-  :init
-  (setq ind-indicator-height 1)
-  :config
-  (defun danylo/create-indicators ()
-    (ind-create-indicator 'point
-                          :managed t
-                          :bitmap 'right-arrow
-                          :face 'danylo/scrollbar-face
-                          :priority 200)
-    (ind-show-indicators))
-  (add-hook 'after-save-hook #'danylo/update-indicators)
-  )
-
-;;;; (start patch) Disable the indicators update.
-(defun danylo/disable-ind-update (orig-fun &rest args)
-  (ind-hide-indicators))
-;;;; (end patch)
-
-;;;; (start patch) Debounce the indicators update such that they don't slow
-;;;;               down cursor motion.
-;;;;               NOTE: the idle delay has to be set correctly for the OS's
-;;;;               configured delay for repeating keys. Otherwise you'll see an
-;;;;               initial flicker when the holding the scroll key before the
-;;;;               scrolling begins.
-(defvar danylo/ind-update-idle-delay 0.25)
-(defvar danylo/ind-update-timer nil)
-(defun danylo/debounced-ind-update (orig-fun &rest args)
-  (if danylo/ind-update-timer
-      (cancel-timer danylo/ind-update-timer)
-    (ind-hide-indicators))
-  (setq
-   danylo/ind-update-timer
-   (run-with-idle-timer
-    danylo/ind-update-idle-delay nil
-    (lambda (orig-fun &rest args)
-      (apply orig-fun args)
-      (setq danylo/ind-update-timer nil)) orig-fun args)))
-;; (advice-add 'ind-update-event-handler :around #'danylo/debounced-ind-update)
-;;;; (end patch)
-
-;;;; (start patch) Update scrollbar indicator on mouse scroll.
-(defun danylo/update-indicators (&rest _)
-  (when indicators-mode
-    (ind-update-event-handler)))
-(advice-add 'pixel-scroll-precision :after #'danylo/update-indicators)
-;;;; (end patch)
-
 ;;; ..:: Modeline ::..
 
 (use-package mood-line
@@ -2260,7 +2214,8 @@ is automatically turned on while the line numbers are displayed."
 ;;;; (start patch) Remove modeline boundary outlines while doing a Helm search.
 (defun danylo/modeline-add-outline ()
   (when (display-graphic-p)
-    (set-face-attribute 'solaire-mode-line-face nil :overline `,danylo/faded-blue)
+    (set-face-attribute 'solaire-mode-line-face nil
+                        :overline `,danylo/faded-blue)
     (set-face-attribute 'solaire-mode-line-face nil
                         :underline `(:color ,danylo/faded-blue :position t))
     (set-face-attribute 'mode-line-active nil :overline `,danylo/faded-blue)
@@ -2268,10 +2223,8 @@ is automatically turned on while the line numbers are displayed."
                         :underline `(:color ,danylo/faded-blue :position t))))
 (defun danylo/modeline-remove-outline ()
   (when (display-graphic-p)
-    (set-face-attribute 'solaire-mode-line-face nil :overline '())
-    (set-face-attribute 'solaire-mode-line-face nil :underline '())
-    (set-face-attribute 'mode-line-active nil :overline '())
-    (set-face-attribute 'mode-line-active nil :underline '())))
+    (copy-face 'solaire-mode-line-face-original 'solaire-mode-line-face)
+    (copy-face 'mode-line-active-original 'mode-line-active)))
 (defun danylo/modeline-add-outline-on-helm-quit (orig-func &rest args)
   (danylo/modeline-add-outline)
   (apply orig-func args))
@@ -2295,14 +2248,9 @@ is automatically turned on while the line numbers are displayed."
   ;; Outline for the modeline border.
   (set-face-attribute 'solaire-mode-line-face nil :box 'unspecified)
   (set-face-attribute 'solaire-mode-line-inactive-face nil :box 'unspecified)
-  (when (display-graphic-p)
-    (set-face-attribute 'solaire-mode-line-inactive-face nil :overline '())
-    (set-face-attribute 'solaire-mode-line-inactive-face nil :underline '())
-    (set-face-attribute 'mode-line-inactive nil :overline '())
-    (set-face-attribute 'mode-line-inactive nil :underline '())
-    (set-face-attribute 'mode-line nil :overline '())
-    (set-face-attribute 'mode-line nil :underline '())
-    (danylo/modeline-add-outline)))
+  (copy-face 'mode-line-active 'mode-line-active-original)
+  (copy-face 'solaire-mode-line-face 'solaire-mode-line-face-original)
+  (danylo/modeline-add-outline))
 (require 'moody)
 
 ;;;; (apply patch) Fix moody modeline slant colors for solaire-mode.
@@ -2328,6 +2276,41 @@ is automatically turned on while the line numbers are displayed."
   (mlscroll-alter-percent-position nil)
   (mlscroll-right-align nil))
 
+(use-package yascroll
+  ;; https://github.com/emacsorphanage/yascroll
+  ;; Yet Another Scroll Bar Mode
+  :hook ((prog-mode . yascroll-bar-mode)
+         (text-mode . yascroll-bar-mode))
+  :custom
+  (yascroll:priority 1000)
+  (yascroll:delay-to-hide nil)
+  :config
+  (let ((region-bg (face-attribute 'region :background)))
+    (set-face-attribute 'yascroll:thumb-text-area
+                        nil :background region-bg)
+    (set-face-attribute 'yascroll:thumb-fringe
+                        nil :background region-bg :foreground region-bg))
+  )
+
+;;;; (start patch) Improve performance of `yascroll:make-thumb-overlays'.
+(defun danylo/yascroll:make-thumb-overlays-fast
+    (orig-fun make-thumb-overlay window-line size)
+  (save-excursion
+    ;; Jump to the line.
+    (goto-char (window-start))
+    (forward-line window-line)
+    ;; Make thumb overlays.
+    (condition-case nil
+        (cl-loop repeat size
+                 do (push (funcall make-thumb-overlay) yascroll:thumb-overlays)
+                 until (progn
+                         (forward-line 1)
+                         (eobp)))
+      (end-of-buffer nil))))
+(advice-add 'yascroll:make-thumb-overlays
+            :around #'danylo/yascroll:make-thumb-overlays-fast)
+;;;; (end patch)
+
 ;; Mode line format.
 (defvar-local mode-line/current-project-cache nil
   "The project associated with the file. Accept new value when nil,
@@ -2349,7 +2332,21 @@ otherwise use the current value.")
                                           `(:foreground ,danylo/green)))
                 " ")))
             (ml-buffer-mod-status
-             (or (mood-line-segment-buffer-status) " "))
+             (when (buffer-file-name (buffer-base-buffer))
+               (cond
+                ((buffer-modified-p)
+                 (propertize (mood-line--get-glyph :buffer-modified)
+                             'face 'mood-line-buffer-status-modified))
+                (buffer-read-only
+                 (propertize (mood-line--get-glyph :buffer-read-only)
+                             'face 'mood-line-buffer-status-read-only))
+                (t " "))))
+            (ml-buffer-narrow-status
+             (if (danylo/is-narrowed)
+                 (danylo/nerd-md-icon
+                  "nf-md-unfold_less_horizontal"
+                  (face-attribute 'mode-line-emphasis :foreground))
+               " "))
             (ml-project-name
              (let ((project (progn
                               (when (null mode-line/current-project-cache)
@@ -2414,6 +2411,7 @@ otherwise use the current value.")
                           ,ml-window-number
                           ,ml-space
                           ,ml-buffer-mod-status
+                          ,ml-buffer-narrow-status
                           ,ml-space
                           ,ml-project-name
                           ,ml-remote-host-name
@@ -3032,8 +3030,7 @@ regions."
               (lambda (&rest _) nil)))
           (fill-region selection-start selection-end nil t nil)))
     (unless (danylo/fill)
-      (fill-paragraph nil t)))
-  (danylo/update-indicators))
+      (fill-paragraph nil t))))
 
 ;;;; (start patch) Unset fill-prefix when evaluating indent-region.
 (defun danylo/indent-region (orig-fun &rest args)
@@ -3349,6 +3346,13 @@ otherwise."
   (interactive)
   (setq c-ts-mode-indent-offset
         (string-to-number (read-string "Set C-language indent to: "))))
+
+(use-package fancy-narrow
+  ;; https://github.com/Malabarba/fancy-narrow
+  ;; Emacs package to immitate narrow-to-region with more eye-candy.
+  :bind (("C-x n D" . fancy-narrow-to-defun)
+         ("C-x n N" . fancy-narrow-to-region)
+         ("C-x n W" . fancy-widen)))
 
 ;;; ..:: Window management ::..
 
@@ -4847,17 +4851,19 @@ _q_: Quit"
 (add-hook 'python-ts-mode-hook 'danylo/python-imenu-hooks)
 
 ;;;; Python shell interaction
+(defvar-local danylo/custom-python-shell nil
+  "Set locally to a custom path of ipython that you'd like to execute.")
 
 (defun danylo/python-shell-open (arg)
   "Open a Python shell."
   (interactive "P")
-  (if arg
-      ;; Open in current window
-      (danylo/shell-open danylo/python-buffer-name
-                         danylo/python-shell-type t)
-    ;; Open in new window
-    (danylo/shell-open danylo/python-buffer-name
-                       danylo/python-shell-type)))
+  (let ((python-shell-type (or danylo/custom-python-shell
+                               danylo/python-shell-type)))
+    (if arg
+        ;; Open in current window
+        (danylo/shell-open danylo/python-buffer-name python-shell-type t)
+      ;; Open in new window
+      (danylo/shell-open danylo/python-buffer-name python-shell-type))))
 
 (defun danylo/python-shell-run-file ()
   "Run current Python file."

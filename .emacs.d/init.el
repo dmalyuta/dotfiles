@@ -2282,10 +2282,10 @@ is automatically turned on while the line numbers are displayed."
   :hook ((prog-mode . yascroll-bar-mode)
          (text-mode . yascroll-bar-mode))
   :custom
-  (yascroll:priority 1000)
+  (yascroll:priority 0)
   (yascroll:delay-to-hide nil)
   :config
-  (let ((region-bg (face-attribute 'region :background)))
+  (let ((region-bg `,danylo/light-gray))
     (set-face-attribute 'yascroll:thumb-text-area
                         nil :background region-bg)
     (set-face-attribute 'yascroll:thumb-fringe

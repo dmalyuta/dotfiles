@@ -2453,48 +2453,53 @@ machine below.")
   (save-excursion
     (goto-char pos)
     (string-to-number (format-mode-line "%l"))))
+(defun danylo/yascroll--display ()
+  "The main code to display the scrollbar. It's a more performant version of
+`yascroll:show-scroll-bar-internal'."
+  (when-let ((scroll-bar (yascroll:choose-scroll-bar)))
+    (let ((window-lines (yascroll:window-height))
+          (buffer-lines (danylo/get-line-number (point-max))))
+      (when (< window-lines buffer-lines)
+        (let* ((scroll-top (danylo/get-line-number (window-start)))
+               (thumb-window-line (yascroll:compute-thumb-window-line
+                                   window-lines buffer-lines scroll-top))
+               (thumb-buffer-line (+ scroll-top thumb-window-line))
+               (thumb-size (yascroll:compute-thumb-size
+                            window-lines buffer-lines))
+               (make-thumb-overlay
+                (cl-ecase scroll-bar
+                  (right-fringe 'yascroll:make-thumb-overlay-right-fringe)
+                  (text-area 'yascroll:make-thumb-overlay-text-area))))
+          (when (<= thumb-buffer-line buffer-lines)
+            (yascroll:make-thumb-overlays make-thumb-overlay
+                                          thumb-window-line
+                                          thumb-size)
+            (yascroll:schedule-hide-scroll-bar)))))))
 (defun danylo/yascroll:show-scroll-bar-internal (&rest _)
   "Show scroll bar in buffer."
-  (let* ((now (float-time))
-         (dt (- now danylo/scrollbar-last-show-time)))
-    (setq danylo/scrollbar-last-show-time now)
-    (if (or danylo/scrollbar-show-always
-            (and (not danylo/scrollbar-hide)
-                 (> dt danylo/scrollbar-max-repeat-interval)))
-        (progn
-          ;; This is the main code to show the scrollbar.
-          (when-let ((scroll-bar (yascroll:choose-scroll-bar)))
-            (let ((window-lines (yascroll:window-height))
-                  (buffer-lines (danylo/get-line-number (point-max))))
-              (when (< window-lines buffer-lines)
-                (let* ((scroll-top (danylo/get-line-number (window-start)))
-                       (thumb-window-line (yascroll:compute-thumb-window-line
-                                           window-lines buffer-lines scroll-top))
-                       (thumb-buffer-line (+ scroll-top thumb-window-line))
-                       (thumb-size (yascroll:compute-thumb-size
-                                    window-lines buffer-lines))
-                       (make-thumb-overlay
-                        (cl-ecase scroll-bar
-                          (right-fringe 'yascroll:make-thumb-overlay-right-fringe)
-                          (text-area 'yascroll:make-thumb-overlay-text-area))))
-                  (when (<= thumb-buffer-line buffer-lines)
-                    (yascroll:make-thumb-overlays make-thumb-overlay
-                                                  thumb-window-line
-                                                  thumb-size)
-                    (yascroll:schedule-hide-scroll-bar)))))))
-      (setq danylo/scrollbar-hide t)
-      (run-with-timer
-       danylo/scrollbar-initial-hide-interval nil
-       (lambda (buffer)
-         (run-with-idle-timer
-          (danylo/run-after-idle-interval danylo/scrollbar-max-repeat-interval)
-          nil
-          (lambda (buffer)
-            (with-current-buffer buffer
-              (setq danylo/scrollbar-hide nil)
-              (danylo/yascroll:show-scroll-bar-internal)))
-          buffer))
-       (current-buffer)))))
+  (if danylo/scrollbar-show-always
+      ;; Always show.
+      (danylo/yascroll--display)
+    ;; Conditional display logic.
+    (unless danylo/scrollbar-hide
+      (let* ((now (float-time))
+             (dt (- now danylo/scrollbar-last-show-time)))
+        (setq danylo/scrollbar-last-show-time now)
+        (if (> dt danylo/scrollbar-max-repeat-interval)
+            (danylo/yascroll--display)
+          (setq danylo/scrollbar-hide t)
+          (run-with-timer
+           danylo/scrollbar-initial-hide-interval nil
+           (lambda (buffer)
+             (run-with-idle-timer
+              (danylo/run-after-idle-interval danylo/scrollbar-max-repeat-interval)
+              nil
+              (lambda (buffer)
+                (with-current-buffer buffer
+                  (setq danylo/scrollbar-hide nil)
+                  (danylo/yascroll:show-scroll-bar-internal)))
+              buffer))
+           (current-buffer)))))))
 (advice-add 'yascroll:show-scroll-bar-internal
             :around #'danylo/yascroll:show-scroll-bar-internal)
 (defun danylo/yascroll:debounced-scroll (orig-fun &rest args)

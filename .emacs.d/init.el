@@ -21,6 +21,15 @@ says whether this Emacs session is running as GUI (vs in a terminal)."
     ;; Apply the function on creating a new emacsclient frame.
     (add-hook 'server-after-make-frame-hook user-func)))
 
+(defun danylo/run-after-idle-interval (dt)
+  "Compute a time interval that makes the idle timer execute function after
+DT seconds (floating point)."
+  (+ (let ((idle-time (current-idle-time)))
+       (if idle-time
+           (float-time idle-time)
+         0))
+     dt))
+
 ;; C-g is used by Emacs at a very low-level to quit out of running code, and it
 ;; is also used to execite `keyboard-quit'. See
 ;; https://www.gnu.org/software/emacs/manual/html_node/elisp/Quitting.html. This
@@ -599,7 +608,7 @@ Remote files are ommitted."
 (defun danylo/fontify (&rest args)
   "Fontify visible part of the buffer."
   (run-with-idle-timer
-   0.05 nil
+   (danylo/run-after-idle-interval 0.05) nil
    (lambda ()
      (save-excursion
        (unless
@@ -721,7 +730,8 @@ changed, and to nil otherwise."
     (setq
      danylo/fold-indicators-refresh-timer
      (run-with-idle-timer
-      danylo/fold-indicators-refresh-idle-delay nil
+      (danylo/run-after-idle-interval
+       danylo/fold-indicators-refresh-idle-delay) nil
       (lambda (orig-fun &rest args)
         (apply orig-fun args)) orig-fun args))))
 (defun danylo/treesit-fold-indicators-render ()
@@ -729,7 +739,7 @@ changed, and to nil otherwise."
   (interactive)
   (when danylo/render-treesit-fold-indicators
     (run-with-idle-timer
-     0 nil
+     (danylo/run-after-idle-interval 0.01) nil
      (lambda ()
        (let ((danylo/fold-indicators-refresh-idle-delay 0))
          (treesit-fold-indicators--size-change))))))
@@ -984,7 +994,7 @@ with characters."
       (electric-pair-mode 0)
       (setq danylo/electric-pair-timer
             (run-with-idle-timer
-             0.1 nil
+             (danylo/run-after-idle-interval 0.1) nil
              (lambda ()
                (setq danylo/electric-pair-timer nil)
                (electric-pair-mode 1)
@@ -1006,7 +1016,7 @@ sequence of newlines."
              (lambda ()
                (setq danylo/do-electric-indent nil)
                (run-with-idle-timer
-                0.05 nil
+                (danylo/run-after-idle-interval 0.05) nil
                 (lambda () (setq danylo/do-electric-indent t)))))
             ;; Do indent (normal mode)
             t)
@@ -1028,50 +1038,6 @@ sequence of newlines."
   ;; https://www.emacswiki.org/emacs/HighlightLibrary
   ;; Provides commands to highlight text
   )
-
-;;;; (start patch) A debounced replacement of built-in active region
-;;;;               highlighting.
-(defvar-local danylo/highlight-timer nil
-  "Timer object for region highlighting function.")
-
-(defun danylo/highlight-region-low-level (window)
-  "Low-level region highlight function."
-  (when (and (window-live-p window) (mark))
-    (let* ((pt (window-point window))
-           (mark (mark))
-           (start (min pt mark))
-           (end   (max pt mark))
-           (rol (window-parameter window 'internal-region-overlay))
-           (new (funcall redisplay-highlight-region-function
-                         start end window rol)))
-      (unless (equal new rol)
-        (set-window-parameter window 'internal-region-overlay new)))))
-
-(defun danylo/highlight-region (orig-fun &rest args)
-  "A throttled (jit lock-style) replacement for Emacs' built-in
-active region highlighting. By throttling the highlighting, we
-are able to maintain fast cursor speed as the highlithing does
-not have to update when the cursor is moving quickly."
-  (let ((window (nth 0 args)))
-    (if (not (and (region-active-p) (eq window (selected-window))))
-        (progn
-          (when danylo/highlight-timer
-            (cancel-timer danylo/highlight-timer))
-          (setq danylo/highlight-timer nil)
-          (let ((rol (window-parameter window 'internal-region-overlay)))
-            (funcall redisplay-unhighlight-region-function rol)))
-      (unless danylo/highlight-timer
-        (danylo/highlight-region-low-level window)
-        (setq
-         danylo/highlight-timer
-         (run-with-idle-timer
-          0.02 t 'danylo/highlight-region-low-level window)))
-      )))
-
-;; The line below will activate the delayed highlight patch.
-;; (advice-add 'redisplay--update-region-highlight
-;;             :around 'danylo/highlight-region)
-;;;; (end patch)
 
 (use-package expand-region
   ;; https://github.com/magnars/expand-region.el
@@ -1314,10 +1280,25 @@ Source: https://emacs.stackexchange.com/a/50834/13661"
   (scroll-error-top-bottom t)
   (scroll-preserve-screen-position 'always))
 
-(defhydra hydra-scroll-row (global-map "C-q")
+;;;; (start patch) Hydra triggers the `window-scroll-functions', but
+;;;;               we already are updating the scrollbar via the
+;;;;               `window-configuration-change-hook' since we are
+;;;;               scrolling. Avoid the double-call by temporarily removing the
+;;;;               scrollbar update from the `window-scroll-functions'.
+(defun danylo/debounce-scrollbar ()
+  (remove-hook 'window-scroll-functions 'yascroll:after-window-scroll t))
+(defun danylo/undo-debounce-scrollbar ()
+  (add-hook 'window-scroll-functions 'yascroll:after-window-scroll nil t))
+;;;; (end patch)
+
+(defhydra hydra-scroll-row
+  (:pre danylo/debounce-scrollbar :post danylo/undo-debounce-scrollbar)
   "Move up/rown one row keeping the cursor at the same position"
   ("n" danylo/scroll-row-down "down")
   ("p" danylo/scroll-row-up "up"))
+
+(general-define-key
+ "C-q" 'hydra-scroll-row/body)
 
 ;;; Mouse wheel scroll behaviour
 (mouse-wheel-mode 't)
@@ -1327,16 +1308,6 @@ Source: https://emacs.stackexchange.com/a/50834/13661"
 
 ;;; Pixel-precision scrolling
 (pixel-scroll-precision-mode 1)
-
-(use-package ultra-scroll
-  ;; https://github.com/jdtsmith/ultra-scroll
-  ;; scroll Emacs like lightning
-  :init
-  (setq scroll-conservatively 3 ; or whatever value you prefer, since v0.4
-        scroll-margin 0)        ; important: scroll-margin>0 not yet supported
-  :config
-  (add-hook 'ultra-scroll-hide-functions 'hl-line-mode)
-  (ultra-scroll-mode 1))
 
 ;;;; eval-buffer default directory fix
 
@@ -2233,24 +2204,30 @@ is automatically turned on while the line numbers are displayed."
 (advice-add 'helm-keyboard-quit :around #'danylo/modeline-add-outline-on-helm-quit)
 ;;;; (end patch)
 
+(defface mode-line-active-original '((t))
+  "Copy of the original `mode-line-active' face.")
+(defface solaire-mode-line-face-original '((t))
+  "Copy of the original `solaire-mode-line-face' face.")
 (use-package moody
   ;; https://github.com/tarsius/moody
   ;; Tabs and ribbons for the mode-line.
   :custom
-  (moody-mode-line-height (window-mode-line-height))
+  (moody-mode-line-height #'moody-default-mode-line-height)
   (moody-ribbon-background '(base :background))
   :config
   (moody-replace-mode-line-front-space)
   (moody-replace-mode-line-buffer-identification)
   (moody-replace-vc-mode)
-  (unless (display-graphic-p)
-    (setq moody-slant-placeholder " "))
   ;; Outline for the modeline border.
-  (set-face-attribute 'solaire-mode-line-face nil :box 'unspecified)
-  (set-face-attribute 'solaire-mode-line-inactive-face nil :box 'unspecified)
-  (copy-face 'mode-line-active 'mode-line-active-original)
-  (copy-face 'solaire-mode-line-face 'solaire-mode-line-face-original)
-  (danylo/modeline-add-outline))
+  (danylo/run-gui-conditional-code
+   (lambda ()
+     (unless (display-graphic-p)
+       (setq moody-slant-placeholder " "))
+     (set-face-attribute 'solaire-mode-line-face nil :box 'unspecified)
+     (set-face-attribute 'solaire-mode-line-inactive-face nil :box 'unspecified)
+     (copy-face 'mode-line-active 'mode-line-active-original)
+     (copy-face 'solaire-mode-line-face 'solaire-mode-line-face-original)
+     (danylo/modeline-add-outline))))
 (require 'moody)
 
 ;;;; (apply patch) Fix moody modeline slant colors for solaire-mode.
@@ -2276,41 +2253,6 @@ is automatically turned on while the line numbers are displayed."
   (mlscroll-alter-percent-position nil)
   (mlscroll-right-align nil))
 
-(use-package yascroll
-  ;; https://github.com/emacsorphanage/yascroll
-  ;; Yet Another Scroll Bar Mode
-  :hook ((prog-mode . yascroll-bar-mode)
-         (text-mode . yascroll-bar-mode))
-  :custom
-  (yascroll:priority 0)
-  (yascroll:delay-to-hide nil)
-  :config
-  (let ((region-bg `,danylo/light-gray))
-    (set-face-attribute 'yascroll:thumb-text-area
-                        nil :background region-bg)
-    (set-face-attribute 'yascroll:thumb-fringe
-                        nil :background region-bg :foreground region-bg))
-  )
-
-;;;; (start patch) Improve performance of `yascroll:make-thumb-overlays'.
-(defun danylo/yascroll:make-thumb-overlays-fast
-    (orig-fun make-thumb-overlay window-line size)
-  (save-excursion
-    ;; Jump to the line.
-    (goto-char (window-start))
-    (forward-line window-line)
-    ;; Make thumb overlays.
-    (condition-case nil
-        (cl-loop repeat size
-                 do (push (funcall make-thumb-overlay) yascroll:thumb-overlays)
-                 until (progn
-                         (forward-line 1)
-                         (eobp)))
-      (end-of-buffer nil))))
-(advice-add 'yascroll:make-thumb-overlays
-            :around #'danylo/yascroll:make-thumb-overlays-fast)
-;;;; (end patch)
-
 ;; Mode line format.
 (defvar-local mode-line/current-project-cache nil
   "The project associated with the file. Accept new value when nil,
@@ -2325,7 +2267,9 @@ otherwise use the current value.")
                  (propertize "▶" 'face `(:foreground ,danylo/blue))
                " "))
             (ml-window-number
-             (let ((winum (window-numbering-get-number-string)))
+             (let ((winum (condition-case nil
+                              (window-numbering-get-number-string)
+                            (error "?"))))
                (concat
                 " "
                 (propertize winum 'face (when (moody-window-active-p)
@@ -2468,6 +2412,137 @@ when there is another buffer printing out information."
   (advice-remove 'internal--after-save-selected-window
                  #'danylo/internal--after-save-selected-window))
 (advice-add 'term-emulate-terminal :around #'danylo/term-emulate-terminal)
+;;;; (end patch)
+
+;;; ..:: Scrollbar ::..
+
+(use-package yascroll
+  ;; https://github.com/emacsorphanage/yascroll
+  ;; Yet Another Scroll Bar Mode
+  :hook ((prog-mode . yascroll-bar-mode)
+         (text-mode . yascroll-bar-mode))
+  :custom
+  (yascroll:priority 1000)
+  (yascroll:delay-to-hide nil)
+  :config
+  (let ((region-bg `,danylo/light-gray))
+    (set-face-attribute 'yascroll:thumb-text-area
+                        nil :background region-bg)
+    (set-face-attribute 'yascroll:thumb-fringe
+                        nil :background region-bg :foreground region-bg))
+  )
+
+;;;; (start patch) Improve performance of yascroll.
+(defconst danylo/scrollbar-max-repeat-interval 0.025
+  "Allowed interval between subsequent scrollbar refreshes, before it gets
+hidden temporarily.")
+(defconst danylo/scrollbar-initial-hide-interval 0.25
+  "Time interval to not show the scrollbar for after it first gets hidden.")
+(defvar danylo/scrollbar-show-always t
+  "Always update and show the scrollbar, which effectively disables the state
+machine below.")
+(defvar-local danylo/scrollbar-last-show-time 0.0
+  "Last time that the scrollbar show function was called.")
+(defvar-local danylo/scrollbar-show-timer nil
+  "Timer for transitioning scrollbar state machine states.")
+(defvar-local danylo/scrollbar-state 'show
+  "Scollbar state machine current state.")
+(defun danylo/get-line-number (pos)
+  (save-excursion
+    (goto-char pos)
+    (string-to-number (format-mode-line "%l"))))
+(defun danylo/yascroll:show-scroll-bar-internal (&rest _)
+  "Show scroll bar in buffer."
+  (let* ((now (float-time))
+         (dt (- now danylo/scrollbar-last-show-time)))
+    (setq danylo/scrollbar-last-show-time now)
+    ;; Scrollbar display state machine.
+    (when (eq danylo/scrollbar-state 'show)
+      (if (or danylo/scrollbar-show-always
+              (> dt danylo/scrollbar-max-repeat-interval))
+          (progn
+            ;; This is the main code to show the scrollbar.
+            (when-let ((scroll-bar (yascroll:choose-scroll-bar)))
+              (let ((window-lines (yascroll:window-height))
+                    (buffer-lines (danylo/get-line-number (point-max))))
+                (when (< window-lines buffer-lines)
+                  (let* ((scroll-top (danylo/get-line-number (window-start)))
+                         (thumb-window-line (yascroll:compute-thumb-window-line
+                                             window-lines buffer-lines scroll-top))
+                         (thumb-buffer-line (+ scroll-top thumb-window-line))
+                         (thumb-size (yascroll:compute-thumb-size
+                                      window-lines buffer-lines))
+                         (make-thumb-overlay
+                          (cl-ecase scroll-bar
+                            (right-fringe 'yascroll:make-thumb-overlay-right-fringe)
+                            (text-area 'yascroll:make-thumb-overlay-text-area))))
+                    (when (<= thumb-buffer-line buffer-lines)
+                      (yascroll:make-thumb-overlays make-thumb-overlay
+                                                    thumb-window-line
+                                                    thumb-size)
+                      (yascroll:schedule-hide-scroll-bar)))))))
+        (setq danylo/scrollbar-state 'long-hide)))
+    (when (eq danylo/scrollbar-state 'long-hide)
+      (setq danylo/scrollbar-state 'idle)
+      (run-with-timer
+       (danylo/run-after-idle-interval danylo/scrollbar-initial-hide-interval)
+       nil
+       (lambda (buffer)
+         (with-current-buffer buffer
+           (setq danylo/scrollbar-state 'short-hide)
+           (danylo/yascroll:show-scroll-bar-internal)))
+       (current-buffer)))
+    (when (eq danylo/scrollbar-state 'short-hide)
+      (setq danylo/scrollbar-state 'idle)
+      (setq
+       danylo/scrollbar-show-timer
+       (run-with-idle-timer
+        (danylo/run-after-idle-interval danylo/scrollbar-max-repeat-interval)
+        nil
+        (lambda (buffer)
+          (with-current-buffer buffer
+            (setq danylo/scrollbar-state 'show)
+            (danylo/yascroll:show-scroll-bar-internal)))
+        (current-buffer))))
+    ))
+(advice-add 'yascroll:show-scroll-bar-internal
+            :around #'danylo/yascroll:show-scroll-bar-internal)
+(defun danylo/yascroll:debounced-scroll (orig-fun &rest args)
+  (let ((danylo/scrollbar-show-always nil))
+    (apply orig-fun args)))
+(advice-add 'yascroll:after-window-scroll
+            :around #'danylo/yascroll:debounced-scroll)
+(advice-add 'yascroll:after-window-configuration-change
+            :around #'danylo/yascroll:debounced-scroll)
+
+(defun danylo/yascroll:after-mouse-scroll (&rest _)
+  (yascroll:after-window-scroll (selected-window) nil))
+(advice-add 'pixel-scroll-precision :after
+            #'danylo/yascroll:after-mouse-scroll)
+
+(defun danylo/yascroll:make-thumb-overlays-fast
+    (orig-fun make-thumb-overlay window-line size)
+  (save-excursion
+    ;; Jump to the line.
+    (goto-char (window-start))
+    ;; `forward-line' is faster, but moves by logical lines instead of visual
+    ;; lines. This will result in scrollbar gaps for wrapped
+    ;; lines. `vertical-line' moves by visual lines, but is computationally
+    ;; slower.
+    ;; (forward-line window-line)
+    (vertical-motion window-line)
+    ;; Make thumb overlays.
+    (condition-case nil
+        (cl-loop repeat size
+                 do
+                 (progn
+                   (push (funcall make-thumb-overlay) yascroll:thumb-overlays)
+                   ;; (forward-line 1)
+                   (vertical-motion 1))
+                 until (eobp))
+      (end-of-buffer nil))))
+(advice-add 'yascroll:make-thumb-overlays
+            :around #'danylo/yascroll:make-thumb-overlays-fast)
 ;;;; (end patch)
 
 ;;; ..:: Code editing ::..
@@ -2714,7 +2789,8 @@ C-z... instead of C-u C-z C-u C-z C-u C-z...")
       (setq
        danylo/hl-todo-overlay-timer
        (run-with-idle-timer
-        danylo/hl-todo-overlay-idle-delay nil
+        (danylo/run-after-idle-interval
+         danylo/hl-todo-overlay-idle-delay) nil
         (lambda (&rest _)
           (remove-overlays nil nil 'hl-todo-overlay t)
           (save-excursion
@@ -3289,7 +3365,7 @@ line is not repeated horizontally at certain text zoom levels."
 (defun danylo/fontify-after-format ()
   "Fontify visible part of the current window."
   (run-with-idle-timer
-   0.1 nil
+   (danylo/run-after-idle-interval 0.1) nil
    (lambda ()
      (save-excursion
        (font-lock-fontify-region (window-start) (window-end))))))
@@ -3319,7 +3395,8 @@ line is not repeated horizontally at certain text zoom levels."
       (cancel-timer danylo/hif-update-timer))
   (setq
    danylo/hif-update-timer
-   (run-with-idle-timer danylo/hif-idle-delay nil #'hide-ifdefs)))
+   (run-with-idle-timer
+    (danylo/run-after-idle-interval danylo/hif-idle-delay) nil #'hide-ifdefs)))
 (defun danylo/hide-ifdef-extra-hooks (&rest _)
   "Add extra functionality when hide-ifdef-mode is active, and remove it
 otherwise."
@@ -3461,7 +3538,8 @@ keys), and for the size of the resulting new window."
     ;; Change step increment and create new timer
     (setq danylo/windsize-current-step danylo/windsize-big-step
           danylo/windsize-timer (run-with-idle-timer
-                                 2.0 nil
+                                 (danylo/run-after-idle-interval 2.0)
+                                 nil
                                  (lambda ()
                                    (setq danylo/windsize-current-step 1)))))
   (windsize-resize dir danylo/windsize-current-step))
@@ -5222,7 +5300,7 @@ Calls itself until the docstring has completed printing."
   (setq imenu-generic-expression
         '(("var   " "^\s*(\\(def\\(?:c\\(?:onst\\(?:ant\\)?\\|ustom\\)\\|ine-symbol-macro\\|parameter\\)\\)\s+\\(\\(?:\\sw\\|\\s_\\|\\\\.\\)+\\)" 2)
           ("var   " "^\s*(defvar\\(?:-local\\)?\s+\\(\\(?:\\sw\\|\\s_\\|\\.\\)+\\)" 1)
-          ("f(x)  " "^(defun\s+\\([a-zA-Z0-9/\\-]*?\\)\s+(.*$" 1)
+          ("f(x)  " "^(defun\s+\\([a-zA-Z0-9/\\:\\-]*?\\)\s+(.*$" 1)
           ("pkg   " "^\s*(use-package\s*\\([a-zA-Z0-9\\-]*\\)$" 1)
           ("§     " "^[;]+\s+\\.\\.::\s+\\(.*\\)\s+::\\.\\." 1)
           ("patch " "^;;;; (start patch)\s\\(.*\\)" 1)))

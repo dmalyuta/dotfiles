@@ -2375,6 +2375,8 @@ otherwise use the current value.")
                            ,ml-vc
                            ,ml-space
                            ,ml-clock
+                           ,ml-space
+                           ,ml-space
                            ,ml-space))
                (ml-right-length 0)
                (ml-center-space ""))

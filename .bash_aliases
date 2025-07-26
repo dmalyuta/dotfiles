@@ -82,6 +82,7 @@ find_string() {
 # Create emacs server and connect to server
 EMACS_DEFAULT_DAEMON="emacs-server"
 EMACS_DEFAULT_SIZE="(set-frame-size (selected-frame) 100 40)"
+EMACS_USE_NW__INTERNAL=false
 
 emacs_start() {
     local logfile=/tmp/emacs_servers_init.log
@@ -171,23 +172,57 @@ emacs_connect() {
         file="$1"
     fi
 
-    window_count=$(emacsclient -s $name -e "(length (frame-list))")
+    # Add the emacsclient command itself, optionally with -nw for TTY mode.
+    local -a emacs_cmd=()
+    emacs_cmd+=("emacsclient")
 
-    if [ -z "$file" ]; then
-        if [ "$window_count" = "1" ]; then
-            nohup emacsclient -c -s "$name" -e "$EMACS_DEFAULT_SIZE" >/dev/null 2>&1 &
-            disown
-        else
-            nohup emacsclient -s "$name" >/dev/null 2>&1 &
-            disown
-        fi
-    else
-        if [ "$window_count" = "1" ]; then
-            nohup emacsclient -c -s "$name" -e "$EMACS_DEFAULT_SIZE" "(find-file \"$file\")" >/dev/null 2>&1 &
-            disown
-        else
-            nohup emacsclient -s "$name" -e "(find-file \"$file\")" >/dev/null 2>&1 &
-            disown
-        fi
+    # Specify TTY mode.
+    is_gui=true
+    if [[ $EMACS_USE_NW__INTERNAL == true ]]; then
+        emacs_cmd+=("-nw")
+        is_gui=false
     fi
+
+    # Connect if no open windows.
+    window_count=$(emacsclient -s $name -e "(length (frame-list))")
+    new_window=false
+    if [[ ($window_count == 1) && ($is_gui == true) ]]; then
+        emacs_cmd+=("-c")
+        new_window=true
+    fi
+
+    # Select server to connect to.
+    emacs_cmd+=("-s" "$name")
+
+    # If creating a new window, specify the size.
+    local -a emacs_exec=()
+    if [[ $new_window == true ]]; then
+        emacs_exec+=("$EMACS_DEFAULT_SIZE")
+    fi
+
+    # If opening a new file, execute the find-file command in the Emacs
+    # instance.
+    if [[ -n $file ]]; then
+        emacs_exec+=("(find-file \"$file\")")
+    fi
+
+    # Append exec statements to the overall command.
+    if [[ ${#emacs_exec[@]} -gt 0 ]]; then
+        emacs_cmd+=("-e" "${emacs_exec[@]}")
+    fi
+
+    # Evaluate the command.
+    echo  Executing: "${emacs_cmd[@]}"
+    if [[ $is_gui == true ]]; then
+        nohup "${emacs_cmd[@]}" >/dev/null 2>&1 &
+        disown
+    else
+        "${emacs_cmd[@]}"
+    fi
+}
+
+emacs_connect_nw() {
+    EMACS_USE_NW__INTERNAL=true
+    emacs_connect $1 $2
+    EMACS_USE_NW__INTERNAL=false
 }

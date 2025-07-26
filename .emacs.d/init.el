@@ -2114,7 +2114,12 @@ is automatically turned on while the line numbers are displayed."
   :custom
   (mlscroll-shortfun-min-width 11) ; truncate which-func
   (mlscroll-alter-percent-position nil)
-  (mlscroll-right-align nil))
+  (mlscroll-right-align nil)
+  (mlscroll-border 0)
+  :config
+  ;; Ensure that new server daemon frames can display the modeline scrollbar.
+  (add-hook 'server-after-make-frame-hook
+            (lambda () (mlscroll--update-size nil nil t))))
 
 ;; Mode line format.
 (defvar-local mode-line/current-project-cache nil

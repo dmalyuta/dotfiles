@@ -164,7 +164,7 @@ DIR has to be 1 or -1."
             (when (danylo/check-if-is-source match-pos-start)
               (let ((ov (make-overlay match-pos-start match-pos-end)))
                 (overlay-put ov 'face face)
-                (overlay-put ov 'priority 100) ;; Higher than hl-line-overlay-priority
+                (overlay-put ov 'priority -10) ;; Higher than hl-line-overlay-priority
                 (overlay-put ov 'highlight-symbol-overlay t)
                 (overlay-put ov 'modification-hooks (list #'danylo/delete-overlay))
                 ))))))))

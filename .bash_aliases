@@ -19,11 +19,13 @@ alias dotfiles='cd ~/Documents/dotfiles && ll'
 ################################################################################
 
 killgrep() {
-    ps -ef | grep -E "$1" | grep -v grep | awk '{print $2}' | xargs kill
+    local input_regexp="$@"
+    ps -ef | grep -E "$@" | grep -v grep | awk '{print $2}' | xargs kill
 }
 
 psgrep() {
-    ps aux | grep $1
+    local input_regexp="$@"
+    ps aux | grep -E "$input_regexp"
 }
 
 ################################################################################
@@ -110,11 +112,18 @@ emacs_stop() {
         local emacs_servers=$(emacs_list_servers | grep -E "${grep_query}")
     fi
     for server_name in $emacs_servers; do
-        emacsclient -s $server_name -e "(kill-emacs)"
-        if [ $? -eq 0 ]; then
-            echo "✅ Stopped $server_name"
+        echo $server_name
+        local server_description="default server"
+        if [ "$server_name" == "emacs--default-server" ]; then
+            emacsclient -e "(kill-emacs)"
         else
-            echo "❌ Failed to stop $server_name"
+            emacsclient -s $server_name -e "(kill-emacs)"
+            server_description=$server_name
+        fi
+        if [ $? -eq 0 ]; then
+            echo "✅ Stopped $server_description"
+        else
+            echo "❌ Failed to stop $server_description"
         fi
     done
 }
@@ -125,9 +134,16 @@ emacs_restart_all() {
 }
 
 emacs_list_servers() {
-    #ls -1 /run/user/1000/emacs
-    ps aux | grep -E "emacs.*--daemon=.*" |
-        awk '/emacs / { match($0, /--daemon=([^ \(]+)/, m); if (m[1] != "") print m[1] }'
+    ps aux | grep -E "emacs.*--daemon.*" | awk '/\semacs --daemon=?/ {
+    match($0, /(--daemon=?)([^ \(]+)/, m);
+    if (m[1] != "") {
+        print m[2];
+    }
+    else
+    {
+        print "emacs--default-server"
+    }
+}'
 }
 
 emacs_connect_new() {

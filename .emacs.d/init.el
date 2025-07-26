@@ -1540,153 +1540,6 @@ there. If not visible, open it but don't focus."
               neo-autorefresh nil)
   (add-hook 'after-init-hook (lambda () (require 'neotree))))
 
-;;;; Imenu
-
-;; Add line numbers to the matched results
-
-(defun danylo/match-string-no-properties-with-linum (orig-fun &rest args)
-  "Same as match-string-no-properties except that it appends the
-line number to the string."
-  (declare (side-effect-free t))
-  (let* ((num (nth 0 args))
-         (match-start-pos (match-beginning num))
-         (total-num-lines (int-to-string
-                           (length
-                            (int-to-string
-                             (count-lines (point-min) (point-max))))))
-         (fmt `,(concat "%-" total-num-lines "d %s"))
-         output)
-    (if match-start-pos
-        (setq
-         output
-         (format fmt
-                 (line-number-at-pos match-start-pos)
-                 (buffer-substring-no-properties
-                  match-start-pos (match-end num))))
-      output)))
-
-(defun danylo/imenu-show-linum (orig-fun &rest args)
-  "Match imenu to show line numbers with the matched results."
-  (let (out)
-    (advice-add 'match-string-no-properties :around
-                #'danylo/match-string-no-properties-with-linum)
-    (setq out (apply orig-fun args))
-    (advice-remove 'match-string-no-properties
-                   #'danylo/match-string-no-properties-with-linum)
-    out))
-(advice-add 'imenu--generic-function :around #'danylo/imenu-show-linum)
-
-;;;; Imenu list: view the list of functions and classes in the file
-
-(use-package imenu-list
-  ;; https://github.com/bmag/imenu-list
-  ;; Emacs plugin to show the current buffer's imenu entries
-  :after org
-  :bind (:map prog-mode-map
-              ("C-c t i" . danylo/imenu-list-jump)
-              :map org-mode-map
-              ("C-c t i" . danylo/imenu-list-jump)
-              :map imenu-list-major-mode-map
-              ("C-c t i" . danylo/imenu-list-jump)
-              ("DEL" . danylo/imenu-list-jump))
-  :init (setq imenu-list-size danylo/side-window-width
-              imenu-list-position 'left
-              imenu-list-mode-line-format
-              '("%e" mode-line-front-space
-                (:propertize "%b" face mode-line-buffer-id) " "
-                (:eval (buffer-name imenu-list--displayed-buffer)) " "
-                mode-line-end-spaces))
-  (require 'imenu-list))
-
-(use-package imenu-anywhere
-  ;; https://github.com/vspinu/imenu-anywhere
-  ;; ido/ivy/helm imenu tag selection across buffers with the same
-  ;; mode/project etc.
-  :bind (("C-x c I" . helm-imenu-anywhere))
-  )
-
-(setq imenu-max-item-length "Unlimited")
-
-(defvar danylo/imenu-list--displayed-window nil
-  "The **window** who owns the saved imenu entries.")
-
-(with-eval-after-load 'lsp-ui
-  (defun danylo/check-if-update-imenu ()
-    "Return t if imenu should be refreshed."
-    (or (not (get-buffer-window lsp-ui-imenu-buffer-name))
-        (not (equal (current-buffer) lsp-ui-imenu--origin))))
-
-  (defun danylo/imenu-list-jump ()
-    "Smart open imenu-list side window."
-    (interactive)
-    (setq danylo/imenu-list--displayed-window (selected-window))
-    (danylo/side-window-jump
-     (lambda ()
-       ;; Update the imenu if it's not the current buffer and the buffer has
-       ;; changed.
-       (if (danylo/check-if-update-imenu)
-           (lsp-ui-imenu)
-         (select-window (get-buffer-window lsp-ui-imenu-buffer-name))))
-     lsp-ui-imenu-buffer-name))
-  (add-hook 'lsp-ui-imenu-mode-hook (lambda () (toggle-truncate-lines 1)))
-
-  (defun danylo/imenu-update (&rest args)
-    "Update Imenu list to reflect the current window's content."
-    (when (and (get-buffer-window lsp-ui-imenu-buffer-name t)
-               (not (string= (format "%s" (current-buffer)) lsp-ui-imenu-buffer-name)))
-      (with-current-buffer (current-buffer)
-        (when (danylo/check-if-update-imenu)
-          (condition-case nil
-              (lsp-ui-imenu--refresh)
-            (imenu-unavailable nil))))))
-
-  ;; Update Imenu automatically when window layout state changes
-  (mapc (lambda (func)
-          (advice-add func :after #'danylo/imenu-update))
-        '(;; windmove-do-window-select
-          ;; other-window switch-to-buffer
-          ;; delete-window
-          ;; quit-window
-          save-buffer
-          ;; delete-frame
-          ;; select-window
-          ))
-  (add-hook 'window-state-change-hook 'danylo/imenu-update))
-
-;; Patches to imenu so as to navigate using the **window** that owns the
-;; current Imenu, not the buffer. This way handles multiple windows showing the
-;; same buffer. Otherwise, the jump happens in the wrong window than the one
-;; the user was browsing.
-
-(defun danylo/imenu-list-goto-entry (orig-fun &rest args)
-  "Switch to the original buffer and display the entry under point.
-Patched to use original **window** instead of buffer."
-  (interactive)
-  (let ((entry (imenu-list--find-entry)))
-    (select-window danylo/imenu-list--displayed-window)
-    (imenu entry)
-    (run-hooks 'imenu-list-after-jump-hook)
-    (imenu-list--show-current-entry)))
-(advice-add 'imenu-list-ret-dwim :around #'danylo/imenu-list-goto-entry)
-
-(defun danylo/imenu-list-display-entry (orig-fun &rest args)
-  "Display in original buffer the entry under point.
-Patched to use original **window** instead of buffer."
-  (interactive)
-  (let ((entry (imenu-list--find-entry)))
-    (save-selected-window
-      (select-window danylo/imenu-list--displayed-window)
-      (imenu entry)
-      (run-hooks 'imenu-list-after-jump-hook)
-      (imenu-list--show-current-entry))))
-(advice-add 'imenu-list-display-dwim :around #'danylo/imenu-list-display-entry)
-
-(defun danylo/imenu-quit-go-back ()
-  "Go back to the most recent window after quitting Imenu."
-  (if danylo/imenu-list--displayed-window
-      (select-window danylo/imenu-list--displayed-window)))
-(advice-add 'imenu-list-quit-window :after #'danylo/imenu-quit-go-back)
-
 ;;;; Helm: search everything sledgehammer
 
 (use-package helm
@@ -2212,7 +2065,7 @@ is automatically turned on while the line numbers are displayed."
   ;; https://github.com/tarsius/moody
   ;; Tabs and ribbons for the mode-line.
   :custom
-  (moody-mode-line-height #'moody-default-mode-line-height)
+  (moody-mode-line-height (moody-default-mode-line-height))
   (moody-ribbon-background '(base :background))
   :config
   (moody-replace-mode-line-front-space)
@@ -2223,12 +2076,22 @@ is automatically turned on while the line numbers are displayed."
    (lambda ()
      (unless (display-graphic-p)
        (setq moody-slant-placeholder " "))
+     (setq moody-mode-line-height (moody-default-mode-line-height))
      (set-face-attribute 'solaire-mode-line-face nil :box 'unspecified)
      (set-face-attribute 'solaire-mode-line-inactive-face nil :box 'unspecified)
      (copy-face 'mode-line-active 'mode-line-active-original)
      (copy-face 'solaire-mode-line-face 'solaire-mode-line-face-original)
      (danylo/modeline-add-outline))))
 (require 'moody)
+
+;;;; (apply patch) Fix moody modeline slant colors for solaire-mode.
+(defun danylo/set-modeline-height (&rest _)
+  (setq moody-mode-line-height (moody-default-mode-line-height)))
+(advice-add 'default-text-scale-decrease
+            :after #'danylo/set-modeline-height)
+(advice-add 'default-text-scale-increase
+            :after #'danylo/set-modeline-height)
+;;;; (end patch)
 
 ;;;; (apply patch) Fix moody modeline slant colors for solaire-mode.
 (defun danylo/moody-wrap-color-fix
@@ -2434,111 +2297,9 @@ when there is another buffer printing out information."
                         nil :background region-bg :foreground region-bg))
   )
 
-;;;; (start patch) Improve performance of yascroll.
-(defconst danylo/scrollbar-max-repeat-interval 0.025
-  "Allowed interval between subsequent scrollbar refreshes, before it gets
-hidden temporarily.")
-(defconst danylo/scrollbar-initial-hide-interval 0.25
-  "Time interval to not show the scrollbar for after it first gets hidden.")
-(defvar danylo/scrollbar-show-always t
-  "Always update and show the scrollbar, which effectively disables the state
-machine below.")
-(defvar-local danylo/scrollbar-last-show-time 0.0
-  "Last time that the scrollbar show function was called.")
-(defvar-local danylo/scrollbar-show-timer nil
-  "Timer for transitioning scrollbar state machine states.")
-(defvar-local danylo/scrollbar-hide nil
-  "Hides the scrollbar when active.")
-(defun danylo/get-line-number (pos)
-  (save-excursion
-    (goto-char pos)
-    (string-to-number (format-mode-line "%l"))))
-(defun danylo/yascroll--display ()
-  "The main code to display the scrollbar. It's a more performant version of
-`yascroll:show-scroll-bar-internal'."
-  (when-let ((scroll-bar (yascroll:choose-scroll-bar)))
-    (let ((window-lines (yascroll:window-height))
-          (buffer-lines (danylo/get-line-number (point-max))))
-      (when (< window-lines buffer-lines)
-        (let* ((scroll-top (danylo/get-line-number (window-start)))
-               (thumb-window-line (yascroll:compute-thumb-window-line
-                                   window-lines buffer-lines scroll-top))
-               (thumb-buffer-line (+ scroll-top thumb-window-line))
-               (thumb-size (yascroll:compute-thumb-size
-                            window-lines buffer-lines))
-               (make-thumb-overlay
-                (cl-ecase scroll-bar
-                  (right-fringe 'yascroll:make-thumb-overlay-right-fringe)
-                  (text-area 'yascroll:make-thumb-overlay-text-area))))
-          (when (<= thumb-buffer-line buffer-lines)
-            (yascroll:make-thumb-overlays make-thumb-overlay
-                                          thumb-window-line
-                                          thumb-size)
-            (yascroll:schedule-hide-scroll-bar)))))))
-(defun danylo/yascroll:show-scroll-bar-internal (&rest _)
-  "Show scroll bar in buffer."
-  (if danylo/scrollbar-show-always
-      ;; Always show.
-      (danylo/yascroll--display)
-    ;; Conditional display logic.
-    (unless danylo/scrollbar-hide
-      (let* ((now (float-time))
-             (dt (- now danylo/scrollbar-last-show-time)))
-        (setq danylo/scrollbar-last-show-time now)
-        (if (> dt danylo/scrollbar-max-repeat-interval)
-            (danylo/yascroll--display)
-          (setq danylo/scrollbar-hide t)
-          (run-with-timer
-           danylo/scrollbar-initial-hide-interval nil
-           (lambda (buffer)
-             (run-with-idle-timer
-              (danylo/run-after-idle-interval danylo/scrollbar-max-repeat-interval)
-              nil
-              (lambda (buffer)
-                (with-current-buffer buffer
-                  (setq danylo/scrollbar-hide nil)
-                  (danylo/yascroll:show-scroll-bar-internal)))
-              buffer))
-           (current-buffer)))))))
-(advice-add 'yascroll:show-scroll-bar-internal
-            :around #'danylo/yascroll:show-scroll-bar-internal)
-(defun danylo/yascroll:debounced-scroll (orig-fun &rest args)
-  (let ((danylo/scrollbar-show-always nil))
-    (apply orig-fun args)))
-(advice-add 'yascroll:after-window-scroll
-            :around #'danylo/yascroll:debounced-scroll)
-(advice-add 'yascroll:after-window-configuration-change
-            :around #'danylo/yascroll:debounced-scroll)
-
-(defun danylo/yascroll:after-mouse-scroll (&rest _)
-  (yascroll:after-window-scroll (selected-window) nil))
-(advice-add 'pixel-scroll-precision :after
-            #'danylo/yascroll:after-mouse-scroll)
-
-(defun danylo/yascroll:make-thumb-overlays-fast
-    (orig-fun make-thumb-overlay window-line size)
-  (save-excursion
-    ;; Jump to the line.
-    (goto-char (window-start))
-    ;; `forward-line' is faster, but moves by logical lines instead of visual
-    ;; lines. This will result in scrollbar gaps for wrapped
-    ;; lines. `vertical-line' moves by visual lines, but is computationally
-    ;; slower.
-    ;; (forward-line window-line)
-    (vertical-motion window-line)
-    ;; Make thumb overlays.
-    (condition-case nil
-        (cl-loop repeat size
-                 do
-                 (progn
-                   (push (funcall make-thumb-overlay) yascroll:thumb-overlays)
-                   ;; (forward-line 1)
-                   (vertical-motion 1))
-                 until (eobp))
-      (end-of-buffer nil))))
-(advice-add 'yascroll:make-thumb-overlays
-            :around #'danylo/yascroll:make-thumb-overlays-fast)
-;;;; (end patch)
+(use-package danylo-scrollbar
+  ;; My scrollbar improvements.
+  :load-path danylo/emacs-custom-lisp-dir)
 
 ;;; ..:: Code editing ::..
 
@@ -2796,7 +2557,7 @@ C-z... instead of C-u C-z C-u C-z C-u C-z...")
               (while (re-search-forward (hl-todo--regexp) end t)
                 (let ((ov (make-overlay (match-beginning 0) (match-end 0))))
                   (overlay-put ov 'face (hl-todo--get-face))
-                  (overlay-put ov 'priority 100) ;; Higher than hl-line-overlay-priority
+                  (overlay-put ov 'priority -10) ;; Higher than hl-line-overlay-priority
                   (overlay-put ov 'hl-todo-overlay t)
                   ))))))))))
 (add-hook 'after-change-functions #'danylo/hl-todo-overlay)
@@ -4147,6 +3908,159 @@ argument: number-or-marker-p, nil'."
   :after (lsp-mode)
   )
 
+;;; ..:: Imenu ::..
+
+;; Add line numbers to the matched results
+(defun danylo/match-string-no-properties-with-linum (orig-fun &rest args)
+  "Same as match-string-no-properties except that it appends the
+line number to the string."
+  (declare (side-effect-free t))
+  (let* ((num (nth 0 args))
+         (match-start-pos (match-beginning num))
+         (total-num-lines (int-to-string
+                           (length
+                            (int-to-string
+                             (count-lines (point-min) (point-max))))))
+         (fmt `,(concat "%-" total-num-lines "d %s"))
+         output)
+    (if match-start-pos
+        (setq
+         output
+         (format fmt
+                 (line-number-at-pos match-start-pos)
+                 (buffer-substring-no-properties
+                  match-start-pos (match-end num))))
+      output)))
+
+(defun danylo/imenu-show-linum (orig-fun &rest args)
+  "Match imenu to show line numbers with the matched results."
+  (let (out)
+    (advice-add 'match-string-no-properties :around
+                #'danylo/match-string-no-properties-with-linum)
+    (setq out (apply orig-fun args))
+    (advice-remove 'match-string-no-properties
+                   #'danylo/match-string-no-properties-with-linum)
+    out))
+(advice-add 'imenu--generic-function :around #'danylo/imenu-show-linum)
+
+;;;; Imenu list: view the list of functions and classes in the file
+
+(use-package imenu-list
+  ;; https://github.com/bmag/imenu-list
+  ;; Emacs plugin to show the current buffer's imenu entries
+  :after org
+  :bind (:map prog-mode-map
+              ("C-c t i" . danylo/imenu-list-jump)
+              :map org-mode-map
+              ("C-c t i" . danylo/imenu-list-jump)
+              :map imenu-list-major-mode-map
+              ("C-c t i" . danylo/imenu-list-jump)
+              ("DEL" . danylo/imenu-list-jump))
+  :init (setq imenu-list-size danylo/side-window-width
+              imenu-list-position 'left
+              imenu-list-mode-line-format
+              '("%e" mode-line-front-space
+                (:propertize "%b" face mode-line-buffer-id) " "
+                (:eval (buffer-name imenu-list--displayed-buffer)) " "
+                mode-line-end-spaces))
+  (require 'imenu-list))
+
+(use-package imenu-anywhere
+  ;; https://github.com/vspinu/imenu-anywhere
+  ;; ido/ivy/helm imenu tag selection across buffers with the same
+  ;; mode/project etc.
+  :bind (("C-x c I" . helm-imenu-anywhere))
+  )
+
+(setq imenu-max-item-length "Unlimited")
+
+(defvar danylo/imenu-list--displayed-window nil
+  "The **window** who owns the saved imenu entries.")
+
+(defun danylo/check-if-update-imenu ()
+  "Return t if imenu should be refreshed."
+  (or (not (get-buffer-window lsp-ui-imenu-buffer-name))
+      (not (equal (current-buffer) lsp-ui-imenu--origin))))
+
+(defun danylo/imenu-list-jump ()
+  "Smart open imenu-list side window."
+  (interactive)
+  (setq danylo/imenu-list--displayed-window (selected-window))
+  (if (boundp 'lsp-ui-imenu-buffer-name)
+      (danylo/side-window-jump
+       (lambda ()
+         ;; Update the imenu if it's not the current buffer and the buffer has
+         ;; changed.
+         (if (danylo/check-if-update-imenu)
+             (lsp-ui-imenu)
+           (select-window (get-buffer-window lsp-ui-imenu-buffer-name))))
+       lsp-ui-imenu-buffer-name)
+    (danylo/side-window-jump 'imenu-list imenu-list-buffer-name))
+  )
+(add-hook 'lsp-ui-imenu-mode-hook (lambda () (toggle-truncate-lines 1)))
+
+(defun danylo/imenu-update (&rest args)
+  "Update Imenu list to reflect the current window's content."
+  (if (boundp 'lsp-ui-imenu-buffer-name)
+      (when (and (get-buffer-window lsp-ui-imenu-buffer-name t)
+                 (not (string= (format "%s" (current-buffer)) lsp-ui-imenu-buffer-name)))
+        (with-current-buffer (current-buffer)
+          (when (danylo/check-if-update-imenu)
+            (condition-case nil
+                (lsp-ui-imenu--refresh)
+              (imenu-unavailable nil)))))
+    (when (and (get-buffer-window imenu-list-buffer-name t)
+               (not (string= (format "%s" (current-buffer)) imenu-list-buffer-name)))
+      (with-current-buffer (current-buffer)
+        (imenu-list-update t)))))
+
+;; Update Imenu automatically when window layout state changes
+(mapc (lambda (func)
+        (advice-add func :after #'danylo/imenu-update))
+      '(;; windmove-do-window-select
+        ;; other-window switch-to-buffer
+        ;; delete-window
+        ;; quit-window
+        save-buffer
+        ;; delete-frame
+        ;; select-window
+        ))
+(add-hook 'window-state-change-hook 'danylo/imenu-update)
+
+;; Patches to imenu so as to navigate using the **window** that owns the
+;; current Imenu, not the buffer. This way handles multiple windows showing the
+;; same buffer. Otherwise, the jump happens in the wrong window than the one
+;; the user was browsing.
+
+(defun danylo/imenu-list-goto-entry (orig-fun &rest args)
+  "Switch to the original buffer and display the entry under point.
+Patched to use original **window** instead of buffer."
+  (interactive)
+  (let ((entry (imenu-list--find-entry)))
+    (select-window danylo/imenu-list--displayed-window)
+    (imenu entry)
+    (run-hooks 'imenu-list-after-jump-hook)
+    (imenu-list--show-current-entry)))
+(advice-add 'imenu-list-ret-dwim :around #'danylo/imenu-list-goto-entry)
+
+(defun danylo/imenu-list-display-entry (orig-fun &rest args)
+  "Display in original buffer the entry under point.
+Patched to use original **window** instead of buffer."
+  (interactive)
+  (let ((entry (imenu-list--find-entry)))
+    (save-selected-window
+      (select-window danylo/imenu-list--displayed-window)
+      (imenu entry)
+      (run-hooks 'imenu-list-after-jump-hook)
+      (imenu-list--show-current-entry))))
+(advice-add 'imenu-list-display-dwim :around #'danylo/imenu-list-display-entry)
+
+(defun danylo/imenu-quit-go-back ()
+  "Go back to the most recent window after quitting Imenu."
+  (if danylo/imenu-list--displayed-window
+      (select-window danylo/imenu-list--displayed-window)))
+(advice-add 'imenu-list-quit-window :after #'danylo/imenu-quit-go-back)
+
 ;;; ..:: Code linting ::..
 
 (use-package flycheck
@@ -4267,7 +4181,6 @@ _q_: Quit"
   "Configure org mode after loading it"
   (setq org-adapt-indentation nil
         org-hide-leading-stars nil)
-  (visual-line-mode t)
   (company-mode t)
   (make-variable-buffer-local 'electric-pair-pairs)
   (add-to-list 'electric-pair-pairs '(?~ . ?~))
@@ -4281,7 +4194,11 @@ _q_: Quit"
   ;; https://github.com/bzg/org-mode
   ;; Your life in plain text
   :hook ((org-mode . danylo/org-mode-setup)
-         (org-mode . subword-mode))
+         (org-mode . subword-mode)
+         (org-mode . (lambda ()
+                       (when (display-graphic-p)
+                         (org-modern-mode))
+                       (setq word-wrap nil))))
   :bind (:map org-mode-map
               ("M-." . org-open-at-point)
               ("M-," . org-mark-ring-goto)
@@ -4314,8 +4231,6 @@ _q_: Quit"
 (use-package org-modern
   ;; https://github.com/minad/org-modern
   ;; Modern Org Style.
-  :config
-  (with-eval-after-load 'org (global-org-modern-mode))
   )
 
 (use-package org-modern-indent
@@ -4324,7 +4239,11 @@ _q_: Quit"
   :quelpa (org-modern-indent :fetcher github
                              :repo "jdtsmith/org-modern-indent")
   :config
-  (add-hook 'org-mode-hook #'org-modern-indent-mode 90))
+  (add-hook 'org-mode-hook
+            (lambda ()
+              (when (display-graphic-p)
+                (org-modern-indent-mode)))
+            90))
 
 (use-package org-auctex
   ;; https://github.com/karthink/org-auctex
@@ -4341,20 +4260,23 @@ _q_: Quit"
 (require 'org-download)
 (defhydra hydra-org-download (:hint none)
   "
-Org image download
-_v_: paste from clipboard
-_s_: take screenshot
-_k_: delete
+Org images
+-------------------------
+_i_:   toggle inline images
+_v_:   paste from clipboard
+_s_:   take screenshot
+_k_:   delete
 
 Essential commands
 _q_: Quit"
   ("v" org-download-clipboard :exit t)
   ("s" org-download-screenshot :exit t)
   ("k" org-download-delete :exit t)
+  ("i" org-toggle-inline-images :exit t)
   ("q" nil "cancel"))
 (general-define-key
  :keymaps 'org-mode-map
- "C-c o i" 'hydra-org-download/body)
+ "C-c i" 'hydra-org-download/body)
 
 (defun danylo/math-preview-init ()
   "Startup actions for math preview."

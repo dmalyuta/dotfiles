@@ -108,7 +108,8 @@ machine below.")
             :around #'danylo/yascroll:debounced-scroll)
 
 (defun danylo/yascroll:after-mouse-scroll (&rest _)
-  (yascroll:after-window-scroll (selected-window) nil))
+  (when yascroll-bar-mode
+    (yascroll:after-window-scroll (selected-window) nil)))
 (advice-add 'pixel-scroll-precision :after
             #'danylo/yascroll:after-mouse-scroll)
 

@@ -3885,7 +3885,8 @@ argument: number-or-marker-p, nil'."
       (lsp-managed-mode -1)
     (lsp)))
 
-;;;; (start patch)
+;;;; (start patch) Remove indent guidelines on lines where lsp-ui information
+;;;;               appears.
 (defvar-local danylo/indent-bars-display-on-blank-lines-prev nil
   "Value of indent-bars-display-on-blank-lines the last time that
 `danylo/indent-bars-watcher' ran.")
@@ -3904,6 +3905,27 @@ argument: number-or-marker-p, nil'."
         (indent-bars--window-change)
         (font-lock-fontify-region (window-start) (window-end))))))
 (add-variable-watcher 'lsp-ui-sideline--ovs #'danylo/indent-bars-watcher)
+;;;; (end patch)
+
+;;;; (start patch) Hide scrollbar in TTY mode on lines where lsp-ui information
+;;;;               appears.
+(defun danylo/scrollbar-watcher (symbol newval operation where)
+  (when (and (not (display-graphic-p))
+             (memq 'lsp-ui-mode minor-mode-list)
+             yascroll-bar-mode)
+    ;; Make sure the scrollbar is up-to-date.
+    (yascroll:after-change)
+    ;; Delete any parts of the scrollbar that interfere with the lsp-ui
+    ;; sideline information.
+    (dolist (lsp-ui-overlay newval)
+      (dolist (existing-overlay
+               (overlays-in (overlay-start lsp-ui-overlay)
+                            (overlay-end lsp-ui-overlay)))
+        (when (overlay-get existing-overlay 'scrollbar-overlay)
+          (setq yascroll:thumb-overlays
+                (remove existing-overlay yascroll:thumb-overlays))
+          (delete-overlay existing-overlay))))))
+(add-variable-watcher 'lsp-ui-sideline--ovs #'danylo/scrollbar-watcher)
 ;;;; (end patch)
 
 ;;;;;;;;;; lsp-booster for more performant LSP mode.

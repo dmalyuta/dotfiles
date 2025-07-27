@@ -114,25 +114,27 @@ machine below.")
 
 (defun danylo/yascroll:make-thumb-overlays-fast
     (orig-fun make-thumb-overlay window-line size)
-  (save-excursion
-    ;; Jump to the line.
-    (goto-char (window-start))
-    ;; `forward-line' is faster, but moves by logical lines instead of visual
-    ;; lines. This will result in scrollbar gaps for wrapped
-    ;; lines. `vertical-line' moves by visual lines, but is computationally
-    ;; slower.
-    ;; (forward-line window-line)
-    (vertical-motion window-line)
-    ;; Make thumb overlays.
-    (condition-case nil
-        (cl-loop repeat size
-                 do
-                 (progn
-                   (push (funcall make-thumb-overlay) yascroll:thumb-overlays)
-                   ;; (forward-line 1)
-                   (vertical-motion 1))
-                 until (eobp))
-      (end-of-buffer nil))))
+  (when make-thumb-overlay
+    (save-excursion
+      ;; Jump to the line.
+      (goto-char (window-start))
+      ;; `forward-line' is faster, but moves by logical lines instead of visual
+      ;; lines. This will result in scrollbar gaps for wrapped
+      ;; lines. `vertical-line' moves by visual lines, but is computationally
+      ;; slower.
+      ;; (forward-line window-line)
+      (vertical-motion window-line)
+      ;; Make thumb overlays.
+      (condition-case nil
+          (cl-loop repeat size
+                   do
+                   (progn
+                     (push (funcall make-thumb-overlay)
+                           yascroll:thumb-overlays)
+                     ;; (forward-line 1)
+                     (vertical-motion 1))
+                   until (eobp))
+        (end-of-buffer nil)))))
 (advice-add 'yascroll:make-thumb-overlays
             :around #'danylo/yascroll:make-thumb-overlays-fast)
 
@@ -159,44 +161,32 @@ properties later on, which is common in in org-mode."
 
 (defun danylo/yascroll:make-thumb-overlay-text-area (orig-fun)
   "Not documented."
-  ;; Make sure that text is contified, i.e, no JIT behavior.
   (save-excursion
     (cl-destructuring-bind (edge-pos edge-padding)
         (yascroll:line-edge-position)
-      ;; Find if scrollbar already exists at point.
-      (let ((overlays (overlays-at edge-pos))
-            found
-            scrollbar-overlay)
-        (while overlays
-          (let ((overlay (car overlays)))
-            (if (overlay-get overlay 'scrollbar-overlay)
-                (setq found overlay)))
-          (setq overlays (cdr overlays)))
-        (if found
-            found
-          (let* ((lep (line-end-position))
-                 (is-folded (invisible-p lep)))
-            (if (= edge-pos lep)
-                (let ((overlay (make-overlay edge-pos edge-pos))
-                      (after-string
-                       (concat (make-string (1- edge-padding) ?\ )
-                               (propertize " " 'face 'yascroll:thumb-text-area))))
-                  (put-text-property 0 1 'cursor t after-string)
-                  (overlay-put overlay 'after-string after-string)
-                  (overlay-put overlay 'window (selected-window))
-                  (overlay-put overlay 'scrollbar-overlay t)
-                  overlay)
-              (let ((overlay (make-overlay edge-pos (1+ edge-pos)))
-                    (display-string
-                     (propertize " "
-                                 'face 'yascroll:thumb-text-area
-                                 'cursor t)))
-                (unless is-folded
-                  (overlay-put overlay 'display display-string)
-                  (overlay-put overlay 'window (selected-window))
-                  (overlay-put overlay 'priority yascroll:priority)
-                  (overlay-put overlay 'scrollbar-overlay t))
-                overlay))))))))
+      (let* ((lep (line-end-position))
+             (is-folded (invisible-p lep)))
+        (if (= edge-pos lep)
+            (let ((overlay (make-overlay edge-pos edge-pos))
+                  (after-string
+                   (concat (make-string (1- edge-padding) ?\ )
+                           (propertize " " 'face 'yascroll:thumb-text-area))))
+              (put-text-property 0 1 'cursor t after-string)
+              (overlay-put overlay 'after-string after-string)
+              (overlay-put overlay 'window (selected-window))
+              (overlay-put overlay 'scrollbar-overlay t)
+              overlay)
+          (let ((overlay (make-overlay edge-pos (1+ edge-pos)))
+                (display-string
+                 (propertize " "
+                             'face 'yascroll:thumb-text-area
+                             'cursor t)))
+            (unless is-folded
+              (overlay-put overlay 'display display-string)
+              (overlay-put overlay 'window (selected-window))
+              (overlay-put overlay 'priority yascroll:priority)
+              (overlay-put overlay 'scrollbar-overlay t))
+            overlay))))))
 (advice-add 'yascroll:make-thumb-overlay-text-area
             :around #'danylo/yascroll:make-thumb-overlay-text-area)
 

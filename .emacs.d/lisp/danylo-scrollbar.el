@@ -13,6 +13,8 @@
 ;;
 ;;; Code:
 
+(require 'yascroll)
+
 (defconst danylo/scrollbar-max-repeat-interval 0.025
   "Allowed interval between subsequent scrollbar refreshes, before it gets
 hidden temporarily.")
@@ -49,21 +51,21 @@ machine below.")
         (save-excursion
           (font-lock-fontify-region
            (line-beginning-position) (line-end-position))
-          (font-lock-flush))
-        (let* ((scroll-top (danylo/get-line-number (window-start)))
-               (thumb-window-line (yascroll:compute-thumb-window-line
-                                   window-lines buffer-lines scroll-top))
-               (thumb-buffer-line (+ scroll-top thumb-window-line))
-               (thumb-size (yascroll:compute-thumb-size
-                            window-lines buffer-lines))
-               (make-thumb-overlay
-                (cl-ecase scroll-bar
-                  (right-fringe 'yascroll:make-thumb-overlay-right-fringe)
-                  (text-area 'yascroll:make-thumb-overlay-text-area))))
-          (yascroll:make-thumb-overlays make-thumb-overlay
-                                        thumb-window-line
-                                        thumb-size)
-          (yascroll:schedule-hide-scroll-bar))))))
+          (font-lock-flush)
+          (let* ((scroll-top (danylo/get-line-number (window-start)))
+                 (thumb-window-line (yascroll:compute-thumb-window-line
+                                     window-lines buffer-lines scroll-top))
+                 (thumb-buffer-line (+ scroll-top thumb-window-line))
+                 (thumb-size (yascroll:compute-thumb-size
+                              window-lines buffer-lines))
+                 (make-thumb-overlay
+                  (cl-ecase scroll-bar
+                    (right-fringe 'yascroll:make-thumb-overlay-right-fringe)
+                    (text-area 'yascroll:make-thumb-overlay-text-area))))
+            (yascroll:make-thumb-overlays make-thumb-overlay
+                                          thumb-window-line
+                                          thumb-size)
+            (yascroll:schedule-hide-scroll-bar)))))))
 
 (defun danylo/yascroll:show-scroll-bar-internal (&rest _)
   "Show scroll bar in buffer."
@@ -82,16 +84,16 @@ machine below.")
           (setq danylo/scrollbar-hide t)
           (run-with-timer
            danylo/scrollbar-initial-hide-interval nil
-           (lambda (buffer)
+           (lambda (buf)
              (run-with-idle-timer
-              (danylo/run-after-idle-interval danylo/scrollbar-max-repeat-interval)
-              nil
-              (lambda (buffer)
-                (with-current-buffer buffer
+              (danylo/run-after-idle-interval
+               danylo/scrollbar-max-repeat-interval) nil
+              (lambda (buf)
+                (with-current-buffer buf
                   (setq danylo/scrollbar-hide nil)
                   (danylo/yascroll:show-scroll-bar-internal)))
-              buffer))
-           (current-buffer)))))))
+              buf))
+           (buffer-name)))))))
 (advice-add 'yascroll:show-scroll-bar-internal
             :around #'danylo/yascroll:show-scroll-bar-internal)
 
@@ -156,51 +158,62 @@ properties later on, which is common in in org-mode."
 (defun danylo/yascroll:make-thumb-overlay-text-area (orig-fun)
   "Not documented."
   ;; Make sure that text is contified, i.e, no JIT behavior.
-  (cl-destructuring-bind (edge-pos edge-padding)
-      (yascroll:line-edge-position)
-    ;; Find if scrollbar already exists at point.
-    (let ((overlays (overlays-at edge-pos))
-          found
-          scrollbar-overlay)
-      (while overlays
-        (let ((overlay (car overlays)))
-          (if (overlay-get overlay 'scrollbar-overlay)
-              (setq found overlay)))
-        (setq overlays (cdr overlays)))
-      (if found
-          found
-        (let* ((lep (line-end-position))
-               (is-folded (invisible-p lep)))
-          (if (= edge-pos lep)
-              (let ((overlay (make-overlay edge-pos edge-pos))
-                    (after-string
-                     (concat (make-string (1- edge-padding) ?\ )
-                             (propertize " " 'face 'yascroll:thumb-text-area))))
-                (put-text-property 0 1 'cursor t after-string)
-                (overlay-put overlay 'after-string after-string)
-                (overlay-put overlay 'window (selected-window))
-                (overlay-put overlay 'scrollbar-overlay t)
-                overlay)
-            (let ((overlay (make-overlay edge-pos (1+ edge-pos)))
-                  (display-string
-                   (propertize " "
-                               'face 'yascroll:thumb-text-area
-                               'cursor t)))
-              (unless is-folded
-                (overlay-put overlay 'display display-string)
-                (overlay-put overlay 'window (selected-window))
-                (overlay-put overlay 'priority yascroll:priority)
-                (overlay-put overlay 'scrollbar-overlay t))
-              overlay)))))))
+  (save-excursion
+    (cl-destructuring-bind (edge-pos edge-padding)
+        (yascroll:line-edge-position)
+      ;; Find if scrollbar already exists at point.
+      (let ((overlays (overlays-at edge-pos))
+            found
+            scrollbar-overlay)
+        (while overlays
+          (let ((overlay (car overlays)))
+            (if (overlay-get overlay 'scrollbar-overlay)
+                (setq found overlay)))
+          (setq overlays (cdr overlays)))
+        (if found
+            found
+          (let* ((lep (line-end-position))
+                 (is-folded (invisible-p lep)))
+            (if (= edge-pos lep)
+                (let ((overlay (make-overlay edge-pos edge-pos))
+                      (after-string
+                       (concat (make-string (1- edge-padding) ?\ )
+                               (propertize " " 'face 'yascroll:thumb-text-area))))
+                  (put-text-property 0 1 'cursor t after-string)
+                  (overlay-put overlay 'after-string after-string)
+                  (overlay-put overlay 'window (selected-window))
+                  (overlay-put overlay 'scrollbar-overlay t)
+                  overlay)
+              (let ((overlay (make-overlay edge-pos (1+ edge-pos)))
+                    (display-string
+                     (propertize " "
+                                 'face 'yascroll:thumb-text-area
+                                 'cursor t)))
+                (unless is-folded
+                  (overlay-put overlay 'display display-string)
+                  (overlay-put overlay 'window (selected-window))
+                  (overlay-put overlay 'priority yascroll:priority)
+                  (overlay-put overlay 'scrollbar-overlay t))
+                overlay))))))))
 (advice-add 'yascroll:make-thumb-overlay-text-area
             :around #'danylo/yascroll:make-thumb-overlay-text-area)
+
+;; Only update the scrollbar in the currently active window.
+(defun danylo/yascroll:show-scroll-bar (&rest _)
+  (yascroll:with-no-redisplay
+    (save-excursion
+      (yascroll:hide-scroll-bar)
+      (yascroll:show-scroll-bar-internal))))
+(advice-add 'yascroll:show-scroll-bar
+            :around #'danylo/yascroll:show-scroll-bar)
 
 ;; Disable scrollbar update on text change.
 (add-hook
  'yascroll-bar-mode-hook
  (lambda ()
-   (remove-hook 'before-change-functions 'yascroll:before-change t)
-   (remove-hook 'after-change-functions 'yascroll:after-change t)))
+   (when (display-graphic-p)
+     (remove-hook 'before-change-functions 'yascroll:before-change t)
+     (remove-hook 'after-change-functions 'yascroll:after-change t))))
 
 (provide 'danylo-scrollbar)
 ;;; danylo-scrollbar.el ends here

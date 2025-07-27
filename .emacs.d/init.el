@@ -1869,10 +1869,19 @@ active. Basically, any non-file-visiting buffer."
 ;;; Highlight the current line.
 (setq hl-line-sticky-flag nil
       global-hl-line-sticky-flag nil)
+(defun danylo/hl-line-mode ()
+  "Enable hl-line-mode when in GUI. In TTY, there are screen flickering
+issues with it.
+
+PS: actually seems like the flicker is caused by running Emacs in tmux.
+Running in a regular shell does not have flickering."
+  ;; (when (display-graphic-p)
+  ;;   (hl-line-mode))
+  (hl-line-mode))
 ;; All programming major modes.
-(add-hook 'prog-mode-hook #'hl-line-mode)
+(add-hook 'prog-mode-hook #'danylo/hl-line-mode)
 ;; All modes derived from text-mode.
-(add-hook 'text-mode-hook #'hl-line-mode)
+(add-hook 'text-mode-hook #'danylo/hl-line-mode)
 
 ;;;; (start patch) Throttle hl-line-highlight when the user is jamming
 ;;;;               `keyboard-quit'.
@@ -2304,6 +2313,7 @@ when there is another buffer printing out information."
 
 (use-package danylo-scrollbar
   ;; My scrollbar improvements.
+  :after yascroll
   :load-path danylo/emacs-custom-lisp-dir)
 
 ;;; ..:: Code editing ::..
@@ -2423,7 +2433,7 @@ direction. Either 'previous or 'next.")
   "This code runs when the user goes back to a single cusor."
   (let ((inhibit-quit t))
     (when danylo/do-enable-hl-line-mode
-      (hl-line-mode)
+      (danylo/hl-line-mode)
       (setq danylo/do-enable-hl-line-mode nil))))
 (add-hook 'multiple-cursors-mode-enabled-hook #'danylo/do-on-mc-start)
 (add-hook 'multiple-cursors-mode-disabled-hook #'danylo/do-on-mc-end)
@@ -2939,12 +2949,20 @@ in the following cases:
   (indent-bars-color-by-depth nil)
   (indent-bars-treesit-scope-min-lines 5)
   (indent-bars-highlight-current-depth nil)
+  :init
   ;; indent-bars on blank lines interact badly with lsp-ui-sideline:
   ;; https://github.com/jdtsmith/indent-bars/issues/14#issuecomment-1685103354.
   ;; I implemented a patch in the form of `danylo/indent-bars-watcher' below in
   ;; order to turn off display of the indent guides on blank lines whenever
   ;; lsp-ui-sideline information is displayed.
-  (indent-bars-display-on-blank-lines t)
+  ;;
+  ;; Furthermore: indent bars on empty lines don't work well with the yascroll
+  ;; bar in terminal mode, since it effectively adds an indent indicator where
+  ;; the scrollbar already added an overlay for the scrollbar. This makes the
+  ;; line wrap because it is too long.
+  (danylo/run-gui-conditional-code
+   (lambda ()
+     (setq indent-bars-display-on-blank-lines (display-graphic-p))))
   )
 
 (require 'indent-bars)
@@ -3120,6 +3138,32 @@ line is not repeated horizontally at certain text zoom levels."
   (setf (alist-get 'black apheleia-formatters)
         (append (alist-get 'black apheleia-formatters) '("--required-version" "24.10.0")))
   )
+
+;;;; (start patch) Apheleia interacts badly with yascroll-bar-mode, so disable
+;;;;               the scrollbar while apheleia runs.
+(defvar-local danylo/reenable-scrollbar-after-save nil
+  "Show the scrollbar again after saving the buffer.")
+(defvar-local danylo/pre-save-point nil
+  "Show the scrollbar again after saving the buffer.")
+(defun danylo/apheleia-yascroll-cooperate (orig-fun &rest args)
+  (when yascroll-bar-mode
+    (yascroll-bar-mode -1)
+    (setq danylo/reenable-scrollbar-after-save t))
+  (setq danylo/pre-save-point (point))
+  (apply orig-fun args))
+(defun danylo/show-scrollbar-after-apheleia ()
+  (when danylo/reenable-scrollbar-after-save
+    (yascroll-bar-mode t)
+    (yascroll:safe-show-scroll-bar)
+    (setq danylo/reenable-scrollbar-after-save nil))
+  (when danylo/pre-save-point
+    (goto-char danylo/pre-save-point)
+    (setq danylo/pre-save-point nil)))
+(advice-add 'apheleia-format-after-save
+            :around #'danylo/apheleia-yascroll-cooperate)
+(add-hook 'apheleia-post-format-hook
+          #'danylo/show-scrollbar-after-apheleia)
+;;;; (end patch)
 
 ;;;; (start patch) Colorize/fontify the visible window after apheleia runs
 ;;;;               formatting.
@@ -3848,7 +3892,8 @@ argument: number-or-marker-p, nil'."
 (defun danylo/indent-bars-watcher (symbol newval operation where)
   (when (and indent-bars-mode
              (memq 'lsp-ui-mode minor-mode-list))
-    (setq indent-bars-display-on-blank-lines (equal newval nil))
+    (setq indent-bars-display-on-blank-lines
+          (and (equal newval nil) (display-graphic-p)))
     (unless (equal indent-bars-display-on-blank-lines
                    danylo/indent-bars-display-on-blank-lines-prev)
       (setq danylo/indent-bars-display-on-blank-lines-prev
@@ -5614,7 +5659,7 @@ It is a fallback for when which-func-functions and `add-log-current-defun' retur
   :config
   ;; Highlight the current line, which makes the full CSV row obvious even when
   ;; the line is wrapped.
-  (add-hook 'danylo-csv-mode-hook #'hl-line-mode))
+  (add-hook 'danylo-csv-mode-hook #'danylo/hl-line-mode))
 
 ;;; ..:: Bazel ::..
 

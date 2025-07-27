@@ -75,25 +75,27 @@ machine below.")
         (setq danylo/scrollbar-hide nil)
         (danylo/yascroll--display))
     ;; Conditional display logic.
-    (unless danylo/scrollbar-hide
-      (let* ((now (float-time))
-             (dt (- now danylo/scrollbar-last-show-time)))
-        (setq danylo/scrollbar-last-show-time now)
-        (if (> dt danylo/scrollbar-max-repeat-interval)
-            (danylo/yascroll--display)
-          (setq danylo/scrollbar-hide t)
-          (run-with-timer
-           danylo/scrollbar-initial-hide-interval nil
-           (lambda (buf)
-             (run-with-idle-timer
-              (danylo/run-after-idle-interval
-               danylo/scrollbar-max-repeat-interval) nil
-              (lambda (buf)
-                (with-current-buffer buf
+    (let* ((now (float-time))
+           (dt (- now danylo/scrollbar-last-show-time)))
+      (setq danylo/scrollbar-last-show-time now)
+      (if (> dt danylo/scrollbar-max-repeat-interval)
+          (progn
+            (setq danylo/scrollbar-hide nil)
+            (danylo/yascroll--display))
+        (setq danylo/scrollbar-hide t)
+        (run-with-timer
+         danylo/scrollbar-initial-hide-interval nil
+         (lambda (buf)
+           (run-with-idle-timer
+            (danylo/run-after-idle-interval
+             danylo/scrollbar-max-repeat-interval) nil
+            (lambda (buf)
+              (with-current-buffer buf
+                (when danylo/scrollbar-hide
                   (setq danylo/scrollbar-hide nil)
-                  (danylo/yascroll:show-scroll-bar-internal)))
-              buf))
-           (buffer-name)))))))
+                  (danylo/yascroll:show-scroll-bar-internal))))
+            buf))
+         (buffer-name))))))
 (advice-add 'yascroll:show-scroll-bar-internal
             :around #'danylo/yascroll:show-scroll-bar-internal)
 

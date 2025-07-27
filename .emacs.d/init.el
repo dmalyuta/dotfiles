@@ -4505,7 +4505,15 @@ fill after inserting the link."
   (set-face-attribute 'magit-branch-current nil
                       :foreground `,danylo/blue
                       :box t
-                      :weight 'bold))
+                      :weight 'bold)
+  (unless (display-graphic-p)
+    ;; Fix magit diff highlight in TTY.
+    (set-face-attribute 'magit-diff-removed-highlight nil
+                        :foreground "#ff6c6b"
+                        :background "#4f343a")
+    (set-face-attribute 'magit-diff-added-highlight nil
+                        :foreground "#98be65"
+                        :background "#3e493d")))
 
 ;; Make sure commit message open immediately in the Git commit mode.
 (require 'git-commit)

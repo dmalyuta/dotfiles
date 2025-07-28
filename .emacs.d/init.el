@@ -409,6 +409,25 @@ Remote files are ommitted."
   (danylo/fancy-icon 'all-the-icons-octicon 'all-the-icons-octicon-family
                      icon fg))
 
+(defhydra hydra-org-image (:hint none)
+  "
+Insert icons
+------------
+_f_:   Font Awesome
+_m_: 󰦆  Material Design
+_o_:   Octicons
+_u_: 🧐 Unicode
+
+Essential commands
+_q_: Quit"
+  ("f" nerd-icons-insert-faicon :exit t)
+  ("m" nerd-icons-insert-mdicon :exit t)
+  ("o" nerd-icons-insert-octicon :exit t)
+  ("u" helm-unicode :exit t)
+  ("q" nil "cancel"))
+(general-define-key
+ "C-c I" 'hydra-org-image/body)
+
 (defun danylo/print-in-minibuffer (str &optional ifempty)
   "Echo STR in the minibuffer."
   (with-selected-window (minibuffer-window)
@@ -874,7 +893,8 @@ reload it."
   "Pretty print save buffer, preserver height of minibuffer."
   (save-excursion
     (let ((message-truncate-lines t)
-          (this-file-name (file-name-nondirectory (buffer-file-name))))
+          (this-file-name (file-name-nondirectory (or (buffer-file-name)
+                                                      (buffer-name)))))
       (let ((inhibit-message t))
         (apply orig-fun args))
       (danylo/print-in-minibuffer
@@ -2299,7 +2319,8 @@ when there is another buffer printing out information."
   ;; https://github.com/emacsorphanage/yascroll
   ;; Yet Another Scroll Bar Mode
   :hook ((prog-mode . yascroll-bar-mode)
-         (text-mode . yascroll-bar-mode))
+         (text-mode . yascroll-bar-mode)
+         (org-mode . yascroll-bar-mode))
   :custom
   (yascroll:priority 1000)
   (yascroll:delay-to-hide nil)
@@ -3150,7 +3171,9 @@ line is not repeated horizontally at certain text zoom levels."
     (yascroll-bar-mode -1)
     (setq danylo/reenable-scrollbar-after-save t))
   (setq danylo/pre-save-point (point))
-  (apply orig-fun args))
+  (unless (apply orig-fun args)
+    ;; Calling formatter has failed, restore the scrollbar immediately.
+    (danylo/show-scrollbar-after-apheleia)))
 (defun danylo/show-scrollbar-after-apheleia ()
   (when danylo/reenable-scrollbar-after-save
     (yascroll-bar-mode t)
@@ -4298,7 +4321,30 @@ _q_: Quit"
         org-goto-interface 'outline-path-completionp
         org-outline-path-complete-in-steps nil
         org-imenu-depth 6
-        ))
+        )
+  ;; Open files in same window.
+  (setf (cdr (assoc 'file org-link-frame-setup)) 'find-file)
+  )
+
+(use-package org-roam
+  ;; https://github.com/org-roam/org-roam
+  ;; Rudimentary Roam replica with Org-mode.
+  :ensure t
+  :custom
+  (org-roam-directory (file-truename "~/Documents/org_notes/"))
+  :bind (("C-c n l" . org-roam-buffer-toggle)
+         ("C-c n f" . org-roam-node-find)
+         ("C-c n g" . org-roam-graph)
+         ("C-c n i" . org-roam-node-insert)
+         ("C-c n c" . org-roam-capture)
+         ;; Dailies
+         ("C-c n j" . org-roam-dailies-capture-today))
+  :config
+  ;; If you're using a vertical completion framework, you might want a more informative completion interface
+  (setq org-roam-node-display-template (concat "${title:*} " (propertize "${tags:10}" 'face 'org-tag)))
+  (org-roam-db-autosync-mode)
+  ;; If using org-roam-protocol
+  (require 'org-roam-protocol))
 
 (use-package org-modern
   ;; https://github.com/minad/org-modern
@@ -4330,7 +4376,7 @@ _q_: Quit"
   :hook ((dired-mode . org-download-enable)))
 
 (require 'org-download)
-(defhydra hydra-org-download (:hint none)
+(defhydra hydra-org-image (:hint none)
   "
 Org images
 -------------------------

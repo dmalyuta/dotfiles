@@ -4322,6 +4322,7 @@ _q_: Quit"
         org-outline-path-complete-in-steps nil
         org-imenu-depth 6
         )
+  :config
   ;; Open files in same window.
   (setf (cdr (assoc 'file org-link-frame-setup)) 'find-file)
   )

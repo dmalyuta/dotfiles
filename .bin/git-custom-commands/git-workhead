@@ -9,4 +9,4 @@ fi
 
 git for-each-ref --sort=committerdate refs/heads/ \
     --format='%(HEAD) %(align:35)%(color:yellow)%(refname:short)%(color:reset)%(end) - %(color:red)%(objectname:short)%(color:reset) - %(authorname) (%(color:green)%(committerdate)%(color:reset))' \
-    | tail -$LINECOUNT
+    --color=always | tail -$LINECOUNT

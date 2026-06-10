@@ -45,7 +45,7 @@ tabline.setup({
 tabline.apply_to_config(config)
 
 -- Make sure that bottom part of terminal is not clipped by taskbar.
-config.window_padding.bottom = 25
+config.window_padding.bottom = 50
 
 -- GUI features
 config.scrollback_lines = 50000

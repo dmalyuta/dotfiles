@@ -1,13 +1,65 @@
 #!/bin/bash
 #
-# Run this script to set up a newly installed Ubuntu. You can download this and
-# run it, and it will download the dotfiles repo.
+# Run this script to set up a newly installed Ubuntu. Nothing has to be checked
+# out first: it clones the dotfiles repo itself. On a fresh machine, run
+#
+#   curl -fsSL https://raw.githubusercontent.com/dmalyuta/dotfiles/master/start_fresh.sh | bash
+#
+# and on a machine that already has the repo, run ~/sw/dotfiles/start_fresh.sh.
 #
 # Safe to re-run on the same machine: every step checks for what it installs and
 # skips if it is already there, so a second run does not re-download, reinstall,
 # or re-append anything to a config file.
 #
 # Author: Danylo Malyuta, 2026.
+
+repo_ssh=git@github.com:dmalyuta/dotfiles.git
+raw_url=https://raw.githubusercontent.com/dmalyuta/dotfiles/master/start_fresh.sh
+
+# ---------------------------------------------------------------------------
+# Bootstrap.
+# ---------------------------------------------------------------------------
+
+# Under `curl ... | bash` the script itself is what is on stdin, so every `read`
+# below would swallow the next lines of the script instead of waiting for the
+# user. Reattaching stdin to the terminal here would not help either: bash has
+# not read the rest of the script yet and would start reading it from the
+# terminal. So fetch a real copy, and re-exec that with the terminal on stdin.
+if [ ! -t 0 ] && [ -z "${DOTFILES_BOOTSTRAP+x}" ]; then
+	# Opening it is the test: /dev/tty is readable by anyone, but opening it
+	# fails when the process has no controlling terminal.
+	if ! { : </dev/tty; } 2>/dev/null; then
+		echo "This script is interactive and needs a terminal." >&2
+		echo "Run it from a terminal, or download it and run it directly." >&2
+		exit 1
+	fi
+	self=$(mktemp)
+	if command -v curl >/dev/null 2>&1; then
+		curl -fsSL "$raw_url" -o "$self" </dev/tty || exit
+	elif command -v wget >/dev/null 2>&1; then
+		wget -qO "$self" "$raw_url" </dev/tty || exit
+	else
+		# Neither downloader, yet we got here somehow (piped from a file?).
+		sudo apt update </dev/tty &&
+			sudo apt install -y curl </dev/tty &&
+			curl -fsSL "$raw_url" -o "$self" </dev/tty || exit
+	fi
+	DOTFILES_BOOTSTRAP=$self exec bash "$self" "$@" </dev/tty
+fi
+# Clean up the copy the block above left in /tmp.
+if [ -n "${DOTFILES_BOOTSTRAP:-}" ]; then
+	trap 'rm -f "$DOTFILES_BOOTSTRAP"' EXIT
+fi
+
+# Where the repo lives. If this script is running out of a checkout already,
+# that checkout is the one that gets linked into the home directory; otherwise
+# the repo is cloned to ~/sw/dotfiles further down. Resolved before the cd
+# below, since $0 may be a relative path.
+dotfiles=~/sw/dotfiles
+self_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)
+if [ -f "$self_dir/.bash_aliases" ] && [ -d "$self_dir/.git" ]; then
+	dotfiles=$self_dir
+fi
 
 downloads=~/Downloads
 mkdir -p "$downloads"
@@ -154,6 +206,10 @@ sudo apt update
 sudo apt upgrade -y
 sudo apt autoremove --purge -y
 
+# The rest of the script downloads, clones and unzips things, so get those out
+# of the way first: a minimal Ubuntu install has none of them guaranteed.
+apt_install ca-certificates curl wget git unzip
+
 # System monitoring.
 apt_install bat btop htop
 
@@ -197,19 +253,37 @@ else
 fi
 eval "$(ssh-agent -s)"
 ssh-add ~/.ssh/id_ed25519
-cat ~/.ssh/id_ed25519.pub
+
+# Pre-seed github.com's host key, so the clone below does not stop on an
+# interactive "are you sure you want to continue connecting?" prompt.
+mkdir -p ~/.ssh
+chmod 700 ~/.ssh
+if ssh-keygen -F github.com >/dev/null 2>&1; then
+	skip "github.com host key"
+else
+	ssh-keyscan github.com >>~/.ssh/known_hosts 2>/dev/null
+fi
 
 # Dotfiles repo.
 mkdir -p ~/sw
-if [ -d ~/sw/dotfiles ]; then
+if [ -d "$dotfiles" ]; then
 	skip "dotfiles repo"
 else
-	git clone git@github.com:dmalyuta/dotfiles.git ~/sw/dotfiles
+	# The clone is over SSH, so the key has to be on GitHub before it can work.
+	until ssh -T git@github.com </dev/null 2>&1 | grep -q 'successfully authenticated'; do
+		echo
+		echo "Add this public key to https://github.com/settings/keys:"
+		echo
+		cat ~/.ssh/id_ed25519.pub
+		echo
+		read -p "Press Enter once it is added... " -r
+	done
+	git clone "$repo_ssh" "$dotfiles"
 fi
 
 # Dotfiles install. Every ln -sf and mkdir -p here is already idempotent.
-cd ~/sw/dotfiles || exit
-DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+cd "$dotfiles" || exit
+DIR=$dotfiles
 ln -sf "$DIR"/.bash_aliases ~
 ln -sf "$DIR"/.local.bashrc ~
 if [ ! -f ./.bin/colorizer/Library/colorizer.sh ]; then

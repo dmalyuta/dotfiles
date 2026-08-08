@@ -551,6 +551,7 @@ if [ -d ~/.config/nvim ]; then
 	skip "LazyVim"
 else
 	git clone https://github.com/LazyVim/starter ~/.config/nvim
+	sudo apt install -y neovim
 fi
 
 # Flameshot screenshot.

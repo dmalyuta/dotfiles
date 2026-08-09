@@ -1,2 +1,4 @@
-layout tall
+# Startup session, referenced by startup_session in kitty.conf.
+# `splits` matches enabled_layouts so the Alt+w split bindings work immediately.
+layout splits
 launch --title "Terminal"

@@ -294,6 +294,7 @@ mkdir -p ~/.config/kitty
 ln -sf "$DIR"/.dircolors ~
 ln -sf "$DIR"/.config/kitty/kitty.conf ~/.config/kitty
 ln -sf "$DIR"/.config/kitty/default-kitty ~/.config/kitty
+ln -sf "$DIR"/.config/kitty/resize_split.py ~/.config/kitty
 ln -sf "$DIR"/.wezterm.lua ~
 ln -sf "$DIR"/.alacritty.toml ~
 mkdir -p ~/.config/tmux-powerline/themes
@@ -572,6 +573,27 @@ else
 		git clone https://github.com/morrownr/mt76 ~/sw/mt76
 		cd ~/sw/mt76 || exit
 		sudo sh install-driver.sh
+		cd "$downloads" || exit
+	fi
+fi
+
+# asusctl for laptop.
+if [ -d ~/sw/asusctl ]; then
+	skip "asusctl"
+else
+	read -p "Install asusctl? [yN] " -r user_answer
+	if [[ "$user_answer" =~ ^[Yy]$ ]]; then
+		git clone https://github.com/OpenGamingCollective/asusctl ~/sw/asusctl
+		cd ~/sw/asusctl || exit
+		sudo apt install -y make cargo gcc pkg-config openssl libasound2-dev cmake build-essential \
+			python3 libfreetype6-dev libexpat1-dev libxcb-composite0-dev libssl-dev libx11-dev \
+			libfontconfig1-dev curl libclang-dev libudev-dev checkinstall libseat-dev libinput-dev \
+			libxkbcommon-dev libgbm-dev
+		make
+		sudo make install
+		systemctl daemon-reload
+		systemctl enable asusd
+		systemctl start asusd
 		cd "$downloads" || exit
 	fi
 fi

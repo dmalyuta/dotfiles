@@ -26,29 +26,29 @@ raw_url=https://raw.githubusercontent.com/dmalyuta/dotfiles/master/start_fresh.s
 # not read the rest of the script yet and would start reading it from the
 # terminal. So fetch a real copy, and re-exec that with the terminal on stdin.
 if [ ! -t 0 ] && [ -z "${DOTFILES_BOOTSTRAP+x}" ]; then
-	# Opening it is the test: /dev/tty is readable by anyone, but opening it
-	# fails when the process has no controlling terminal.
-	if ! { : </dev/tty; } 2>/dev/null; then
-		echo "This script is interactive and needs a terminal." >&2
-		echo "Run it from a terminal, or download it and run it directly." >&2
-		exit 1
-	fi
-	self=$(mktemp)
-	if command -v curl >/dev/null 2>&1; then
-		curl -fsSL "$raw_url" -o "$self" </dev/tty || exit
-	elif command -v wget >/dev/null 2>&1; then
-		wget -qO "$self" "$raw_url" </dev/tty || exit
-	else
-		# Neither downloader, yet we got here somehow (piped from a file?).
-		sudo apt update </dev/tty &&
-			sudo apt install -y curl </dev/tty &&
-			curl -fsSL "$raw_url" -o "$self" </dev/tty || exit
-	fi
-	DOTFILES_BOOTSTRAP=$self exec bash "$self" "$@" </dev/tty
+  # Opening it is the test: /dev/tty is readable by anyone, but opening it
+  # fails when the process has no controlling terminal.
+  if ! { : </dev/tty; } 2>/dev/null; then
+    echo "This script is interactive and needs a terminal." >&2
+    echo "Run it from a terminal, or download it and run it directly." >&2
+    exit 1
+  fi
+  self=$(mktemp)
+  if command -v curl >/dev/null 2>&1; then
+    curl -fsSL "$raw_url" -o "$self" </dev/tty || exit
+  elif command -v wget >/dev/null 2>&1; then
+    wget -qO "$self" "$raw_url" </dev/tty || exit
+  else
+    # Neither downloader, yet we got here somehow (piped from a file?).
+    sudo apt update </dev/tty &&
+      sudo apt install -y curl </dev/tty &&
+      curl -fsSL "$raw_url" -o "$self" </dev/tty || exit
+  fi
+  DOTFILES_BOOTSTRAP=$self exec bash "$self" "$@" </dev/tty
 fi
 # Clean up the copy the block above left in /tmp.
 if [ -n "${DOTFILES_BOOTSTRAP:-}" ]; then
-	trap 'rm -f "$DOTFILES_BOOTSTRAP"' EXIT
+  trap 'rm -f "$DOTFILES_BOOTSTRAP"' EXIT
 fi
 
 # Where the repo lives. If this script is running out of a checkout already,
@@ -58,7 +58,7 @@ fi
 dotfiles=~/sw/dotfiles
 self_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)
 if [ -f "$self_dir/.bash_aliases" ] && [ -d "$self_dir/.git" ]; then
-	dotfiles=$self_dir
+  dotfiles=$self_dir
 fi
 
 downloads=~/Downloads
@@ -81,120 +81,120 @@ have() { command -v "$1" >/dev/null 2>&1; }
 
 # True if the named apt package is installed.
 pkg_installed() {
-	dpkg-query -W -f='${Status}' "$1" 2>/dev/null | grep -q 'ok installed'
+  dpkg-query -W -f='${Status}' "$1" 2>/dev/null | grep -q 'ok installed'
 }
 
 # Download <url> to <file>, unless the file is already there.
 fetch() {
-	local file=$1 url=$2
-	if [ -s "$file" ]; then
-		skip "$file"
-	else
-		wget -O "$file" "$url"
-	fi
+  local file=$1 url=$2
+  if [ -s "$file" ]; then
+    skip "$file"
+  else
+    wget -O "$file" "$url"
+  fi
 }
 
 # Install apt packages, skipping the ones already installed.
 apt_install() {
-	local pkg
-	for pkg in "$@"; do
-		pkg_installed "$pkg" || sudo apt install -y "$pkg"
-	done
+  local pkg
+  for pkg in "$@"; do
+    pkg_installed "$pkg" || sudo apt install -y "$pkg"
+  done
 }
 
 # Download and install a .deb. The package name is read out of the .deb itself
 # rather than guessed, so a re-run skips the install.
 install_deb() {
-	local file=$1 url=$2 pkg
-	fetch "$file" "$url" || return
-	pkg=$(dpkg-deb -f "$file" Package 2>/dev/null)
-	if [ -n "$pkg" ] && pkg_installed "$pkg"; then
-		skip "$pkg"
-		return
-	fi
-	sudo apt install -y "./$file"
+  local file=$1 url=$2 pkg
+  fetch "$file" "$url" || return
+  pkg=$(dpkg-deb -f "$file" Package 2>/dev/null)
+  if [ -n "$pkg" ] && pkg_installed "$pkg"; then
+    skip "$pkg"
+    return
+  fi
+  sudo apt install -y "./$file"
 }
 
 # Add a PPA unless it is already in the apt sources. add-apt-repository is
 # itself idempotent, but it runs an apt update every time, which is the slow bit.
 add_ppa() {
-	local ppa=$1
-	if grep -rqs "${ppa#ppa:}" /etc/apt/sources.list.d/; then
-		skip "$ppa"
-	else
-		sudo add-apt-repository -y "$ppa"
-	fi
+  local ppa=$1
+  if grep -rqs "${ppa#ppa:}" /etc/apt/sources.list.d/; then
+    skip "$ppa"
+  else
+    sudo add-apt-repository -y "$ppa"
+  fi
 }
 
 # Install Flatpak apps, skipping the ones already installed.
 flatpak_install() {
-	local app
-	for app in "$@"; do
-		if flatpak info "$app" >/dev/null 2>&1; then
-			skip "$app"
-		else
-			flatpak install -y flathub "$app"
-		fi
-	done
+  local app
+  for app in "$@"; do
+    if flatpak info "$app" >/dev/null 2>&1; then
+      skip "$app"
+    else
+      flatpak install -y flathub "$app"
+    fi
+  done
 }
 
 # Install snaps, skipping the ones already installed.
 snap_install() {
-	local pkg
-	for pkg in "$@"; do
-		if snap list "$pkg" >/dev/null 2>&1; then
-			skip "$pkg"
-		else
-			sudo snap install "$pkg"
-		fi
-	done
+  local pkg
+  for pkg in "$@"; do
+    if snap list "$pkg" >/dev/null 2>&1; then
+      skip "$pkg"
+    else
+      sudo snap install "$pkg"
+    fi
+  done
 }
 
 # Download an AppImage and hand it to Gear Lever, unless the .desktop file it
 # creates is already there.
 # Usage: gearlever_integrate <desktop file name> <appimage> <url>
 gearlever_integrate() {
-	local desktop=$1 file=$2 url=$3
-	if [ -f ~/.local/share/applications/"$desktop" ]; then
-		skip "$desktop"
-		return
-	fi
-	fetch "$file" "$url" || return
-	flatpak run it.mijorus.gearlever --integrate "$file"
+  local desktop=$1 file=$2 url=$3
+  if [ -f ~/.local/share/applications/"$desktop" ]; then
+    skip "$desktop"
+    return
+  fi
+  fetch "$file" "$url" || return
+  flatpak run it.mijorus.gearlever --integrate "$file"
 }
 
 # Write stdin to a root-owned file. Returns 0 only when the content actually
 # changed, so callers can skip the expensive follow-up work (initramfs rebuild,
 # daemon reload, udev reload) on a re-run.
 write_root_file() {
-	local dest=$1 tmp
-	tmp=$(mktemp)
-	cat >"$tmp"
-	if sudo cmp -s "$tmp" "$dest" 2>/dev/null; then
-		rm -f "$tmp"
-		return 1
-	fi
-	sudo mkdir -p "$(dirname "$dest")"
-	sudo install -m 644 "$tmp" "$dest"
-	rm -f "$tmp"
+  local dest=$1 tmp
+  tmp=$(mktemp)
+  cat >"$tmp"
+  if sudo cmp -s "$tmp" "$dest" 2>/dev/null; then
+    rm -f "$tmp"
+    return 1
+  fi
+  sudo mkdir -p "$(dirname "$dest")"
+  sudo install -m 644 "$tmp" "$dest"
+  rm -f "$tmp"
 }
 
 # Sets a key in a .desktop file's [Desktop Entry] group, replacing the value if
 # the key is already there. Inserts right after the group header rather than at
 # the end of the file, since some of these have a trailing [Desktop Action ...].
 set_desktop_key() {
-	local file=$1 key=$2 value=$3
-	local sudo_cmd=()
-	if [ ! -f "$file" ]; then
-		echo "set_desktop_key: $file not found, skipping."
-		return
-	fi
-	[ -w "$file" ] || sudo_cmd=(sudo)
-	if grep -q "^${key}=" "$file"; then
-		"${sudo_cmd[@]}" sed -i "s|^${key}=.*|${key}=${value}|" "$file"
-	else
-		"${sudo_cmd[@]}" sed -i "/^\[Desktop Entry\]/a ${key}=${value}" "$file"
-	fi
+  local file=$1 key=$2 value=$3
+  local sudo_cmd=()
+  if [ ! -f "$file" ]; then
+    echo "set_desktop_key: $file not found, skipping."
+    return
+  fi
+  [ -w "$file" ] || sudo_cmd=(sudo)
+  if grep -q "^${key}=" "$file"; then
+    "${sudo_cmd[@]}" sed -i "s|^${key}=.*|${key}=${value}|" "$file"
+  else
+    "${sudo_cmd[@]}" sed -i "/^\[Desktop Entry\]/a ${key}=${value}" "$file"
+  fi
 }
 
 # ---------------------------------------------------------------------------
@@ -222,9 +222,9 @@ install_deb obsidian.deb "https://github.com/obsidianmd/obsidian-releases/releas
 # Brave browser.
 apt_install curl fzf
 if pkg_installed brave-browser; then
-	skip "Brave"
+  skip "Brave"
 else
-	curl -fsS https://dl.brave.com/install.sh | sh
+  curl -fsS https://dl.brave.com/install.sh | sh
 fi
 
 # VS Code editor.
@@ -233,23 +233,23 @@ install_deb code.deb "https://code.visualstudio.com/sha/download?build=stable&os
 
 # Github SSH.
 if [ -n "$(git config --global user.name)" ]; then
-	skip "git user.name"
+  skip "git user.name"
 else
-	read -p "Git name: " -r user_answer
-	git config --global user.name "$user_answer"
+  read -p "Git name: " -r user_answer
+  git config --global user.name "$user_answer"
 fi
 if [ -n "$(git config --global user.email)" ]; then
-	skip "git user.email"
+  skip "git user.email"
 else
-	read -p "Git email: " -r user_answer
-	git config --global user.email "$user_answer"
+  read -p "Git email: " -r user_answer
+  git config --global user.email "$user_answer"
 fi
 # Never regenerate over an existing key, that would lock you out of anything
 # already using it.
 if [ -f ~/.ssh/id_ed25519 ]; then
-	skip "SSH key"
+  skip "SSH key"
 else
-	ssh-keygen -t ed25519 -C "$(git config --global user.email)"
+  ssh-keygen -t ed25519 -C "$(git config --global user.email)"
 fi
 eval "$(ssh-agent -s)"
 ssh-add ~/.ssh/id_ed25519
@@ -259,26 +259,26 @@ ssh-add ~/.ssh/id_ed25519
 mkdir -p ~/.ssh
 chmod 700 ~/.ssh
 if ssh-keygen -F github.com >/dev/null 2>&1; then
-	skip "github.com host key"
+  skip "github.com host key"
 else
-	ssh-keyscan github.com >>~/.ssh/known_hosts 2>/dev/null
+  ssh-keyscan github.com >>~/.ssh/known_hosts 2>/dev/null
 fi
 
 # Dotfiles repo.
 mkdir -p ~/sw
 if [ -d "$dotfiles" ]; then
-	skip "dotfiles repo"
+  skip "dotfiles repo"
 else
-	# The clone is over SSH, so the key has to be on GitHub before it can work.
-	until ssh -T git@github.com </dev/null 2>&1 | grep -q 'successfully authenticated'; do
-		echo
-		echo "Add this public key to https://github.com/settings/keys:"
-		echo
-		cat ~/.ssh/id_ed25519.pub
-		echo
-		read -p "Press Enter once it is added... " -r
-	done
-	git clone "$repo_ssh" "$dotfiles"
+  # The clone is over SSH, so the key has to be on GitHub before it can work.
+  until ssh -T git@github.com </dev/null 2>&1 | grep -q 'successfully authenticated'; do
+    echo
+    echo "Add this public key to https://github.com/settings/keys:"
+    echo
+    cat ~/.ssh/id_ed25519.pub
+    echo
+    read -p "Press Enter once it is added... " -r
+  done
+  git clone "$repo_ssh" "$dotfiles"
 fi
 
 # Dotfiles install. Every ln -sf and mkdir -p here is already idempotent.
@@ -287,7 +287,7 @@ DIR=$dotfiles
 ln -sf "$DIR"/.bash_aliases ~
 ln -sf "$DIR"/.local.bashrc ~
 if [ ! -f ./.bin/colorizer/Library/colorizer.sh ]; then
-	git submodule update --init --recursive
+  git submodule update --init --recursive
 fi
 ln -sf "$DIR"/.bin ~
 mkdir -p ~/.config/kitty
@@ -300,17 +300,17 @@ ln -sf "$DIR"/.alacritty.toml ~
 mkdir -p ~/.config/tmux-powerline/themes
 ln -sf "$DIR"/.tmux.conf ~
 ln -sf "$DIR"/.config/tmux-powerline/config.sh \
-	~/.config/tmux-powerline/config.sh
+  ~/.config/tmux-powerline/config.sh
 ln -sf "$DIR"/.config/tmux-powerline/themes/danylo-theme.sh \
-	~/.config/tmux-powerline/themes/danylo-theme.sh
+  ~/.config/tmux-powerline/themes/danylo-theme.sh
 ln -sf "$DIR"/.config/.blue-owl-custom.omp.json ~/.blue-owl-custom.omp.json
 cd "$downloads" || exit
 
 # Kitty terminal. The cp/sed/echo below all overwrite, so they are re-runnable.
 if [ -d ~/.local/kitty.app ]; then
-	skip "kitty"
+  skip "kitty"
 else
-	curl -L https://sw.kovidgoyal.net/kitty/installer.sh | sh /dev/stdin
+  curl -L https://sw.kovidgoyal.net/kitty/installer.sh | sh /dev/stdin
 fi
 mkdir -p ~/.local/bin ~/.local/share/applications
 ln -sf ~/.local/kitty.app/bin/kitty ~/.local/kitty.app/bin/kitten ~/.local/bin/
@@ -322,29 +322,29 @@ echo 'kitty.desktop' >~/.config/xdg-terminals.list
 
 # Fan control.
 if pkg_installed coolercontrol; then
-	skip "Cooler Control"
+  skip "Cooler Control"
 else
-	read -p "Install Cooler Control? [yN] " -r user_answer
-	if [[ "$user_answer" =~ ^[Yy]$ ]]; then
-		apt_install curl apt-transport-https
-		curl -1sLf 'https://dl.cloudsmith.io/public/coolercontrol/coolercontrol/setup.deb.sh' | sudo -E bash
-		sudo apt install -y coolercontrol
-		sudo systemctl enable --now coolercontrold
+  read -p "Install Cooler Control? [yN] " -r user_answer
+  if [[ "$user_answer" =~ ^[Yy]$ ]]; then
+    apt_install curl apt-transport-https
+    curl -1sLf 'https://dl.cloudsmith.io/public/coolercontrol/coolercontrol/setup.deb.sh' | sudo -E bash
+    sudo apt install -y coolercontrol
+    sudo systemctl enable --now coolercontrold
 
-		sudo modprobe nct6775
-		echo "nct6775" | write_root_file /etc/modules-load.d/nct6775.conf
+    sudo modprobe nct6775
+    echo "nct6775" | write_root_file /etc/modules-load.d/nct6775.conf
 
-		while true; do
-			read -e -p "Path to the Cooler Control backup file: " -r cc_backup
-			cc_backup="${cc_backup/#\~/$HOME}"
-			[ -f "$cc_backup" ] && break
-			echo "$cc_backup not found, try again."
-		done
+    while true; do
+      read -e -p "Path to the Cooler Control backup file: " -r cc_backup
+      cc_backup="${cc_backup/#\~/$HOME}"
+      [ -f "$cc_backup" ] && break
+      echo "$cc_backup not found, try again."
+    done
 
-		sudo systemctl stop coolercontrold
-		sudo tar -xvf "$cc_backup" -C /
-		sudo systemctl start coolercontrold
-	fi
+    sudo systemctl stop coolercontrold
+    sudo tar -xvf "$cc_backup" -C /
+    sudo systemctl start coolercontrold
+  fi
 fi
 
 # OpenRazer.
@@ -362,96 +362,96 @@ flatpak_install it.mijorus.gearlever com.github.tchx84.Flatseal io.github.tanayb
 # in now to silence the warning for the rest of this script.
 . /etc/profile.d/flatpak.sh
 if grep -rqs universe /etc/apt/sources.list.d/ /etc/apt/sources.list; then
-	skip "universe"
+  skip "universe"
 else
-	sudo add-apt-repository -y universe
+  sudo add-apt-repository -y universe
 fi
 apt_install libfuse2t64
 
 # Now move apps into Gear Lever.
 gearlever_integrate nextcloud_desktop.desktop nextcloud.AppImage \
-	"https://github.com/nextcloud-releases/desktop/releases/download/v34.0.1/Nextcloud-34.0.1-x86_64.AppImage"
+  "https://github.com/nextcloud-releases/desktop/releases/download/v34.0.1/Nextcloud-34.0.1-x86_64.AppImage"
 gearlever_integrate gnu_image_manipulation_program.desktop GIMP.AppImage \
-	"https://download.gimp.org/gimp/v3.2/linux/GIMP-3.2.4-x86_64.AppImage"
+  "https://download.gimp.org/gimp/v3.2/linux/GIMP-3.2.4-x86_64.AppImage"
 
 # Install MATLAB
 if [ -d /usr/local/MATLAB ]; then
-	skip "MATLAB"
+  skip "MATLAB"
 else
-	read -p "Install MATLAB? [yN] " -r user_answer
-	if [[ "$user_answer" =~ ^[Yy]$ ]]; then
-		while [ ! -f matlab_R2026a_Linux.zip ]; do
-			echo "matlab_R2026a_Linux.zip not found in $(pwd)."
-			echo "Download MATLAB from https://www.mathworks.com/downloads/ and put the zip here."
-			read -p "Press Enter to try again... " -r
-		done
-		[ -d matlab_R2026a ] || unzip matlab_R2026a_Linux.zip -d matlab_R2026a
-		cd matlab_R2026a || exit
-		xhost +SI:localuser:root
-		sudo -H ./install
-		xhost -SI:localuser:root
-		cd "$downloads" || exit
-	fi
+  read -p "Install MATLAB? [yN] " -r user_answer
+  if [[ "$user_answer" =~ ^[Yy]$ ]]; then
+    while [ ! -f matlab_R2026a_Linux.zip ]; do
+      echo "matlab_R2026a_Linux.zip not found in $(pwd)."
+      echo "Download MATLAB from https://www.mathworks.com/downloads/ and put the zip here."
+      read -p "Press Enter to try again... " -r
+    done
+    [ -d matlab_R2026a ] || unzip matlab_R2026a_Linux.zip -d matlab_R2026a
+    cd matlab_R2026a || exit
+    xhost +SI:localuser:root
+    sudo -H ./install
+    xhost -SI:localuser:root
+    cd "$downloads" || exit
+  fi
 fi
 [ -d /usr/local/MATLAB ] && apt_install matlab-support
 
 # Download OpenRGB.
 if [ -f ~/.local/share/applications/openrgb.desktop ]; then
-	skip "OpenRGB"
+  skip "OpenRGB"
 else
-	read -p "Install OpenRGB? [yN] " -r user_answer
-	if [[ "$user_answer" =~ ^[Yy]$ ]]; then
-		fetch openrgb.zip "https://gitlab.com/CalcProgrammer1/OpenRGB/-/jobs/artifacts/master/download?job=Linux%20amd64%20AppImage"
-		unzip -o openrgb.zip -d openrgb
-		# Copy the rules from the downloaded openrgb zip folder for the latest build
-		sudo cp openrgb/60-openrgb.rules /etc/udev/rules.d/
-		sudo udevadm control --reload-rules
-		sudo udevadm trigger
-		# Add user permissions
-		getent group i2c >/dev/null || sudo groupadd --system i2c
-		sudo usermod "$USER" -aG i2c
-		sudo modprobe i2c-dev
-		sudo modprobe i2c-piix4
-		echo i2c-dev | write_root_file /etc/modules-load.d/i2c-dev.conf
-		echo i2c-piix4 | write_root_file /etc/modules-load.d/i2c-piix4.conf
-		flatpak run it.mijorus.gearlever --integrate openrgb/OpenRGB-x86_64.AppImage
-	fi
+  read -p "Install OpenRGB? [yN] " -r user_answer
+  if [[ "$user_answer" =~ ^[Yy]$ ]]; then
+    fetch openrgb.zip "https://gitlab.com/CalcProgrammer1/OpenRGB/-/jobs/artifacts/master/download?job=Linux%20amd64%20AppImage"
+    unzip -o openrgb.zip -d openrgb
+    # Copy the rules from the downloaded openrgb zip folder for the latest build
+    sudo cp openrgb/60-openrgb.rules /etc/udev/rules.d/
+    sudo udevadm control --reload-rules
+    sudo udevadm trigger
+    # Add user permissions
+    getent group i2c >/dev/null || sudo groupadd --system i2c
+    sudo usermod "$USER" -aG i2c
+    sudo modprobe i2c-dev
+    sudo modprobe i2c-piix4
+    echo i2c-dev | write_root_file /etc/modules-load.d/i2c-dev.conf
+    echo i2c-piix4 | write_root_file /etc/modules-load.d/i2c-piix4.conf
+    flatpak run it.mijorus.gearlever --integrate openrgb/OpenRGB-x86_64.AppImage
+  fi
 fi
 
 # Rust compiler.
 if [ -d ~/.cargo ]; then
-	skip "Rust"
+  skip "Rust"
 else
-	curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 fi
 
 # Tmux.
 tmux_version=3.7b
 if [ "$(tmux -V 2>/dev/null)" = "tmux $tmux_version" ]; then
-	skip "tmux $tmux_version"
+  skip "tmux $tmux_version"
 else
-	fetch tmux.tar.gz "https://github.com/tmux/tmux/releases/download/$tmux_version/tmux-$tmux_version.tar.gz"
-	tar xvf tmux.tar.gz
-	apt_install cmake g++ pkg-config libfontconfig1-dev libxcb-xfixes0-dev \
-		libxkbcommon-dev python3 libevent-dev libncurses-dev bison
-	cd "tmux-$tmux_version" || exit
-	./configure
-	make
-	sudo make install
-	cd "$downloads" || exit
+  fetch tmux.tar.gz "https://github.com/tmux/tmux/releases/download/$tmux_version/tmux-$tmux_version.tar.gz"
+  tar xvf tmux.tar.gz
+  apt_install cmake g++ pkg-config libfontconfig1-dev libxcb-xfixes0-dev \
+    libxkbcommon-dev python3 libevent-dev libncurses-dev bison
+  cd "tmux-$tmux_version" || exit
+  ./configure
+  make
+  sudo make install
+  cd "$downloads" || exit
 fi
 if [ -d ~/.tmux/plugins/tpm ]; then
-	skip "tpm"
+  skip "tpm"
 else
-	git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
+  git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
 fi
 
 # Bashrc setup. Keyed off the oh-my-posh line so a re-run does not append the
 # whole block a second time.
 if grep -qF 'oh-my-posh init bash --config ~/.blue-owl-custom.omp.json' ~/.bashrc; then
-	skip "bashrc block"
+  skip "bashrc block"
 else
-	cat >>~/.bashrc <<'EOF'
+  cat >>~/.bashrc <<'EOF'
 
 # Binaries.
 export PATH=$PATH:~/.local/bin
@@ -478,19 +478,19 @@ fi
 
 # Oh-my-posh prompt.
 if have oh-my-posh; then
-	skip "oh-my-posh"
+  skip "oh-my-posh"
 else
-	curl -s https://ohmyposh.dev/install.sh | bash -s
+  curl -s https://ohmyposh.dev/install.sh | bash -s
 fi
 if fc-list 2>/dev/null | grep -qi caskaydia; then
-	skip "CascadiaCode font"
+  skip "CascadiaCode font"
 else
-	oh-my-posh font install CascadiaCode
+  oh-my-posh font install CascadiaCode
 fi
 
-# Fsearch.
+# Search tools.
 add_ppa ppa:christian-boxdoerfer/fsearch-stable
-apt_install fsearch fd-find
+apt_install fsearch fd-find ripgrep
 
 # Inkscape.
 add_ppa ppa:inkscape.dev/stable
@@ -505,13 +505,13 @@ snap_install vlc
 
 # PureRef.
 if pkg_installed pureref; then
-	skip "PureRef"
+  skip "PureRef"
 else
-	while [ ! -f PureRef-2.1.3_x64.deb ]; do
-		echo "Download PureRef from https://www.pureref.com/download.php into $downloads"
-		read -p "Press Enter to try again... " -r
-	done
-	sudo apt install -y ./PureRef-2.1.3_x64.deb
+  while [ ! -f PureRef-2.1.3_x64.deb ]; do
+    echo "Download PureRef from https://www.pureref.com/download.php into $downloads"
+    read -p "Press Enter to try again... " -r
+  done
+  sudo apt install -y ./PureRef-2.1.3_x64.deb
 fi
 
 # Calculators.
@@ -521,26 +521,26 @@ install_deb speedcrunch.deb "https://bitbucket.org/heldercorreia/speedcrunch/dow
 
 # Anaconda Python.
 if [ -d ~/anaconda3 ]; then
-	skip "Anaconda"
+  skip "Anaconda"
 else
-	fetch anaconda.sh "https://repo.anaconda.com/archive/Anaconda3-2026.07-1-Linux-x86_64.sh"
-	bash anaconda.sh
+  fetch anaconda.sh "https://repo.anaconda.com/archive/Anaconda3-2026.07-1-Linux-x86_64.sh"
+  bash anaconda.sh
 fi
 
 # NordVPN.
 if have nordvpn; then
-	skip "NordVPN"
+  skip "NordVPN"
 else
-	sh <(wget -qO - https://downloads.nordcdn.com/apps/linux/install.sh) -p nordvpn-gui
+  sh <(wget -qO - https://downloads.nordcdn.com/apps/linux/install.sh) -p nordvpn-gui
 fi
 getent group nordvpn >/dev/null || sudo groupadd nordvpn
 sudo usermod -aG nordvpn "$USER"
 
 # Node.js.
 if [ -d ~/.nvm ]; then
-	skip "nvm"
+  skip "nvm"
 else
-	curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.6/install.sh | bash
+  curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.6/install.sh | bash
 fi
 \. "$HOME/.nvm/nvm.sh"
 nvm install 26
@@ -549,82 +549,82 @@ npm -v  # Should print "11.19.0".
 
 # Neovim.
 if [ -d ~/.config/nvim ]; then
-	skip "LazyVim"
+  skip "LazyVim"
 else
-	git clone https://github.com/LazyVim/starter ~/.config/nvim
-	sudo apt install -y neovim
+  git clone https://github.com/LazyVim/starter ~/.config/nvim
+  sudo apt install -y neovim
 fi
 
 # Flameshot screenshot.
 if pkg_installed flameshot; then
-	skip "flameshot"
+  skip "flameshot"
 else
-	fetch flameshot.zip "https://github.com/flameshot-org/flameshot/releases/download/v14.0.0/flameshot-v14.0+git0.da6121bd-artifact-ubuntu-24.04-amd64.zip"
-	unzip -o flameshot.zip -d flameshot
-	sudo apt install -y ./flameshot/flameshot-14.0.0-1.ubuntu-24.04.amd64.deb
+  fetch flameshot.zip "https://github.com/flameshot-org/flameshot/releases/download/v14.0.0/flameshot-v14.0+git0.da6121bd-artifact-ubuntu-24.04-amd64.zip"
+  unzip -o flameshot.zip -d flameshot
+  sudo apt install -y ./flameshot/flameshot-14.0.0-1.ubuntu-24.04.amd64.deb
 fi
 
 # mt76 WiFi driver.
 if [ -d ~/sw/mt76 ]; then
-	skip "mt76"
+  skip "mt76"
 else
-	read -p "Install mt76 WiFi driver? [yN] " -r user_answer
-	if [[ "$user_answer" =~ ^[Yy]$ ]]; then
-		git clone https://github.com/morrownr/mt76 ~/sw/mt76
-		cd ~/sw/mt76 || exit
-		sudo sh install-driver.sh
-		cd "$downloads" || exit
-	fi
+  read -p "Install mt76 WiFi driver? [yN] " -r user_answer
+  if [[ "$user_answer" =~ ^[Yy]$ ]]; then
+    git clone https://github.com/morrownr/mt76 ~/sw/mt76
+    cd ~/sw/mt76 || exit
+    sudo sh install-driver.sh
+    cd "$downloads" || exit
+  fi
 fi
 
 # asusctl for laptop.
 if [ -d ~/sw/asusctl ]; then
-	skip "asusctl"
+  skip "asusctl"
 else
-	read -p "Install asusctl? [yN] " -r user_answer
-	if [[ "$user_answer" =~ ^[Yy]$ ]]; then
-		git clone https://github.com/OpenGamingCollective/asusctl ~/sw/asusctl
-		cd ~/sw/asusctl || exit
-		sudo apt install -y make cargo gcc pkg-config openssl libasound2-dev cmake build-essential \
-			python3 libfreetype6-dev libexpat1-dev libxcb-composite0-dev libssl-dev libx11-dev \
-			libfontconfig1-dev curl libclang-dev libudev-dev checkinstall libseat-dev libinput-dev \
-			libxkbcommon-dev libgbm-dev
-		make
-		sudo make install
-		systemctl daemon-reload
-		systemctl enable asusd
-		systemctl start asusd
-		cd "$downloads" || exit
-	fi
+  read -p "Install asusctl? [yN] " -r user_answer
+  if [[ "$user_answer" =~ ^[Yy]$ ]]; then
+    git clone https://github.com/OpenGamingCollective/asusctl ~/sw/asusctl
+    cd ~/sw/asusctl || exit
+    sudo apt install -y make cargo gcc pkg-config openssl libasound2-dev cmake build-essential \
+      python3 libfreetype6-dev libexpat1-dev libxcb-composite0-dev libssl-dev libx11-dev \
+      libfontconfig1-dev curl libclang-dev libudev-dev checkinstall libseat-dev libinput-dev \
+      libxkbcommon-dev libgbm-dev
+    make
+    sudo make install
+    systemctl daemon-reload
+    systemctl enable asusd
+    systemctl start asusd
+    cd "$downloads" || exit
+  fi
 fi
 
 # Brother printer driver.
 if pkg_installed mfcj805dwpdrv; then
-	skip "Brother printer driver"
+  skip "Brother printer driver"
 else
-	read -p "Install Brother printer driver? [yN] " -r user_answer
-	if [[ "$user_answer" =~ ^[Yy]$ ]]; then
-		fetch brother.gz "https://download.brother.com/welcome/dlf006893/linux-brprinter-installer-2.2.6-0.gz"
-		# -k so the .gz survives and the next run does not re-download it.
-		[ -f brother ] || gunzip -k brother.gz
-		sudo -H bash brother MFC-J805DW
-	fi
+  read -p "Install Brother printer driver? [yN] " -r user_answer
+  if [[ "$user_answer" =~ ^[Yy]$ ]]; then
+    fetch brother.gz "https://download.brother.com/welcome/dlf006893/linux-brprinter-installer-2.2.6-0.gz"
+    # -k so the .gz survives and the next run does not re-download it.
+    [ -f brother ] || gunzip -k brother.gz
+    sudo -H bash brother MFC-J805DW
+  fi
 fi
 
 # Grafana.
 apt_install apt-transport-https wget gnupg
 if pkg_installed grafana-enterprise; then
-	skip "Grafana"
+  skip "Grafana"
 else
-	sudo mkdir -p /etc/apt/keyrings
-	[ -s /etc/apt/keyrings/grafana.asc ] ||
-		sudo wget -O /etc/apt/keyrings/grafana.asc https://apt.grafana.com/gpg-full.key
-	sudo chmod 644 /etc/apt/keyrings/grafana.asc
-	# A plain write, not an append: appending duplicates the line every run.
-	echo "deb [signed-by=/etc/apt/keyrings/grafana.asc] https://apt.grafana.com stable main" |
-		write_root_file /etc/apt/sources.list.d/grafana.list
-	sudo apt update
-	sudo apt install -y grafana-enterprise
+  sudo mkdir -p /etc/apt/keyrings
+  [ -s /etc/apt/keyrings/grafana.asc ] ||
+    sudo wget -O /etc/apt/keyrings/grafana.asc https://apt.grafana.com/gpg-full.key
+  sudo chmod 644 /etc/apt/keyrings/grafana.asc
+  # A plain write, not an append: appending duplicates the line every run.
+  echo "deb [signed-by=/etc/apt/keyrings/grafana.asc] https://apt.grafana.com stable main" |
+    write_root_file /etc/apt/sources.list.d/grafana.list
+  sudo apt update
+  sudo apt install -y grafana-enterprise
 fi
 sudo systemctl enable --now grafana-server
 # Make sure you do NOT use chmod -R (that'll apply to all directories and has to be undone manually)
@@ -635,25 +635,25 @@ if write_root_file /etc/systemd/system/grafana-server.service.d/override.conf <<
 [Service]
 ProtectHome=false
 EOF
-	sudo systemctl daemon-reload
-	sudo systemctl restart grafana-server
+  sudo systemctl daemon-reload
+  sudo systemctl restart grafana-server
 fi
 
 # Don't wake up system from mouse or keyboard.
 udev_changed=0
 echo 'ACTION=="add", SUBSYSTEM=="usb", DRIVERS=="usb", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="00cc", ATTR{power/wakeup}="disabled"' |
-	write_root_file /etc/udev/rules.d/razer-mouse.rules && udev_changed=1
+  write_root_file /etc/udev/rules.d/razer-mouse.rules && udev_changed=1
 echo 'ACTION=="add", SUBSYSTEM=="usb", DRIVERS=="usb", ATTRS{idVendor}=="3434", ATTRS{idProduct}=="0230", ATTR{power/wakeup}="disabled"' |
-	write_root_file /etc/udev/rules.d/keychron-keyboard.rules && udev_changed=1
+  write_root_file /etc/udev/rules.d/keychron-keyboard.rules && udev_changed=1
 if [ "$udev_changed" -eq 1 ]; then
-	sudo udevadm control --reload
+  sudo udevadm control --reload
 fi
 
 # Fix Nvidia wake-up.
 if echo 'options nvidia NVreg_PreserveVideoMemoryAllocations=1' |
-	write_root_file /etc/modprobe.d/zz-nvidia-local.conf; then
-	# Only rebuild the initramfs when the option actually changed.
-	sudo update-initramfs -u
+  write_root_file /etc/modprobe.d/zz-nvidia-local.conf; then
+  # Only rebuild the initramfs when the option actually changed.
+  sudo update-initramfs -u
 fi
 
 # Fix icons.

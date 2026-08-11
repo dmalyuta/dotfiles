@@ -334,20 +334,26 @@ else
     sudo apt install -y coolercontrol
     sudo systemctl enable --now coolercontrold
 
-    sudo modprobe nct6775
-    echo "nct6775" | write_root_file /etc/modules-load.d/nct6775.conf
+ 		read -p "Try to find fans on desktop? [yN] " -r user_answer
+ 		if [[ "$user_answer" =~ ^[Yy]$ ]]; then
+ 			sudo modprobe nct6775
+ 			echo "nct6775" | write_root_file /etc/modules-load.d/nct6775.conf
+ 		fi
 
-    while true; do
-      read -e -p "Path to the Cooler Control backup file: " -r cc_backup
-      cc_backup="${cc_backup/#\~/$HOME}"
-      [ -f "$cc_backup" ] && break
-      echo "$cc_backup not found, try again."
-    done
+ 		read -p "Restore Cooler Control settings from backup? [yN] " -r user_answer
+ 		if [[ "$user_answer" =~ ^[Yy]$ ]]; then
+ 			while true; do
+ 				read -e -p "Path to the Cooler Control backup file: " -r cc_backup
+ 				cc_backup="${cc_backup/#\~/$HOME}"
+ 				[ -f "$cc_backup" ] && break
+ 				echo "$cc_backup not found, try again."
+ 			done
 
-    sudo systemctl stop coolercontrold
-    sudo tar -xvf "$cc_backup" -C /
-    sudo systemctl start coolercontrold
-  fi
+ 			sudo systemctl stop coolercontrold
+ 			sudo tar -xvf "$cc_backup" -C /
+ 			sudo systemctl start coolercontrold
+ 		fi
+ 	fi
 fi
 
 # OpenRazer.

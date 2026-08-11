@@ -213,6 +213,9 @@ apt_install ca-certificates curl wget git unzip
 # System monitoring.
 apt_install bat btop htop
 
+# Navigation in the command line.
+apt_install tree
+
 # Password manager.
 install_deb proton_pass.deb "https://proton.me/download/pass/linux/proton-pass_1.38.1_amd64.deb"
 

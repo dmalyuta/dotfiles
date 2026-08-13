@@ -560,8 +560,9 @@ npm -v  # Should print "11.19.0".
 if [ -d ~/.config/nvim ]; then
   skip "LazyVim"
 else
-  git clone https://github.com/LazyVim/starter ~/.config/nvim
   sudo apt install -y neovim
+  # My lazyvim configuration.
+  ln -s "$DIR"/.config/nvim ~/.config/nvim
 fi
 
 # Flameshot screenshot.

@@ -680,3 +680,58 @@ set_desktop_key "$apps"/openrgb.desktop X-AppImage-Name "OpenRGB"
 
 set_desktop_key /usr/share/applications/matlab.desktop StartupWMClass "MATLAB R2026a Update 4"
 set_desktop_key /usr/share/applications/matlab.desktop X-AppImage-Name "MATLAB R2026a"
+
+# ---------------------------------------------------------------------------
+# Keyboard and mouse configuration.
+# ---------------------------------------------------------------------------
+
+if ! have gsettings; then
+  echo "gsettings not found, skipping keyboard and mouse settings."
+else
+  # Add a path to the custom-keybindings list, unless it is already there.
+  add_custom_keybinding_path() {
+    local path=$1 current new
+    current=$(gsettings get org.gnome.settings-daemon.plugins.media-keys custom-keybindings)
+    [[ "$current" == *"'$path'"* ]] && return
+    if [ "$current" = "@as []" ]; then
+      new="['$path']"
+    else
+      new="${current%]}, '$path']"
+    fi
+    gsettings set org.gnome.settings-daemon.plugins.media-keys custom-keybindings "$new"
+  }
+
+  # Define (or redefine) a custom shortcut that runs a command.
+  set_custom_shortcut() {
+    local slug=$1 name=$2 command=$3 binding=$4
+    local path="/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/$slug/"
+    local schema="org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:$path"
+    gsettings set "$schema" name "$name"
+    gsettings set "$schema" command "$command"
+    gsettings set "$schema" binding "$binding"
+    add_custom_keybinding_path "$path"
+  }
+
+  # Key repeat: 150 ms before the first repeat, then one every 20 ms. Same as
+  # Settings > Accessibility > Typing > Repeat Keys.
+  gsettings set org.gnome.desktop.peripherals.keyboard repeat true
+  gsettings set org.gnome.desktop.peripherals.keyboard delay "uint32 150"
+  gsettings set org.gnome.desktop.peripherals.keyboard repeat-interval "uint32 20"
+
+  # Pointer speed, on the [-1, 1] scale of the slider in Settings > Mouse &
+  # Touchpad. A bit below the middle.
+  gsettings set org.gnome.desktop.peripherals.mouse speed -0.325
+
+  # Window management.
+  gsettings set org.gnome.desktop.wm.keybindings minimize "['<Super>h']"
+  gsettings set org.gnome.desktop.wm.keybindings switch-to-workspace-left "['<Control><Alt>Left']"
+  gsettings set org.gnome.desktop.wm.keybindings switch-to-workspace-right "['<Control><Alt>Right']"
+  gsettings set org.gnome.desktop.wm.keybindings move-to-workspace-left "['<Shift><Control><Alt>Left']"
+  gsettings set org.gnome.desktop.wm.keybindings move-to-workspace-right "['<Shift><Control><Alt>Right']"
+
+  # App launchers.
+  set_custom_shortcut flameshot Flameshot "flameshot gui" "<Shift><Control><Alt>p"
+  set_custom_shortcut speedcrunch SpeedCrunch speedcrunch "<Shift><Control><Alt>n"
+  set_custom_shortcut brave Brave brave-browser "<Shift><Control><Alt>b"
+  set_custom_shortcut pureref PureRef PureRef "<Shift><Control><Alt>r"
+fi

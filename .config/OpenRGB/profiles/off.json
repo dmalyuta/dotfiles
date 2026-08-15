@@ -1,0 +1,1569 @@
+{
+    "controllers": [
+        {
+            "active_mode": 1,
+            "colors": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "description": "ENE SMBus Device",
+            "display_name": "",
+            "flags": 1,
+            "leds": [
+                {
+                    "name": "DRAM LED 1"
+                },
+                {
+                    "name": "DRAM LED 2"
+                },
+                {
+                    "name": "DRAM LED 3"
+                },
+                {
+                    "name": "DRAM LED 4"
+                },
+                {
+                    "name": "DRAM LED 5"
+                },
+                {
+                    "name": "DRAM LED 6"
+                },
+                {
+                    "name": "DRAM LED 7"
+                },
+                {
+                    "name": "DRAM LED 8"
+                }
+            ],
+            "location": "I2C: SMBus PIIX4 adapter port 0 at 0b00 (/dev/i2c-1), address 0x71",
+            "modes": [
+                {
+                    "brightness": 0,
+                    "brightness_max": 0,
+                    "brightness_min": 0,
+                    "color_mode": 1,
+                    "colors_max": 0,
+                    "colors_min": 0,
+                    "direction": 0,
+                    "flags": 32,
+                    "name": "Direct",
+                    "speed": 0,
+                    "speed_max": 0,
+                    "speed_min": 0
+                },
+                {
+                    "brightness": 0,
+                    "brightness_max": 0,
+                    "brightness_min": 0,
+                    "color_mode": 0,
+                    "colors_max": 0,
+                    "colors_min": 0,
+                    "direction": 0,
+                    "flags": 0,
+                    "name": "Off",
+                    "speed": 0,
+                    "speed_max": 0,
+                    "speed_min": 0
+                },
+                {
+                    "brightness": 0,
+                    "brightness_max": 0,
+                    "brightness_min": 0,
+                    "color_mode": 1,
+                    "colors_max": 0,
+                    "colors_min": 0,
+                    "direction": 0,
+                    "flags": 32,
+                    "name": "Static",
+                    "speed": 0,
+                    "speed_max": 0,
+                    "speed_min": 0
+                },
+                {
+                    "brightness": 0,
+                    "brightness_max": 0,
+                    "brightness_min": 0,
+                    "color_mode": 1,
+                    "colors_max": 0,
+                    "colors_min": 0,
+                    "direction": 0,
+                    "flags": 161,
+                    "name": "Breathing",
+                    "speed": 2,
+                    "speed_max": 0,
+                    "speed_min": 4
+                },
+                {
+                    "brightness": 0,
+                    "brightness_max": 0,
+                    "brightness_min": 0,
+                    "color_mode": 1,
+                    "colors_max": 0,
+                    "colors_min": 0,
+                    "direction": 0,
+                    "flags": 33,
+                    "name": "Flashing",
+                    "speed": 2,
+                    "speed_max": 0,
+                    "speed_min": 4
+                },
+                {
+                    "brightness": 0,
+                    "brightness_max": 0,
+                    "brightness_min": 0,
+                    "color_mode": 0,
+                    "colors_max": 0,
+                    "colors_min": 0,
+                    "direction": 0,
+                    "flags": 1,
+                    "name": "Spectrum Cycle",
+                    "speed": 2,
+                    "speed_max": 0,
+                    "speed_min": 4
+                },
+                {
+                    "brightness": 0,
+                    "brightness_max": 0,
+                    "brightness_min": 0,
+                    "color_mode": 0,
+                    "colors_max": 0,
+                    "colors_min": 0,
+                    "direction": 0,
+                    "flags": 3,
+                    "name": "Rainbow",
+                    "speed": 0,
+                    "speed_max": 0,
+                    "speed_min": 4
+                },
+                {
+                    "brightness": 0,
+                    "brightness_max": 0,
+                    "brightness_min": 0,
+                    "color_mode": 1,
+                    "colors_max": 0,
+                    "colors_min": 0,
+                    "direction": 0,
+                    "flags": 163,
+                    "name": "Chase Fade",
+                    "speed": 2,
+                    "speed_max": 0,
+                    "speed_min": 4
+                },
+                {
+                    "brightness": 0,
+                    "brightness_max": 0,
+                    "brightness_min": 0,
+                    "color_mode": 1,
+                    "colors_max": 0,
+                    "colors_min": 0,
+                    "direction": 0,
+                    "flags": 163,
+                    "name": "Chase",
+                    "speed": 2,
+                    "speed_max": 0,
+                    "speed_min": 4
+                },
+                {
+                    "brightness": 0,
+                    "brightness_max": 0,
+                    "brightness_min": 0,
+                    "color_mode": 0,
+                    "colors_max": 0,
+                    "colors_min": 0,
+                    "direction": 0,
+                    "flags": 1,
+                    "name": "Random Flicker",
+                    "speed": 2,
+                    "speed_max": 0,
+                    "speed_min": 4
+                }
+            ],
+            "name": "ENE DRAM",
+            "serial": "",
+            "type": 1,
+            "vendor": "ENE",
+            "version": "AUDA0-E6K5-0101",
+            "zones": [
+                {
+                    "display_name": "",
+                    "flags": 0,
+                    "leds_count": 8,
+                    "leds_max": 8,
+                    "leds_min": 8,
+                    "matrix_map": {
+                        "height": 0,
+                        "width": 0
+                    },
+                    "name": "DRAM",
+                    "type": 1
+                }
+            ]
+        },
+        {
+            "active_mode": 1,
+            "colors": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "description": "ENE SMBus Device",
+            "display_name": "",
+            "flags": 1,
+            "leds": [
+                {
+                    "name": "DRAM LED 1"
+                },
+                {
+                    "name": "DRAM LED 2"
+                },
+                {
+                    "name": "DRAM LED 3"
+                },
+                {
+                    "name": "DRAM LED 4"
+                },
+                {
+                    "name": "DRAM LED 5"
+                },
+                {
+                    "name": "DRAM LED 6"
+                },
+                {
+                    "name": "DRAM LED 7"
+                },
+                {
+                    "name": "DRAM LED 8"
+                }
+            ],
+            "location": "I2C: SMBus PIIX4 adapter port 0 at 0b00 (/dev/i2c-1), address 0x73",
+            "modes": [
+                {
+                    "brightness": 0,
+                    "brightness_max": 0,
+                    "brightness_min": 0,
+                    "color_mode": 1,
+                    "colors_max": 0,
+                    "colors_min": 0,
+                    "direction": 0,
+                    "flags": 32,
+                    "name": "Direct",
+                    "speed": 0,
+                    "speed_max": 0,
+                    "speed_min": 0
+                },
+                {
+                    "brightness": 0,
+                    "brightness_max": 0,
+                    "brightness_min": 0,
+                    "color_mode": 0,
+                    "colors_max": 0,
+                    "colors_min": 0,
+                    "direction": 0,
+                    "flags": 0,
+                    "name": "Off",
+                    "speed": 0,
+                    "speed_max": 0,
+                    "speed_min": 0
+                },
+                {
+                    "brightness": 0,
+                    "brightness_max": 0,
+                    "brightness_min": 0,
+                    "color_mode": 1,
+                    "colors_max": 0,
+                    "colors_min": 0,
+                    "direction": 0,
+                    "flags": 32,
+                    "name": "Static",
+                    "speed": 0,
+                    "speed_max": 0,
+                    "speed_min": 0
+                },
+                {
+                    "brightness": 0,
+                    "brightness_max": 0,
+                    "brightness_min": 0,
+                    "color_mode": 1,
+                    "colors_max": 0,
+                    "colors_min": 0,
+                    "direction": 0,
+                    "flags": 161,
+                    "name": "Breathing",
+                    "speed": 2,
+                    "speed_max": 0,
+                    "speed_min": 4
+                },
+                {
+                    "brightness": 0,
+                    "brightness_max": 0,
+                    "brightness_min": 0,
+                    "color_mode": 1,
+                    "colors_max": 0,
+                    "colors_min": 0,
+                    "direction": 0,
+                    "flags": 33,
+                    "name": "Flashing",
+                    "speed": 2,
+                    "speed_max": 0,
+                    "speed_min": 4
+                },
+                {
+                    "brightness": 0,
+                    "brightness_max": 0,
+                    "brightness_min": 0,
+                    "color_mode": 0,
+                    "colors_max": 0,
+                    "colors_min": 0,
+                    "direction": 0,
+                    "flags": 1,
+                    "name": "Spectrum Cycle",
+                    "speed": 2,
+                    "speed_max": 0,
+                    "speed_min": 4
+                },
+                {
+                    "brightness": 0,
+                    "brightness_max": 0,
+                    "brightness_min": 0,
+                    "color_mode": 0,
+                    "colors_max": 0,
+                    "colors_min": 0,
+                    "direction": 0,
+                    "flags": 3,
+                    "name": "Rainbow",
+                    "speed": 0,
+                    "speed_max": 0,
+                    "speed_min": 4
+                },
+                {
+                    "brightness": 0,
+                    "brightness_max": 0,
+                    "brightness_min": 0,
+                    "color_mode": 1,
+                    "colors_max": 0,
+                    "colors_min": 0,
+                    "direction": 0,
+                    "flags": 163,
+                    "name": "Chase Fade",
+                    "speed": 2,
+                    "speed_max": 0,
+                    "speed_min": 4
+                },
+                {
+                    "brightness": 0,
+                    "brightness_max": 0,
+                    "brightness_min": 0,
+                    "color_mode": 1,
+                    "colors_max": 0,
+                    "colors_min": 0,
+                    "direction": 0,
+                    "flags": 163,
+                    "name": "Chase",
+                    "speed": 2,
+                    "speed_max": 0,
+                    "speed_min": 4
+                },
+                {
+                    "brightness": 0,
+                    "brightness_max": 0,
+                    "brightness_min": 0,
+                    "color_mode": 0,
+                    "colors_max": 0,
+                    "colors_min": 0,
+                    "direction": 0,
+                    "flags": 1,
+                    "name": "Random Flicker",
+                    "speed": 2,
+                    "speed_max": 0,
+                    "speed_min": 4
+                }
+            ],
+            "name": "ENE DRAM",
+            "serial": "",
+            "type": 1,
+            "vendor": "ENE",
+            "version": "AUDA0-E6K5-0101",
+            "zones": [
+                {
+                    "display_name": "",
+                    "flags": 0,
+                    "leds_count": 8,
+                    "leds_max": 8,
+                    "leds_min": 8,
+                    "matrix_map": {
+                        "height": 0,
+                        "width": 0
+                    },
+                    "name": "DRAM",
+                    "type": 1
+                }
+            ]
+        },
+        {
+            "active_mode": 0,
+            "colors": [
+                0
+            ],
+            "description": "MSI GPU V2 Device",
+            "display_name": "",
+            "flags": 1,
+            "leds": [
+                {
+                    "name": "Color"
+                }
+            ],
+            "location": "I2C: NVIDIA i2c adapter 1 at 1:00.0\n (/dev/i2c-4), address 0x68",
+            "modes": [
+                {
+                    "brightness": 0,
+                    "brightness_max": 0,
+                    "brightness_min": 0,
+                    "color_mode": 0,
+                    "colors_max": 0,
+                    "colors_min": 0,
+                    "direction": 0,
+                    "flags": 256,
+                    "name": "Off",
+                    "speed": 0,
+                    "speed_max": 0,
+                    "speed_min": 0
+                },
+                {
+                    "brightness": 5,
+                    "brightness_max": 5,
+                    "brightness_min": 1,
+                    "color_mode": 1,
+                    "colors_max": 0,
+                    "colors_min": 0,
+                    "direction": 0,
+                    "flags": 304,
+                    "name": "Direct",
+                    "speed": 0,
+                    "speed_max": 0,
+                    "speed_min": 0
+                },
+                {
+                    "brightness": 5,
+                    "brightness_max": 5,
+                    "brightness_min": 1,
+                    "color_mode": 3,
+                    "colors_max": 0,
+                    "colors_min": 0,
+                    "direction": 0,
+                    "flags": 403,
+                    "name": "Rainbow Wave",
+                    "speed": 1,
+                    "speed_max": 2,
+                    "speed_min": 0
+                },
+                {
+                    "brightness": 5,
+                    "brightness_max": 5,
+                    "brightness_min": 1,
+                    "color_mode": 3,
+                    "colors_max": 0,
+                    "colors_min": 0,
+                    "direction": 0,
+                    "flags": 401,
+                    "name": "Magic",
+                    "speed": 1,
+                    "speed_max": 2,
+                    "speed_min": 0
+                },
+                {
+                    "brightness": 5,
+                    "brightness_max": 5,
+                    "brightness_min": 1,
+                    "color_mode": 2,
+                    "colors": [
+                        255,
+                        65280,
+                        16711680
+                    ],
+                    "colors_max": 3,
+                    "colors_min": 1,
+                    "direction": 0,
+                    "flags": 337,
+                    "name": "Color Cycle",
+                    "speed": 1,
+                    "speed_max": 2,
+                    "speed_min": 0
+                },
+                {
+                    "brightness": 5,
+                    "brightness_max": 5,
+                    "brightness_min": 1,
+                    "color_mode": 1,
+                    "colors_max": 0,
+                    "colors_min": 0,
+                    "direction": 0,
+                    "flags": 305,
+                    "name": "Patrolling",
+                    "speed": 1,
+                    "speed_max": 2,
+                    "speed_min": 0
+                },
+                {
+                    "brightness": 5,
+                    "brightness_max": 5,
+                    "brightness_min": 1,
+                    "color_mode": 3,
+                    "colors_max": 0,
+                    "colors_min": 0,
+                    "direction": 0,
+                    "flags": 401,
+                    "name": "Streaming",
+                    "speed": 1,
+                    "speed_max": 2,
+                    "speed_min": 0
+                },
+                {
+                    "brightness": 5,
+                    "brightness_max": 5,
+                    "brightness_min": 1,
+                    "color_mode": 3,
+                    "colors_max": 0,
+                    "colors_min": 0,
+                    "direction": 0,
+                    "flags": 401,
+                    "name": "Lightning",
+                    "speed": 1,
+                    "speed_max": 2,
+                    "speed_min": 0
+                },
+                {
+                    "brightness": 5,
+                    "brightness_max": 5,
+                    "brightness_min": 1,
+                    "color_mode": 2,
+                    "colors": [
+                        255,
+                        65280,
+                        16711680
+                    ],
+                    "colors_max": 3,
+                    "colors_min": 1,
+                    "direction": 0,
+                    "flags": 339,
+                    "name": "Wave",
+                    "speed": 1,
+                    "speed_max": 2,
+                    "speed_min": 0
+                },
+                {
+                    "brightness": 5,
+                    "brightness_max": 5,
+                    "brightness_min": 1,
+                    "color_mode": 1,
+                    "colors_max": 0,
+                    "colors_min": 0,
+                    "direction": 0,
+                    "flags": 305,
+                    "name": "Meteor",
+                    "speed": 1,
+                    "speed_max": 2,
+                    "speed_min": 0
+                },
+                {
+                    "brightness": 5,
+                    "brightness_max": 5,
+                    "brightness_min": 1,
+                    "color_mode": 1,
+                    "colors_max": 0,
+                    "colors_min": 0,
+                    "direction": 0,
+                    "flags": 305,
+                    "name": "Stack",
+                    "speed": 1,
+                    "speed_max": 2,
+                    "speed_min": 0
+                },
+                {
+                    "brightness": 5,
+                    "brightness_max": 5,
+                    "brightness_min": 1,
+                    "color_mode": 1,
+                    "colors_max": 0,
+                    "colors_min": 0,
+                    "direction": 0,
+                    "flags": 305,
+                    "name": "Rhythm",
+                    "speed": 1,
+                    "speed_max": 2,
+                    "speed_min": 0
+                },
+                {
+                    "brightness": 5,
+                    "brightness_max": 5,
+                    "brightness_min": 1,
+                    "color_mode": 1,
+                    "colors_max": 0,
+                    "colors_min": 0,
+                    "direction": 0,
+                    "flags": 305,
+                    "name": "Flowing",
+                    "speed": 1,
+                    "speed_max": 2,
+                    "speed_min": 0
+                },
+                {
+                    "brightness": 5,
+                    "brightness_max": 5,
+                    "brightness_min": 1,
+                    "color_mode": 1,
+                    "colors_max": 0,
+                    "colors_min": 0,
+                    "direction": 0,
+                    "flags": 305,
+                    "name": "Whirling",
+                    "speed": 1,
+                    "speed_max": 2,
+                    "speed_min": 0
+                },
+                {
+                    "brightness": 5,
+                    "brightness_max": 5,
+                    "brightness_min": 1,
+                    "color_mode": 2,
+                    "colors": [
+                        255,
+                        65280
+                    ],
+                    "colors_max": 2,
+                    "colors_min": 1,
+                    "direction": 0,
+                    "flags": 337,
+                    "name": "Fade In",
+                    "speed": 1,
+                    "speed_max": 2,
+                    "speed_min": 0
+                },
+                {
+                    "brightness": 5,
+                    "brightness_max": 5,
+                    "brightness_min": 1,
+                    "color_mode": 2,
+                    "colors": [
+                        255,
+                        65280
+                    ],
+                    "colors_max": 2,
+                    "colors_min": 1,
+                    "direction": 0,
+                    "flags": 337,
+                    "name": "Breathing",
+                    "speed": 1,
+                    "speed_max": 2,
+                    "speed_min": 0
+                },
+                {
+                    "brightness": 5,
+                    "brightness_max": 5,
+                    "brightness_min": 1,
+                    "color_mode": 1,
+                    "colors_max": 0,
+                    "colors_min": 0,
+                    "direction": 0,
+                    "flags": 305,
+                    "name": "Flashing",
+                    "speed": 1,
+                    "speed_max": 2,
+                    "speed_min": 0
+                },
+                {
+                    "brightness": 5,
+                    "brightness_max": 5,
+                    "brightness_min": 1,
+                    "color_mode": 1,
+                    "colors_max": 0,
+                    "colors_min": 0,
+                    "direction": 0,
+                    "flags": 305,
+                    "name": "Double Flashing",
+                    "speed": 1,
+                    "speed_max": 2,
+                    "speed_min": 0
+                }
+            ],
+            "name": "MSI GeForce RTX 5090 SUPRIM SOC",
+            "serial": "",
+            "type": 2,
+            "vendor": "MSI",
+            "version": "",
+            "zones": [
+                {
+                    "display_name": "",
+                    "flags": 0,
+                    "leds_count": 1,
+                    "leds_max": 1,
+                    "leds_min": 1,
+                    "matrix_map": {
+                        "height": 0,
+                        "width": 0
+                    },
+                    "name": "GPU",
+                    "type": 0
+                }
+            ]
+        },
+        {
+            "active_mode": 1,
+            "colors": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "configuration": null,
+            "description": "ASUS Aura USB Mainboard Device",
+            "display_name": "",
+            "flags": 1,
+            "leds": [
+                {
+                    "name": "Addressable RGB Header 1, LED 1"
+                },
+                {
+                    "name": "Addressable RGB Header 1, LED 2"
+                },
+                {
+                    "name": "Addressable RGB Header 1, LED 3"
+                },
+                {
+                    "name": "Addressable RGB Header 1, LED 4"
+                },
+                {
+                    "name": "Addressable RGB Header 1, LED 5"
+                },
+                {
+                    "name": "Addressable RGB Header 1, LED 6"
+                },
+                {
+                    "name": "Addressable RGB Header 1, LED 7"
+                },
+                {
+                    "name": "Addressable RGB Header 1, LED 8"
+                },
+                {
+                    "name": "Addressable RGB Header 1, LED 9"
+                },
+                {
+                    "name": "Addressable RGB Header 1, LED 10"
+                },
+                {
+                    "name": "Addressable RGB Header 1, LED 11"
+                },
+                {
+                    "name": "Addressable RGB Header 1, LED 12"
+                },
+                {
+                    "name": "Addressable RGB Header 1, LED 13"
+                },
+                {
+                    "name": "Addressable RGB Header 1, LED 14"
+                },
+                {
+                    "name": "Addressable RGB Header 1, LED 15"
+                },
+                {
+                    "name": "Addressable RGB Header 1, LED 16"
+                },
+                {
+                    "name": "Addressable RGB Header 1, LED 17"
+                },
+                {
+                    "name": "Addressable RGB Header 1, LED 18"
+                },
+                {
+                    "name": "Addressable RGB Header 1, LED 19"
+                },
+                {
+                    "name": "Addressable RGB Header 1, LED 20"
+                },
+                {
+                    "name": "Addressable RGB Header 1, LED 21"
+                },
+                {
+                    "name": "Addressable RGB Header 1, LED 22"
+                },
+                {
+                    "name": "Addressable RGB Header 1, LED 23"
+                },
+                {
+                    "name": "Addressable RGB Header 1, LED 24"
+                },
+                {
+                    "name": "Addressable RGB Header 1, LED 25"
+                },
+                {
+                    "name": "Addressable RGB Header 1, LED 26"
+                },
+                {
+                    "name": "Addressable RGB Header 1, LED 27"
+                },
+                {
+                    "name": "Addressable RGB Header 1, LED 28"
+                },
+                {
+                    "name": "Addressable RGB Header 2, LED 1"
+                },
+                {
+                    "name": "Addressable RGB Header 2, LED 2"
+                },
+                {
+                    "name": "Addressable RGB Header 2, LED 3"
+                },
+                {
+                    "name": "Addressable RGB Header 2, LED 4"
+                },
+                {
+                    "name": "Addressable RGB Header 2, LED 5"
+                },
+                {
+                    "name": "Addressable RGB Header 2, LED 6"
+                },
+                {
+                    "name": "Addressable RGB Header 2, LED 7"
+                },
+                {
+                    "name": "Addressable RGB Header 2, LED 8"
+                },
+                {
+                    "name": "Addressable RGB Header 2, LED 9"
+                },
+                {
+                    "name": "Addressable RGB Header 2, LED 10"
+                },
+                {
+                    "name": "Addressable RGB Header 2, LED 11"
+                },
+                {
+                    "name": "Addressable RGB Header 2, LED 12"
+                },
+                {
+                    "name": "Addressable RGB Header 2, LED 13"
+                },
+                {
+                    "name": "Addressable RGB Header 2, LED 14"
+                },
+                {
+                    "name": "Addressable RGB Header 2, LED 15"
+                },
+                {
+                    "name": "Addressable RGB Header 2, LED 16"
+                },
+                {
+                    "name": "Addressable RGB Header 2, LED 17"
+                },
+                {
+                    "name": "Addressable RGB Header 2, LED 18"
+                },
+                {
+                    "name": "Addressable RGB Header 2, LED 19"
+                },
+                {
+                    "name": "Addressable RGB Header 2, LED 20"
+                },
+                {
+                    "name": "Addressable RGB Header 2, LED 21"
+                },
+                {
+                    "name": "Addressable RGB Header 2, LED 22"
+                },
+                {
+                    "name": "Addressable RGB Header 2, LED 23"
+                },
+                {
+                    "name": "Addressable RGB Header 2, LED 24"
+                },
+                {
+                    "name": "Addressable RGB Header 2, LED 25"
+                },
+                {
+                    "name": "Addressable RGB Header 2, LED 26"
+                },
+                {
+                    "name": "Addressable RGB Header 2, LED 27"
+                },
+                {
+                    "name": "Addressable RGB Header 2, LED 28"
+                },
+                {
+                    "name": "Addressable RGB Header 3, LED 1"
+                },
+                {
+                    "name": "Addressable RGB Header 3, LED 2"
+                },
+                {
+                    "name": "Addressable RGB Header 3, LED 3"
+                },
+                {
+                    "name": "Addressable RGB Header 3, LED 4"
+                },
+                {
+                    "name": "Addressable RGB Header 3, LED 5"
+                },
+                {
+                    "name": "Addressable RGB Header 3, LED 6"
+                },
+                {
+                    "name": "Addressable RGB Header 3, LED 7"
+                },
+                {
+                    "name": "Addressable RGB Header 3, LED 8"
+                },
+                {
+                    "name": "Addressable RGB Header 3, LED 9"
+                },
+                {
+                    "name": "Addressable RGB Header 3, LED 10"
+                },
+                {
+                    "name": "Addressable RGB Header 3, LED 11"
+                },
+                {
+                    "name": "Addressable RGB Header 3, LED 12"
+                },
+                {
+                    "name": "Addressable RGB Header 3, LED 13"
+                },
+                {
+                    "name": "Addressable RGB Header 3, LED 14"
+                },
+                {
+                    "name": "Addressable RGB Header 3, LED 15"
+                },
+                {
+                    "name": "Addressable RGB Header 3, LED 16"
+                },
+                {
+                    "name": "Addressable RGB Header 3, LED 17"
+                },
+                {
+                    "name": "Addressable RGB Header 3, LED 18"
+                },
+                {
+                    "name": "Addressable RGB Header 3, LED 19"
+                },
+                {
+                    "name": "Addressable RGB Header 3, LED 20"
+                },
+                {
+                    "name": "Addressable RGB Header 3, LED 21"
+                },
+                {
+                    "name": "Addressable RGB Header 3, LED 22"
+                },
+                {
+                    "name": "Addressable RGB Header 3, LED 23"
+                },
+                {
+                    "name": "Addressable RGB Header 3, LED 24"
+                },
+                {
+                    "name": "Addressable RGB Header 3, LED 25"
+                },
+                {
+                    "name": "Addressable RGB Header 3, LED 26"
+                },
+                {
+                    "name": "Addressable RGB Header 3, LED 27"
+                },
+                {
+                    "name": "Addressable RGB Header 3, LED 28"
+                },
+                {
+                    "name": "Addressable RGB Header 4, LED 1"
+                },
+                {
+                    "name": "Addressable RGB Header 4, LED 2"
+                },
+                {
+                    "name": "Addressable RGB Header 4, LED 3"
+                },
+                {
+                    "name": "Addressable RGB Header 4, LED 4"
+                },
+                {
+                    "name": "Addressable RGB Header 4, LED 5"
+                },
+                {
+                    "name": "Addressable RGB Header 4, LED 6"
+                },
+                {
+                    "name": "Addressable RGB Header 4, LED 7"
+                },
+                {
+                    "name": "Addressable RGB Header 4, LED 8"
+                },
+                {
+                    "name": "Addressable RGB Header 4, LED 9"
+                },
+                {
+                    "name": "Addressable RGB Header 4, LED 10"
+                },
+                {
+                    "name": "Addressable RGB Header 4, LED 11"
+                },
+                {
+                    "name": "Addressable RGB Header 4, LED 12"
+                },
+                {
+                    "name": "Addressable RGB Header 4, LED 13"
+                },
+                {
+                    "name": "Addressable RGB Header 4, LED 14"
+                },
+                {
+                    "name": "Addressable RGB Header 4, LED 15"
+                },
+                {
+                    "name": "Addressable RGB Header 4, LED 16"
+                },
+                {
+                    "name": "Addressable RGB Header 4, LED 17"
+                },
+                {
+                    "name": "Addressable RGB Header 4, LED 18"
+                },
+                {
+                    "name": "Addressable RGB Header 4, LED 19"
+                },
+                {
+                    "name": "Addressable RGB Header 4, LED 20"
+                },
+                {
+                    "name": "Addressable RGB Header 4, LED 21"
+                },
+                {
+                    "name": "Addressable RGB Header 4, LED 22"
+                },
+                {
+                    "name": "Addressable RGB Header 4, LED 23"
+                },
+                {
+                    "name": "Addressable RGB Header 4, LED 24"
+                },
+                {
+                    "name": "Addressable RGB Header 4, LED 25"
+                },
+                {
+                    "name": "Addressable RGB Header 4, LED 26"
+                },
+                {
+                    "name": "Addressable RGB Header 4, LED 27"
+                },
+                {
+                    "name": "Addressable RGB Header 4, LED 28"
+                }
+            ],
+            "location": "HID: /dev/hidraw12",
+            "modes": [
+                {
+                    "brightness": 0,
+                    "brightness_max": 0,
+                    "brightness_min": 0,
+                    "color_mode": 1,
+                    "colors_max": 0,
+                    "colors_min": 0,
+                    "direction": 0,
+                    "flags": 32,
+                    "name": "Direct",
+                    "speed": 0,
+                    "speed_max": 0,
+                    "speed_min": 0
+                },
+                {
+                    "brightness": 0,
+                    "brightness_max": 0,
+                    "brightness_min": 0,
+                    "color_mode": 0,
+                    "colors_max": 0,
+                    "colors_min": 0,
+                    "direction": 0,
+                    "flags": 256,
+                    "name": "Off",
+                    "speed": 0,
+                    "speed_max": 0,
+                    "speed_min": 0
+                },
+                {
+                    "brightness": 0,
+                    "brightness_max": 0,
+                    "brightness_min": 0,
+                    "color_mode": 2,
+                    "colors": [
+                        0
+                    ],
+                    "colors_max": 1,
+                    "colors_min": 1,
+                    "direction": 0,
+                    "flags": 320,
+                    "name": "Static",
+                    "speed": 0,
+                    "speed_max": 0,
+                    "speed_min": 0
+                },
+                {
+                    "brightness": 0,
+                    "brightness_max": 0,
+                    "brightness_min": 0,
+                    "color_mode": 2,
+                    "colors": [
+                        0
+                    ],
+                    "colors_max": 1,
+                    "colors_min": 1,
+                    "direction": 0,
+                    "flags": 320,
+                    "name": "Breathing",
+                    "speed": 0,
+                    "speed_max": 0,
+                    "speed_min": 0
+                },
+                {
+                    "brightness": 0,
+                    "brightness_max": 0,
+                    "brightness_min": 0,
+                    "color_mode": 2,
+                    "colors": [
+                        0
+                    ],
+                    "colors_max": 1,
+                    "colors_min": 1,
+                    "direction": 0,
+                    "flags": 320,
+                    "name": "Flashing",
+                    "speed": 0,
+                    "speed_max": 0,
+                    "speed_min": 0
+                },
+                {
+                    "brightness": 0,
+                    "brightness_max": 0,
+                    "brightness_min": 0,
+                    "color_mode": 0,
+                    "colors_max": 0,
+                    "colors_min": 0,
+                    "direction": 0,
+                    "flags": 256,
+                    "name": "Spectrum Cycle",
+                    "speed": 0,
+                    "speed_max": 0,
+                    "speed_min": 0
+                },
+                {
+                    "brightness": 0,
+                    "brightness_max": 0,
+                    "brightness_min": 0,
+                    "color_mode": 0,
+                    "colors_max": 0,
+                    "colors_min": 0,
+                    "direction": 0,
+                    "flags": 256,
+                    "name": "Rainbow",
+                    "speed": 0,
+                    "speed_max": 0,
+                    "speed_min": 0
+                },
+                {
+                    "brightness": 0,
+                    "brightness_max": 0,
+                    "brightness_min": 0,
+                    "color_mode": 2,
+                    "colors": [
+                        0
+                    ],
+                    "colors_max": 1,
+                    "colors_min": 1,
+                    "direction": 0,
+                    "flags": 320,
+                    "name": "Chase Fade",
+                    "speed": 0,
+                    "speed_max": 0,
+                    "speed_min": 0
+                },
+                {
+                    "brightness": 0,
+                    "brightness_max": 0,
+                    "brightness_min": 0,
+                    "color_mode": 2,
+                    "colors": [
+                        0
+                    ],
+                    "colors_max": 1,
+                    "colors_min": 1,
+                    "direction": 0,
+                    "flags": 320,
+                    "name": "Chase",
+                    "speed": 0,
+                    "speed_max": 0,
+                    "speed_min": 0
+                }
+            ],
+            "name": "ASUS ROG CROSSHAIR X870E EXTREME",
+            "serial": "9876543210",
+            "type": 0,
+            "vendor": "ASUS",
+            "version": "AULA3-AR60-0112",
+            "zones": [
+                {
+                    "display_name": "",
+                    "flags": 4158,
+                    "leds_count": 28,
+                    "leds_max": 120,
+                    "leds_min": 0,
+                    "matrix_map": {
+                        "height": 0,
+                        "width": 0
+                    },
+                    "name": "Addressable RGB Header 1",
+                    "type": 1
+                },
+                {
+                    "display_name": "",
+                    "flags": 4158,
+                    "leds_count": 28,
+                    "leds_max": 120,
+                    "leds_min": 0,
+                    "matrix_map": {
+                        "height": 0,
+                        "width": 0
+                    },
+                    "name": "Addressable RGB Header 2",
+                    "type": 1
+                },
+                {
+                    "display_name": "",
+                    "flags": 4158,
+                    "leds_count": 28,
+                    "leds_max": 120,
+                    "leds_min": 0,
+                    "matrix_map": {
+                        "height": 0,
+                        "width": 0
+                    },
+                    "name": "Addressable RGB Header 3",
+                    "type": 1
+                },
+                {
+                    "display_name": "",
+                    "flags": 4158,
+                    "leds_count": 28,
+                    "leds_max": 120,
+                    "leds_min": 0,
+                    "matrix_map": {
+                        "height": 0,
+                        "width": 0
+                    },
+                    "name": "Addressable RGB Header 4",
+                    "type": 1
+                }
+            ]
+        },
+        {
+            "active_mode": 1,
+            "colors": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "description": "Razer Device, Black",
+            "display_name": "",
+            "flags": 1,
+            "leds": [
+                {
+                    "name": "Scroll Wheel"
+                },
+                {
+                    "name": "Logo"
+                },
+                {
+                    "name": "LED Strip LED 1"
+                },
+                {
+                    "name": "LED Strip LED 2"
+                },
+                {
+                    "name": "LED Strip LED 3"
+                },
+                {
+                    "name": "LED Strip LED 4"
+                },
+                {
+                    "name": "LED Strip LED 5"
+                },
+                {
+                    "name": "LED Strip LED 6"
+                },
+                {
+                    "name": "LED Strip LED 7"
+                },
+                {
+                    "name": "LED Strip LED 8"
+                },
+                {
+                    "name": "LED Strip LED 9"
+                },
+                {
+                    "name": "LED Strip LED 10"
+                },
+                {
+                    "name": "LED Strip LED 11"
+                }
+            ],
+            "location": "HID: /dev/hidraw4",
+            "modes": [
+                {
+                    "brightness": 255,
+                    "brightness_max": 255,
+                    "brightness_min": 0,
+                    "color_mode": 1,
+                    "colors_max": 0,
+                    "colors_min": 0,
+                    "direction": 0,
+                    "flags": 48,
+                    "name": "Direct",
+                    "speed": 0,
+                    "speed_max": 0,
+                    "speed_min": 0
+                },
+                {
+                    "brightness": 0,
+                    "brightness_max": 0,
+                    "brightness_min": 0,
+                    "color_mode": 0,
+                    "colors_max": 0,
+                    "colors_min": 0,
+                    "direction": 0,
+                    "flags": 0,
+                    "name": "Off",
+                    "speed": 0,
+                    "speed_max": 0,
+                    "speed_min": 0
+                },
+                {
+                    "brightness": 255,
+                    "brightness_max": 255,
+                    "brightness_min": 0,
+                    "color_mode": 2,
+                    "colors": [
+                        0
+                    ],
+                    "colors_max": 1,
+                    "colors_min": 1,
+                    "direction": 0,
+                    "flags": 80,
+                    "name": "Static",
+                    "speed": 0,
+                    "speed_max": 0,
+                    "speed_min": 0
+                },
+                {
+                    "brightness": 255,
+                    "brightness_max": 255,
+                    "brightness_min": 0,
+                    "color_mode": 0,
+                    "colors_max": 0,
+                    "colors_min": 0,
+                    "direction": 0,
+                    "flags": 16,
+                    "name": "Spectrum Cycle",
+                    "speed": 0,
+                    "speed_max": 0,
+                    "speed_min": 0
+                },
+                {
+                    "brightness": 255,
+                    "brightness_max": 255,
+                    "brightness_min": 0,
+                    "color_mode": 0,
+                    "colors_max": 0,
+                    "colors_min": 0,
+                    "direction": 1,
+                    "flags": 18,
+                    "name": "Wave",
+                    "speed": 0,
+                    "speed_max": 0,
+                    "speed_min": 0
+                }
+            ],
+            "name": "Razer Basilisk V3 Pro 35K (Wired)",
+            "serial": "632547H33200033       ",
+            "type": 6,
+            "vendor": "Razer",
+            "version": "v2.50",
+            "zones": [
+                {
+                    "display_name": "",
+                    "flags": 0,
+                    "leds_count": 1,
+                    "leds_max": 1,
+                    "leds_min": 1,
+                    "matrix_map": {
+                        "height": 0,
+                        "width": 0
+                    },
+                    "name": "Scroll Wheel",
+                    "type": 0
+                },
+                {
+                    "display_name": "",
+                    "flags": 0,
+                    "leds_count": 1,
+                    "leds_max": 1,
+                    "leds_min": 1,
+                    "matrix_map": {
+                        "height": 0,
+                        "width": 0
+                    },
+                    "name": "Logo",
+                    "type": 0
+                },
+                {
+                    "display_name": "",
+                    "flags": 0,
+                    "leds_count": 11,
+                    "leds_max": 11,
+                    "leds_min": 11,
+                    "matrix_map": {
+                        "height": 0,
+                        "width": 0
+                    },
+                    "name": "LED Strip",
+                    "type": 1
+                }
+            ]
+        }
+    ],
+    "profile_name": "off",
+    "profile_version": 6
+}

@@ -424,6 +424,13 @@ else
     echo i2c-dev | write_root_file /etc/modules-load.d/i2c-dev.conf
     echo i2c-piix4 | write_root_file /etc/modules-load.d/i2c-piix4.conf
     flatpak run it.mijorus.gearlever --integrate openrgb/OpenRGB-x86_64.AppImage
+    # Link settings.
+    mkdir -p ~/.config/OpenRGB/profiles
+    mkdir -p ~/.config/OpenRGB/plugins
+    ln -sf "$DIR"/.config/OpenRGB/Configuration.json ~/.config/OpenRGB/
+    ln -sf "$DIR"/.config/OpenRGB/OpenRGB.json ~/.config/OpenRGB/
+    ln -sf "$DIR"/.config/OpenRGB/profiles/blue.json ~/.config/OpenRGB/profiles/
+    ln -sf "$DIR"/.config/OpenRGB/profiles/off.json ~/.config/OpenRGB/profiles/
   fi
 fi
 

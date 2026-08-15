@@ -692,11 +692,11 @@ set_desktop_key /usr/share/applications/matlab.desktop StartupWMClass "MATLAB R2
 set_desktop_key /usr/share/applications/matlab.desktop X-AppImage-Name "MATLAB R2026a"
 
 # ---------------------------------------------------------------------------
-# Keyboard and mouse configuration.
+# Gnome desktop configuration.
 # ---------------------------------------------------------------------------
 
 if ! have gsettings; then
-  echo "gsettings not found, skipping keyboard and mouse settings."
+  echo "gsettings not found, skipping Gnome configuration."
 else
   # Add a path to the custom-keybindings list, unless it is already there.
   add_custom_keybinding_path() {
@@ -732,6 +732,24 @@ else
   # Touchpad. A bit below the middle.
   gsettings set org.gnome.desktop.peripherals.mouse speed -0.325
 
+  # Traditional scrolling on a laptop: moving the fingers down scrolls the
+  # content down. Same as Settings > Mouse & Touchpad > Touchpad > Scrolling
+  # Direction. Desktops have no touchpad, so there is nothing to set there.
+  if grep -qi touchpad /proc/bus/input/devices 2>/dev/null; then
+    gsettings set org.gnome.desktop.peripherals.touchpad natural-scroll false
+  else
+    echo "No touchpad found, skipping touchpad settings."
+  fi
+
+  # Keep the screen at the brightness it is set to, instead of letting the
+  # ambient light sensor change it. Same as turning off Settings > Power >
+  # Automatic Brightness, which only shows up on a built-in panel.
+  if compgen -G '/sys/class/backlight/*' >/dev/null; then
+    gsettings set org.gnome.settings-daemon.plugins.power ambient-enabled false
+  else
+    echo "No internal backlight found, skipping adaptive brightness setting."
+  fi
+
   # Window management.
   gsettings set org.gnome.desktop.wm.keybindings minimize "['<Super>h']"
   gsettings set org.gnome.desktop.wm.keybindings switch-to-workspace-left "['<Control><Super>Left']"
@@ -744,4 +762,5 @@ else
   set_custom_shortcut speedcrunch SpeedCrunch speedcrunch "<Shift><Control><Alt>n"
   set_custom_shortcut brave Brave brave-browser "<Shift><Control><Alt>b"
   set_custom_shortcut pureref PureRef PureRef "<Shift><Control><Alt>r"
+  set_custom_shortcut obsidian Obsidian obsidian "<Shift><Control><Alt>o"
 fi

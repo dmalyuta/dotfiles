@@ -219,7 +219,10 @@ apt_install tree
 # Password manager.
 install_deb proton_pass.deb "https://proton.me/download/pass/linux/proton-pass_1.38.1_amd64.deb"
 
-# Basic software to start.
+# Gnome configuration.
+install_deb gnome-shell-extension-manager gnome-tweaks
+
+# Note taking.
 install_deb obsidian.deb "https://github.com/obsidianmd/obsidian-releases/releases/download/v1.13.4/obsidian_1.13.4_amd64.deb"
 
 # Brave browser.
@@ -731,10 +734,10 @@ else
 
   # Window management.
   gsettings set org.gnome.desktop.wm.keybindings minimize "['<Super>h']"
-  gsettings set org.gnome.desktop.wm.keybindings switch-to-workspace-left "['<Control><Alt>Left']"
-  gsettings set org.gnome.desktop.wm.keybindings switch-to-workspace-right "['<Control><Alt>Right']"
-  gsettings set org.gnome.desktop.wm.keybindings move-to-workspace-left "['<Shift><Control><Alt>Left']"
-  gsettings set org.gnome.desktop.wm.keybindings move-to-workspace-right "['<Shift><Control><Alt>Right']"
+  gsettings set org.gnome.desktop.wm.keybindings switch-to-workspace-left "['<Control><Super>Left']"
+  gsettings set org.gnome.desktop.wm.keybindings switch-to-workspace-right "['<Control><Super>Right']"
+  gsettings set org.gnome.desktop.wm.keybindings move-to-workspace-left "['<Shift><Control><Super>Left']"
+  gsettings set org.gnome.desktop.wm.keybindings move-to-workspace-right "['<Shift><Control><Super>Right']"
 
   # App launchers.
   set_custom_shortcut flameshot Flameshot "flameshot gui" "<Shift><Control><Alt>p"

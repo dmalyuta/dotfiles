@@ -2047,8 +2047,12 @@
     },
     "UserInterface": {
         "geometry": {
+            "height": 0,
             "load_geometry": true,
-            "save_on_exit": true
+            "save_on_exit": true,
+            "width": 0,
+            "x": 0,
+            "y": 0
         },
         "minimize_on_close": true,
         "run_zone_checks": false

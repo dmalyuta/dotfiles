@@ -693,10 +693,19 @@ if [ "$udev_changed" -eq 1 ]; then
 fi
 
 # Fix Nvidia wake-up.
-if echo 'options nvidia NVreg_PreserveVideoMemoryAllocations=1' |
-  write_root_file /etc/modprobe.d/zz-nvidia-local.conf; then
-  # Only rebuild the initramfs when the option actually changed.
-  sudo update-initramfs -u
+read -p "Attempt to fix sleep issues with Nvidia GPU? [yN] " -r user_answer
+if [[ "$user_answer" =~ ^[Yy]$ ]]; then
+  sudo systemctl enable nvidia-suspend.service
+  sudo systemctl enable nvidia-hibernate.service
+  sudo systemctl enable nvidia-resume.service
+
+  if write_root_file /etc/modprobe.d/zz-nvidia-local.conf <<'EOF'; then
+options nvidia NVreg_PreserveVideoMemoryAllocations=1
+options nvidia NVreg_TemporaryFilePath=/var/tmp
+EOF
+    # Only rebuild the initramfs when the option actually changed.
+    sudo update-initramfs -u
+  fi
 fi
 
 # Fix icons.

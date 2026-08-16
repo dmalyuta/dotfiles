@@ -659,6 +659,29 @@ EOF
   sudo systemctl restart grafana-server
 fi
 
+# Wine.
+if pkg_installed winehq-stable; then
+  skip "wine"
+else
+  sudo dpkg --add-architecture i386
+  wget -qO- https://dl.winehq.org/wine-builds/winehq.key | sudo gpg --dearmor -o /etc/apt/keyrings/winehq-archive.key
+  sudo wget -NP /etc/apt/sources.list.d/ https://dl.winehq.org/wine-builds/ubuntu/dists/resolute/winehq-resolute.sources
+  sudo apt update
+  sudo apt install --install-recommends -y winehq-stable
+  sudo apt install -y winetricks
+  winetricks corefonts
+fi
+
+# PDF-XChange editor.
+read -p "Install PDF-XChange Editor? [yN] " -r user_answer
+if [[ "$user_answer" =~ ^[Yy]$ ]]; then
+  while [ ! -f EditorV11.x64.msi ]; do
+    echo "Download PDF-XChange Editor Plus 64-bit MSI installer from https://www.pdf-xchange.com/product/downloads into $downloads"
+    read -p "Press Enter to try again... " -r
+  done
+  wine msiexec /i EditorV11.x64.msi
+fi
+
 # Don't wake up system from mouse or keyboard.
 udev_changed=0
 echo 'ACTION=="add", SUBSYSTEM=="usb", DRIVERS=="usb", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="00cc", ATTR{power/wakeup}="disabled"' |

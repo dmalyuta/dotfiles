@@ -667,7 +667,7 @@ else
   wget -qO- https://dl.winehq.org/wine-builds/winehq.key | sudo gpg --dearmor -o /etc/apt/keyrings/winehq-archive.key
   sudo wget -NP /etc/apt/sources.list.d/ https://dl.winehq.org/wine-builds/ubuntu/dists/resolute/winehq-resolute.sources
   sudo apt update
-  sudo apt install --install-recommends -y winehq-stable
+  sudo apt install --install-recommends -y winehq-devel
   sudo apt install -y winetricks
   winetricks corefonts
 fi

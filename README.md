@@ -32,4 +32,4 @@ https://github.com/dmalyuta/dotfiles/blob/master/LICENSE).
 
 ---
 
-[^1]: Standard version that comes with the Gnome desktop.
+[^1]: either Gnome (regular) or KDE (Kubuntu) versions.

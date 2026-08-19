@@ -660,7 +660,7 @@ EOF
 fi
 
 # Wine.
-if pkg_installed winehq-stable; then
+if pkg_installed winehq-devel; then
   skip "wine"
 else
   sudo dpkg --add-architecture i386
@@ -693,18 +693,22 @@ if [ "$udev_changed" -eq 1 ]; then
 fi
 
 # Fix Nvidia wake-up.
-read -p "Attempt to fix sleep issues with Nvidia GPU? [yN] " -r user_answer
-if [[ "$user_answer" =~ ^[Yy]$ ]]; then
-  sudo systemctl enable nvidia-suspend.service
-  sudo systemctl enable nvidia-hibernate.service
-  sudo systemctl enable nvidia-resume.service
+if [ -f /etc/modprobe.d/zz-nvidia-local.conf ]; then
+  skip "Nvidia sleep fix"
+else
+  read -p "Attempt to fix sleep issues with Nvidia GPU? [yN] " -r user_answer
+  if [[ "$user_answer" =~ ^[Yy]$ ]]; then
+    sudo systemctl enable nvidia-suspend.service
+    sudo systemctl enable nvidia-hibernate.service
+    sudo systemctl enable nvidia-resume.service
 
-  if write_root_file /etc/modprobe.d/zz-nvidia-local.conf <<'EOF'; then
+    if write_root_file /etc/modprobe.d/zz-nvidia-local.conf <<'EOF'; then
 options nvidia NVreg_PreserveVideoMemoryAllocations=1
 options nvidia NVreg_TemporaryFilePath=/var/tmp
 EOF
-    # Only rebuild the initramfs when the option actually changed.
-    sudo update-initramfs -u
+      # Only rebuild the initramfs when the option actually changed.
+      sudo update-initramfs -u
+    fi
   fi
 fi
 
@@ -724,10 +728,39 @@ set_desktop_key /usr/share/applications/matlab.desktop StartupWMClass "MATLAB R2
 set_desktop_key /usr/share/applications/matlab.desktop X-AppImage-Name "MATLAB R2026a"
 
 # ---------------------------------------------------------------------------
+# Desktop configuration shared values.
+# ---------------------------------------------------------------------------
+# Used by both the Gnome and KDE branches below, so a future tweak only has
+# to be made in one place.
+
+# Key repeat: how long before the first repeat, and how long between the
+# repeats after that.
+kbd_repeat_delay_ms=150
+kbd_repeat_interval_ms=20
+
+# Pointer speed, on the [-1, 1] scale both desktops use for their speed
+# slider. A bit below the middle.
+pointer_speed=-0.325
+
+# App launchers: slug, display name, command, and the letter combined with
+# Shift+Control+Alt below.
+app_launchers=(
+  "flameshot|Flameshot|flameshot gui|p"
+  "speedcrunch|SpeedCrunch|speedcrunch|n"
+  "brave|Brave|brave-browser|b"
+  "pureref|PureRef|PureRef|r"
+  "obsidian|Obsidian|obsidian|o"
+)
+
+# ---------------------------------------------------------------------------
 # Gnome desktop configuration.
 # ---------------------------------------------------------------------------
 
-if ! have gsettings; then
+if [[ ${XDG_CURRENT_DESKTOP,,} != *gnome* ]]; then
+  # gsettings itself is not a reliable check: it (and the schemas it reads)
+  # get pulled in as a dependency of plenty of non-Gnome apps.
+  echo "Not running Gnome, skipping Gnome configuration."
+elif ! have gsettings; then
   echo "gsettings not found, skipping Gnome configuration."
 else
   # Add a path to the custom-keybindings list, unless it is already there.
@@ -757,12 +790,12 @@ else
   # Key repeat: 150 ms before the first repeat, then one every 20 ms. Same as
   # Settings > Accessibility > Typing > Repeat Keys.
   gsettings set org.gnome.desktop.peripherals.keyboard repeat true
-  gsettings set org.gnome.desktop.peripherals.keyboard delay "uint32 150"
-  gsettings set org.gnome.desktop.peripherals.keyboard repeat-interval "uint32 20"
+  gsettings set org.gnome.desktop.peripherals.keyboard delay "uint32 $kbd_repeat_delay_ms"
+  gsettings set org.gnome.desktop.peripherals.keyboard repeat-interval "uint32 $kbd_repeat_interval_ms"
 
   # Pointer speed, on the [-1, 1] scale of the slider in Settings > Mouse &
   # Touchpad. A bit below the middle.
-  gsettings set org.gnome.desktop.peripherals.mouse speed -0.325
+  gsettings set org.gnome.desktop.peripherals.mouse speed "$pointer_speed"
 
   # Traditional scrolling on a laptop: moving the fingers down scrolls the
   # content down. Same as Settings > Mouse & Touchpad > Touchpad > Scrolling
@@ -784,15 +817,203 @@ else
 
   # Window management.
   gsettings set org.gnome.desktop.wm.keybindings minimize "['<Super>h']"
+  gsettings set org.gnome.desktop.wm.keybindings maximize "['<Super>Up']"
   gsettings set org.gnome.desktop.wm.keybindings switch-to-workspace-left "['<Control><Super>Left']"
   gsettings set org.gnome.desktop.wm.keybindings switch-to-workspace-right "['<Control><Super>Right']"
   gsettings set org.gnome.desktop.wm.keybindings move-to-workspace-left "['<Shift><Control><Super>Left']"
   gsettings set org.gnome.desktop.wm.keybindings move-to-workspace-right "['<Shift><Control><Super>Right']"
 
   # App launchers.
-  set_custom_shortcut flameshot Flameshot "flameshot gui" "<Shift><Control><Alt>p"
-  set_custom_shortcut speedcrunch SpeedCrunch speedcrunch "<Shift><Control><Alt>n"
-  set_custom_shortcut brave Brave brave-browser "<Shift><Control><Alt>b"
-  set_custom_shortcut pureref PureRef PureRef "<Shift><Control><Alt>r"
-  set_custom_shortcut obsidian Obsidian obsidian "<Shift><Control><Alt>o"
+  for entry in "${app_launchers[@]}"; do
+    IFS='|' read -r slug name command key <<<"$entry"
+    set_custom_shortcut "$slug" "$name" "$command" "<Shift><Control><Alt>$key"
+  done
+fi
+
+# ---------------------------------------------------------------------------
+# KDE desktop configuration.
+# ---------------------------------------------------------------------------
+
+if [[ ${XDG_CURRENT_DESKTOP,,} != *kde* ]]; then
+  echo "Not running KDE, skipping KDE configuration."
+elif ! have kwriteconfig6 || ! have gdbus; then
+  echo "kwriteconfig6 or gdbus not found, skipping KDE configuration."
+else
+  # kwriteconfig6 with change notification, so running programs reload the
+  # setting instead of keeping their stale in-memory copy.
+  kconf() { kwriteconfig6 --notify "$@"; }
+
+  # The Qt key code of a "Mod+Mod+Key" binding, which is how kglobalaccel's
+  # DBus API takes shortcuts. Only the keys used below are covered.
+  qt_keycode() {
+    local part code=0 parts
+    IFS='+' read -ra parts <<<"$1"
+    for part in "${parts[@]}"; do
+      case "$part" in
+      Shift) ((code += 0x02000000)) ;;
+      Ctrl) ((code += 0x04000000)) ;;
+      Alt) ((code += 0x08000000)) ;;
+      Meta) ((code += 0x10000000)) ;;
+      Left) ((code += 0x01000012)) ;;
+      Up) ((code += 0x01000013)) ;;
+      Right) ((code += 0x01000014)) ;;
+      Down) ((code += 0x01000015)) ;;
+      Del) ((code += 0x01000007)) ;;
+      None) ;;
+      [A-Za-z]) ((code += $(printf '%d' "'${part^^}"))) ;;
+      *)
+        echo "qt_keycode: unknown key '$part'" >&2
+        return 1
+        ;;
+      esac
+    done
+    echo "$code"
+  }
+
+  # Bind a global shortcut through the kglobalaccel DBus API. Editing
+  # kglobalshortcutsrc does not work: the daemon (KWin itself on Wayland)
+  # keeps shortcuts in memory, never re-reads the file while running, and
+  # writes its stale copy back over any edits. Changes made through the API
+  # take effect immediately and the daemon persists them itself.
+  set_kde_shortcut() {
+    local component=$1 comp_name=$2 action=$3 action_name=$4 binding=$5
+    local id="['$component','$action','$comp_name','$action_name']" code
+    # Resolve the key code first: passing an empty key list to the API would
+    # unbind the action rather than leave it alone.
+    code=$(qt_keycode "$binding") || return
+    gdbus call --session --dest org.kde.kglobalaccel --object-path /kglobalaccel \
+      --method org.kde.KGlobalAccel.doRegister "$id" >/dev/null
+    gdbus call --session --dest org.kde.kglobalaccel --object-path /kglobalaccel \
+      --method org.kde.KGlobalAccel.setForeignShortcut "$id" "[$code]" >/dev/null
+  }
+
+  # Key repeat: 150 ms before the first repeat, then one every 20 ms (a rate
+  # of 50/s). Same as System Settings > Keyboard > Advanced.
+  kconf --file kcminputrc --group Keyboard --key RepeatDelay "$kbd_repeat_delay_ms"
+  kconf --file kcminputrc --group Keyboard --key RepeatRate "$((1000 / kbd_repeat_interval_ms))"
+
+  # Pointer speed for mice (same [-1, 1] scale as the Gnome slider above) and
+  # traditional scrolling for touchpads, matching the Gnome branch. KDE has
+  # no "all mice" setting the way Gnome does: it keys libinput settings per
+  # device, as nested kcminputrc groups [Libinput][vendor][product][name]
+  # with the IDs in decimal. So walk /proc/bus/input/devices and write every
+  # pointer device - the ones with a mouseN handler - individually.
+  found_mouse=0 found_touchpad=0
+  vendor="" product="" name="" handlers=""
+  while IFS= read -r line; do
+    case "$line" in
+    I:*)
+      [[ "$line" =~ Vendor=([0-9a-f]+)\ Product=([0-9a-f]+) ]] &&
+        vendor=$((16#${BASH_REMATCH[1]})) product=$((16#${BASH_REMATCH[2]}))
+      ;;
+    N:*)
+      name=${line#*\"}
+      name=${name%\"}
+      ;;
+    H:*)
+      handlers=${line#*=}
+      ;;
+    "")
+      if [ -n "$name" ] && [[ "$handlers" == *mouse* ]]; then
+        if [[ "${name,,}" == *touchpad* ]]; then
+          kconf --file kcminputrc --group Libinput --group "$vendor" \
+            --group "$product" --group "$name" --key NaturalScroll false
+          found_touchpad=1
+        else
+          # "--" so the negative value is not parsed as more options.
+          kconf --file kcminputrc --group Libinput --group "$vendor" \
+            --group "$product" --group "$name" --key PointerAcceleration -- "$pointer_speed"
+          found_mouse=1
+        fi
+      fi
+      vendor="" product="" name="" handlers=""
+      ;;
+    esac
+  done < <(
+    cat /proc/bus/input/devices 2>/dev/null
+    echo
+  )
+  [ "$found_mouse" -eq 1 ] || echo "No mouse found, skipping pointer speed."
+  [ "$found_touchpad" -eq 1 ] || echo "No touchpad found, skipping touchpad settings."
+
+  # Ambient-light auto-brightness only landed in Plasma 6.6, with no stable
+  # config-file switch yet, so this can only point at the GUI.
+  if compgen -G '/sys/class/backlight/*' >/dev/null; then
+    echo "Internal backlight found: if System Settings > Display has an auto-brightness toggle, turn it off there."
+  else
+    echo "No internal backlight found, skipping adaptive brightness setting."
+  fi
+
+  # Window management. Quick Tile Top holds Meta+Up by default and has to
+  # give it up first, or the daemon refuses the conflicting Maximize bind
+  # and leaves Maximize with no shortcut at all.
+  while IFS='|' read -r action action_name binding; do
+    set_kde_shortcut kwin KWin "$action" "$action_name" "$binding"
+  done <<'EOF'
+Window Minimize|Minimize Window|Meta+Del
+Window Quick Tile Top|Quick Tile Window to the Top|None
+Window Maximize|Maximize Window|Meta+Up
+Switch One Desktop to the Left|Switch One Desktop to the Left|Meta+Ctrl+Left
+Switch One Desktop to the Right|Switch One Desktop to the Right|Meta+Ctrl+Right
+Window One Desktop to the Left|Window One Desktop to the Left|Meta+Ctrl+Shift+Left
+Window One Desktop to the Right|Window One Desktop to the Right|Meta+Ctrl+Shift+Right
+EOF
+
+  # App launchers. Plasma 6 dropped the "Custom Shortcuts" KCM; the
+  # replacement for a run-a-command shortcut is a hidden .desktop launcher
+  # that the shortcut points at. The sycoca rebuild is what lets kglobalaccel
+  # resolve the new launchers, so it has to happen before they are bound.
+  for entry in "${app_launchers[@]}"; do
+    IFS='|' read -r slug name command key <<<"$entry"
+    file=~/.local/share/applications/"$slug".desktop
+    [ -f "$file" ] || printf '[Desktop Entry]\n' >"$file"
+    set_desktop_key "$file" Type Application
+    set_desktop_key "$file" Name "$name"
+    set_desktop_key "$file" Exec "$command"
+    set_desktop_key "$file" NoDisplay true
+    set_desktop_key "$file" StartupNotify false
+    set_desktop_key "$file" X-KDE-GlobalAccel-CommandShortcut true
+  done
+  have kbuildsycoca6 && kbuildsycoca6 >/dev/null 2>&1
+  for entry in "${app_launchers[@]}"; do
+    IFS='|' read -r slug name command key <<<"$entry"
+    set_kde_shortcut "$slug.desktop" "$name" _launch "$name" "Shift+Ctrl+Alt+${key^^}"
+  done
+
+  # Ctrl+Alt+T opens a terminal by default, bound to Konsole; rebind it to
+  # kitty (already given its own .desktop entry earlier in this script).
+  set_kde_shortcut org.kde.konsole.desktop Konsole _launch Konsole None
+  set_kde_shortcut kitty.desktop kitty _launch kitty Ctrl+Alt+T
+
+  # Dark theme.
+  if [ "$(kreadconfig6 --file kdeglobals --group KDE --key LookAndFeelPackage)" = "org.kde.breezedark.desktop" ]; then
+    skip "Dark theme"
+  else
+    plasma-apply-lookandfeel --apply org.kde.breezedark.desktop
+  fi
+
+  # Remove animations. The duration factor turns every fixed-duration
+  # animation instant; the effects below animate or deform regardless, so
+  # disable them outright:
+  #   wobblywindows, magiclamp   - drag deformation and minimize physics
+  #   translucency               - windows fading translucent while dragged
+  #   squash                     - minimize-to-taskbar animation
+  #   scale, fade, glide         - window open/close/hide transitions
+  #   maximize, fullscreen       - maximize/fullscreen transitions
+  #   slide, fadedesktop         - transitions between workspaces
+  kconf --file kdeglobals --group KDE --key AnimationDurationFactor 0
+  kde_disabled_effects=(wobblywindows magiclamp translucency squash
+    scale fade glide maximize fullscreen slide fadedesktop)
+  for effect in "${kde_disabled_effects[@]}"; do
+    kconf --file kwinrc --group Plugins --key "${effect}Enabled" false
+  done
+  # KWin only re-reads kwinrc when told to, and a reconfigure still does not
+  # unload already-running effects, so kick those out directly (unloading an
+  # effect that is not loaded is a harmless no-op).
+  gdbus call --session --dest org.kde.KWin --object-path /KWin \
+    --method org.kde.KWin.reconfigure >/dev/null
+  for effect in "${kde_disabled_effects[@]}"; do
+    gdbus call --session --dest org.kde.KWin --object-path /Effects \
+      --method org.kde.kwin.Effects.unloadEffect "$effect" >/dev/null
+  done
 fi

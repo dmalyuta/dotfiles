@@ -327,6 +327,8 @@
             "Asus ROG STRIX PG32UCDM": true,
             "Asus ROG STRIX XG27AQDMG": true,
             "Asus ROG STRIX XG27UCG": true,
+            "Asus ROG SWIFT PG32UCDM": true,
+            "Asus ROG SWIFT PG32UCDMR": true,
             "Asus ROG Spatha X 2.4GHz": true,
             "Asus ROG Spatha X Dock": true,
             "Asus ROG Spatha X USB": true,
@@ -695,6 +697,7 @@
             "Gainward GeForce RTX 3090 Phoenix": true,
             "Gainward GeForce RTX 3090 Ti Phantom": true,
             "Gainward GeForce RTX 4080 Phantom GS": true,
+            "GameSir Nova 2 Lite": true,
             "Genesis Thor 300": true,
             "Genesis Xenon 200": true,
             "Gigabyte AORUS ATC800": true,
@@ -1130,6 +1133,8 @@
             "Logitech G915TKL Wireless RGB Mechanical Gaming Keyboard (Wired)": true,
             "Logitech G933 Lightsync Headset": true,
             "Logitech G935 Gaming Headset": true,
+            "Logitech HID++ 2.0": true,
+            "Logitech HID++ 2.0 (C547 receiver)": true,
             "Logitech HID++ 2.0 G502 X Plus (wired)": true,
             "Logitech HID++ 2.0 G502 X Plus (wireless)": true,
             "Logitech HID++ 2.0 G515 LS TKL (wired)": true,
@@ -1443,6 +1448,7 @@
             "PNY GeForce RTX 4090 XLR8 Verto Epic-X OC": true,
             "PNY GeForce RTX 5060Ti ARGB Epic-X OC": true,
             "PNY GeForce RTX 5070 ARGB Epic-X OC": true,
+            "PNY GeForce RTX 5070Ti ARGB Epic-X": true,
             "PNY GeForce RTX 5070Ti ARGB Epic-X OC": true,
             "PNY GeForce RTX 5080 ARGB Epic-X OC": true,
             "PNY GeForce RTX 5090 ARGB Epic-X OC": true,
@@ -2039,6 +2045,14 @@
         "resume_profile": {
             "enabled": true,
             "name": "blue"
+        },
+        "service_shutdown_profile": {
+            "enabled": false,
+            "name": ""
+        },
+        "service_startup_profile": {
+            "enabled": false,
+            "name": ""
         },
         "suspend_profile": {
             "enabled": true,

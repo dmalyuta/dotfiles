@@ -160,7 +160,7 @@ gearlever_integrate() {
     return
   fi
   fetch "$file" "$url" || return
-  flatpak run it.mijorus.gearlever --integrate "$file"
+  flatpak run it.mijorus.gearlever --integrate "$file" -y
 }
 
 # Write stdin to a root-owned file. Returns 0 only when the content actually
@@ -205,6 +205,9 @@ set_desktop_key() {
 sudo apt update
 sudo apt upgrade -y
 sudo apt autoremove --purge -y
+
+# Nvidia driver.
+apt_install nvidia-driver-610-open
 
 # The rest of the script downloads, clones and unzips things, so get those out
 # of the way first: a minimal Ubuntu install has none of them guaranteed.
@@ -334,7 +337,7 @@ else
   if [[ "$user_answer" =~ ^[Yy]$ ]]; then
     apt_install curl apt-transport-https
     curl -1sLf 'https://dl.cloudsmith.io/public/coolercontrol/coolercontrol/setup.deb.sh' | sudo -E bash
-    sudo apt install -y coolercontrol
+    apt_install coolercontrol
     sudo systemctl enable --now coolercontrold
 
  		read -p "Try to find fans on desktop? [yN] " -r user_answer
@@ -426,7 +429,7 @@ else
     sudo modprobe i2c-piix4
     echo i2c-dev | write_root_file /etc/modules-load.d/i2c-dev.conf
     echo i2c-piix4 | write_root_file /etc/modules-load.d/i2c-piix4.conf
-    flatpak run it.mijorus.gearlever --integrate openrgb/OpenRGB-x86_64.AppImage
+    flatpak run it.mijorus.gearlever --integrate openrgb/OpenRGB-x86_64.AppImage -y
     # Link settings.
     mkdir -p ~/.config/OpenRGB/profiles
     mkdir -p ~/.config/OpenRGB/plugins
@@ -570,7 +573,7 @@ npm -v  # Should print "11.19.0".
 if [ -d ~/.config/nvim ]; then
   skip "LazyVim"
 else
-  sudo apt install -y neovim
+  apt_install neovim
   # My lazyvim configuration.
   ln -s "$DIR"/.config/nvim ~/.config/nvim
 fi
@@ -605,16 +608,26 @@ else
   if [[ "$user_answer" =~ ^[Yy]$ ]]; then
     git clone https://github.com/OpenGamingCollective/asusctl ~/sw/asusctl
     cd ~/sw/asusctl || exit
-    sudo apt install -y make cargo gcc pkg-config openssl libasound2-dev cmake build-essential \
+    apt_install make cargo gcc pkg-config openssl libasound2-dev cmake build-essential \
       python3 libfreetype6-dev libexpat1-dev libxcb-composite0-dev libssl-dev libx11-dev \
       libfontconfig1-dev curl libclang-dev libudev-dev checkinstall libseat-dev libinput-dev \
-      libxkbcommon-dev libgbm-dev
+      libxkbcommon-dev libgbm-dev gettext
     make
     sudo make install
     systemctl daemon-reload
     systemctl enable asusd
     systemctl start asusd
     cd "$downloads" || exit
+  fi
+fi
+
+# envycontrol hybrid GPU switching for laptop.
+if [ -d ~/sw/envycontrol ]; then
+  skip "envycontrol"
+else
+  read -p "Install envycontrol hybrid GPU switching? [yN] " -r user_answer
+  if [[ "$user_answer" =~ ^[Yy]$ ]]; then
+    git clone https://github.com/bayasdev/envycontrol ~/sw/envycontrol
   fi
 fi
 
@@ -644,7 +657,7 @@ else
   echo "deb [signed-by=/etc/apt/keyrings/grafana.asc] https://apt.grafana.com stable main" |
     write_root_file /etc/apt/sources.list.d/grafana.list
   sudo apt update
-  sudo apt install -y grafana-enterprise
+  apt_install grafana-enterprise
 fi
 sudo systemctl enable --now grafana-server
 # Make sure you do NOT use chmod -R (that'll apply to all directories and has to be undone manually)
@@ -668,7 +681,7 @@ else
   sudo wget -NP /etc/apt/sources.list.d/ https://dl.winehq.org/wine-builds/ubuntu/dists/resolute/winehq-resolute.sources
   sudo apt update
   sudo apt install --install-recommends -y winehq-devel
-  sudo apt install -y winetricks
+  apt_install winetricks
   winetricks corefonts
 fi
 

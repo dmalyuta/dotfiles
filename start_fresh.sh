@@ -138,6 +138,22 @@ flatpak_install() {
   done
 }
 
+# Install the Flatpak GL extension matching the installed Nvidia driver, so
+# Flatpak apps get hardware-accelerated rendering under Wayland instead of
+# falling back to broken software GL (which shows up as GTK's
+# "Error 71 (Protocol error) dispatching to Wayland display").
+flatpak_install_nvidia_gl() {
+  local version ref
+  version=$(modinfo -F version nvidia 2>/dev/null) || return
+  [ -n "$version" ] || return
+  ref="org.freedesktop.Platform.GL.nvidia-${version//./-}"
+  if flatpak info "$ref" >/dev/null 2>&1; then
+    skip "$ref"
+  else
+    flatpak install -y flathub "$ref"
+  fi
+}
+
 # Install snaps, skipping the ones already installed.
 snap_install() {
   local pkg
@@ -220,7 +236,7 @@ apt_install bat btop htop
 apt_install tree
 
 # Password manager.
-install_deb proton_pass.deb "https://proton.me/download/pass/linux/proton-pass_1.38.1_amd64.deb"
+install_deb proton_pass.deb "https://proton.me/download/PassDesktop/linux/x64/ProtonPass.deb"
 
 # Gnome configuration.
 install_deb gnome-shell-extension-manager gnome-tweaks
@@ -372,6 +388,7 @@ apt_install openrazer-meta polychromatic
 # Flathub + apps.
 apt_install flatpak gnome-software-plugin-flatpak
 flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+flatpak_install_nvidia_gl
 flatpak_install it.mijorus.gearlever com.github.tchx84.Flatseal io.github.tanaybhomia.Whisp
 # Flatpak's export dirs are only added to XDG_DATA_DIRS at login, so pull them
 # in now to silence the warning for the rest of this script.

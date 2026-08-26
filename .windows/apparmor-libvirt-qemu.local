@@ -1,0 +1,19 @@
+# Extra paths QEMU needs for this setup, which libvirt's AppArmor helper does
+# not work out on its own. Written by make_windows_vm.sh; edit that instead.
+#
+# Pulled in by the "include if exists <local/abstractions/libvirt-qemu>" line
+# at the end of /etc/apparmor.d/abstractions/libvirt-qemu, so it applies to
+# every libvirt guest without editing a packaged file.
+
+# The VBIOS handed to a passed-through GPU. virt-aa-helper builds the
+# per-domain profile from the domain XML but ignores <rom file='...'/>, so
+# without this QEMU is denied the file and reports it as, misleadingly,
+#
+#   failed to find romfile "..."
+#
+# even though the file is there and readable.
+{{VBIOS_DIR}}/*.rom r,
+
+# The Looking Glass shared memory region. The guest writes frames into it and
+# the Linux client reads them out, so QEMU needs it read-write.
+/dev/shm/{{LG_SHM_NAME}} rw,

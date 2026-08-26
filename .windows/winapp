@@ -1,0 +1,205 @@
+#!/bin/bash
+#
+# Run a program from the Windows VM as an ordinary Linux window.
+#
+#   winapp <windows-exe-path> [file ...]   one program, in its own window
+#   winapp --desktop                       the whole Windows desktop, in a window
+#   winapp --list                          programs this script knows how to launch
+#
+# The program is drawn by FreeRDP through RDP's RemoteApp mode, so each Windows
+# window becomes a real X11 window that the window manager treats like any
+# other: it tiles, alt-tabs and minimises normally.
+#
+# Windows 11 Pro allows one interactive session at a time, so this and the
+# console view (virt-viewer or Looking Glass) take turns: connecting here
+# disconnects the console, and signing in at the console ends this.
+#
+# Written by make_windows_vm.sh; edit that instead of this.
+
+set -o pipefail
+
+: "${VM_NAME:={{VM_NAME}}}"
+: "${WIN_USER:={{WIN_USER}}}"
+: "${VM_SHARE_DIR:={{SHARE_DIR}}}"
+: "${PW_FILE:={{PW_FILE}}}"
+: "${VIRSH:=virsh --connect qemu:///system}"
+
+die() {
+	printf '\033[1;31mwinapp:\033[0m %s\n' "$*" >&2
+	exit 1
+}
+
+usage() {
+	sed -n '3,7p' "$0" | sed 's/^# \?//'
+	exit "${1:-0}"
+}
+
+# Bring the VM up if it is not already.
+ensure_running() {
+	$VIRSH domstate "$VM_NAME" 2>/dev/null | grep -q running && return 0
+	printf 'Starting %s...\n' "$VM_NAME" >&2
+	$VIRSH start "$VM_NAME" >/dev/null || die "could not start $VM_NAME"
+}
+
+# Ask the guest agent what address the guest actually took, rather than
+# assuming a DHCP lease that can change.
+guest_ip() {
+	local deadline=$((SECONDS + 120)) ip
+	while [ "$SECONDS" -lt "$deadline" ]; do
+		ip=$($VIRSH domifaddr "$VM_NAME" --source agent 2>/dev/null |
+			awk '$3 == "ipv4" && $4 !~ /^127\./ {sub(/\/.*/, "", $4); print $4; exit}')
+		if [ -n "$ip" ]; then
+			echo "$ip"
+			return 0
+		fi
+		sleep 2
+	done
+	return 1
+}
+
+# Windows starts answering on 3389 a good while after the VM counts as running.
+wait_for_rdp() {
+	local ip=$1 deadline=$((SECONDS + 180))
+	while [ "$SECONDS" -lt "$deadline" ]; do
+		(exec 4<>"/dev/tcp/$ip/3389") 2>/dev/null && return 0
+		sleep 2
+	done
+	return 1
+}
+
+# Turn a Linux path into one Windows can open, leaving it in win_path.
+#
+# A file inside the shared directory is already visible to the guest on Z:, so
+# it only needs rewriting. Anything else is handed over for this session alone
+# through a redirected drive.
+#
+# The result goes in a variable rather than to stdout on purpose. Called as
+# $(to_windows_path ...) this runs in a subshell, and the drive it adds to
+# extra_drives is discarded when that subshell exits -- leaving Windows with a
+# \\tsclient path pointing at a share that was never offered, which is every
+# file opened from outside the shared directory.
+declare -a extra_drives=() shared_dirs=()
+win_path=""
+to_windows_path() {
+	local abs rel dir i share=""
+	abs=$(readlink -f "$1") || return 1
+
+	case "$abs/" in
+	"$VM_SHARE_DIR"/*)
+		rel=${abs#"$VM_SHARE_DIR"/}
+		printf -v win_path 'Z:\\%s' "${rel//\//\\}"
+		return 0
+		;;
+	esac
+
+	# One share per directory, reused when several files come from the same
+	# one. FreeRDP takes each /drive: as its own share, so handing it the same
+	# name twice is not something to rely on.
+	dir=$(dirname "$abs")
+	for i in "${!shared_dirs[@]}"; do
+		if [ "${shared_dirs[i]}" = "$dir" ]; then
+			share=winapp$i
+			break
+		fi
+	done
+	if [ -z "$share" ]; then
+		share=winapp${#shared_dirs[@]}
+		shared_dirs+=("$dir")
+		extra_drives+=("/drive:$share,$dir")
+	fi
+	printf -v win_path '\\\\tsclient\\%s\\%s' "$share" "$(basename "$abs")"
+}
+
+main() {
+	local mode=app program=""
+	case "${1:-}" in
+	-h | --help) usage ;;
+	--desktop)
+		mode=desktop
+		shift
+		;;
+	--list)
+		printf 'Programs with a launcher entry:\n'
+		grep -l 'X-WinApp=true' "$HOME"/.local/share/applications/*.desktop 2>/dev/null |
+			while read -r f; do
+				printf '  %-28s %s\n' \
+					"$(sed -n 's/^Name=//p' "$f" | head -1)" \
+					"$(sed -n 's/^X-WinApp-Program=//p' "$f" | head -1)"
+			done
+		exit 0
+		;;
+	"") usage 1 ;;
+	*)
+		program=$1
+		shift
+		;;
+	esac
+
+	[ -s "$PW_FILE" ] ||
+		die "no password at $PW_FILE. Re-run make_windows_vm.sh phase 3."
+
+	ensure_running
+
+	local ip
+	ip=$(guest_ip) ||
+		die "the guest never reported an address. Is the QEMU guest agent running?"
+	wait_for_rdp "$ip" ||
+		die "$ip is not answering on 3389. Is Windows still booting?"
+
+	local -a files=()
+	local f
+	for f in "$@"; do
+		# Not $(...): see to_windows_path.
+		to_windows_path "$f" && files+=("$win_path")
+	done
+
+	# Everything, credentials included, goes in over a file descriptor.
+	# Command line arguments are readable by every user on the machine through
+	# ps, and one of these is the Windows password.
+	local -a args=(
+		"/v:$ip"
+		"/u:$WIN_USER"
+		"/p:$(cat "$PW_FILE")"
+		/cert:ignore
+		+clipboard
+		/sound
+		/dynamic-resolution
+		# Share the folder for the whole session as well, so a Save As dialog
+		# can reach it even when the program was opened without a file.
+		"/drive:shared,$VM_SHARE_DIR"
+		+auto-reconnect
+		/auto-reconnect-max-retries:3
+	)
+
+	if [ "$mode" = desktop ]; then
+		args+=(/dynamic-resolution /floatbar:sticky:off,default:visible)
+	else
+		# Must match the slug make_windows_vm.sh used for the desktop
+		# entry, or the window will not be recognised as belonging to it.
+		# basename splits on forward slashes, which a Windows path has none
+		# of, so the last backslash is what separates the name here.
+		local wmclass=${program##*\\}
+		wmclass=${wmclass%.*}
+		wmclass=$(printf '%s' "$wmclass" | tr '[:upper:]' '[:lower:]' |
+			tr -cd 'a-z0-9-')
+		args+=("/wm-class:winapp-$wmclass")
+		if [ "${#files[@]}" -gt 0 ]; then
+			# cmd: is the argument list only. FreeRDP puts the program in
+			# front of it itself, so naming the program here too makes
+			# Windows receive it twice and treat its own path as a file to
+			# open.
+			local cmdline=""
+			for f in "${files[@]}"; do cmdline+="\"$f\" "; done
+			args+=("/app:program:$program,cmd:${cmdline% }")
+		else
+			args+=("/app:program:$program")
+		fi
+	fi
+
+	args+=("${extra_drives[@]}")
+
+	exec 3< <(printf '%s\n' "${args[@]}")
+	exec xfreerdp3 /args-from:fd:3
+}
+
+main "$@"

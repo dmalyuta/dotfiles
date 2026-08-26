@@ -1,0 +1,227 @@
+<!--
+  libvirt domain for the Windows 11 guest.
+
+  Rendered by make_windows_vm.sh, which fills in every doubled-brace token
+  below. Edit this file, not the defined domain: re-running phase 4 overwrites
+  what virsh has. To change the running definition by hand instead, use
+  "virsh edit" and accept that the next phase 4 run will replace it.
+-->
+<domain type='kvm'>
+  <name>{{VM_NAME}}</name>
+  <!-- Kept stable across re-runs. libvirt refuses to redefine a domain whose
+       XML carries a different UUID, and the nvram file and generated AppArmor
+       profile are both named after it. -->
+  <uuid>{{UUID}}</uuid>
+  <title>Windows 11 ({{RAM_GB}} GiB, {{VCPUS}} vCPU, iGPU passthrough)</title>
+
+  <memory unit='GiB'>{{RAM_GB}}</memory>
+  <currentMemory unit='GiB'>{{RAM_GB}}</currentMemory>
+  <memoryBacking>
+    <!-- 1 GiB pages cut the cost of the guest's memory lookups: one page
+         table entry covers a gigabyte instead of two megabytes, so the TLB
+         holds the whole working set and nested page walks mostly disappear.
+         These are allocated by the libvirt hook when the VM starts and given
+         back when it stops, so Linux keeps the RAM the rest of the time.
+         The hook rewrites the line below if it cannot get 1 GiB pages. -->
+    <hugepages>
+      <page size='1048576' unit='KiB'/>
+    </hugepages>
+    <!-- virtiofs maps the guest's memory from outside QEMU, which it can only
+         do if that memory is shared. Without this the filesystem below fails
+         to start. -->
+    <access mode='shared'/>
+  </memoryBacking>
+
+  <vcpu placement='static'>{{VCPUS}}</vcpu>
+  <iothreads>1</iothreads>
+  <cputune>
+    <!-- Each vCPU is nailed to one host thread, and the pairs are laid out so
+         that guest core N's two threads land on host threads that really are
+         siblings. Windows then makes the same scheduling decisions it would
+         on bare metal instead of treating sibling threads as full cores. -->
+{{VCPUPIN}}
+    <!-- QEMU's own threads live outside the guest's cores. They do the disk
+         and network work, and letting them interrupt a pinned vCPU is what
+         shows up as audio crackle and frame stutter. -->
+    <emulatorpin cpuset='{{EMULATOR_CPUS}}'/>
+    <iothreadpin iothread='1' cpuset='{{EMULATOR_CPUS}}'/>
+  </cputune>
+
+  <os firmware='efi'>
+    <type arch='x86_64' machine='q35'>hvm</type>
+    <firmware>
+      <!-- Windows 11 checks for Secure Boot, and enrolled-keys is what makes
+           the firmware come up with Microsoft's certificates already in it. -->
+      <feature enabled='yes' name='enrolled-keys'/>
+      <feature enabled='yes' name='secure-boot'/>
+    </firmware>
+    <loader secure='yes'/>
+    <!-- No boot menu on purpose. It puts a second prompt in front of the
+         installation media's own "press any key", and the two race each other
+         when the keypress is being sent by a script rather than a person. -->
+  </os>
+
+  <features>
+    <acpi/>
+    <apic/>
+    <!-- Secure Boot needs System Management Mode to protect the variable
+         store; without it the firmware will not enforce anything. -->
+    <smm state='on'/>
+    <vmport state='off'/>
+    <!-- The Hyper-V enlightenments. This is the single largest Windows-on-KVM
+         performance win: they let Windows use paravirtual timers, interrupts
+         and TLB shootdowns instead of trapping to the hypervisor for each
+         one. -->
+    <hyperv mode='custom'>
+      <relaxed state='on'/>
+      <vapic state='on'/>
+      <spinlocks state='on' retries='8191'/>
+      <vpindex state='on'/>
+      <runtime state='on'/>
+      <synic state='on'/>
+      <stimer state='on'/>
+      <reset state='on'/>
+      <frequencies state='on'/>
+      <reenlightenment state='on'/>
+      <tlbflush state='on'/>
+      <ipi state='on'/>
+      <!-- Hiding the hypervisor was tried here (vendor_id spoofing plus
+           <kvm><hidden/>) as the usual remedy for the iGPU's error code 43.
+           It made no difference, which fits: AMD drivers, unlike NVIDIA's,
+           do not refuse to run in a VM. Left out rather than carried as
+           configuration nobody can explain. -->
+      <vendor_id state='on' value='KVM Hv'/>
+    </hyperv>
+  </features>
+
+  <cpu mode='host-passthrough' check='none' migratable='off'>
+    <topology sockets='1' dies='1' cores='{{CORES}}' threads='{{THREADS}}'/>
+    <!-- Report the real cache layout, so Windows' scheduler knows which
+         threads share an L3 and keeps related work together. -->
+    <cache mode='passthrough'/>
+    <!-- topoext is how AMD advertises SMT; without it Windows sees the
+         sibling threads as separate cores. invtsc lets Windows trust the TSC
+         as a clock source, which is cheaper than every other option. -->
+    <feature policy='require' name='topoext'/>
+    <feature policy='require' name='invtsc'/>
+  </cpu>
+
+  <clock offset='localtime'>
+    <timer name='rtc' tickpolicy='catchup'/>
+    <timer name='pit' tickpolicy='delay'/>
+    <!-- Windows does not use the HPET and emulating it only costs exits. -->
+    <timer name='hpet' present='no'/>
+    <timer name='hypervclock' present='yes'/>
+  </clock>
+
+  <on_poweroff>destroy</on_poweroff>
+  <on_reboot>restart</on_reboot>
+  <on_crash>destroy</on_crash>
+
+  <pm>
+    <suspend-to-mem enabled='no'/>
+    <suspend-to-disk enabled='no'/>
+  </pm>
+
+  <devices>
+    <emulator>/usr/bin/qemu-system-x86_64</emulator>
+
+    <!-- The system disk. Raw rather than qcow2 because there is no format
+         layer to walk, and io_uring submits without a thread-pool hop. The
+         file is sparse, so the size below is a ceiling and not a
+         reservation. -->
+    <disk type='file' device='disk'>
+      <driver name='qemu' type='raw' cache='none' io='io_uring'
+              discard='unmap' iothread='1' queues='4'/>
+      <source file='{{DISK}}'/>
+      <target dev='vda' bus='virtio'/>
+      <boot order='{{DISK_BOOT_ORDER}}'/>
+    </disk>
+
+{{INSTALL_MEDIA}}
+    <controller type='usb' model='qemu-xhci' ports='15'/>
+    <controller type='sata' index='0'/>
+    <controller type='virtio-serial' index='0'/>
+
+    <interface type='network'>
+      <source network='default'/>
+      <model type='virtio'/>
+      <!-- Pinned: Windows activation is bound to a hardware hash that
+           includes the MAC, so a redefine must not invent a new one. -->
+      <mac address='{{MAC}}'/>
+    </interface>
+
+    <!-- Windows 11 refuses to install without a TPM 2.0. -->
+    <tpm model='tpm-crb'>
+      <backend type='emulator' version='2.0'/>
+    </tpm>
+
+    <!-- The integrated GPU. managed='no' because vfio-pci already owns this
+         card from boot, via vfio-pci.ids on the kernel command line: letting
+         libvirt manage it would have it try to hand the card back to amdgpu
+         at shutdown. An integrated GPU has no ROM to read a VBIOS from, so
+         QEMU is handed one as a file: the VBIOS extracted from the ACPI
+         tables, with a UEFI GOP driver chained behind it so that the guest's
+         firmware has an image it can actually run. -->
+    <hostdev mode='subsystem' type='pci' managed='no'>
+      <source>
+        <address domain='0x0000' bus='{{IGPU_BUS}}' slot='{{IGPU_SLOT}}'
+                 function='{{IGPU_FUNC}}'/>
+      </source>
+      <rom file='{{VBIOS}}'/>
+    </hostdev>
+{{IGPU_AUDIO_HOSTDEV}}
+
+    <!-- The window Looking Glass moves frames through. A capture program in
+         the guest writes them here and the Linux client reads them out. -->
+    <shmem name='{{LG_SHM_NAME}}'>
+      <model type='ivshmem-plain'/>
+      <size unit='M'>{{LG_SHM_MB}}</size>
+    </shmem>
+
+    <!-- A directory shared with Windows, so a file exists once rather than
+         twice. Scoped deliberately: everything under it is fully readable and
+         writable by the guest, which is why it is not $HOME. -->
+    <filesystem type='mount' accessmode='passthrough'>
+      <driver type='virtiofs' queue='1024'/>
+      <binary path='/usr/libexec/virtiofsd'>
+        <cache mode='always'/>
+      </binary>
+      <source dir='{{SHARE_DIR}}'/>
+      <target dir='shared'/>
+    </filesystem>
+
+    <!-- An emulated display, used to watch the installation and as a fallback
+         later. Once the guest drives the passed-through iGPU, Looking Glass
+         is the fast path and this one is just a back door. -->
+    <graphics type='spice' autoport='yes'>
+      <listen type='address' address='127.0.0.1'/>
+      <image compression='off'/>
+      <gl enable='no'/>
+    </graphics>
+    <video>
+      <model type='qxl' ram='65536' vram='65536' vgamem='16384' heads='1'/>
+    </video>
+
+    <!-- virtio rather than USB, on Looking Glass's advice. A USB tablet
+         reports absolute positions and SPICE moves the pointer itself, which
+         fights with the client over where the cursor is: hovering works, but
+         every click warps the pointer back to the middle of the window. The
+         virtio devices leave positioning to the client, and are also what
+         makes the extra buttons on a 5-button mouse arrive. They need the
+         vioinput driver, which phase 6 puts in the guest first. -->
+    <input type='mouse' bus='virtio'/>
+    <input type='keyboard' bus='virtio'/>
+
+    <channel type='spicevmc'>
+      <target type='virtio' name='com.redhat.spice.0'/>
+    </channel>
+    <channel type='unix'>
+      <target type='virtio' name='org.qemu.guest_agent.0'/>
+    </channel>
+
+    <!-- Ballooning fights with hugepages: it hands memory back a 4 KiB page
+         at a time, which is exactly what the big pages exist to avoid. -->
+    <memballoon model='none'/>
+  </devices>
+</domain>

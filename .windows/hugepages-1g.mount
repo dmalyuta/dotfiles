@@ -1,0 +1,26 @@
+# A hugetlbfs mount for 1 GiB pages, which Ubuntu does not provide: it mounts
+# only the 2 MiB one at /dev/hugepages. libvirt picks a mount whose page size
+# matches what the domain asks for, and without this one a guest backed by
+# 1 GiB pages fails to start with
+#
+#   Unable to find any usable hugetlbfs mount for 1048576 KiB
+#
+# Written by make_windows_vm.sh; edit that instead of this.
+
+[Unit]
+Description=1 GiB hugepage filesystem for {{VM_NAME}}
+Documentation=man:hugetlbfs(5)
+DefaultDependencies=no
+# libvirt reads the mount table once, when it starts, so a mount that appears
+# afterwards is invisible to it until the next restart.
+Before=libvirtd.service virtqemud.service
+ConditionPathExists=/sys/kernel/mm/hugepages/hugepages-1048576kB
+
+[Mount]
+What=hugetlbfs
+Where=/dev/hugepages1G
+Type=hugetlbfs
+Options=pagesize=1G
+
+[Install]
+WantedBy=multi-user.target

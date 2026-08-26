@@ -1,0 +1,238 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Template for the Windows 11 unattended installation answer file.
+
+  Rendered by make_windows_vm.sh, which fills in every doubled-brace token
+  below and writes the result to the root of a small ISO. Windows Setup reads
+  autounattend.xml from the root of any drive it can see, so that ISO is
+  attached as a second CD-ROM and answers everything Setup would otherwise
+  stop to ask.
+
+  Edit this file, not the copy on the generated ISO.
+-->
+<unattend xmlns="urn:schemas-microsoft-com:unattend"
+          xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
+
+  <settings pass="windowsPE">
+    <component name="Microsoft-Windows-International-Core-WinPE"
+               processorArchitecture="amd64" language="neutral"
+               versionScope="nonSxS"
+               publicKeyToken="31bf3856ad364e35">
+      <SetupUILanguage>
+        <UILanguage>{{LOCALE}}</UILanguage>
+      </SetupUILanguage>
+      <InputLocale>{{LOCALE}}</InputLocale>
+      <SystemLocale>{{LOCALE}}</SystemLocale>
+      <UILanguage>{{LOCALE}}</UILanguage>
+      <UserLocale>{{LOCALE}}</UserLocale>
+    </component>
+
+    <!-- Boot-critical drivers for WinPE. This has to be its own component:
+         DriverPaths is not a child of Microsoft-Windows-Setup, and putting it
+         there means it is quietly ignored, Setup finds no disk, and the
+         installation stops on an empty drive list. Paths that do not exist
+         are skipped, so listing several drive letters is safe. -->
+    <component name="Microsoft-Windows-PnpCustomizationsWinPE"
+               processorArchitecture="amd64" language="neutral"
+               versionScope="nonSxS"
+               publicKeyToken="31bf3856ad364e35">
+      <DriverPaths>{{DRIVER_PATHS}}
+      </DriverPaths>
+    </component>
+
+    <component name="Microsoft-Windows-Setup"
+               processorArchitecture="amd64" language="neutral"
+               versionScope="nonSxS"
+               publicKeyToken="31bf3856ad364e35">
+
+      <DiskConfiguration>
+        <WillShowUI>OnError</WillShowUI>
+        <Disk wcm:action="add">
+          <DiskID>0</DiskID>
+          <WillWipeDisk>true</WillWipeDisk>
+          <CreatePartitions>
+            <!-- The layout UEFI requires: an EFI system partition, the
+                 reserved partition Windows wants, then the rest. -->
+            <CreatePartition wcm:action="add">
+              <Order>1</Order><Type>EFI</Type><Size>300</Size>
+            </CreatePartition>
+            <CreatePartition wcm:action="add">
+              <Order>2</Order><Type>MSR</Type><Size>128</Size>
+            </CreatePartition>
+            <CreatePartition wcm:action="add">
+              <Order>3</Order><Type>Primary</Type><Extend>true</Extend>
+            </CreatePartition>
+          </CreatePartitions>
+          <ModifyPartitions>
+            <ModifyPartition wcm:action="add">
+              <Order>1</Order><PartitionID>1</PartitionID>
+              <Label>System</Label><Format>FAT32</Format>
+            </ModifyPartition>
+            <ModifyPartition wcm:action="add">
+              <Order>2</Order><PartitionID>2</PartitionID>
+            </ModifyPartition>
+            <ModifyPartition wcm:action="add">
+              <Order>3</Order><PartitionID>3</PartitionID>
+              <Label>Windows</Label><Letter>C</Letter><Format>NTFS</Format>
+            </ModifyPartition>
+          </ModifyPartitions>
+        </Disk>
+      </DiskConfiguration>
+
+      <ImageInstall>
+        <OSImage>
+          <InstallFrom>
+            <!-- A multi-edition ISO holds a dozen images; this is how
+                 one gets chosen without being asked. -->
+            <MetaData wcm:action="add">
+              <Key>/IMAGE/NAME</Key>
+              <Value>{{EDITION}}</Value>
+            </MetaData>
+          </InstallFrom>
+          <InstallTo>
+            <DiskID>0</DiskID><PartitionID>3</PartitionID>
+          </InstallTo>
+          <WillShowUI>OnError</WillShowUI>
+        </OSImage>
+      </ImageInstall>
+
+      <UserData>
+        <AcceptEula>true</AcceptEula>
+{{PRODUCT_KEY_BLOCK}}
+      </UserData>
+    </component>
+  </settings>
+
+  <settings pass="specialize">
+    <component name="Microsoft-Windows-Shell-Setup"
+               processorArchitecture="amd64" language="neutral"
+               versionScope="nonSxS"
+               publicKeyToken="31bf3856ad364e35">
+      <ComputerName>{{HOSTNAME}}</ComputerName>
+      <TimeZone>{{TIMEZONE}}</TimeZone>
+    </component>
+
+    <!-- Turn on the RDP server. This is what lets individual Windows
+         programs be drawn as ordinary Linux windows later; without it
+         only the whole-desktop view through Looking Glass works. -->
+    <component name="Microsoft-Windows-TerminalServices-LocalSessionManager"
+               processorArchitecture="amd64" language="neutral"
+               versionScope="nonSxS"
+               publicKeyToken="31bf3856ad364e35">
+      <fDenyTSConnections>false</fDenyTSConnections>
+    </component>
+    <component name="Microsoft-Windows-TerminalServices-RDP-WinStationExtensions"
+               processorArchitecture="amd64" language="neutral"
+               versionScope="nonSxS"
+               publicKeyToken="31bf3856ad364e35">
+      <!-- Network Level Authentication stays on: the client speaks it
+           fine and it keeps an unauthenticated peer from reaching the
+           login screen at all. -->
+      <UserAuthentication>1</UserAuthentication>
+      <SecurityLayer>2</SecurityLayer>
+    </component>
+    <component name="Networking-MPSSVC-Svc"
+               processorArchitecture="amd64" language="neutral"
+               versionScope="nonSxS"
+               publicKeyToken="31bf3856ad364e35">
+      <FirewallGroups>
+        <FirewallGroup wcm:action="add" wcm:keyValue="RemoteDesktop">
+          <Active>true</Active>
+          <Group>@FirewallAPI.dll,-28752</Group>
+          <Profile>all</Profile>
+        </FirewallGroup>
+      </FirewallGroups>
+    </component>
+
+    <component name="Microsoft-Windows-Deployment"
+               processorArchitecture="amd64" language="neutral"
+               versionScope="nonSxS"
+               publicKeyToken="31bf3856ad364e35">
+      <RunSynchronous>
+        <!-- Recent Windows 11 builds push hard for a Microsoft account
+             during setup. The local account below is normally enough
+             to skip that; this is the belt to its braces. -->
+        <RunSynchronousCommand wcm:action="add">
+          <Order>1</Order>
+          <Path>reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\OOBE" /v BypassNRO /t REG_DWORD /d 1 /f</Path>
+          <Description>Allow finishing setup without a Microsoft account</Description>
+        </RunSynchronousCommand>
+      </RunSynchronous>
+    </component>
+  </settings>
+
+  <settings pass="oobeSystem">
+    <component name="Microsoft-Windows-Shell-Setup"
+               processorArchitecture="amd64" language="neutral"
+               versionScope="nonSxS"
+               publicKeyToken="31bf3856ad364e35">
+      <OOBE>
+        <HideEULAPage>true</HideEULAPage>
+        <HideOEMRegistrationScreen>true</HideOEMRegistrationScreen>
+        <HideOnlineAccountScreens>true</HideOnlineAccountScreens>
+        <HideWirelessSetupInOOBE>true</HideWirelessSetupInOOBE>
+        <NetworkLocation>Home</NetworkLocation>
+        <!-- 3 is "install security updates only", the least chatty of
+             the three settings this accepts. -->
+        <ProtectYourPC>3</ProtectYourPC>
+      </OOBE>
+
+      <UserAccounts>
+        <LocalAccounts>
+          <LocalAccount wcm:action="add">
+            <Name>{{USERNAME}}</Name>
+            <DisplayName>{{USERNAME}}</DisplayName>
+            <Group>Administrators</Group>
+            <Password>
+              <Value>{{PASSWORD}}</Value>
+              <PlainText>true</PlainText>
+            </Password>
+          </LocalAccount>
+        </LocalAccounts>
+      </UserAccounts>
+
+      <!-- One automatic login so the commands below actually run.
+           After that Windows asks for the password as usual. -->
+      <AutoLogon>
+        <Username>{{USERNAME}}</Username>
+        <Enabled>true</Enabled>
+        <LogonCount>1</LogonCount>
+        <Password>
+          <Value>{{PASSWORD}}</Value>
+          <PlainText>true</PlainText>
+        </Password>
+      </AutoLogon>
+
+      <FirstLogonCommands>
+        <SynchronousCommand wcm:action="add">
+          <Order>1</Order>
+          <CommandLine>cmd /c powercfg /hibernate off</CommandLine>
+          <Description>Turn hibernation off</Description>
+        </SynchronousCommand>
+        <SynchronousCommand wcm:action="add">
+          <Order>2</Order>
+          <CommandLine>reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Power" /v HiberbootEnabled /t REG_DWORD /d 0 /f</CommandLine>
+          <Description>Turn fast startup off, which corrupts state across VM resets</Description>
+        </SynchronousCommand>
+        <SynchronousCommand wcm:action="add">
+          <Order>3</Order>
+          <!-- The guest tools bring the balloon, serial, network and
+               shared-filesystem drivers in one installer. The drive
+               letter is found rather than assumed. -->
+          <CommandLine>cmd /c for %i in (D E F G H) do @if exist %i:\virtio-win-guest-tools.exe start /wait %i:\virtio-win-guest-tools.exe /install /passive /norestart</CommandLine>
+          <Description>Install the virtio guest drivers</Description>
+        </SynchronousCommand>
+        <SynchronousCommand wcm:action="add">
+          <Order>4</Order>
+          <CommandLine>powershell -NoProfile -Command "Get-NetConnectionProfile | Set-NetConnectionProfile -NetworkCategory Private"</CommandLine>
+          <Description>Mark the network private so RDP is reachable</Description>
+        </SynchronousCommand>
+        <SynchronousCommand wcm:action="add">
+          <Order>5</Order>
+          <CommandLine>netsh advfirewall firewall set rule group="remote desktop" new enable=Yes</CommandLine>
+          <Description>Open the firewall for RDP</Description>
+        </SynchronousCommand>
+      </FirstLogonCommands>
+    </component>
+  </settings>
+</unattend>

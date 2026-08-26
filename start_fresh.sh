@@ -1047,3 +1047,24 @@ EOF
 			--method org.kde.kwin.Effects.unloadEffect "$effect" >/dev/null
 	done
 fi
+
+# ---------------------------------------------------------------------------
+# Windows 11 virtual machine.
+# ---------------------------------------------------------------------------
+
+# Last on purpose: this is the only part of the script that needs the machine
+# rebooted part way through. The integrated GPU has to be handed to vfio-pci on
+# the kernel command line before a guest can use it, and a kernel command line
+# only takes effect at boot. Everything above has finished by the time this
+# asks, so the reboot costs nothing.
+#
+# make_windows_vm.sh stands on its own and every phase is re-runnable, so
+# answering no here costs nothing but running it later by hand. It works out
+# which phases are already done and picks up from there, which is also how it
+# continues after the reboot it asks for.
+if [ -x "$dotfiles/make_windows_vm.sh" ]; then
+	read -p "Set up the Windows 11 virtual machine? [yN] " -r user_answer
+	if [[ "$user_answer" =~ ^[Yy]$ ]]; then
+		"$dotfiles/make_windows_vm.sh"
+	fi
+fi

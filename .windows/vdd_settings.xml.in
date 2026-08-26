@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Settings for the Virtual Display Driver (MttVDD).
+
+  The passed-through iGPU has no cable on it, so Windows gives it no display
+  outputs and nothing is ever drawn on it. This driver invents a monitor and,
+  through <friendlyname> below, renders it on that iGPU. That is what gives
+  Looking Glass frames the passed-through GPU actually produced.
+
+  The driver reads this from a fixed path, C:\VirtualDisplayDriver.
+-->
+<vdd_settings>
+    <monitors>
+        <count>1</count>
+    </monitors>
+    <gpu>
+        <friendlyname>{{GPU_NAME}}</friendlyname>
+    </gpu>
+    <global>
+        <g_refresh_rate>60</g_refresh_rate>
+        <g_refresh_rate>120</g_refresh_rate>
+    </global>
+    <!--
+      The first entry is the mode the driver comes up in. It is set to the
+      host monitor's own size so the client maps guest pixels to host pixels
+      one for one; anything else costs a rescale on every frame.
+    -->
+    <resolutions>
+        <resolution>
+            <width>{{WIDTH}}</width>
+            <height>{{HEIGHT}}</height>
+            <refresh_rate>60</refresh_rate>
+        </resolution>
+        <resolution>
+            <width>1920</width>
+            <height>1080</height>
+            <refresh_rate>60</refresh_rate>
+        </resolution>
+        <resolution>
+            <width>1280</width>
+            <height>720</height>
+            <refresh_rate>60</refresh_rate>
+        </resolution>
+    </resolutions>
+    <options>
+        <CustomEdid>false</CustomEdid>
+        <PreventSpoof>false</PreventSpoof>
+        <EdidCeaOverride>false</EdidCeaOverride>
+        <HardwareCursor>true</HardwareCursor>
+        <SDR10bit>false</SDR10bit>
+        <HDRPlus>false</HDRPlus>
+        <logging>true</logging>
+        <debuglogging>false</debuglogging>
+    </options>
+</vdd_settings>

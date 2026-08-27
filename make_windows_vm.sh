@@ -1546,11 +1546,17 @@ igpu_rom() {
 build_install_media() {
 	local installing=$1
 
+	# The one path here that is not ours: the ISO is picked up from wherever
+	# the browser dropped it, so its name can hold characters XML cannot,
+	# like the & in "Win11 & drivers.iso".
+	local win_iso_xml
+	win_iso_xml=$(printf '%s' "$WIN_ISO_PATH" | xml_escape)
+
 	if [ "$installing" = yes ]; then
 		cat <<-EOF
 			    <disk type='file' device='cdrom'>
 			      <driver name='qemu' type='raw'/>
-			      <source file='$WIN_ISO_PATH'/>
+			      <source file='$win_iso_xml'/>
 			      <target dev='sda' bus='sata'/>
 			      <readonly/>
 			      <boot order='1'/>

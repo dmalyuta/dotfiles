@@ -42,7 +42,7 @@ virsh --connect qemu:///system destroy windows11      # pull the plug (only if u
 virsh --connect qemu:///system domifaddr windows11 --source agent
 ```
 
-> ### ⚠ Leave the VM running
+> ### ⚠️ Leave the VM running
 >
 > The iGPU **cannot be reset** once Windows has driven it — its Platform Security
 > Processor holds firmware state that only a real power cycle clears. After *any*
@@ -65,13 +65,22 @@ desktop renders on the CPU.
 ```bash
 looking-glass                       # connect, starting the VM first if off
 looking-glass -- -F                 # start full screen
+looking-glass -m KEY_RIGHTALT       # make right Alt the escape key
 looking-glass -- win:showFPS=yes    # any client option passes through after --
 looking-glass-client --help         # every option the client accepts
 ```
 
+> ### ⚠️ If looking-glass client quits randomly
+>
+> This issue could be resolved by setting the environment variable `export
+> __NV_DISABLE_EXPLICIT_SYNC=1`. See [GitHub
+> issue](https://github.com/gnif/LookingGlass/issues/1151).
+
 ### Key bindings
 
-`ScrLk` is the escape key. Hold it ~200 ms for the on-screen help menu.
+`ScrLk` is the escape key. You can make another key the escape key using
+`looking-glass -m KEY_...` (for example, `KEY_RIGHTALT`). Hold it ~200 ms for
+the on-screen help menu.
 
 | Key | Action | Key | Action |
 |---|---|---|---|

@@ -436,7 +436,7 @@ else
 		fetch openrgb.zip "https://gitlab.com/CalcProgrammer1/OpenRGB/-/jobs/artifacts/master/download?job=Linux%20amd64%20AppImage"
 		unzip -o openrgb.zip -d openrgb
 		# Copy the rules from the downloaded openrgb zip folder for the latest build
-		sudo cp openrgb/60-openrgb.rules /etc/udev/rules.d/
+		sudo openrgb/OpenRGB-x86_64.AppImage --generate-udev-rules /etc/udev/rules.d/60-openrgb.rules
 		sudo udevadm control --reload-rules
 		sudo udevadm trigger
 		# Add user permissions
@@ -754,7 +754,7 @@ set_desktop_key "$apps"/nextcloud_desktop.desktop X-AppImage-Name "Nextcloud Des
 set_desktop_key "$apps"/openrgb.desktop StartupWMClass "AppRun.wrapped"
 set_desktop_key "$apps"/openrgb.desktop X-AppImage-Name "OpenRGB"
 
-set_desktop_key /usr/share/applications/matlab.desktop StartupWMClass "MATLAB R2026a Update 4"
+set_desktop_key /usr/share/applications/matlab.desktop StartupWMClass "MATLAB R2026a Update 5"
 set_desktop_key /usr/share/applications/matlab.desktop X-AppImage-Name "MATLAB R2026a"
 
 # ---------------------------------------------------------------------------

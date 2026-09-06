@@ -1,0 +1,7 @@
+# Razer Basilisk V3 Pro 35K - must never wake the machine.
+ACTION=="add|change|bind", SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", \
+  ATTR{idVendor}=="1532", ATTR{idProduct}=="00cc", ATTR{power/wakeup}="disabled"
+
+# Keychron K3 Pro - must be able to wake the machine.
+ACTION=="add|change|bind", SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", \
+  ATTR{idVendor}=="3434", ATTR{idProduct}=="0230", ATTR{power/wakeup}="enabled"

@@ -109,7 +109,7 @@ winapp --desktop                    # the whole desktop over RDP, in one window
 winapp 'C:\Program Files\PDF-XChange\PDF Editor\PXCEditor.exe'
 winapp 'C:\…\PXCEditor.exe' ~/Documents/report.pdf    # open a Linux file in it
 
-./make_windows_vm.sh --only 5       # re-scan the guest after installing software
+./scripts/make_windows_vm.sh --only 5       # re-scan the guest after installing software
 ```
 
 **Files.** Anything in `~/Shared` is permanently visible to Windows as drive
@@ -130,8 +130,8 @@ driver.
 ```bash
 virt-viewer --connect qemu:///system --domain-name windows11
 
-./make_windows_vm.sh --enable-console   # switch the emulated adapter back on
-./make_windows_vm.sh --only 6           # switch it off again
+./scripts/make_windows_vm.sh --enable-console   # switch the emulated adapter back on
+./scripts/make_windows_vm.sh --only 6           # switch it off again
 ```
 
 > **Expect a blank window today.** Phase 6 disables the emulated adapter on
@@ -146,15 +146,15 @@ virt-viewer --connect qemu:///system --domain-name windows11
 
 ## 6. Setup script
 
-`~/sw/dotfiles/make_windows_vm.sh`. Every phase is safe to re-run — each checks
+`~/sw/dotfiles/scripts/make_windows_vm.sh`. Every phase is safe to re-run — each checks
 for what it creates and skips it.
 
 ```bash
-./make_windows_vm.sh --status           # which phases are done
-./make_windows_vm.sh --only 5           # re-scan installed programs, rebuild launchers
-./make_windows_vm.sh --only 6           # re-apply Looking Glass / virtual display setup
-./make_windows_vm.sh --enable-console   # bring back the emulated display adapter
-./make_windows_vm.sh --help             # all options
+./scripts/make_windows_vm.sh --status           # which phases are done
+./scripts/make_windows_vm.sh --only 5           # re-scan installed programs, rebuild launchers
+./scripts/make_windows_vm.sh --only 6           # re-apply Looking Glass / virtual display setup
+./scripts/make_windows_vm.sh --enable-console   # bring back the emulated display adapter
+./scripts/make_windows_vm.sh --help             # all options
 ```
 
 **Installing Office:** install it through Looking Glass, then run `--only 5`;
@@ -172,7 +172,7 @@ Word and Excel pick up launcher entries automatically.
 | `~/.local/bin/winapp` | RemoteApp launcher |
 | `~/.local/state/windows-vm/` | Phase markers and the RDP credential (mode 600) |
 | `/dev/shm/looking-glass` | The 128 MiB frame buffer, created by QEMU at start |
-| `~/sw/dotfiles/make_windows_vm.sh` | The setup script; templates in `.windows/` |
+| `~/sw/dotfiles/scripts/make_windows_vm.sh` | The setup script; templates in `.windows/` |
 
 ---
 

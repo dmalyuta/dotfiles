@@ -1,0 +1,27 @@
+#!/bin/sh
+# Enforce USB wake sources immediately before sleep.
+#   Razer Basilisk V3 Pro 35K (1532:00cc) - must never wake the machine.
+#   Keychron K3 Pro           (3434:0230) - must be able to wake the machine.
+
+[ "$1" = "pre" ] || exit 0
+
+set_wakeup() {
+	vendor=$1 product=$2 state=$3 found=0
+	for d in /sys/bus/usb/devices/*/; do
+		[ -e "$d/idVendor" ] || continue
+		[ "$(cat "$d/idVendor")" = "$vendor" ] || continue
+		[ "$(cat "$d/idProduct")" = "$product" ] || continue
+		[ -w "$d/power/wakeup" ] || continue
+		echo "$state" >"$d/power/wakeup"
+		found=1
+		# Logged before the freeze, so the journal records the state the
+		# machine actually went to sleep in.
+		logger -t usb-wakeup "$vendor:$product at $(basename "$d") -> $state"
+	done
+	[ "$found" -eq 1 ] || logger -t usb-wakeup "$vendor:$product not present"
+}
+
+set_wakeup 1532 00cc disabled
+set_wakeup 3434 0230 enabled
+
+exit 0

@@ -1,0 +1,45 @@
+#!/bin/sh
+# pre:  snapshot the kernel's wakeup counters.
+# post: diff them, so the journal says which device woke the machine, then
+#       commit the log to disk while still in early resume.
+
+SNAP=/run/sleep-forensics.counters
+
+snapshot() {
+	for d in /sys/class/wakeup/*/; do
+		[ -r "$d/event_count" ] || continue
+		printf '%s\t%s\t%s\n' "$(basename "$d")" \
+			"$(cat "$d/name" 2>/dev/null)" \
+			"$(cat "$d/event_count" 2>/dev/null)"
+	done
+}
+
+case "$1" in
+pre)
+	snapshot >"$SNAP" 2>/dev/null
+	logger -t sleep-forensics "pre: counters snapshotted, entering $2"
+	;;
+post)
+	woke=$(snapshot | awk -F'\t' '
+		NR==FNR { was[$1] = $3; next }
+		{ b = ($1 in was) ? was[$1] : 0
+		  if ($3 + 0 != b + 0) printf "%s (%s): %s -> %s\n", $1, $2, b, $3 }
+	' "$SNAP" - 2>/dev/null)
+	if [ -n "$woke" ]; then
+		# Note this names the wake *path*, not the leaf device: a USB wake is
+		# counted at the host controller, so the keyboard's own counter stays
+		# at zero. It is still conclusive while only one USB device is allowed
+		# to wake the machine.
+		echo "$woke" | while read -r line; do
+			logger -t sleep-forensics "WAKE SOURCE: $line"
+		done
+	else
+		logger -t sleep-forensics "WAKE SOURCE: none counted"
+	fi
+	logger -t sleep-forensics "post: resumed from $2, flushing journal to disk"
+	timeout 15 journalctl --sync 2>/dev/null || true
+	sync
+	;;
+esac
+
+exit 0

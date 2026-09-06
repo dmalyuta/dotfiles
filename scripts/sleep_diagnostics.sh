@@ -8,6 +8,8 @@
 #
 # What this toggles:
 #
+# The tmpfiles rule it installs is .devices/pm-debug.conf.
+#
 #     pm_print_times          per-device suspend/resume timings. ~740 lines a
 #                             cycle, and the only way to see which device is
 #                             slow (it is the HP dock: ~2.7s of the ~4.7s).
@@ -31,6 +33,12 @@
 # Author: Danylo Malyuta, 2026.
 
 set -euo pipefail
+
+# Resolved from the script's own location, through any symlink, so it works the
+# same whether it is run by path or from $PATH.
+script_dir=$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" 2>/dev/null && pwd)
+[ -n "$script_dir" ] || script_dir=$PWD
+: "${DEVICES_DIR:=$(dirname "$script_dir")/.devices}"
 
 grub=/etc/default/grub
 key=GRUB_CMDLINE_LINUX_DEFAULT
@@ -73,10 +81,7 @@ set_knobs() {
 
 case "${1:-status}" in
 on)
-	sudo tee "$tmpfiles" >/dev/null <<'EOF'
-w /sys/power/pm_print_times    - - - - 1
-w /sys/power/pm_debug_messages - - - - 1
-EOF
+	sudo install -m 644 "$DEVICES_DIR/pm-debug.conf" "$tmpfiles"
 	set_knobs 1
 	echo "== pm_print_times and pm_debug_messages on, now and at every boot."
 	if set_boot_opts add; then

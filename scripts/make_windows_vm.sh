@@ -6,7 +6,7 @@
 #
 # Run it directly:
 #
-#   ~/sw/dotfiles/make_windows_vm.sh
+#   ~/sw/dotfiles/scripts/make_windows_vm.sh
 #
 # or let start_fresh.sh offer it at the end of a fresh install.
 #
@@ -16,13 +16,13 @@
 # Every phase is safe to re-run: each one checks for what it creates and skips
 # it if it is already there.
 #
-#   ./make_windows_vm.sh              run every phase that is not done yet
-#   ./make_windows_vm.sh --status     show what is done and what is left
-#   ./make_windows_vm.sh --only 2     run just phase 2, done or not
-#   ./make_windows_vm.sh --from 3     run phase 3 onwards, done or not
-#   ./make_windows_vm.sh --reset      forget all recorded progress
-#   ./make_windows_vm.sh --config     every setting and its current value
-#   ./make_windows_vm.sh --enable-console
+#   ./scripts/make_windows_vm.sh              run every phase that is not done yet
+#   ./scripts/make_windows_vm.sh --status     show what is done and what is left
+#   ./scripts/make_windows_vm.sh --only 2     run just phase 2, done or not
+#   ./scripts/make_windows_vm.sh --from 3     run phase 3 onwards, done or not
+#   ./scripts/make_windows_vm.sh --reset      forget all recorded progress
+#   ./scripts/make_windows_vm.sh --config     every setting and its current value
+#   ./scripts/make_windows_vm.sh --enable-console
 #                                     put the emulated display back, if the
 #                                     virtual one ever fails to appear
 #
@@ -44,7 +44,7 @@ set -o pipefail
 
 # ---------------------------------------------------------------------------
 # Configuration. Every one of these can be overridden from the environment,
-# e.g. VM_RAM_GB=16 ./make_windows_vm.sh
+# e.g. VM_RAM_GB=16 ./scripts/make_windows_vm.sh
 # ---------------------------------------------------------------------------
 
 # Name libvirt knows the VM by.
@@ -233,7 +233,7 @@ script_dir=$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" 2>/dev/null &&
 # sourced from a pipe. Falling back to the working directory beats carrying an
 # empty path forward and looking for templates in /.
 [ -n "$script_dir" ] || script_dir=$PWD
-: "${TEMPLATE_DIR:=$script_dir/.windows}"
+: "${TEMPLATE_DIR:=$(dirname "$script_dir")/.windows}"
 
 state_dir=${XDG_STATE_HOME:-$HOME/.local/state}/windows-vm
 
@@ -607,8 +607,9 @@ phase_0() {
 	done
 	[ -z "$missing" ] ||
 		die "Missing from $TEMPLATE_DIR:$missing
-   These live in the .windows directory next to the script. Copy the whole
-   directory, or point TEMPLATE_DIR at where it really is."
+   These live in the .windows directory at the top of the repo, one level up
+   from this script. Copy the whole directory, or point TEMPLATE_DIR at where
+   it really is."
 	info "Templates found in $TEMPLATE_DIR."
 
 	grep -qE '^flags.*\bsvm\b' /proc/cpuinfo ||

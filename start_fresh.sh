@@ -56,9 +56,9 @@ fi
 # the repo is cloned to ~/sw/dotfiles further down. Resolved before the cd
 # below, since $0 may be a relative path.
 dotfiles=~/sw/dotfiles
-self_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)
-if [ -f "$self_dir/.bash_aliases" ] && [ -d "$self_dir/.git" ]; then
-	dotfiles=$self_dir
+scriptdir=$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)
+if [ -f "$scriptdir/.home/.bash_aliases" ] && [ -d "$scriptdir/.git" ]; then
+	dotfiles=$scriptdir
 fi
 
 downloads=~/Downloads
@@ -195,32 +195,6 @@ write_root_file() {
 	rm -f "$tmp"
 }
 
-# Rewrite the kernel command line in /etc/default/grub: make sure every option
-# in $1 is present and every option in $2 is gone (both space-separated, plain
-# words). Returns 0 only when the line actually changed, so callers can skip
-# update-grub on a re-run.
-kernel_cmdline() {
-	local add=$1 drop=$2 key=GRUB_CMDLINE_LINUX_DEFAULT file=/etc/default/grub
-	local cur new opt
-	cur=$(sed -n "s/^${key}=\"\(.*\)\"$/\1/p" "$file")
-	# Pad with spaces so every option is surrounded by them and the matches below
-	# cannot catch a substring of a longer option.
-	new=" $cur "
-	for opt in $drop; do
-		new=${new// $opt / }
-	done
-	for opt in $add; do
-		case "$new" in *" $opt "*) ;; *) new="$new$opt " ;; esac
-	done
-	new=$(printf '%s' "$new" | tr -s ' ' | sed 's/^ //; s/ $//')
-	[ "$new" = "$cur" ] && return 1
-	if grep -q "^${key}=" "$file"; then
-		sudo sed -i "s|^${key}=.*|${key}=\"${new}\"|" "$file"
-	else
-		printf '%s="%s"\n' "$key" "$new" | sudo tee -a "$file" >/dev/null
-	fi
-}
-
 # Sets a key in a .desktop file's [Desktop Entry] group, replacing the value if
 # the key is already there. Inserts right after the group header rather than at
 # the end of the file, since some of these have a trailing [Desktop Action ...].
@@ -333,28 +307,29 @@ else
 fi
 
 # Dotfiles install. Every ln -sf and mkdir -p here is already idempotent.
+# The files that belong directly in $HOME live in .home/; everything else is
+# kept under the path it lands on, such as .config/kitty.
 cd "$dotfiles" || exit
-DIR=$dotfiles
-ln -sf "$DIR"/.bash_aliases ~
-ln -sf "$DIR"/.local.bashrc ~
+ln -sf "$dotfiles"/.home/.bash_aliases ~
+ln -sf "$dotfiles"/.home/.local.bashrc ~
 if [ ! -f ./.bin/colorizer/Library/colorizer.sh ]; then
 	git submodule update --init --recursive
 fi
-ln -sf "$DIR"/.bin ~
+ln -sf "$dotfiles"/.bin ~
 mkdir -p ~/.config/kitty
-ln -sf "$DIR"/.dircolors ~
-ln -sf "$DIR"/.config/kitty/kitty.conf ~/.config/kitty
-ln -sf "$DIR"/.config/kitty/default-kitty ~/.config/kitty
-ln -sf "$DIR"/.config/kitty/resize_split.py ~/.config/kitty
-ln -sf "$DIR"/.wezterm.lua ~
-ln -sf "$DIR"/.alacritty.toml ~
+ln -sf "$dotfiles"/.home/.dircolors ~
+ln -sf "$dotfiles"/.config/kitty/kitty.conf ~/.config/kitty
+ln -sf "$dotfiles"/.config/kitty/default-kitty ~/.config/kitty
+ln -sf "$dotfiles"/.config/kitty/resize_split.py ~/.config/kitty
+ln -sf "$dotfiles"/.home/.wezterm.lua ~
+ln -sf "$dotfiles"/.home/.alacritty.toml ~
 mkdir -p ~/.config/tmux-powerline/themes
-ln -sf "$DIR"/.tmux.conf ~
-ln -sf "$DIR"/.config/tmux-powerline/config.sh \
+ln -sf "$dotfiles"/.home/.tmux.conf ~
+ln -sf "$dotfiles"/.config/tmux-powerline/config.sh \
 	~/.config/tmux-powerline/config.sh
-ln -sf "$DIR"/.config/tmux-powerline/themes/danylo-theme.sh \
+ln -sf "$dotfiles"/.config/tmux-powerline/themes/danylo-theme.sh \
 	~/.config/tmux-powerline/themes/danylo-theme.sh
-ln -sf "$DIR"/.config/.blue-owl-custom.omp.json ~/.blue-owl-custom.omp.json
+ln -sf "$dotfiles"/.config/.blue-owl-custom.omp.json ~/.blue-owl-custom.omp.json
 cd "$downloads" || exit
 
 # Kitty terminal. The cp/sed/echo below all overwrite, so they are re-runnable.
@@ -476,10 +451,10 @@ else
 		# Link settings.
 		mkdir -p ~/.config/OpenRGB/profiles
 		mkdir -p ~/.config/OpenRGB/plugins
-		ln -sf "$DIR"/.config/OpenRGB/Configuration.json ~/.config/OpenRGB/
-		ln -sf "$DIR"/.config/OpenRGB/OpenRGB.json ~/.config/OpenRGB/
-		ln -sf "$DIR"/.config/OpenRGB/profiles/blue.json ~/.config/OpenRGB/profiles/
-		ln -sf "$DIR"/.config/OpenRGB/profiles/off.json ~/.config/OpenRGB/profiles/
+		ln -sf "$dotfiles"/.config/OpenRGB/Configuration.json ~/.config/OpenRGB/
+		ln -sf "$dotfiles"/.config/OpenRGB/OpenRGB.json ~/.config/OpenRGB/
+		ln -sf "$dotfiles"/.config/OpenRGB/profiles/blue.json ~/.config/OpenRGB/profiles/
+		ln -sf "$dotfiles"/.config/OpenRGB/profiles/off.json ~/.config/OpenRGB/profiles/
 	fi
 fi
 
@@ -618,7 +593,7 @@ if [ -d ~/.config/nvim ]; then
 else
 	apt_install neovim
 	# My lazyvim configuration.
-	ln -s "$DIR"/.config/nvim ~/.config/nvim
+	ln -s "$dotfiles"/.config/nvim ~/.config/nvim
 fi
 
 # Flameshot screenshot.
@@ -738,218 +713,11 @@ if [[ "$user_answer" =~ ^[Yy]$ ]]; then
 	wine msiexec /i EditorV11.x64.msi
 fi
 
-# USB wake sources.
-#
-# The Razer mouse must never wake the machine; the Keychron keyboard must be
-# able to. This is enforced in two places on purpose:
-#
-#   1. udev, so the state is correct as soon as a device is enumerated.
-#   2. A pre-sleep hook, because the HID interface drivers probe *after* udev's
-#      "add" event for the usb_device and re-enable wakeup behind udev's back.
-#      That race is what made the old ACTION=="add" rule silently lose on the
-#      Razer while appearing to be installed correctly.
-#
-# Note ATTR (the usb_device's own attributes) rather than ATTRS (any ancestor's),
-# so the rule cannot also match the interface children.
-udev_changed=0
-sudo rm -f /etc/udev/rules.d/razer-mouse.rules /etc/udev/rules.d/keychron-keyboard.rules
-if write_root_file /etc/udev/rules.d/90-usb-wakeup.rules <<'EOF'; then
-# Razer Basilisk V3 Pro 35K - must never wake the machine.
-ACTION=="add|change|bind", SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", \
-  ATTR{idVendor}=="1532", ATTR{idProduct}=="00cc", ATTR{power/wakeup}="disabled"
-
-# Keychron K3 Pro - must be able to wake the machine.
-ACTION=="add|change|bind", SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", \
-  ATTR{idVendor}=="3434", ATTR{idProduct}=="0230", ATTR{power/wakeup}="enabled"
-EOF
-	udev_changed=1
-fi
-if [ "$udev_changed" -eq 1 ]; then
-	sudo udevadm control --reload
-	# --reload only reloads the rule files; it does not reapply them to devices
-	# that are already present, so trigger those explicitly.
-	sudo udevadm trigger --action=add --subsystem-match=usb
-fi
-
-# Belt and braces for the above: re-assert the wake sources immediately before
-# sleep, which is immune to enumeration order, replugs, dock power cycling,
-# OpenRazer daemon restarts and driver rebinds.
-#
-# /usr/lib/systemd/system-sleep, not /etc/systemd/system-sleep: systemd only
-# scans the former (it is the single system-sleep path in the systemd-sleep
-# binary, and the only one man:systemd-sleep documents). A hook dropped in /etc
-# is silently never run.
-if write_root_file /usr/lib/systemd/system-sleep/usb-wakeup <<'EOF'; then
-#!/bin/sh
-# Enforce USB wake sources immediately before sleep.
-#   Razer Basilisk V3 Pro 35K (1532:00cc) - must never wake the machine.
-#   Keychron K3 Pro           (3434:0230) - must be able to wake the machine.
-
-[ "$1" = "pre" ] || exit 0
-
-set_wakeup() {
-	vendor=$1 product=$2 state=$3 found=0
-	for d in /sys/bus/usb/devices/*/; do
-		[ -e "$d/idVendor" ] || continue
-		[ "$(cat "$d/idVendor")" = "$vendor" ] || continue
-		[ "$(cat "$d/idProduct")" = "$product" ] || continue
-		[ -w "$d/power/wakeup" ] || continue
-		echo "$state" >"$d/power/wakeup"
-		found=1
-		# Logged before the freeze, so the journal records the state the
-		# machine actually went to sleep in.
-		logger -t usb-wakeup "$vendor:$product at $(basename "$d") -> $state"
-	done
-	[ "$found" -eq 1 ] || logger -t usb-wakeup "$vendor:$product not present"
-}
-
-set_wakeup 1532 00cc disabled
-set_wakeup 3434 0230 enabled
-
-exit 0
-EOF
-	sudo chmod 0755 /usr/lib/systemd/system-sleep/usb-wakeup
-fi
-
-# Waking up from sleep with a working display.
-#
-# Two things are needed, and the machine is unusable after a suspend without
-# the first one.
-#
-# 1. fbcon=nodefer. By default fbcon's takeover of the console is deferred -
-#    that is what lets a splash screen own the screen at boot - so fbcon never
-#    binds to nvidia-drmdrmfb while the machine is running. The pending
-#    takeover instead fires during *resume*, out of the
-#    fbcon_register_existing_fbs workqueue. That work takes console_lock and
-#    then blocks inside nvidia_modeset, while systemd-sleep is stuck in
-#    pm_restore_console waiting for the very same console_lock. So
-#    systemd-sleep never reaches the post-sleep hook that tells the driver to
-#    restore video memory, and the driver never releases what fbcon is waiting
-#    for. Everything else resumes - disks, network, userspace - but the display
-#    stays dark and the console is wedged until the machine is power-cycled.
-#
-#    fbcon_register_existing_fbs only ever runs while the takeover is still
-#    deferred, so nodefer resolves it at boot and takes it off the resume path.
-#
-#    "quiet" is why the takeover survived long enough to matter. A deferred
-#    takeover ends the first time something prints to the console, and with
-#    quiet essentially nothing does - so it stayed pending for the whole
-#    uptime, until pm_restore_console switched VTs during resume. Dropping
-#    quiet is a second, independent reason the takeover now happens at boot.
-#    "splash" goes with it because Plymouth relies on the console staying off
-#    the framebuffer; once fbcon owns it at boot the two only fight.
-#
-#    The alternative fix is nvidia_drm fbdev=0, which stops fbcon binding to
-#    the GPU at all. It works too, but it costs the text virtual terminals.
-#
-# 2. NVreg_PreserveVideoMemoryAllocations plus the nvidia sleep services, so
-#    video memory is written to disk over the suspend rather than lost.
-#
-# A regression here looks like "PM: suspend entry" in the journal with no
-# matching "PM: suspend exit", plus hung-task traces naming console_lock.
-if [ -e /proc/driver/nvidia/version ]; then
-	for unit in nvidia-suspend nvidia-hibernate nvidia-resume; do
-		systemctl is-enabled --quiet "$unit.service" 2>/dev/null ||
-			sudo systemctl enable "$unit.service"
-	done
-
-	if write_root_file /etc/modprobe.d/zz-nvidia-local.conf <<'EOF'; then
-options nvidia NVreg_PreserveVideoMemoryAllocations=1
-options nvidia NVreg_TemporaryFilePath=/var/tmp
-EOF
-		# Only rebuild the initramfs when the option actually changed.
-		sudo update-initramfs -u
-	fi
-
-	if kernel_cmdline "fbcon=nodefer" "quiet splash"; then
-		sudo update-grub
-	fi
-fi
-
-# Make the next failed resume readable instead of a mystery. None of the below
-# changes how the machine sleeps. The noisier, higher-volume diagnostics are
-# not installed here; scripts/sleep_diagnostics.sh turns those on and off.
-
-# journald syncs every 5 minutes by default, so a resume that has to be ended
-# with the power button takes the whole record of itself with it.
-if write_root_file /etc/systemd/journald.conf.d/10-sleep-sync.conf <<'EOF'; then
-[Journal]
-SyncIntervalSec=10s
-EOF
-	sudo systemctl restart systemd-journald
-fi
-
-# Alt+SysRq+W (blocked tasks) then +L (all-CPU backtraces) then +S (sync) is the
-# only way to capture a wedged resume from the keyboard. Ubuntu's default mask
-# leaves W and L out.
-if write_root_file /etc/sysctl.d/60-sysrq.conf <<'EOF'; then
-kernel.sysrq = 1
-EOF
-	sudo sysctl --system >/dev/null
-fi
-
-# Names the device that woke the machine, and - the important part - forces the
-# kernel's whole suspend/resume sequence to disk during early resume, before
-# the graphics session has had any chance to wedge. A power-cycle after that
-# point still leaves the log intact.
-if write_root_file /usr/lib/systemd/system-sleep/zz-sleep-forensics <<'EOF'; then
-#!/bin/sh
-# pre:  snapshot the kernel's wakeup counters.
-# post: diff them, so the journal says which device woke the machine, then
-#       commit the log to disk while still in early resume.
-
-SNAP=/run/sleep-forensics.counters
-
-snapshot() {
-	for d in /sys/class/wakeup/*/; do
-		[ -r "$d/event_count" ] || continue
-		printf '%s\t%s\t%s\n' "$(basename "$d")" \
-			"$(cat "$d/name" 2>/dev/null)" \
-			"$(cat "$d/event_count" 2>/dev/null)"
-	done
-}
-
-case "$1" in
-pre)
-	snapshot >"$SNAP" 2>/dev/null
-	logger -t sleep-forensics "pre: counters snapshotted, entering $2"
-	;;
-post)
-	woke=$(snapshot | awk -F'\t' '
-		NR==FNR { was[$1] = $3; next }
-		{ b = ($1 in was) ? was[$1] : 0
-		  if ($3 + 0 != b + 0) printf "%s (%s): %s -> %s\n", $1, $2, b, $3 }
-	' "$SNAP" - 2>/dev/null)
-	if [ -n "$woke" ]; then
-		# Note this names the wake *path*, not the leaf device: a USB wake is
-		# counted at the host controller, so the keyboard's own counter stays
-		# at zero. It is still conclusive while only one USB device is allowed
-		# to wake the machine.
-		echo "$woke" | while read -r line; do
-			logger -t sleep-forensics "WAKE SOURCE: $line"
-		done
-	else
-		logger -t sleep-forensics "WAKE SOURCE: none counted"
-	fi
-	logger -t sleep-forensics "post: resumed from $2, flushing journal to disk"
-	timeout 15 journalctl --sync 2>/dev/null || true
-	sync
-	;;
-esac
-
-exit 0
-EOF
-	sudo chmod 0755 /usr/lib/systemd/system-sleep/zz-sleep-forensics
-fi
-
-# A resume that leaves the display dead usually leaves the machine perfectly
-# reachable over the network, so keep a way in that does not need the screen.
-# Deliberately scoped to the home LAN rather than opened to the world.
-apt_install openssh-server
-systemctl is-enabled --quiet ssh 2>/dev/null || sudo systemctl enable --now ssh
-if have ufw; then
-	sudo ufw allow from 192.168.4.0/22 to any port 22 proto tcp \
-		comment 'ssh from LAN' >/dev/null
+# Wake sources, and coming back from suspend with a working display. Split out
+# because it is a self-contained piece of system configuration with a long
+# explanation attached, and because it is worth being able to re-run on its own.
+if [ -x "$dotfiles/scripts/setup_sleep.sh" ]; then
+	"$dotfiles/scripts/setup_sleep.sh"
 fi
 
 # Fix icons.
@@ -1268,13 +1036,13 @@ fi
 # only takes effect at boot. Everything above has finished by the time this
 # asks, so the reboot costs nothing.
 #
-# make_windows_vm.sh stands on its own and every phase is re-runnable, so
+# scripts/make_windows_vm.sh stands on its own and every phase is re-runnable, so
 # answering no here costs nothing but running it later by hand. It works out
 # which phases are already done and picks up from there, which is also how it
 # continues after the reboot it asks for.
-if [ -x "$dotfiles/make_windows_vm.sh" ]; then
+if [ -x "$dotfiles/scripts/make_windows_vm.sh" ]; then
 	read -p "Set up the Windows 11 virtual machine? [yN] " -r user_answer
 	if [[ "$user_answer" =~ ^[Yy]$ ]]; then
-		"$dotfiles/make_windows_vm.sh"
+		"$dotfiles/scripts/make_windows_vm.sh"
 	fi
 fi

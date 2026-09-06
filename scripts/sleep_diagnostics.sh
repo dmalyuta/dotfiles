@@ -28,7 +28,7 @@
 #     /usr/lib/systemd/system-sleep/zz-sleep-forensics
 #     journald SyncIntervalSec=10s               logs survive a power-cycle
 #     kernel.sysrq=1                             Alt+SysRq+W/L/S
-#     sshd                                       a way in when the screen is dead
+#     sshd (only when ufw is enabled)            a way in when the screen is dead
 #
 # Author: Danylo Malyuta, 2026.
 
@@ -39,6 +39,11 @@ set -euo pipefail
 script_dir=$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" 2>/dev/null && pwd)
 [ -n "$script_dir" ] || script_dir=$PWD
 : "${DEVICES_DIR:=$(dirname "$script_dir")/.devices}"
+
+die() {
+	printf '\033[1;31m!!\033[0m %s\n' "$*" >&2
+	exit 1
+}
 
 grub=/etc/default/grub
 key=GRUB_CMDLINE_LINUX_DEFAULT
@@ -52,6 +57,15 @@ grub_cmdline() { sed -n "s/^${key}=\"\(.*\)\"$/\1/p" "$grub"; }
 # repeat run does not re-run update-grub.
 set_boot_opts() {
 	local mode=$1 cur new opt
+	# Refuse to touch a line that cannot be parsed back exactly: rewriting it
+	# would silently drop every option it carries. Ubuntu writes the line as
+	# KEY="..." and nothing else; anything different is somebody's hand edit.
+	case "$(grep -c "^${key}=" "$grub" || true)" in
+	0) ;;
+	1) grep -q "^${key}=\"[^\"]*\"$" "$grub" ||
+		die "$grub: cannot parse the $key line, leaving it alone." ;;
+	*) die "$grub: more than one $key line, leaving them alone." ;;
+	esac
 	cur=$(grub_cmdline)
 	# Pad so every option is space-delimited and a match cannot catch the
 	# substring of a longer one.
@@ -81,6 +95,9 @@ set_knobs() {
 
 case "${1:-status}" in
 on)
+	[ -f "$DEVICES_DIR/pm-debug.conf" ] || die "No $DEVICES_DIR/pm-debug.conf.
+   It lives in .devices/ at the top of the repo, next to start_fresh.sh. Point
+   DEVICES_DIR at it if the repo is somewhere unusual."
 	sudo install -m 644 "$DEVICES_DIR/pm-debug.conf" "$tmpfiles"
 	set_knobs 1
 	echo "== pm_print_times and pm_debug_messages on, now and at every boot."

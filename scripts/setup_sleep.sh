@@ -73,6 +73,9 @@ set -o pipefail
 script_dir=$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" 2>/dev/null && pwd)
 [ -n "$script_dir" ] || script_dir=$PWD
 : "${DEVICES_DIR:=$(dirname "$script_dir")/.devices}"
+# Where SSH logins are allowed in from. Only used when ufw is enabled; see the
+# sshd section at the end.
+: "${SSH_FROM:=192.168.4.0/22}"
 
 info() { printf '   %s\n' "$*"; }
 say() { printf '\n\033[1m== %s\033[0m\n' "$*"; }
@@ -107,6 +110,15 @@ install_device_file() {
 kernel_cmdline() {
 	local add=$1 drop=$2 key=GRUB_CMDLINE_LINUX_DEFAULT file=/etc/default/grub
 	local cur new opt
+	# Refuse to touch a line that cannot be parsed back exactly: rewriting it
+	# would silently drop every option it carries. Ubuntu writes the line as
+	# KEY="..." and nothing else; anything different is somebody's hand edit.
+	case "$(grep -c "^${key}=" "$file" || true)" in
+	0) ;;
+	1) grep -q "^${key}=\"[^\"]*\"$" "$file" ||
+		die "$file: cannot parse the $key line, leaving it alone." ;;
+	*) die "$file: more than one $key line, leaving them alone." ;;
+	esac
 	cur=$(sed -n "s/^${key}=\"\(.*\)\"$/\1/p" "$file")
 	# Pad with spaces so every option is surrounded by them and the matches
 	# below cannot catch a substring of a longer option.
@@ -199,14 +211,28 @@ install_device_file zz-sleep-forensics \
 
 # A resume that leaves the display dead usually leaves the machine perfectly
 # reachable over the network, so keep a way in that does not need the screen.
-# Deliberately scoped to the home LAN rather than opened to the world.
-if ! dpkg-query -W -f='${Status}' openssh-server 2>/dev/null | grep -q 'ok installed'; then
-	sudo apt install -y openssh-server
-fi
-systemctl is-enabled --quiet ssh 2>/dev/null || sudo systemctl enable --now ssh
-if command -v ufw >/dev/null 2>&1; then
-	sudo ufw allow from 192.168.4.0/22 to any port 22 proto tcp \
+#
+# Only with a firewall to scope it, though. sshd listens on every interface,
+# and "ufw allow from <LAN>" limits that only while ufw is actually enabled -
+# which a fresh Ubuntu install is not. Without the firewall, a laptop would be
+# offering password logins to every network it joins. ufw's own on/off switch
+# is ENABLED= in ufw.conf; that is what "ufw status" reports, and unlike the
+# ufw systemd unit (which is "active" whether or not any rules are loaded) it
+# is readable without root.
+if grep -qs '^ENABLED=yes' /etc/ufw/ufw.conf; then
+	if ! dpkg-query -W -f='${Status}' openssh-server 2>/dev/null | grep -q 'ok installed'; then
+		sudo apt install -y openssh-server
+	fi
+	systemctl is-enabled --quiet ssh 2>/dev/null || sudo systemctl enable --now ssh
+	sudo ufw allow from "$SSH_FROM" to any port 22 proto tcp \
 		comment 'ssh from LAN' >/dev/null
+else
+	info "ufw is not enabled, so sshd is not being set up: with no firewall it"
+	info "would accept logins from every network this machine joins."
+	info "To have it: sudo ufw enable, then re-run this script."
+	if systemctl is-active --quiet ssh 2>/dev/null; then
+		info "Note: sshd is already running on this machine, with nothing scoping it."
+	fi
 fi
 
 say "Done"

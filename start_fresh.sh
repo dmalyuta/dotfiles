@@ -217,13 +217,29 @@ set_desktop_key() {
 # Install.
 # ---------------------------------------------------------------------------
 
+# Pin to a known-working Nvidia driver 610.43.02. A priority above 1000 is what lets apt downgrade
+# onto this version, and what keeps unattended-upgrades from pulling the newer one back in. Written
+# before the upgrade below so that step cannot reinstall a newer version.
+nvidia_version=610.43.02
+write_root_file /etc/apt/preferences.d/nvidia-610-pin <<EOF
+Package: nvidia-* libnvidia-* xserver-xorg-video-nvidia-*
+Pin: version ${nvidia_version}-*
+Pin-Priority: 1001
+EOF
+
 # Upgrade.
 sudo apt update
 sudo apt upgrade -y
 sudo apt autoremove --purge -y
 
-# Nvidia driver.
-apt_install nvidia-driver-610-open
+# Nvidia driver. apt_install skips on any installed version, and here the
+# version is the whole point, so check for that one instead.
+if dpkg-query -W -f='${Version}' nvidia-driver-610-open 2>/dev/null |
+	grep -q "^${nvidia_version}-"; then
+	skip "nvidia-driver-610-open $nvidia_version"
+else
+	sudo apt install -y --allow-downgrades nvidia-driver-610-open
+fi
 
 # The rest of the script downloads, clones and unzips things, so get those out
 # of the way first: a minimal Ubuntu install has none of them guaranteed.
@@ -238,11 +254,8 @@ apt_install tree
 # Password manager.
 install_deb proton_pass.deb "https://proton.me/download/PassDesktop/linux/x64/ProtonPass.deb"
 
-# Gnome configuration.
-install_deb gnome-shell-extension-manager gnome-tweaks
-
 # Note taking.
-install_deb obsidian.deb "https://github.com/obsidianmd/obsidian-releases/releases/download/v1.13.4/obsidian_1.13.4_amd64.deb"
+install_deb obsidian_1.13.7_amd64.deb "https://github.com/obsidianmd/obsidian-releases/releases/download/v1.13.7/obsidian_1.13.7_amd64.deb"
 
 # Brave browser.
 apt_install curl fzf
@@ -312,6 +325,7 @@ fi
 cd "$dotfiles" || exit
 ln -sf "$dotfiles"/.home/.bash_aliases ~
 ln -sf "$dotfiles"/.home/.local.bashrc ~
+ln -sf "$dotfiles"/.home/.flyline.conf ~
 if [ ! -f ./.bin/colorizer/Library/colorizer.sh ]; then
 	git submodule update --init --recursive
 fi
@@ -528,6 +542,23 @@ else
 	oh-my-posh font install CascadiaCode
 fi
 
+# Flyline: a replacement line editor for bash, shipped as a shared library that
+# bash loads as a builtin. Upstream's install.sh does exactly what this does --
+# unpack the versioned .so into ~/.local/lib and symlink libflyline.so at it --
+# but it also appends its own enable line to ~/.bashrc and always takes the
+# latest release, so do it here instead and keep the version pinned.
+# ~/.flyline.conf is what enables the builtin and configures it.
+flyline_version=1.7.1
+if [ -f ~/.local/lib/libflyline.so."$flyline_version" ]; then
+	skip "flyline $flyline_version"
+else
+	fetch "flyline-$flyline_version.tar.gz" \
+		"https://github.com/HalFrgrd/flyline/releases/download/v$flyline_version/libflyline-v$flyline_version-x86_64-unknown-linux-gnu.tar.gz"
+	mkdir -p ~/.local/lib
+	tar xzf "flyline-$flyline_version.tar.gz" -C ~/.local/lib
+	ln -sf libflyline.so."$flyline_version" ~/.local/lib/libflyline.so
+fi
+
 # Search tools.
 add_ppa ppa:christian-boxdoerfer/fsearch-stable
 apt_install fsearch fd-find ripgrep
@@ -603,7 +634,49 @@ else
 	fetch flameshot.zip "https://github.com/flameshot-org/flameshot/releases/download/v14.0.0/flameshot-v14.0+git0.da6121bd-artifact-ubuntu-24.04-amd64.zip"
 	unzip -o flameshot.zip -d flameshot
 	sudo apt install -y ./flameshot/flameshot-14.0.0-1.ubuntu-24.04.amd64.deb
+
+	# On Wayland, Flameshot's clipboard copy silently fails: it logs "Capture saved
+	# to clipboard" but nothing ever reaches the compositor, because the capture
+	# window is torn down before the compositor asks for the data. Upstream works
+	# around this on Gnome only, by keeping that window alive until the data is
+	# fetched, so on KDE the copy is simply lost. Running the daemon under XWayland
+	# sidesteps it. The capture still goes through the desktop portal, so the
+	# screenshots are identical either way, and on an X11 session this is the
+	# platform Qt picks anyway, so setting it there changes nothing.
+	#
+	# Only the daemon matters here. The `flameshot gui` client that the screenshot
+	# hotkey runs just sends the daemon a D-Bus message, so it needs no override --
+	# but the daemon gets started two different ways, and both do: the autostart
+	# entry at login, and D-Bus activation when something asks for
+	# org.flameshot.Flameshot while no daemon is running.
+	flameshot_autostart=~/.config/autostart/Flameshot.desktop
+	if [ ! -f "$flameshot_autostart" ]; then
+		# Flameshot writes this file itself the first time it runs with "launch at
+		# startup" enabled, which has not happened yet on a fresh machine.
+		mkdir -p "$(dirname "$flameshot_autostart")"
+		cat >"$flameshot_autostart" <<'EOF'
+	[Desktop Entry]
+	Name=flameshot
+	Icon=flameshot
+	Exec=flameshot
+	Terminal=false
+	Type=Application
+	X-GNOME-Autostart-enabled=true
+EOF
+	fi
+	set_desktop_key "$flameshot_autostart" Exec "env QT_QPA_PLATFORM=xcb flameshot"
+
+	# Shadows /usr/share/dbus-1/services/org.flameshot.Flameshot.service, which
+	# activates the daemon with a bare `Exec=/usr/bin/flameshot`. Files in the home
+	# directory win over the ones in /usr/share.
+	mkdir -p ~/.local/share/dbus-1/services
+	cat >~/.local/share/dbus-1/services/org.flameshot.Flameshot.service <<'EOF'
+	[D-BUS Service]
+	Name=org.flameshot.Flameshot
+	Exec=/usr/bin/env QT_QPA_PLATFORM=xcb /usr/bin/flameshot
+EOF
 fi
+
 
 # mt76 WiFi driver.
 if [ -d ~/sw/mt76 ]; then
@@ -750,14 +823,19 @@ kbd_repeat_interval_ms=20
 # slider. A bit below the middle.
 pointer_speed=-0.325
 
-# App launchers: slug, display name, command, and the letter combined with
-# Shift+Control+Alt below.
+# App launchers: slug, display name, command, the letter combined with
+# Shift+Control+Alt below, and -- for KDE, which binds shortcuts to desktop
+# entries rather than to a command line -- the desktop entry to launch and the
+# action within it. "_launch" is the entry's own Exec; anything else names one
+# of its [Desktop Action ...] groups, which is how Flameshot gets its capture
+# mode instead of starting the daemon a second time. Gnome uses the command and
+# ignores the last two fields.
 app_launchers=(
-	"flameshot|Flameshot|flameshot gui|p"
-	"speedcrunch|SpeedCrunch|speedcrunch|n"
-	"brave|Brave|brave-browser|b"
-	"pureref|PureRef|PureRef|r"
-	"obsidian|Obsidian|obsidian|o"
+	"flameshot|Flameshot|flameshot gui|p|org.flameshot.Flameshot.desktop|Capture"
+	"speedcrunch|SpeedCrunch|speedcrunch|n|speedcrunch.desktop|_launch"
+	"brave|Brave|brave-browser|b|brave-browser.desktop|_launch"
+	"pureref|PureRef|PureRef|r|pureref.desktop|_launch"
+	"obsidian|Obsidian|obsidian|o|md.obsidian.Obsidian.desktop|_launch"
 )
 
 # ---------------------------------------------------------------------------
@@ -967,25 +1045,25 @@ Window One Desktop to the Left|Window One Desktop to the Left|Meta+Ctrl+Shift+Le
 Window One Desktop to the Right|Window One Desktop to the Right|Meta+Ctrl+Shift+Right
 EOF
 
-	# App launchers. Plasma 6 dropped the "Custom Shortcuts" KCM; the
-	# replacement for a run-a-command shortcut is a hidden .desktop launcher
-	# that the shortcut points at. The sycoca rebuild is what lets kglobalaccel
-	# resolve the new launchers, so it has to happen before they are bound.
-	for entry in "${app_launchers[@]}"; do
-		IFS='|' read -r slug name command key <<<"$entry"
-		file=~/.local/share/applications/"$slug".desktop
-		[ -f "$file" ] || printf '[Desktop Entry]\n' >"$file"
-		set_desktop_key "$file" Type Application
-		set_desktop_key "$file" Name "$name"
-		set_desktop_key "$file" Exec "$command"
-		set_desktop_key "$file" NoDisplay true
-		set_desktop_key "$file" StartupNotify false
-		set_desktop_key "$file" X-KDE-GlobalAccel-CommandShortcut true
-	done
+	# App launchers. Plasma 6 dropped the "Custom Shortcuts" KCM, and its
+	# replacement binds a shortcut to a desktop entry rather than to a command
+	# line, so these point straight at the entries the applications already
+	# install. The sycoca rebuild is what lets kglobalaccel resolve them, so it
+	# has to happen before they are bound -- kitty's entry is written by this
+	# script further up and would not be found otherwise.
+	#
+	# The other way to do this is a hidden NoDisplay stub carrying the command,
+	# which is what the shortcuts KCM itself writes. Avoid it. A desktop entry
+	# is identified by its file name and the copy in the home directory wins
+	# over the one in /usr/share/applications, so a stub named after the
+	# application shadows the application's own entry and takes it out of the
+	# application menu, and a stub the KCM does not list is liable to be
+	# dropped, taking the shortcut with it.
 	have kbuildsycoca6 && kbuildsycoca6 >/dev/null 2>&1
 	for entry in "${app_launchers[@]}"; do
-		IFS='|' read -r slug name command key <<<"$entry"
-		set_kde_shortcut "$slug.desktop" "$name" _launch "$name" "Shift+Ctrl+Alt+${key^^}"
+		IFS='|' read -r slug name command key desktop action <<<"$entry"
+		set_kde_shortcut "$desktop" "$name" "$action" "$name" \
+			"Shift+Ctrl+Alt+${key^^}"
 	done
 
 	# Ctrl+Alt+T opens a terminal by default, bound to Konsole; rebind it to

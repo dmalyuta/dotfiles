@@ -618,15 +618,6 @@ nvm install 26
 node -v # Should print "v26.7.0".
 npm -v  # Should print "11.19.0".
 
-# Neovim.
-if [ -d ~/.config/nvim ]; then
-	skip "LazyVim"
-else
-	apt_install neovim
-	# My lazyvim configuration.
-	ln -s "$dotfiles"/.config/nvim ~/.config/nvim
-fi
-
 # Flameshot screenshot.
 if pkg_installed flameshot; then
 	skip "flameshot"

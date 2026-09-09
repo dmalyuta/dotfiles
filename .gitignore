@@ -1,6 +1,1 @@
-.jupyter/migrated
-.jupyter/lab/
-.emacs.d/**/*.elc
-.emacs.d/**/.yas-compiled-snippets*
-.projectile*
 __pycache__/

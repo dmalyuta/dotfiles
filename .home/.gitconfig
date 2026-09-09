@@ -1,5 +1,0 @@
-# Git defaults configuration
-[core]
-    editor = emacsclient -s "git-server"
-[push]
-    default = matching

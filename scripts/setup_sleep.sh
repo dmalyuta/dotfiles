@@ -8,7 +8,7 @@
 #
 #   ./scripts/setup_sleep.sh
 #
-# The files it installs live in .devices/ at the top of the repo rather than in
+# The files it installs live in devices/ at the top of the repo rather than in
 # heredocs, so they can be read, edited and linted on their own.
 #
 # ---------------------------------------------------------------------------
@@ -72,7 +72,7 @@ set -o pipefail
 # same whether it is run by path, from start_fresh.sh, or from $PATH.
 script_dir=$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" 2>/dev/null && pwd)
 [ -n "$script_dir" ] || script_dir=$PWD
-: "${DEVICES_DIR:=$(dirname "$script_dir")/.devices}"
+: "${DEVICES_DIR:=$(dirname "$script_dir")/devices}"
 # Where SSH logins are allowed in from. Only used when ufw is enabled; see the
 # sshd section at the end.
 : "${SSH_FROM:=192.168.4.0/22}"
@@ -84,11 +84,11 @@ die() {
 	exit 1
 }
 
-[ -d "$DEVICES_DIR" ] || die "No .devices directory at $DEVICES_DIR.
+[ -d "$DEVICES_DIR" ] || die "No devices directory at $DEVICES_DIR.
    It lives at the top of the repo, next to start_fresh.sh. Point DEVICES_DIR
    at it if the repo is somewhere unusual."
 
-# Install one of the files from .devices/ to where it belongs on the system.
+# Install one of the files from devices/ to where it belongs on the system.
 # Returns 0 only when the content actually changed, so callers can skip the
 # expensive follow-up work on a re-run.
 install_device_file() {

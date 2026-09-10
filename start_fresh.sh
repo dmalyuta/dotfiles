@@ -57,7 +57,7 @@ fi
 # below, since $0 may be a relative path.
 dotfiles=~/sw/dotfiles
 scriptdir=$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)
-if [ -f "$scriptdir/.home/.bash_aliases" ] && [ -d "$scriptdir/.git" ]; then
+if [ -f "$scriptdir/home/.bash_aliases" ] && [ -d "$scriptdir/.git" ]; then
 	dotfiles=$scriptdir
 fi
 
@@ -329,30 +329,33 @@ else
 fi
 
 # Dotfiles install. Every ln -sf and mkdir -p here is already idempotent.
-# The files that belong directly in $HOME live in .home/; everything else is
-# kept under the path it lands on, such as .config/kitty.
+# The files that belong directly in $HOME live in home/; everything else is
+# kept under the path it lands on, such as config/kitty.
 cd "$dotfiles" || exit
-ln -sf "$dotfiles"/.home/.bash_aliases ~
-ln -sf "$dotfiles"/.home/.local.bashrc ~
-ln -sf "$dotfiles"/.home/.flyline.conf ~
-if [ ! -f ./.bin/colorizer/Library/colorizer.sh ]; then
+ln -sf "$dotfiles"/home/.bash_aliases ~
+ln -sf "$dotfiles"/home/.local.bashrc ~
+ln -sf "$dotfiles"/home/.flyline.conf ~
+if [ ! -f ./bin/colorizer/Library/colorizer.sh ]; then
 	git submodule update --init --recursive
 fi
-ln -sf "$dotfiles"/.bin ~
+# bin/ is the one that lands under a different name than it has in the repo,
+# so name the link explicitly; -n so that a re-run replaces the existing link
+# rather than following it and making bin/bin underneath it.
+ln -sfn "$dotfiles"/bin ~/.bin
 mkdir -p ~/.config/kitty
-ln -sf "$dotfiles"/.home/.dircolors ~
-ln -sf "$dotfiles"/.config/kitty/kitty.conf ~/.config/kitty
-ln -sf "$dotfiles"/.config/kitty/default-kitty ~/.config/kitty
-ln -sf "$dotfiles"/.config/kitty/resize_split.py ~/.config/kitty
-ln -sf "$dotfiles"/.home/.wezterm.lua ~
-ln -sf "$dotfiles"/.home/.alacritty.toml ~
+ln -sf "$dotfiles"/home/.dircolors ~
+ln -sf "$dotfiles"/config/kitty/kitty.conf ~/.config/kitty
+ln -sf "$dotfiles"/config/kitty/default-kitty ~/.config/kitty
+ln -sf "$dotfiles"/config/kitty/resize_split.py ~/.config/kitty
+ln -sf "$dotfiles"/home/.wezterm.lua ~
+ln -sf "$dotfiles"/home/.alacritty.toml ~
 mkdir -p ~/.config/tmux-powerline/themes
-ln -sf "$dotfiles"/.home/.tmux.conf ~
-ln -sf "$dotfiles"/.config/tmux-powerline/config.sh \
+ln -sf "$dotfiles"/home/.tmux.conf ~
+ln -sf "$dotfiles"/config/tmux-powerline/config.sh \
 	~/.config/tmux-powerline/config.sh
-ln -sf "$dotfiles"/.config/tmux-powerline/themes/danylo-theme.sh \
+ln -sf "$dotfiles"/config/tmux-powerline/themes/danylo-theme.sh \
 	~/.config/tmux-powerline/themes/danylo-theme.sh
-ln -sf "$dotfiles"/.config/.blue-owl-custom.omp.json ~/.blue-owl-custom.omp.json
+ln -sf "$dotfiles"/config/.blue-owl-custom.omp.json ~/.blue-owl-custom.omp.json
 cd "$downloads" || exit
 
 # Kitty terminal. The cp/sed/echo below all overwrite, so they are re-runnable.
@@ -474,10 +477,10 @@ else
 		# Link settings.
 		mkdir -p ~/.config/OpenRGB/profiles
 		mkdir -p ~/.config/OpenRGB/plugins
-		ln -sf "$dotfiles"/.config/OpenRGB/Configuration.json ~/.config/OpenRGB/
-		ln -sf "$dotfiles"/.config/OpenRGB/OpenRGB.json ~/.config/OpenRGB/
-		ln -sf "$dotfiles"/.config/OpenRGB/profiles/blue.json ~/.config/OpenRGB/profiles/
-		ln -sf "$dotfiles"/.config/OpenRGB/profiles/off.json ~/.config/OpenRGB/profiles/
+		ln -sf "$dotfiles"/config/OpenRGB/Configuration.json ~/.config/OpenRGB/
+		ln -sf "$dotfiles"/config/OpenRGB/OpenRGB.json ~/.config/OpenRGB/
+		ln -sf "$dotfiles"/config/OpenRGB/profiles/blue.json ~/.config/OpenRGB/profiles/
+		ln -sf "$dotfiles"/config/OpenRGB/profiles/off.json ~/.config/OpenRGB/profiles/
 	fi
 fi
 

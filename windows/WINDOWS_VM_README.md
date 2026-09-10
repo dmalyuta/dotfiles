@@ -172,7 +172,7 @@ Word and Excel pick up launcher entries automatically.
 | `~/.local/bin/winapp` | RemoteApp launcher |
 | `~/.local/state/windows-vm/` | Phase markers and the RDP credential (mode 600) |
 | `/dev/shm/looking-glass` | The 128 MiB frame buffer, created by QEMU at start |
-| `~/sw/dotfiles/scripts/make_windows_vm.sh` | The setup script; templates in `.windows/` |
+| `~/sw/dotfiles/scripts/make_windows_vm.sh` | The setup script; templates in `windows/` |
 
 ---
 

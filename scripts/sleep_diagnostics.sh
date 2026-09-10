@@ -8,7 +8,7 @@
 #
 # What this toggles:
 #
-# The tmpfiles rule it installs is .devices/pm-debug.conf.
+# The tmpfiles rule it installs is devices/pm-debug.conf.
 #
 #     pm_print_times          per-device suspend/resume timings. ~740 lines a
 #                             cycle, and the only way to see which device is
@@ -38,7 +38,7 @@ set -euo pipefail
 # same whether it is run by path or from $PATH.
 script_dir=$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" 2>/dev/null && pwd)
 [ -n "$script_dir" ] || script_dir=$PWD
-: "${DEVICES_DIR:=$(dirname "$script_dir")/.devices}"
+: "${DEVICES_DIR:=$(dirname "$script_dir")/devices}"
 
 die() {
 	printf '\033[1;31m!!\033[0m %s\n' "$*" >&2
@@ -108,7 +108,7 @@ set_knobs() {
 case "${1:-status}" in
 on)
 	[ -f "$DEVICES_DIR/pm-debug.conf" ] || die "No $DEVICES_DIR/pm-debug.conf.
-   It lives in .devices/ at the top of the repo, next to start_fresh.sh. Point
+   It lives in devices/ at the top of the repo, next to start_fresh.sh. Point
    DEVICES_DIR at it if the repo is somewhere unusual."
 	sudo install -m 644 "$DEVICES_DIR/pm-debug.conf" "$tmpfiles"
 	set_knobs 1

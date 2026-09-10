@@ -233,7 +233,7 @@ script_dir=$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" 2>/dev/null &&
 # sourced from a pipe. Falling back to the working directory beats carrying an
 # empty path forward and looking for templates in /.
 [ -n "$script_dir" ] || script_dir=$PWD
-: "${TEMPLATE_DIR:=$(dirname "$script_dir")/.windows}"
+: "${TEMPLATE_DIR:=$(dirname "$script_dir")/windows}"
 
 state_dir=${XDG_STATE_HOME:-$HOME/.local/state}/windows-vm
 
@@ -607,7 +607,7 @@ phase_0() {
 	done
 	[ -z "$missing" ] ||
 		die "Missing from $TEMPLATE_DIR:$missing
-   These live in the .windows directory at the top of the repo, one level up
+   These live in the windows directory at the top of the repo, one level up
    from this script. Copy the whole directory, or point TEMPLATE_DIR at where
    it really is."
 	info "Templates found in $TEMPLATE_DIR."

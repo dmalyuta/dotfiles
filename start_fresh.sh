@@ -599,7 +599,7 @@ snap_install qalculate
 apt_install qalc
 install_deb speedcrunch.deb "https://bitbucket.org/heldercorreia/speedcrunch/downloads/SpeedCrunch-0.12-linux64.deb"
 
-# Iamge viewer.
+# Image viewer.
 install_deb xnview.deb https://www.xnview.com/download.php?file=XnViewMP-linux-x64.deb
 
 # Anaconda Python.
@@ -788,6 +788,9 @@ if [[ "$user_answer" =~ ^[Yy]$ ]]; then
 	done
 	wine msiexec /i EditorV11.x64.msi
 fi
+
+# Okular PDF viewer.
+apt_install okular
 
 # Wake sources, and coming back from suspend with a working display. Split out
 # because it is a self-contained piece of system configuration with a long

@@ -599,6 +599,9 @@ snap_install qalculate
 apt_install qalc
 install_deb speedcrunch.deb "https://bitbucket.org/heldercorreia/speedcrunch/downloads/SpeedCrunch-0.12-linux64.deb"
 
+# Iamge viewer.
+install_deb xnview.deb https://www.xnview.com/download.php?file=XnViewMP-linux-x64.deb
+
 # Anaconda Python.
 if [ -d ~/anaconda3 ]; then
 	skip "Anaconda"

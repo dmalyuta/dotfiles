@@ -239,6 +239,8 @@ if dpkg-query -W -f='${Version}' nvidia-driver-610-open 2>/dev/null |
 	skip "nvidia-driver-610-open $nvidia_version"
 else
 	sudo apt install -y --allow-downgrades nvidia-driver-610-open
+	read -r -s -p "A reboot is required to activate the new Nvidia driver. After the reboot, run the script again. Press [Enter] now to reboot..."
+	sudo reboot
 fi
 
 # The rest of the script downloads, clones and unzips things, so get those out

@@ -256,9 +256,13 @@ apt_install ca-certificates curl wget git unzip
 
 # System monitoring.
 apt_install bat btop htop
+ln -s /usr/bin/batcat ~/.local/bin/bat
 
 # Navigation in the command line.
 apt_install tree
+
+# Bash fuzzy finder.
+apt_install fzf
 
 # Password manager.
 install_deb proton_pass.deb "https://proton.me/download/PassDesktop/linux/x64/ProtonPass.deb"
@@ -267,7 +271,7 @@ install_deb proton_pass.deb "https://proton.me/download/PassDesktop/linux/x64/Pr
 install_deb obsidian_1.13.7_amd64.deb "https://github.com/obsidianmd/obsidian-releases/releases/download/v1.13.7/obsidian_1.13.7_amd64.deb"
 
 # Brave browser.
-apt_install curl fzf
+apt_install curl
 if pkg_installed brave-browser; then
 	skip "Brave"
 else
@@ -335,9 +339,7 @@ cd "$dotfiles" || exit
 ln -sf "$dotfiles"/home/.bash_aliases ~
 ln -sf "$dotfiles"/home/.local.bashrc ~
 ln -sf "$dotfiles"/home/.flyline.conf ~
-if [ ! -f ./bin/colorizer/Library/colorizer.sh ]; then
-	git submodule update --init --recursive
-fi
+git submodule update --init --recursive
 # bin/ is the one that lands under a different name than it has in the repo,
 # so name the link explicitly; -n so that a re-run replaces the existing link
 # rather than following it and making bin/bin underneath it.
@@ -526,6 +528,8 @@ export PATH=$PATH:~/.bin/git-custom-commands
 
 # Enable fzf commands
 eval "$(fzf --bash)"
+# source ~/.bin/fzf-tab-completion/bash/fzf-bash-completion.sh
+# bind -x '"\t": fzf_bash_completion'
 
 # Oh-my-posh
 eval "$(oh-my-posh init bash --config ~/.blue-owl-custom.omp.json)"
@@ -682,7 +686,6 @@ EOF
 	Exec=/usr/bin/env QT_QPA_PLATFORM=xcb /usr/bin/flameshot
 EOF
 fi
-
 
 # mt76 WiFi driver.
 if [ -d ~/sw/mt76 ]; then
@@ -1258,26 +1261,15 @@ EOF
 		.filter(widget => widget.type === "org.kde.plasma.pager")
 		.forEach(widget => widget.remove()))' >/dev/null
 
-	# Start every session with an empty desktop instead of reopening whatever
-	# was on screen at the last logout. Same as System Settings > Session >
-	# Desktop Session > "Start with an empty session".
 	kconf --file ksmserverrc --group General --key loginMode emptySession
-
-	# Remove animations. The duration factor turns every fixed-duration
-	# animation instant; the effects below animate or deform regardless, so
-	# disable them outright:
-	#   wobblywindows, magiclamp   - drag deformation and minimize physics
-	#   translucency               - windows fading translucent while dragged
-	#   squash                     - minimize-to-taskbar animation
-	#   scale, fade, glide         - window open/close/hide transitions
-	#   maximize, fullscreen       - maximize/fullscreen transitions
-	#   slide, fadedesktop         - transitions between workspaces
+	kconf --file ksmserverrc --group General --key confirmLogout false
 	kconf --file kdeglobals --group KDE --key AnimationDurationFactor 0
 	kde_disabled_effects=(wobblywindows magiclamp translucency squash
 		scale fade glide maximize fullscreen slide fadedesktop)
 	for effect in "${kde_disabled_effects[@]}"; do
 		kconf --file kwinrc --group Plugins --key "${effect}Enabled" false
 	done
+
 	# KWin only re-reads kwinrc when told to, and a reconfigure still does not
 	# unload already-running effects, so kick those out directly (unloading an
 	# effect that is not loaded is a harmless no-op).

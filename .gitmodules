@@ -1,3 +1,6 @@
 [submodule "bin/colorizer"]
 	path = bin/colorizer
 	url = https://github.com/jakobwesthoff/colorizer
+[submodule "bin/fzf-tab-completion"]
+	path = bin/fzf-tab-completion
+	url = https://github.com/lincheney/fzf-tab-completion

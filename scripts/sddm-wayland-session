@@ -1,0 +1,56 @@
+#!/bin/sh
+#
+# Wrapper around SDDM's own /etc/sddm/wayland-session. Installed to
+# /usr/local/bin/sddm-wayland-session by start_fresh.sh, which also points SDDM
+# at it with the SessionCommand setting in
+# /etc/sddm.conf.d/90-session-robustness.conf. Two things are added.
+#
+# 1. The three terminal-generated signals are ignored.
+#
+#    SDDM runs the session leader in the foreground process group of the
+#    session's own virtual terminal -- ps shows it as "Ss+" on a ttyN. The
+#    compositor is supposed to switch that console's keyboard off once it
+#    takes the VT. When it does not, which a slow session start makes likely,
+#    the kernel goes on translating keys there, so a Ctrl+C aimed at whatever
+#    has focus on the desktop is *also* delivered as SIGINT to that process
+#    group. It kills startplasma-wayland, and SDDM, seeing the process it
+#    started go away, drops back to the greeter: the desktop appears and then
+#    throws you out a moment later. In the journal it reads as
+#    "Auth: sddm-helper exited with 2", where the 2 is the signal number
+#    rather than an exit status, because that is how Qt reports a process that
+#    died on a signal.
+#
+#    Ignoring the signals here covers the whole session, because a disposition
+#    of SIG_IGN is inherited across execve. A handler is not -- exec resets
+#    those to the default -- so this has to be an ignore and cannot be a trap
+#    that runs something. Logging out still works: that is SIGTERM, which
+#    startplasma-wayland handles itself.
+#
+# 2. The session is torn down however the leader exited.
+#
+#    Plasma 6 starts its components as systemd units under user@UID.service
+#    rather than in the login session's own cgroup, so they outlive the
+#    leader. If it dies without reaching its own teardown, the desktop keeps
+#    running: orphaned, off-screen, and still holding DRM master. Every login
+#    after that dies within seconds with "Atomic modeset test failed!
+#    Permission denied" and there is no way back short of a reboot. So stop it
+#    here regardless. graphical-session.target is the lever the unit files
+#    already provide: plasma-workspace.target is BindsTo= it and
+#    plasma-kwin_wayland.service is PartOf= it, so stopping it takes the
+#    compositor down too. Doing it after a clean logout as well costs nothing,
+#    since Plasma has already stopped these and systemd skips units that are
+#    not running.
+
+trap '' INT QUIT TSTP
+
+/etc/sddm/wayland-session "$@"
+status=$?
+
+# Blocking until the stop finishes is the point: SDDM waits for this script,
+# and the next greeter's compositor cannot set a mode until the old one has
+# let the GPU go. The timeout is so that a unit which refuses to stop leaves a
+# usable machine rather than hanging it at a black screen.
+XDG_RUNTIME_DIR=${XDG_RUNTIME_DIR:-/run/user/$(id -u)} \
+	timeout 20 systemctl --user stop graphical-session.target >/dev/null 2>&1
+
+exit $status

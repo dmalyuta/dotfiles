@@ -217,29 +217,36 @@ set_desktop_key() {
 # Install.
 # ---------------------------------------------------------------------------
 
-# Pin to a known-working Nvidia driver 610.43.02. A priority above 1000 is what lets apt downgrade
-# onto this version, and what keeps unattended-upgrades from pulling the newer one back in. Written
-# before the upgrade below so that step cannot reinstall a newer version.
-nvidia_version=610.43.02
-write_root_file /etc/apt/preferences.d/nvidia-610-pin <<EOF
-Package: nvidia-* libnvidia-* xserver-xorg-video-nvidia-*
-Pin: version ${nvidia_version}-*
-Pin-Priority: 1001
-EOF
+# Nvidia driver version as it is at the start of the run. Taken before the
+# upgrade below, since a full-upgrade can bump the driver itself, and the reboot
+# check further down has to see that as a change too.
+nvidia_pkg=nvidia-driver-610-open
+nvidia_before=
+pkg_installed "$nvidia_pkg" &&
+	nvidia_before=$(dpkg-query -W -f='${Version}' "$nvidia_pkg" 2>/dev/null)
 
 # Upgrade.
 sudo apt update
 sudo apt full-upgrade -y
 sudo apt autoremove --purge -y
 
-# Nvidia driver. apt_install skips on any installed version, and here the
-# version is the whole point, so check for that one instead.
-if dpkg-query -W -f='${Version}' nvidia-driver-610-open 2>/dev/null |
-	grep -q "^${nvidia_version}-"; then
-	skip "nvidia-driver-610-open $nvidia_version"
+# Nvidia driver. apt_install skips on any installed version, and here it is the
+# latest version that matters, so run the install unconditionally and let apt
+# work out whether that is a fresh install, an upgrade or a no-op. Comparing the
+# recorded version around it says which of the three happened: only a version
+# that actually moved needs a reboot to load the new kernel module.
+if ! sudo apt install -y "$nvidia_pkg"; then
+	echo "== Failed to install $nvidia_pkg." >&2
+	exit 1
+fi
+nvidia_after=
+pkg_installed "$nvidia_pkg" &&
+	nvidia_after=$(dpkg-query -W -f='${Version}' "$nvidia_pkg" 2>/dev/null)
+if [ "$nvidia_after" = "$nvidia_before" ]; then
+	skip "$nvidia_pkg $nvidia_after"
 else
-	sudo apt install -y --allow-downgrades nvidia-driver-610-open
 	read -r -s -p "A reboot is required to activate the new Nvidia driver. After the reboot, run the script again. Press ENTER now to reboot..."
+	echo
 	sudo reboot
 fi
 
@@ -910,6 +917,33 @@ else
 fi
 
 # ---------------------------------------------------------------------------
+# Login session robustness.
+# ---------------------------------------------------------------------------
+
+# Guards the two failures that between them turn one bad keystroke into a
+# machine that cannot be logged into at all until it is rebooted. See the
+# comments in scripts/sddm-wayland-session for the mechanics; this needs SDDM
+# but not a running desktop, so it is deliberately outside the KDE block below,
+# which is skipped when this script is run from a text console -- exactly the
+# situation the second failure leaves you in.
+session_wrapper=$dotfiles/scripts/sddm-wayland-session
+session_conf=$dotfiles/scripts/90-session-robustness.conf
+if ! pkg_installed sddm; then
+	echo "SDDM not installed, skipping login session robustness."
+elif [ ! -f "$session_wrapper" ] || [ ! -f "$session_conf" ]; then
+	echo "$dotfiles/scripts is missing the session files, skipping login session robustness."
+else
+	write_root_file /usr/local/bin/sddm-wayland-session <"$session_wrapper"
+	# write_root_file installs 644, and this one has to be runnable. Done
+	# unconditionally so a re-run fixes the mode even when the file is
+	# already up to date and was not rewritten.
+	sudo chmod 755 /usr/local/bin/sddm-wayland-session
+
+	# Sorts after Kubuntu's own 10- and 20- drop-ins, so this wins.
+	write_root_file /etc/sddm.conf.d/90-session-robustness.conf <"$session_conf"
+fi
+
+# ---------------------------------------------------------------------------
 # KDE desktop configuration.
 # ---------------------------------------------------------------------------
 
@@ -1182,6 +1216,25 @@ EOF
 			restart_plasmashell=1
 		fi
 	done
+
+	# No desktop icons: the desktop uses Kubuntu's default Folder View layout,
+	# which draws the contents of ~/Desktop, so switch it to the plain Desktop
+	# layout, the other of the two choices under right-click > Configure Desktop
+	# and Wallpaper > Layout. Nothing in ~/Desktop is touched, it is just not
+	# drawn any more. The containment type is read-only in the scripting API, so
+	# this one has to go through the file and the restart below, and the ids come
+	# from the API for the same reason the panel ids do.
+	desktop_ids=$(plasma_script 'print(desktops().map(desktop => desktop.id).join(" "))' |
+		sed -E "s/^\('(.*)',\)\$/\1/")
+	for desktop_id in $desktop_ids; do
+		if [ "$(kreadconfig6 --file plasma-org.kde.plasma.desktop-appletsrc \
+			--group Containments --group "$desktop_id" --key plugin)" != org.kde.desktopcontainment ]; then
+			kconf --file plasma-org.kde.plasma.desktop-appletsrc \
+				--group Containments --group "$desktop_id" --key plugin org.kde.desktopcontainment
+			restart_plasmashell=1
+		fi
+	done
+
 	if [ "$restart_plasmashell" -eq 1 ]; then
 		systemctl --user restart plasma-plasmashell.service
 	fi

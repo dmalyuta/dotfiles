@@ -229,7 +229,7 @@ EOF
 
 # Upgrade.
 sudo apt update
-sudo apt upgrade -y
+sudo apt full-upgrade -y
 sudo apt autoremove --purge -y
 
 # Nvidia driver. apt_install skips on any installed version, and here the
@@ -239,7 +239,7 @@ if dpkg-query -W -f='${Version}' nvidia-driver-610-open 2>/dev/null |
 	skip "nvidia-driver-610-open $nvidia_version"
 else
 	sudo apt install -y --allow-downgrades nvidia-driver-610-open
-	read -r -s -p "A reboot is required to activate the new Nvidia driver. After the reboot, run the script again. Press [Enter] now to reboot..."
+	read -r -s -p "A reboot is required to activate the new Nvidia driver. After the reboot, run the script again. Press ENTER now to reboot..."
 	sudo reboot
 fi
 
@@ -316,7 +316,7 @@ else
 		echo
 		cat ~/.ssh/id_ed25519.pub
 		echo
-		read -p "Press Enter once it is added... " -r
+		read -p "Press ENTER once it is added... " -r
 	done
 	git clone "$repo_ssh" "$dotfiles"
 fi
@@ -369,7 +369,7 @@ else
 	read -p "Install Cooler Control? [yN] " -r user_answer
 	if [[ "$user_answer" =~ ^[Yy]$ ]]; then
 		apt_install curl apt-transport-https
-		curl -1sLf 'https://dl.cloudsmith.io/public/coolercontrol/coolercontrol/setup.deb.sh' | sudo -E bash
+		curl -fsSL https://apt.coolercontrol.org/setup.sh | sudo sh
 		apt_install coolercontrol
 		sudo systemctl enable --now coolercontrold
 
@@ -432,7 +432,7 @@ else
 		while [ ! -f matlab_R2026a_Linux.zip ]; do
 			echo "matlab_R2026a_Linux.zip not found in $(pwd)."
 			echo "Download MATLAB from https://www.mathworks.com/downloads/ and put the zip here."
-			read -p "Press Enter to try again... " -r
+			read -p "Press ENTER to try again... " -r
 		done
 		[ -d matlab_R2026a ] || unzip matlab_R2026a_Linux.zip -d matlab_R2026a
 		cd matlab_R2026a || exit
@@ -582,7 +582,7 @@ if pkg_installed pureref; then
 else
 	while [ ! -f PureRef-2.1.3_x64.deb ]; do
 		echo "Download PureRef from https://www.pureref.com/download.php into $downloads"
-		read -p "Press Enter to try again... " -r
+		read -p "Press ENTER to try again... " -r
 	done
 	sudo apt install -y ./PureRef-2.1.3_x64.deb
 fi
@@ -774,7 +774,7 @@ read -p "Install PDF-XChange Editor? [yN] " -r user_answer
 if [[ "$user_answer" =~ ^[Yy]$ ]]; then
 	while [ ! -f EditorV11.x64.msi ]; do
 		echo "Download PDF-XChange Editor Plus 64-bit MSI installer from https://www.pdf-xchange.com/product/downloads into $downloads"
-		read -p "Press Enter to try again... " -r
+		read -p "Press ENTER to try again... " -r
 	done
 	wine msiexec /i EditorV11.x64.msi
 fi
@@ -1015,6 +1015,14 @@ else
 	[ "$found_mouse" -eq 1 ] || echo "No mouse found, skipping pointer speed."
 	[ "$found_touchpad" -eq 1 ] || echo "No touchpad found, skipping touchpad settings."
 
+	# Cursor size, same as System Settings > Mouse & Touchpad > Cursors >
+	# Size. KWin re-reads it on the reconfigure at the end of this block; the
+	# signal is how the Cursors KCM tells applications that are already
+	# running to pick the new size up (5 is KGlobalSettings' CursorChanged).
+	kconf --file kcminputrc --group Mouse --key cursorSize 24
+	gdbus emit --session --object-path /KGlobalSettings \
+		--signal org.kde.KGlobalSettings.notifyChange 5 0
+
 	# Ambient-light auto-brightness only landed in Plasma 6.6, with no stable
 	# config-file switch yet, so this can only point at the GUI.
 	if compgen -G '/sys/class/backlight/*' >/dev/null; then
@@ -1037,6 +1045,71 @@ Switch One Desktop to the Right|Switch One Desktop to the Right|Meta+Ctrl+Right
 Window One Desktop to the Left|Window One Desktop to the Left|Meta+Ctrl+Shift+Left
 Window One Desktop to the Right|Window One Desktop to the Right|Meta+Ctrl+Shift+Right
 EOF
+
+	# Make 3 named virtual desktops.
+	kde_desktops=(code browsing windows)
+
+	virtual_desktop() {
+		local method=$1
+		shift
+		gdbus call --session --dest org.kde.KWin \
+			--object-path /VirtualDesktopManager \
+			--method "org.kde.KWin.VirtualDesktopManager.$method" "$@" >/dev/null
+	}
+
+	# The ids of the desktops that exist, in order. The property is a list of
+	# (position, id, name) tuples, so the first quoted field of each tuple is
+	# the one to take. gdbus writes the type of a value it considers ambiguous
+	# in front of it, which it does for the first position -- "(uint32 0," and
+	# plain "(1," in the same list -- so the position is matched loosely.
+	virtual_desktop_ids() {
+		gdbus call --session --dest org.kde.KWin \
+			--object-path /VirtualDesktopManager \
+			--method org.freedesktop.DBus.Properties.Get \
+			org.kde.KWin.VirtualDesktopManager desktops |
+			grep -oE "\([a-z0-9]* ?[0-9]+, '[^']*'" | sed -E "s/.*'(.*)'/\1/"
+	}
+
+	# Added and removed at the end, so the desktops that are already there
+	# keep their ids and the windows on them stay where they are.
+	mapfile -t desktop_ids < <(virtual_desktop_ids)
+	while [ "${#desktop_ids[@]}" -ne "${#kde_desktops[@]}" ]; do
+		if [ "${#desktop_ids[@]}" -lt "${#kde_desktops[@]}" ]; then
+			virtual_desktop createDesktop "${#desktop_ids[@]}" \
+				"${kde_desktops[${#desktop_ids[@]}]}"
+		else
+			virtual_desktop removeDesktop "${desktop_ids[-1]}"
+		fi
+		mapfile -t new_desktop_ids < <(virtual_desktop_ids)
+		# Nothing changed, so stop rather than ask forever.
+		if [ "${#new_desktop_ids[@]}" -eq "${#desktop_ids[@]}" ]; then
+			echo "KWin kept ${#desktop_ids[@]} virtual desktops, leaving the count alone."
+			break
+		fi
+		desktop_ids=("${new_desktop_ids[@]}")
+	done
+	for i in "${!kde_desktops[@]}"; do
+		[ -n "${desktop_ids[i]:-}" ] || continue
+		virtual_desktop setDesktopName "${desktop_ids[i]}" "${kde_desktops[i]}"
+	done
+	# One row, so the desktops sit side by side and the left/right shortcuts
+	# above walk the whole list.
+	gdbus call --session --dest org.kde.KWin --object-path /VirtualDesktopManager \
+		--method org.freedesktop.DBus.Properties.Set \
+		org.kde.KWin.VirtualDesktopManager rows '<uint32 1>' >/dev/null
+
+	# Name the desktop on screen when switching to it, for 200 ms. Plasma's
+	# on-screen display for this is a KWin script rather than an effect, so it
+	# is switched on in [Plugins] like the effects below, but configured under
+	# [Script-...]; TextOnly leaves out the pager grid it would otherwise draw
+	# above the name. Loading a script that has just been enabled is not part
+	# of a reconfigure, so ask for it separately -- the call re-reads the
+	# config itself and does nothing to scripts that are already running.
+	kconf --file kwinrc --group Plugins --key desktopchangeosdEnabled true
+	kconf --file kwinrc --group Script-desktopchangeosd --key PopupHideDelay 200
+	kconf --file kwinrc --group Script-desktopchangeosd --key TextOnly true
+	gdbus call --session --dest org.kde.KWin --object-path /Scripting \
+		--method org.kde.kwin.Scripting.start >/dev/null
 
 	# App launchers. Plasma 6 dropped the "Custom Shortcuts" KCM, and its
 	# replacement binds a shortcut to a desktop entry rather than to a command
@@ -1070,6 +1143,63 @@ EOF
 	else
 		plasma-apply-lookandfeel --apply org.kde.breezedark.desktop
 	fi
+
+	# Panel: 40 px tall, opaque rather than adaptive (which is opaque only
+	# while a window is up against it), and without the pager.
+	#
+	# The height and the opacity both live in plasmashellrc, which plasmashell
+	# reads when it builds a panel and writes back itself, on a timer. The
+	# opacity has no scripting property, so it is written to the file, and
+	# only takes effect the next time the shell starts -- hence the restart,
+	# and only when it actually changed. The height is written there too, so
+	# that the restart cannot undo it, and then set again through the API so
+	# that it also applies when there is no restart.
+	#
+	# The restart comes before the API calls for that same reason: what those
+	# change is not on disk yet, and a restart would take it with it. systemd
+	# only reports the unit started once the new shell has taken its bus name
+	# (it is Type=dbus), so the calls after it reach the new shell.
+	panel_height=40
+
+	plasma_script() {
+		gdbus call --session --dest org.kde.plasmashell --object-path /PlasmaShell \
+			--method org.kde.PlasmaShell.evaluateScript "$1"
+	}
+
+	# The panel ids, to address each panel's own group in plasmashellrc. gdbus
+	# prints the string the call returns as ('...',).
+	panel_ids=$(plasma_script 'print(panels().map(panel => panel.id).join(" "))' |
+		sed -E "s/^\('(.*)',\)\$/\1/")
+	restart_plasmashell=0
+	for panel_id in $panel_ids; do
+		kconf --file plasmashellrc --group PlasmaViews --group "Panel $panel_id" \
+			--group Defaults --key thickness "$panel_height"
+		# Adaptive is 0, opaque 1, translucent 2.
+		if [ "$(kreadconfig6 --file plasmashellrc --group PlasmaViews \
+			--group "Panel $panel_id" --key panelOpacity)" != 1 ]; then
+			kconf --file plasmashellrc --group PlasmaViews \
+				--group "Panel $panel_id" --key panelOpacity 1
+			restart_plasmashell=1
+		fi
+	done
+	if [ "$restart_plasmashell" -eq 1 ]; then
+		systemctl --user restart plasma-plasmashell.service
+	fi
+	plasma_script "panels().forEach(panel => panel.height = $panel_height)" >/dev/null
+
+	# The panel comes with a pager, and it takes up room as soon as there is
+	# more than one virtual desktop -- which the block above arranges. The
+	# switching shortcuts and the on-screen display already say which desktop
+	# is current, so take it out. Removing the widget is the only way to hide
+	# it: a panel applet has no visibility setting of its own.
+	plasma_script 'panels().forEach(panel => panel.widgetIds.map(id => panel.widgetById(id))
+		.filter(widget => widget.type === "org.kde.plasma.pager")
+		.forEach(widget => widget.remove()))' >/dev/null
+
+	# Start every session with an empty desktop instead of reopening whatever
+	# was on screen at the last logout. Same as System Settings > Session >
+	# Desktop Session > "Start with an empty session".
+	kconf --file ksmserverrc --group General --key loginMode emptySession
 
 	# Remove animations. The duration factor turns every fixed-duration
 	# animation instant; the effects below animate or deform regardless, so

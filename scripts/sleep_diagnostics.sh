@@ -51,19 +51,31 @@ boot_opts="no_console_suspend log_buf_len=8M"
 tmpfiles=/etc/tmpfiles.d/pm-debug.conf
 knobs="/sys/power/pm_print_times /sys/power/pm_debug_messages"
 
-grub_cmdline() { sed -n "s/^${key}=\"\(.*\)\"$/\1/p" "$grub"; }
+# The options on the line, however it is quoted; see set_boot_opts below.
+grub_cmdline() { sed -n "s/^${key}=[\"']\(.*\)[\"']$/\1/p" "$grub"; }
 
 # $1 is "add" or "drop". Returns 0 only when the file actually changed, so a
 # repeat run does not re-run update-grub.
 set_boot_opts() {
-	local mode=$1 cur new opt
+	local mode=$1 cur new opt quote
 	# Refuse to touch a line that cannot be parsed back exactly: rewriting it
-	# would silently drop every option it carries. Ubuntu writes the line as
-	# KEY="..." and nothing else; anything different is somebody's hand edit.
+	# would silently drop every option it carries. A fresh install writes the
+	# line either as KEY="..." or as KEY='...' -- both are quoted the same way
+	# by the shell that sources this file, and which one it is differs between
+	# Ubuntu releases and flavours. Anything else is somebody's hand edit.
+	# The quote the file already uses is the one it gets written back with, so
+	# the only change to the line is the option list itself.
 	case "$(grep -c "^${key}=" "$grub" || true)" in
-	0) ;;
-	1) grep -q "^${key}=\"[^\"]*\"$" "$grub" ||
-		die "$grub: cannot parse the $key line, leaving it alone." ;;
+	0) quote='"' ;;
+	1)
+		if grep -q "^${key}=\"[^\"]*\"$" "$grub"; then
+			quote='"'
+		elif grep -q "^${key}='[^']*'$" "$grub"; then
+			quote="'"
+		else
+			die "$grub: cannot parse the $key line, leaving it alone."
+		fi
+		;;
 	*) die "$grub: more than one $key line, leaving them alone." ;;
 	esac
 	cur=$(grub_cmdline)
@@ -81,7 +93,7 @@ set_boot_opts() {
 		return 1
 	fi
 	sudo cp -a "$grub" "$grub.bak-$(date +%Y%m%d-%H%M%S)"
-	sudo sed -i "s|^${key}=.*|${key}=\"${new}\"|" "$grub"
+	sudo sed -i "s|^${key}=.*|${key}=${quote}${new}${quote}|" "$grub"
 }
 
 set_knobs() {

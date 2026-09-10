@@ -109,17 +109,28 @@ install_device_file() {
 # update-grub on a re-run.
 kernel_cmdline() {
 	local add=$1 drop=$2 key=GRUB_CMDLINE_LINUX_DEFAULT file=/etc/default/grub
-	local cur new opt
+	local cur new opt quote
 	# Refuse to touch a line that cannot be parsed back exactly: rewriting it
-	# would silently drop every option it carries. Ubuntu writes the line as
-	# KEY="..." and nothing else; anything different is somebody's hand edit.
+	# would silently drop every option it carries. A fresh install writes the
+	# line either as KEY="..." or as KEY='...' -- both are quoted the same way
+	# by the shell that sources this file, and which one it is differs between
+	# Ubuntu releases and flavours. Anything else is somebody's hand edit.
+	# The quote the file already uses is the one it gets written back with, so
+	# the only change to the line is the option list itself.
 	case "$(grep -c "^${key}=" "$file" || true)" in
-	0) ;;
-	1) grep -q "^${key}=\"[^\"]*\"$" "$file" ||
-		die "$file: cannot parse the $key line, leaving it alone." ;;
+	0) quote='"' ;;
+	1)
+		if grep -q "^${key}=\"[^\"]*\"$" "$file"; then
+			quote='"'
+		elif grep -q "^${key}='[^']*'$" "$file"; then
+			quote="'"
+		else
+			die "$file: cannot parse the $key line, leaving it alone."
+		fi
+		;;
 	*) die "$file: more than one $key line, leaving them alone." ;;
 	esac
-	cur=$(sed -n "s/^${key}=\"\(.*\)\"$/\1/p" "$file")
+	cur=$(sed -n "s/^${key}=${quote}\(.*\)${quote}$/\1/p" "$file")
 	# Pad with spaces so every option is surrounded by them and the matches
 	# below cannot catch a substring of a longer option.
 	new=" $cur "
@@ -132,9 +143,9 @@ kernel_cmdline() {
 	new=$(printf '%s' "$new" | tr -s ' ' | sed 's/^ //; s/ $//')
 	[ "$new" = "$cur" ] && return 1
 	if grep -q "^${key}=" "$file"; then
-		sudo sed -i "s|^${key}=.*|${key}=\"${new}\"|" "$file"
+		sudo sed -i "s|^${key}=.*|${key}=${quote}${new}${quote}|" "$file"
 	else
-		printf '%s="%s"\n' "$key" "$new" | sudo tee -a "$file" >/dev/null
+		printf '%s=%s%s%s\n' "$key" "$quote" "$new" "$quote" | sudo tee -a "$file" >/dev/null
 	fi
 	info "kernel command line: $new"
 }
@@ -235,5 +246,27 @@ else
 	fi
 fi
 
+say "Noisy diagnostics"
+
+# Their own switch, and this is the moment to think about them: the machine is
+# set up, so what they report now is the baseline to hold a later bad resume
+# against. "status" only reads, which is why it is the default; "on" and "off"
+# rewrite the kernel command line and want a reboot afterwards.
+diagnostics=$script_dir/sleep_diagnostics.sh
+while true; do
+	# A closed stdin would otherwise spin here: read fails, and the
+	# answer it did not get is the default one.
+	read -p "Set sleep diagnostics [on|off|*status*]? " -r user_answer ||
+		user_answer=status
+	# Empty is the default, and the answer is not case-sensitive.
+	user_answer=${user_answer:-status}
+	case "${user_answer,,}" in
+	on | off | status)
+		"$diagnostics" "${user_answer,,}"
+		break
+		;;
+	*) info "Answer on, off or status, or press ENTER for default (status)." ;;
+	esac
+done
+
 say "Done"
-info "Toggle the noisy diagnostics with scripts/sleep_diagnostics.sh on|off|status."

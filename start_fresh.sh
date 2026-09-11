@@ -805,6 +805,10 @@ if [ -x "$dotfiles/scripts/setup_sleep.sh" ]; then
 	"$dotfiles/scripts/setup_sleep.sh"
 fi
 
+# Remove apport "experience a crash" popups.
+sudo sed -i 's/enabled=1/enabled=0/g' /etc/default/apport
+sudo systemctl stop apport.service
+
 # Fix icons.
 apps=~/.local/share/applications
 

@@ -282,6 +282,45 @@ fi
 apt_install shfmt
 install_deb code.deb "https://code.visualstudio.com/sha/download?build=stable&os=linux-deb-x64"
 
+# Superluminal profiler. The Linux build is a plain tarball with no desktop
+# integration, so unpack it into ~/.local/superluminal (user-owned, so its auto
+# updater can write there) and add a launcher and a .desktop file by hand. The
+# download link carries the version, so read the current one off the download
+# page. The binary finds its bundled libraries relative to its real path, so a
+# plain symlink on PATH is enough.
+superluminal_dir=~/.local/superluminal
+if [ -x "$superluminal_dir"/Superluminal ]; then
+	skip "Superluminal"
+else
+	read -p "Install Superluminal profiler? [yN] " -r user_answer
+	if [[ "$user_answer" =~ ^[Yy]$ ]]; then
+		superluminal_url=$(curl -fsSL https://superluminal.eu/download/ |
+			grep -oE 'https://[^"]*/SuperluminalLinux-[^"]*\.tar\.gz' | head -n 1)
+		superluminal_tar="$downloads"/superluminal.tar.gz
+		if [ -z "$superluminal_url" ]; then
+			echo "== Could not find the Superluminal Linux download link, skipping." >&2
+		elif fetch "$superluminal_tar" "$superluminal_url"; then
+			mkdir -p "$superluminal_dir" ~/.local/bin ~/.local/share/applications \
+				~/.local/share/icons/hicolor/scalable/apps
+			# Entries are ./Superluminal/..., so strip both "." and "Superluminal".
+			tar xzf "$superluminal_tar" -C "$superluminal_dir" --strip-components=2
+			cp "$superluminal_dir"/Documentation/Superluminal/assets/img/logo.svg \
+				~/.local/share/icons/hicolor/scalable/apps/superluminal.svg
+			ln -sf "$superluminal_dir"/Superluminal ~/.local/bin/superluminal
+			cat >~/.local/share/applications/superluminal.desktop <<EOF
+[Desktop Entry]
+Type=Application
+Name=Superluminal
+Comment=CPU profiler
+Exec=$superluminal_dir/Superluminal
+Icon=$HOME/.local/share/icons/hicolor/scalable/apps/superluminal.svg
+Terminal=false
+Categories=Development;Profiling;
+EOF
+		fi
+	fi
+fi
+
 # Github SSH.
 if [ -n "$(git config --global user.name)" ]; then
 	skip "git user.name"
@@ -413,6 +452,19 @@ apt_install software-properties-gtk
 add_ppa ppa:openrazer/stable
 add_ppa ppa:polychromatic/stable
 apt_install openrazer-meta polychromatic
+
+# mt76 WiFi driver.
+if [ -d ~/sw/mt76 ]; then
+	skip "mt76"
+else
+	read -p "Install mt76 WiFi driver? [yN] " -r user_answer
+	if [[ "$user_answer" =~ ^[Yy]$ ]]; then
+		git clone https://github.com/morrownr/mt76 ~/sw/mt76
+		cd ~/sw/mt76 || exit
+		sudo sh install-driver.sh
+		cd "$downloads" || exit
+	fi
+fi
 
 # Flathub + apps.
 apt_install flatpak gnome-software-plugin-flatpak
@@ -687,19 +739,6 @@ EOF
 EOF
 fi
 
-# mt76 WiFi driver.
-if [ -d ~/sw/mt76 ]; then
-	skip "mt76"
-else
-	read -p "Install mt76 WiFi driver? [yN] " -r user_answer
-	if [[ "$user_answer" =~ ^[Yy]$ ]]; then
-		git clone https://github.com/morrownr/mt76 ~/sw/mt76
-		cd ~/sw/mt76 || exit
-		sudo sh install-driver.sh
-		cd "$downloads" || exit
-	fi
-fi
-
 # asusctl for laptop.
 if [ -d ~/sw/asusctl ]; then
 	skip "asusctl"
@@ -807,7 +846,9 @@ fi
 
 # Remove apport "experience a crash" popups.
 sudo sed -i 's/enabled=1/enabled=0/g' /etc/default/apport
-sudo systemctl stop apport.service
+if [[ ${XDG_CURRENT_DESKTOP,,} != *gnome* ]]; then
+	sudo systemctl stop apport.service
+fi
 
 # Fix icons.
 apps=~/.local/share/applications

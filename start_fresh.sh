@@ -673,7 +673,7 @@ fi
 if have nordvpn; then
 	skip "NordVPN"
 else
-	sh <(wget -qO - https://downloads.nordcdn.com/apps/linux/install.sh) -p nordvpn-gui
+	sh <(wget -qO - https://downloads.nordcdn.com/apps/linux/install.sh) -n -p nordvpn-gui
 fi
 getent group nordvpn >/dev/null || sudo groupadd nordvpn
 sudo usermod -aG nordvpn "$USER"

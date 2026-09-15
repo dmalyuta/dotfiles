@@ -846,7 +846,7 @@ fi
 
 # Remove apport "experience a crash" popups.
 sudo sed -i 's/enabled=1/enabled=0/g' /etc/default/apport
-if [[ ${XDG_CURRENT_DESKTOP,,} != *gnome* ]]; then
+if [[ ${XDG_CURRENT_DESKTOP,,} == *gnome* ]]; then
 	sudo systemctl stop apport.service
 fi
 
@@ -1004,6 +1004,7 @@ fi
 # KDE desktop configuration.
 # ---------------------------------------------------------------------------
 
+should_reboot=false
 if [[ ${XDG_CURRENT_DESKTOP,,} != *kde* ]]; then
 	echo "Not running KDE, skipping KDE configuration."
 elif ! have kwriteconfig6 || ! have gdbus; then
@@ -1324,6 +1325,7 @@ EOF
 		gdbus call --session --dest org.kde.KWin --object-path /Effects \
 			--method org.kde.kwin.Effects.unloadEffect "$effect" >/dev/null
 	done
+	should_reboot=true
 fi
 
 # ---------------------------------------------------------------------------
@@ -1345,4 +1347,8 @@ if [ -x "$dotfiles/scripts/make_windows_vm.sh" ]; then
 	if [[ "$user_answer" =~ ^[Yy]$ ]]; then
 		"$dotfiles/scripts/make_windows_vm.sh"
 	fi
+elif $should_reboot; then
+	read -r -s -p "A reboot is required to finalize the installation. Press ENTER now to reboot..."
+	echo
+	sudo reboot
 fi

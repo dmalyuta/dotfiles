@@ -151,6 +151,27 @@ status)
 	printf '%-24s running=%-4s next boot=%s\n' "fbcon=nodefer (the fix)" \
 		"$(grep -qw -- fbcon=nodefer /proc/cmdline && echo yes || echo no)" \
 		"$(grep -q -- fbcon=nodefer "$grub" && echo yes || echo no)"
+
+	# Whether the next lockup will leave anything behind. All of this is
+	# always-on and lives in setup_sleep.sh; it is reported here because this
+	# is where you look when a resume has just gone wrong.
+	echo
+	printf '%-24s %s\n' "pstore backend" \
+		"$(cat /sys/module/pstore/parameters/backend 2>/dev/null || echo 'none - a panic records nothing')"
+	for knob in hardlockup_panic softlockup_panic panic_on_oops panic; do
+		printf '%-24s %s\n' "kernel.$knob" \
+			"$(cat "/proc/sys/kernel/$knob" 2>/dev/null || echo '(not supported)')"
+	done
+	captured=$(ls -1d /var/lib/systemd/pstore/*/ 2>/dev/null | wc -l || true)
+	pending=$(ls -1 /sys/fs/pstore/ 2>/dev/null | wc -l || true)
+	printf '%-24s %s archived in /var/lib/systemd/pstore, %s not yet archived\n' \
+		"captured crashes" "$captured" "$pending"
+	if [ "$captured" -gt 0 ] 2>/dev/null; then
+		echo
+		echo "   Read the newest with:"
+		# shellcheck disable=SC2012
+		echo "     sudo less \"\$(ls -1dt /var/lib/systemd/pstore/*/ | head -1)\"dmesg.txt"
+	fi
 	;;
 *)
 	echo "usage: $(basename "$0") on|off|status" >&2

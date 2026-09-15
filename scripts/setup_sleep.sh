@@ -64,6 +64,15 @@
 # diagnostics are not installed here; scripts/sleep_diagnostics.sh turns those
 # on and off.
 #
+# One piece of it does change what a *failure* looks like, and deliberately:
+# devices/60-lockup-panic.conf makes a detected lockup panic and reboot instead
+# of sitting there wedged. A lockup already costs the session -- it is ended
+# with the power button either way -- so the only thing traded is twenty
+# seconds, and what is bought is the kernel log that explains it, written to
+# the pstore backend and archived on the way back up. Read that file before
+# changing any of it; it also has the test that proves the capture works, which
+# is worth running, because an unverified crash dump is not a crash dump.
+#
 # Author: Danylo Malyuta, 2026.
 
 set -o pipefail
@@ -211,6 +220,56 @@ fi
 # leaves W and L out.
 if install_device_file 60-sysrq.conf /etc/sysctl.d/60-sysrq.conf; then
 	sudo sysctl --system >/dev/null
+fi
+
+# ...and panicking is the only way to capture one when there is nobody at the
+# keyboard, which is the usual case for a resume that was left running
+# overnight. See the long comment in devices/60-lockup-panic.conf: the
+# detection and the persistent store were both already there, only the
+# instruction to panic was missing.
+if install_device_file 60-lockup-panic.conf /etc/sysctl.d/60-lockup-panic.conf; then
+	sudo sysctl --system >/dev/null
+fi
+
+# The half that turns the panic into something readable afterwards: it copies
+# /sys/fs/pstore into /var/lib/systemd/pstore on the next boot and unlinks the
+# originals, which is also what keeps the EFI variables from filling up over
+# repeated crashes. Enabled by default on Ubuntu, checked here because the
+# whole capture is worthless without it.
+if ! systemctl is-enabled --quiet systemd-pstore.service 2>/dev/null; then
+	sudo systemctl enable systemd-pstore.service
+fi
+
+# Which backend pstore ended up with decides what survives what. efi_pstore
+# writes to NVRAM, so it survives a power cut as well as a reboot, and that is
+# what this machine registers by default. Say so when it is missing rather than
+# leaving a silent hole, because a panic with no backend leaves exactly as
+# little behind as no panic at all.
+if [ -e /sys/module/pstore/parameters/backend ]; then
+	backend=$(cat /sys/module/pstore/parameters/backend 2>/dev/null)
+	case $backend in
+	efi_pstore)
+		# What efivarfs reports comes from the firmware's QueryVariableInfo.
+		# The kernel refuses to create a variable once fewer than 5K would be
+		# left, and a deflate-compressed 10K dmesg tail lands in 2-4K, so
+		# roughly 12K free is where a capture stops being certain to fit.
+		free=$(df -k --output=avail /sys/firmware/efi/efivars 2>/dev/null | tail -1 | tr -d ' ')
+		if [ -n "$free" ] && [ "$free" -lt 12 ]; then
+			info "pstore backend is efi_pstore with only ${free}K free in efivarfs,"
+			info "of which the kernel reserves 5K. A panic record may not fit."
+			info "Most of that space is the firmware's own variables and is not"
+			info "safe to reclaim; use ramoops instead. The recipe is at the"
+			info "bottom of devices/60-lockup-panic.conf."
+		else
+			info "pstore backend: efi_pstore, ${free:-?}K free in efivarfs (5K of it reserved)."
+		fi
+		;;
+	"" | none)
+		info "No pstore backend registered: a panic will leave nothing behind."
+		info "Check that efi_pstore is loadable, or set one up with ramoops."
+		;;
+	*) info "pstore backend: $backend." ;;
+	esac
 fi
 
 # Names the device that woke the machine, and - the important part - forces the

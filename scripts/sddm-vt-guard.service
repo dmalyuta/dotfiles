@@ -1,0 +1,29 @@
+# Installed to /etc/systemd/system/sddm-vt-guard.service by start_fresh.sh,
+# which also enables it. See the comments in scripts/sddm-vt-guard for what it
+# is guarding against.
+[Unit]
+Description=Unstick SDDM's handoff to the session VT
+# Only meaningful while SDDM is running, and it must not outlive it: BindsTo
+# stops it whenever SDDM goes away for any reason, restart included.
+BindsTo=sddm.service
+After=sddm.service
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/sddm-vt-guard
+# It reads /proc/PID/syscall of a root process and calls VT_ACTIVATE, so it
+# needs to be root; everything it does not need is taken away.
+CapabilityBoundingSet=CAP_SYS_TTY_CONFIG CAP_SYS_PTRACE
+NoNewPrivileges=yes
+ProtectHome=yes
+ProtectSystem=strict
+PrivateNetwork=yes
+RestrictAddressFamilies=AF_UNIX
+MemoryMax=32M
+# A crash here must not leave the machine without the guard, but it also must
+# not spin: the thing it protects only matters at login.
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=sddm.service

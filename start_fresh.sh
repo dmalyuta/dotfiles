@@ -977,17 +977,21 @@ fi
 # Login session robustness.
 # ---------------------------------------------------------------------------
 
-# Guards the two failures that between them turn one bad keystroke into a
-# machine that cannot be logged into at all until it is rebooted. See the
-# comments in scripts/sddm-wayland-session for the mechanics; this needs SDDM
-# but not a running desktop, so it is deliberately outside the KDE block below,
-# which is skipped when this script is run from a text console -- exactly the
-# situation the second failure leaves you in.
+# Guards the three failures that between them turn one bad keystroke, or one
+# lost race at login, into a machine that cannot be logged into at all until it
+# is rebooted. See the comments in scripts/sddm-wayland-session and
+# scripts/sddm-vt-guard for the mechanics; this needs SDDM but not a running
+# desktop, so it is deliberately outside the KDE block below, which is skipped
+# when this script is run from a text console -- exactly the situation those
+# failures leave you in.
 session_wrapper=$dotfiles/scripts/sddm-wayland-session
 session_conf=$dotfiles/scripts/90-session-robustness.conf
+vt_guard=$dotfiles/scripts/sddm-vt-guard
+vt_guard_unit=$dotfiles/scripts/sddm-vt-guard.service
 if ! pkg_installed sddm; then
 	echo "SDDM not installed, skipping login session robustness."
-elif [ ! -f "$session_wrapper" ] || [ ! -f "$session_conf" ]; then
+elif [ ! -f "$session_wrapper" ] || [ ! -f "$session_conf" ] ||
+	[ ! -f "$vt_guard" ] || [ ! -f "$vt_guard_unit" ]; then
 	echo "$dotfiles/scripts is missing the session files, skipping login session robustness."
 else
 	write_root_file /usr/local/bin/sddm-wayland-session <"$session_wrapper"
@@ -998,6 +1002,18 @@ else
 
 	# Sorts after Kubuntu's own 10- and 20- drop-ins, so this wins.
 	write_root_file /etc/sddm.conf.d/90-session-robustness.conf <"$session_conf"
+
+	write_root_file /usr/local/bin/sddm-vt-guard <"$vt_guard"
+	sudo chmod 755 /usr/local/bin/sddm-vt-guard
+	# Only reload when the unit actually changed; write_root_file says so.
+	if write_root_file /etc/systemd/system/sddm-vt-guard.service <"$vt_guard_unit"; then
+		sudo systemctl daemon-reload
+	fi
+	# WantedBy=sddm.service, so enabling just drops the symlink; it starts
+	# with SDDM rather than now, and starting it here would be wrong anyway
+	# when this script is being run to repair a machine whose SDDM is down.
+	systemctl is-enabled --quiet sddm-vt-guard.service 2>/dev/null ||
+		sudo systemctl enable sddm-vt-guard.service
 fi
 
 # ---------------------------------------------------------------------------

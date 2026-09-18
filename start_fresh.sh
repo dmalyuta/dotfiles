@@ -56,10 +56,11 @@ fi
 # the repo is cloned to ~/sw/dotfiles further down. Resolved before the cd
 # below, since $0 may be a relative path.
 dotfiles=~/sw/dotfiles
-scriptdir=$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)
-if [ -f "$scriptdir/home/.bash_aliases" ] && [ -d "$scriptdir/.git" ]; then
-	dotfiles=$scriptdir
+this_script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)
+if [ -f "$this_script_dir/home/.bash_aliases" ] && [ -d "$this_script_dir/.git" ]; then
+	dotfiles=$this_script_dir
 fi
+scripts_dir=$dotfiles/scripts
 
 downloads=~/Downloads
 mkdir -p "$downloads"
@@ -213,42 +214,29 @@ set_desktop_key() {
 	fi
 }
 
+# Install one of the files from scripts/ to where it belongs on the system.
+# Returns 0 only when the content actually changed, so callers can skip the
+# expensive follow-up work on a re-run.
+install_device_file() {
+	local name=$1 dest=$2 mode=${3:-644} src
+	src=$scripts_dir/$name
+	[ -f "$src" ] || die "missing $src"
+	if sudo cmp -s "$src" "$dest" 2>/dev/null; then
+		return 1
+	fi
+	sudo mkdir -p "$(dirname "$dest")"
+	sudo install -m "$mode" "$src" "$dest" || die "could not install $dest"
+	info "installed $dest"
+}
+
 # ---------------------------------------------------------------------------
 # Install.
 # ---------------------------------------------------------------------------
-
-# Nvidia driver version as it is at the start of the run. Taken before the
-# upgrade below, since a full-upgrade can bump the driver itself, and the reboot
-# check further down has to see that as a change too.
-nvidia_pkg=nvidia-driver-610-open
-nvidia_before=
-pkg_installed "$nvidia_pkg" &&
-	nvidia_before=$(dpkg-query -W -f='${Version}' "$nvidia_pkg" 2>/dev/null)
 
 # Upgrade.
 sudo apt update
 sudo apt full-upgrade -y
 sudo apt autoremove --purge -y
-
-# Nvidia driver. apt_install skips on any installed version, and here it is the
-# latest version that matters, so run the install unconditionally and let apt
-# work out whether that is a fresh install, an upgrade or a no-op. Comparing the
-# recorded version around it says which of the three happened: only a version
-# that actually moved needs a reboot to load the new kernel module.
-if ! sudo apt install -y "$nvidia_pkg"; then
-	echo "== Failed to install $nvidia_pkg." >&2
-	exit 1
-fi
-nvidia_after=
-pkg_installed "$nvidia_pkg" &&
-	nvidia_after=$(dpkg-query -W -f='${Version}' "$nvidia_pkg" 2>/dev/null)
-if [ "$nvidia_after" = "$nvidia_before" ]; then
-	skip "$nvidia_pkg $nvidia_after"
-else
-	read -r -s -p "A reboot is required to activate the new Nvidia driver. After the reboot, run the script again. Press ENTER now to reboot..."
-	echo
-	sudo reboot
-fi
 
 # The rest of the script downloads, clones and unzips things, so get those out
 # of the way first: a minimal Ubuntu install has none of them guaranteed.
@@ -377,7 +365,6 @@ fi
 cd "$dotfiles" || exit
 ln -sf "$dotfiles"/home/.bash_aliases ~
 ln -sf "$dotfiles"/home/.local.bashrc ~
-ln -sf "$dotfiles"/home/.flyline.conf ~
 git submodule update --init --recursive
 # bin/ is the one that lands under a different name than it has in the repo,
 # so name the link explicitly; -n so that a re-run replaces the existing link
@@ -453,19 +440,6 @@ add_ppa ppa:openrazer/stable
 add_ppa ppa:polychromatic/stable
 apt_install openrazer-meta polychromatic
 
-# mt76 WiFi driver.
-if [ -d ~/sw/mt76 ]; then
-	skip "mt76"
-else
-	read -p "Install mt76 WiFi driver? [yN] " -r user_answer
-	if [[ "$user_answer" =~ ^[Yy]$ ]]; then
-		git clone https://github.com/morrownr/mt76 ~/sw/mt76
-		cd ~/sw/mt76 || exit
-		sudo sh install-driver.sh
-		cd "$downloads" || exit
-	fi
-fi
-
 # Flathub + apps.
 apt_install flatpak gnome-software-plugin-flatpak
 flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
@@ -486,27 +460,6 @@ gearlever_integrate nextcloud_desktop.desktop nextcloud.AppImage \
 	"https://github.com/nextcloud-releases/desktop/releases/download/v34.0.1/Nextcloud-34.0.1-x86_64.AppImage"
 gearlever_integrate gnu_image_manipulation_program.desktop GIMP.AppImage \
 	"https://download.gimp.org/gimp/v3.2/linux/GIMP-3.2.4-x86_64.AppImage"
-
-# Install MATLAB
-if [ -d /usr/local/MATLAB ]; then
-	skip "MATLAB"
-else
-	read -p "Install MATLAB? [yN] " -r user_answer
-	if [[ "$user_answer" =~ ^[Yy]$ ]]; then
-		while [ ! -f matlab_R2026a_Linux.zip ]; do
-			echo "matlab_R2026a_Linux.zip not found in $(pwd)."
-			echo "Download MATLAB from https://www.mathworks.com/downloads/ and put the zip here."
-			read -p "Press ENTER to try again... " -r
-		done
-		[ -d matlab_R2026a ] || unzip matlab_R2026a_Linux.zip -d matlab_R2026a
-		cd matlab_R2026a || exit
-		xhost +SI:localuser:root
-		sudo -H ./install
-		xhost -SI:localuser:root
-		cd "$downloads" || exit
-	fi
-fi
-[ -d /usr/local/MATLAB ] && apt_install matlab-support
 
 # Download OpenRGB.
 if [ -f ~/.local/share/applications/openrgb.desktop ]; then
@@ -608,23 +561,6 @@ if fc-list 2>/dev/null | grep -qi caskaydia; then
 	skip "CascadiaCode font"
 else
 	oh-my-posh font install CascadiaCode
-fi
-
-# Flyline: a replacement line editor for bash, shipped as a shared library that
-# bash loads as a builtin. Upstream's install.sh does exactly what this does --
-# unpack the versioned .so into ~/.local/lib and symlink libflyline.so at it --
-# but it also appends its own enable line to ~/.bashrc and always takes the
-# latest release, so do it here instead and keep the version pinned.
-# ~/.flyline.conf is what enables the builtin and configures it.
-flyline_version=1.7.1
-if [ -f ~/.local/lib/libflyline.so."$flyline_version" ]; then
-	skip "flyline $flyline_version"
-else
-	fetch "flyline-$flyline_version.tar.gz" \
-		"https://github.com/HalFrgrd/flyline/releases/download/v$flyline_version/libflyline-v$flyline_version-x86_64-unknown-linux-gnu.tar.gz"
-	mkdir -p ~/.local/lib
-	tar xzf "flyline-$flyline_version.tar.gz" -C ~/.local/lib
-	ln -sf libflyline.so."$flyline_version" ~/.local/lib/libflyline.so
 fi
 
 # Search tools.
@@ -840,9 +776,21 @@ apt_install okular
 # Wake sources, and coming back from suspend with a working display. Split out
 # because it is a self-contained piece of system configuration with a long
 # explanation attached, and because it is worth being able to re-run on its own.
-if [ -x "$dotfiles/scripts/setup_sleep.sh" ]; then
-	"$dotfiles/scripts/setup_sleep.sh"
+if install_device_file 90-usb-wakeup.rules /etc/udev/rules.d/90-usb-wakeup.rules; then
+	sudo udevadm control --reload
+	# --reload only reloads the rule files; it does not reapply them to
+	# devices that are already present, so trigger those explicitly.
+	sudo udevadm trigger --action=add --subsystem-match=usb
 fi
+# Belt and braces for the rule above: re-assert the wake sources immediately
+# before sleep, which is immune to enumeration order, replugs, dock power
+# cycling, OpenRazer daemon restarts and driver rebinds.
+#
+# /usr/lib/systemd/system-sleep, not /etc/systemd/system-sleep: systemd only
+# scans the former (it is the single system-sleep path in the systemd-sleep
+# binary, and the only one man:systemd-sleep documents). A hook dropped in /etc
+# is silently never run.
+install_device_file usb-wakeup /usr/lib/systemd/system-sleep/usb-wakeup 0755
 
 # Remove apport "experience a crash" popups.
 sudo sed -i 's/enabled=1/enabled=0/g' /etc/default/apport
@@ -971,400 +919,4 @@ else
 		IFS='|' read -r slug name command key <<<"$entry"
 		set_custom_shortcut "$slug" "$name" "$command" "<Shift><Control><Alt>$key"
 	done
-fi
-
-# ---------------------------------------------------------------------------
-# Login session robustness.
-# ---------------------------------------------------------------------------
-
-# Guards the three failures that between them turn one bad keystroke, or one
-# lost race at login, into a machine that cannot be logged into at all until it
-# is rebooted. See the comments in scripts/sddm-wayland-session and
-# scripts/sddm-vt-guard for the mechanics; this needs SDDM but not a running
-# desktop, so it is deliberately outside the KDE block below, which is skipped
-# when this script is run from a text console -- exactly the situation those
-# failures leave you in.
-session_wrapper=$dotfiles/scripts/sddm-wayland-session
-session_conf=$dotfiles/scripts/90-session-robustness.conf
-vt_guard=$dotfiles/scripts/sddm-vt-guard
-vt_guard_unit=$dotfiles/scripts/sddm-vt-guard.service
-if ! pkg_installed sddm; then
-	echo "SDDM not installed, skipping login session robustness."
-elif [ ! -f "$session_wrapper" ] || [ ! -f "$session_conf" ] ||
-	[ ! -f "$vt_guard" ] || [ ! -f "$vt_guard_unit" ]; then
-	echo "$dotfiles/scripts is missing the session files, skipping login session robustness."
-else
-	write_root_file /usr/local/bin/sddm-wayland-session <"$session_wrapper"
-	# write_root_file installs 644, and this one has to be runnable. Done
-	# unconditionally so a re-run fixes the mode even when the file is
-	# already up to date and was not rewritten.
-	sudo chmod 755 /usr/local/bin/sddm-wayland-session
-
-	# Sorts after Kubuntu's own 10- and 20- drop-ins, so this wins.
-	write_root_file /etc/sddm.conf.d/90-session-robustness.conf <"$session_conf"
-
-	write_root_file /usr/local/bin/sddm-vt-guard <"$vt_guard"
-	sudo chmod 755 /usr/local/bin/sddm-vt-guard
-	# Only reload when the unit actually changed; write_root_file says so.
-	if write_root_file /etc/systemd/system/sddm-vt-guard.service <"$vt_guard_unit"; then
-		sudo systemctl daemon-reload
-	fi
-	# WantedBy=sddm.service, so enabling just drops the symlink; it starts
-	# with SDDM rather than now, and starting it here would be wrong anyway
-	# when this script is being run to repair a machine whose SDDM is down.
-	systemctl is-enabled --quiet sddm-vt-guard.service 2>/dev/null ||
-		sudo systemctl enable sddm-vt-guard.service
-fi
-
-# ---------------------------------------------------------------------------
-# KDE desktop configuration.
-# ---------------------------------------------------------------------------
-
-should_reboot=false
-if [[ ${XDG_CURRENT_DESKTOP,,} != *kde* ]]; then
-	echo "Not running KDE, skipping KDE configuration."
-elif ! have kwriteconfig6 || ! have gdbus; then
-	echo "kwriteconfig6 or gdbus not found, skipping KDE configuration."
-else
-	# kwriteconfig6 with change notification, so running programs reload the
-	# setting instead of keeping their stale in-memory copy.
-	kconf() { kwriteconfig6 --notify "$@"; }
-
-	# The Qt key code of a "Mod+Mod+Key" binding, which is how kglobalaccel's
-	# DBus API takes shortcuts. Only the keys used below are covered.
-	qt_keycode() {
-		local part code=0 parts
-		IFS='+' read -ra parts <<<"$1"
-		for part in "${parts[@]}"; do
-			case "$part" in
-			Shift) ((code += 0x02000000)) ;;
-			Ctrl) ((code += 0x04000000)) ;;
-			Alt) ((code += 0x08000000)) ;;
-			Meta) ((code += 0x10000000)) ;;
-			Left) ((code += 0x01000012)) ;;
-			Up) ((code += 0x01000013)) ;;
-			Right) ((code += 0x01000014)) ;;
-			Down) ((code += 0x01000015)) ;;
-			Del) ((code += 0x01000007)) ;;
-			None) ;;
-			[A-Za-z]) ((code += $(printf '%d' "'${part^^}"))) ;;
-			*)
-				echo "qt_keycode: unknown key '$part'" >&2
-				return 1
-				;;
-			esac
-		done
-		echo "$code"
-	}
-
-	# Bind a global shortcut through the kglobalaccel DBus API. Editing
-	# kglobalshortcutsrc does not work: the daemon (KWin itself on Wayland)
-	# keeps shortcuts in memory, never re-reads the file while running, and
-	# writes its stale copy back over any edits. Changes made through the API
-	# take effect immediately and the daemon persists them itself.
-	set_kde_shortcut() {
-		local component=$1 comp_name=$2 action=$3 action_name=$4 binding=$5
-		local id="['$component','$action','$comp_name','$action_name']" code
-		# Resolve the key code first: passing an empty key list to the API would
-		# unbind the action rather than leave it alone.
-		code=$(qt_keycode "$binding") || return
-		gdbus call --session --dest org.kde.kglobalaccel --object-path /kglobalaccel \
-			--method org.kde.KGlobalAccel.doRegister "$id" >/dev/null
-		gdbus call --session --dest org.kde.kglobalaccel --object-path /kglobalaccel \
-			--method org.kde.KGlobalAccel.setForeignShortcut "$id" "[$code]" >/dev/null
-	}
-
-	# Key repeat: 150 ms before the first repeat, then one every 20 ms (a rate
-	# of 50/s). Same as System Settings > Keyboard > Advanced.
-	kconf --file kcminputrc --group Keyboard --key RepeatDelay "$kbd_repeat_delay_ms"
-	kconf --file kcminputrc --group Keyboard --key RepeatRate "$((1000 / kbd_repeat_interval_ms))"
-
-	# Pointer speed for mice (same [-1, 1] scale as the Gnome slider above) and
-	# traditional scrolling for touchpads, matching the Gnome branch. KDE has
-	# no "all mice" setting the way Gnome does: it keys libinput settings per
-	# device, as nested kcminputrc groups [Libinput][vendor][product][name]
-	# with the IDs in decimal. So walk /proc/bus/input/devices and write every
-	# pointer device - the ones with a mouseN handler - individually.
-	found_mouse=0 found_touchpad=0
-	vendor="" product="" name="" handlers=""
-	while IFS= read -r line; do
-		case "$line" in
-		I:*)
-			[[ "$line" =~ Vendor=([0-9a-f]+)\ Product=([0-9a-f]+) ]] &&
-				vendor=$((16#${BASH_REMATCH[1]})) product=$((16#${BASH_REMATCH[2]}))
-			;;
-		N:*)
-			name=${line#*\"}
-			name=${name%\"}
-			;;
-		H:*)
-			handlers=${line#*=}
-			;;
-		"")
-			if [ -n "$name" ] && [[ "$handlers" == *mouse* ]]; then
-				if [[ "${name,,}" == *touchpad* ]]; then
-					kconf --file kcminputrc --group Libinput --group "$vendor" \
-						--group "$product" --group "$name" --key NaturalScroll false
-					found_touchpad=1
-				else
-					# "--" so the negative value is not parsed as more options.
-					kconf --file kcminputrc --group Libinput --group "$vendor" \
-						--group "$product" --group "$name" --key PointerAcceleration -- "$pointer_speed"
-					found_mouse=1
-				fi
-			fi
-			vendor="" product="" name="" handlers=""
-			;;
-		esac
-	done < <(
-		cat /proc/bus/input/devices 2>/dev/null
-		echo
-	)
-	[ "$found_mouse" -eq 1 ] || echo "No mouse found, skipping pointer speed."
-	[ "$found_touchpad" -eq 1 ] || echo "No touchpad found, skipping touchpad settings."
-
-	# Cursor size, same as System Settings > Mouse & Touchpad > Cursors >
-	# Size. KWin re-reads it on the reconfigure at the end of this block; the
-	# signal is how the Cursors KCM tells applications that are already
-	# running to pick the new size up (5 is KGlobalSettings' CursorChanged).
-	kconf --file kcminputrc --group Mouse --key cursorSize 24
-	gdbus emit --session --object-path /KGlobalSettings \
-		--signal org.kde.KGlobalSettings.notifyChange 5 0
-
-	# Ambient-light auto-brightness only landed in Plasma 6.6, with no stable
-	# config-file switch yet, so this can only point at the GUI.
-	if compgen -G '/sys/class/backlight/*' >/dev/null; then
-		echo "Internal backlight found: if System Settings > Display has an auto-brightness toggle, turn it off there."
-	else
-		echo "No internal backlight found, skipping adaptive brightness setting."
-	fi
-
-	# Window management. Quick Tile Top holds Meta+Up by default and has to
-	# give it up first, or the daemon refuses the conflicting Maximize bind
-	# and leaves Maximize with no shortcut at all.
-	while IFS='|' read -r action action_name binding; do
-		set_kde_shortcut kwin KWin "$action" "$action_name" "$binding"
-	done <<'EOF'
-Window Minimize|Minimize Window|Meta+Del
-Window Quick Tile Top|Quick Tile Window to the Top|None
-Window Maximize|Maximize Window|Meta+Up
-Switch One Desktop to the Left|Switch One Desktop to the Left|Meta+Ctrl+Left
-Switch One Desktop to the Right|Switch One Desktop to the Right|Meta+Ctrl+Right
-Window One Desktop to the Left|Window One Desktop to the Left|Meta+Ctrl+Shift+Left
-Window One Desktop to the Right|Window One Desktop to the Right|Meta+Ctrl+Shift+Right
-EOF
-
-	# Make 3 named virtual desktops.
-	kde_desktops=(code browsing windows)
-
-	virtual_desktop() {
-		local method=$1
-		shift
-		gdbus call --session --dest org.kde.KWin \
-			--object-path /VirtualDesktopManager \
-			--method "org.kde.KWin.VirtualDesktopManager.$method" "$@" >/dev/null
-	}
-
-	# The ids of the desktops that exist, in order. The property is a list of
-	# (position, id, name) tuples, so the first quoted field of each tuple is
-	# the one to take. gdbus writes the type of a value it considers ambiguous
-	# in front of it, which it does for the first position -- "(uint32 0," and
-	# plain "(1," in the same list -- so the position is matched loosely.
-	virtual_desktop_ids() {
-		gdbus call --session --dest org.kde.KWin \
-			--object-path /VirtualDesktopManager \
-			--method org.freedesktop.DBus.Properties.Get \
-			org.kde.KWin.VirtualDesktopManager desktops |
-			grep -oE "\([a-z0-9]* ?[0-9]+, '[^']*'" | sed -E "s/.*'(.*)'/\1/"
-	}
-
-	# Added and removed at the end, so the desktops that are already there
-	# keep their ids and the windows on them stay where they are.
-	mapfile -t desktop_ids < <(virtual_desktop_ids)
-	while [ "${#desktop_ids[@]}" -ne "${#kde_desktops[@]}" ]; do
-		if [ "${#desktop_ids[@]}" -lt "${#kde_desktops[@]}" ]; then
-			virtual_desktop createDesktop "${#desktop_ids[@]}" \
-				"${kde_desktops[${#desktop_ids[@]}]}"
-		else
-			virtual_desktop removeDesktop "${desktop_ids[-1]}"
-		fi
-		mapfile -t new_desktop_ids < <(virtual_desktop_ids)
-		# Nothing changed, so stop rather than ask forever.
-		if [ "${#new_desktop_ids[@]}" -eq "${#desktop_ids[@]}" ]; then
-			echo "KWin kept ${#desktop_ids[@]} virtual desktops, leaving the count alone."
-			break
-		fi
-		desktop_ids=("${new_desktop_ids[@]}")
-	done
-	for i in "${!kde_desktops[@]}"; do
-		[ -n "${desktop_ids[i]:-}" ] || continue
-		virtual_desktop setDesktopName "${desktop_ids[i]}" "${kde_desktops[i]}"
-	done
-	# One row, so the desktops sit side by side and the left/right shortcuts
-	# above walk the whole list.
-	gdbus call --session --dest org.kde.KWin --object-path /VirtualDesktopManager \
-		--method org.freedesktop.DBus.Properties.Set \
-		org.kde.KWin.VirtualDesktopManager rows '<uint32 1>' >/dev/null
-
-	# Name the desktop on screen when switching to it, for 200 ms. Plasma's
-	# on-screen display for this is a KWin script rather than an effect, so it
-	# is switched on in [Plugins] like the effects below, but configured under
-	# [Script-...]; TextOnly leaves out the pager grid it would otherwise draw
-	# above the name. Loading a script that has just been enabled is not part
-	# of a reconfigure, so ask for it separately -- the call re-reads the
-	# config itself and does nothing to scripts that are already running.
-	kconf --file kwinrc --group Plugins --key desktopchangeosdEnabled true
-	kconf --file kwinrc --group Script-desktopchangeosd --key PopupHideDelay 200
-	kconf --file kwinrc --group Script-desktopchangeosd --key TextOnly true
-	gdbus call --session --dest org.kde.KWin --object-path /Scripting \
-		--method org.kde.kwin.Scripting.start >/dev/null
-
-	# App launchers. Plasma 6 dropped the "Custom Shortcuts" KCM, and its
-	# replacement binds a shortcut to a desktop entry rather than to a command
-	# line, so these point straight at the entries the applications already
-	# install. The sycoca rebuild is what lets kglobalaccel resolve them, so it
-	# has to happen before they are bound -- kitty's entry is written by this
-	# script further up and would not be found otherwise.
-	#
-	# The other way to do this is a hidden NoDisplay stub carrying the command,
-	# which is what the shortcuts KCM itself writes. Avoid it. A desktop entry
-	# is identified by its file name and the copy in the home directory wins
-	# over the one in /usr/share/applications, so a stub named after the
-	# application shadows the application's own entry and takes it out of the
-	# application menu, and a stub the KCM does not list is liable to be
-	# dropped, taking the shortcut with it.
-	have kbuildsycoca6 && kbuildsycoca6 >/dev/null 2>&1
-	for entry in "${app_launchers[@]}"; do
-		IFS='|' read -r slug name command key desktop action <<<"$entry"
-		set_kde_shortcut "$desktop" "$name" "$action" "$name" \
-			"Shift+Ctrl+Alt+${key^^}"
-	done
-
-	# Ctrl+Alt+T opens a terminal by default, bound to Konsole; rebind it to
-	# kitty (already given its own .desktop entry earlier in this script).
-	set_kde_shortcut org.kde.konsole.desktop Konsole _launch Konsole None
-	set_kde_shortcut kitty.desktop kitty _launch kitty Ctrl+Alt+T
-
-	# Dark theme.
-	if [ "$(kreadconfig6 --file kdeglobals --group KDE --key LookAndFeelPackage)" = "org.kde.breezedark.desktop" ]; then
-		skip "Dark theme"
-	else
-		plasma-apply-lookandfeel --apply org.kde.breezedark.desktop
-	fi
-
-	# Panel: 40 px tall, opaque rather than adaptive (which is opaque only
-	# while a window is up against it), and without the pager.
-	#
-	# The height and the opacity both live in plasmashellrc, which plasmashell
-	# reads when it builds a panel and writes back itself, on a timer. The
-	# opacity has no scripting property, so it is written to the file, and
-	# only takes effect the next time the shell starts -- hence the restart,
-	# and only when it actually changed. The height is written there too, so
-	# that the restart cannot undo it, and then set again through the API so
-	# that it also applies when there is no restart.
-	#
-	# The restart comes before the API calls for that same reason: what those
-	# change is not on disk yet, and a restart would take it with it. systemd
-	# only reports the unit started once the new shell has taken its bus name
-	# (it is Type=dbus), so the calls after it reach the new shell.
-	panel_height=40
-
-	plasma_script() {
-		gdbus call --session --dest org.kde.plasmashell --object-path /PlasmaShell \
-			--method org.kde.PlasmaShell.evaluateScript "$1"
-	}
-
-	# The panel ids, to address each panel's own group in plasmashellrc. gdbus
-	# prints the string the call returns as ('...',).
-	panel_ids=$(plasma_script 'print(panels().map(panel => panel.id).join(" "))' |
-		sed -E "s/^\('(.*)',\)\$/\1/")
-	restart_plasmashell=0
-	for panel_id in $panel_ids; do
-		kconf --file plasmashellrc --group PlasmaViews --group "Panel $panel_id" \
-			--group Defaults --key thickness "$panel_height"
-		# Adaptive is 0, opaque 1, translucent 2.
-		if [ "$(kreadconfig6 --file plasmashellrc --group PlasmaViews \
-			--group "Panel $panel_id" --key panelOpacity)" != 1 ]; then
-			kconf --file plasmashellrc --group PlasmaViews \
-				--group "Panel $panel_id" --key panelOpacity 1
-			restart_plasmashell=1
-		fi
-	done
-
-	# No desktop icons: the desktop uses Kubuntu's default Folder View layout,
-	# which draws the contents of ~/Desktop, so switch it to the plain Desktop
-	# layout, the other of the two choices under right-click > Configure Desktop
-	# and Wallpaper > Layout. Nothing in ~/Desktop is touched, it is just not
-	# drawn any more. The containment type is read-only in the scripting API, so
-	# this one has to go through the file and the restart below, and the ids come
-	# from the API for the same reason the panel ids do.
-	desktop_ids=$(plasma_script 'print(desktops().map(desktop => desktop.id).join(" "))' |
-		sed -E "s/^\('(.*)',\)\$/\1/")
-	for desktop_id in $desktop_ids; do
-		if [ "$(kreadconfig6 --file plasma-org.kde.plasma.desktop-appletsrc \
-			--group Containments --group "$desktop_id" --key plugin)" != org.kde.desktopcontainment ]; then
-			kconf --file plasma-org.kde.plasma.desktop-appletsrc \
-				--group Containments --group "$desktop_id" --key plugin org.kde.desktopcontainment
-			restart_plasmashell=1
-		fi
-	done
-
-	if [ "$restart_plasmashell" -eq 1 ]; then
-		systemctl --user restart plasma-plasmashell.service
-	fi
-	plasma_script "panels().forEach(panel => panel.height = $panel_height)" >/dev/null
-
-	# The panel comes with a pager, and it takes up room as soon as there is
-	# more than one virtual desktop -- which the block above arranges. The
-	# switching shortcuts and the on-screen display already say which desktop
-	# is current, so take it out. Removing the widget is the only way to hide
-	# it: a panel applet has no visibility setting of its own.
-	plasma_script 'panels().forEach(panel => panel.widgetIds.map(id => panel.widgetById(id))
-		.filter(widget => widget.type === "org.kde.plasma.pager")
-		.forEach(widget => widget.remove()))' >/dev/null
-
-	kconf --file ksmserverrc --group General --key loginMode emptySession
-	kconf --file ksmserverrc --group General --key confirmLogout false
-	kconf --file kdeglobals --group KDE --key AnimationDurationFactor 0
-	kde_disabled_effects=(wobblywindows magiclamp translucency squash
-		scale fade glide maximize fullscreen slide fadedesktop)
-	for effect in "${kde_disabled_effects[@]}"; do
-		kconf --file kwinrc --group Plugins --key "${effect}Enabled" false
-	done
-
-	# KWin only re-reads kwinrc when told to, and a reconfigure still does not
-	# unload already-running effects, so kick those out directly (unloading an
-	# effect that is not loaded is a harmless no-op).
-	gdbus call --session --dest org.kde.KWin --object-path /KWin \
-		--method org.kde.KWin.reconfigure >/dev/null
-	for effect in "${kde_disabled_effects[@]}"; do
-		gdbus call --session --dest org.kde.KWin --object-path /Effects \
-			--method org.kde.kwin.Effects.unloadEffect "$effect" >/dev/null
-	done
-	should_reboot=true
-fi
-
-# ---------------------------------------------------------------------------
-# Windows 11 virtual machine.
-# ---------------------------------------------------------------------------
-
-# Last on purpose: this is the only part of the script that needs the machine
-# rebooted part way through. The integrated GPU has to be handed to vfio-pci on
-# the kernel command line before a guest can use it, and a kernel command line
-# only takes effect at boot. Everything above has finished by the time this
-# asks, so the reboot costs nothing.
-#
-# scripts/make_windows_vm.sh stands on its own and every phase is re-runnable, so
-# answering no here costs nothing but running it later by hand. It works out
-# which phases are already done and picks up from there, which is also how it
-# continues after the reboot it asks for.
-if [ -x "$dotfiles/scripts/make_windows_vm.sh" ]; then
-	read -p "Set up the Windows 11 virtual machine? [yN] " -r user_answer
-	if [[ "$user_answer" =~ ^[Yy]$ ]]; then
-		"$dotfiles/scripts/make_windows_vm.sh"
-	fi
-elif $should_reboot; then
-	read -r -s -p "A reboot is required to finalize the installation. Press ENTER now to reboot..."
-	echo
-	sudo reboot
 fi

@@ -9,7 +9,7 @@
 # Author: Danylo Malyuta, 2026.
 
 repo_ssh=git@github.com:dmalyuta/dotfiles.git
-raw_url=https://raw.githubusercontent.com/dmalyuta/dotfiles/master/start_fresh.sh
+raw_url=https://raw.githubusercontent.com/dmalyuta/dotfiles/cachyos/start_fresh.sh
 
 # ---------------------------------------------------------------------------
 # Bootstrap.

@@ -5,6 +5,7 @@ CachyOS (KDE Plasma) setup after a fresh install.
 ## Fresh machine
 
 On a brand new install, run:
+
 ```bash
 curl -fsSL https://raw.githubusercontent.com/dmalyuta/dotfiles/cachyos/start_fresh.sh | bash
 ```
@@ -15,11 +16,17 @@ to install OpenRGB, the printer driver and so on.
 
 It is also safe to re-run (aka *idempotent*): every step checks for what it
 installs and skips it if it is already there. So you can always re-run using:
+
 ```bash
 ~/sw/dotfiles/start_fresh.sh
 ```
 
+Do re-run using the more recent run's answers to user questions:
+
+```bash
+~/sw/dotfiles/start_fresh.sh -c
+```
+
 ## License
 
-The code is available under the [MIT license](
-https://github.com/dmalyuta/dotfiles/blob/master/LICENSE).
+The code is available under the [MIT license](https://github.com/dmalyuta/dotfiles/blob/master/LICENSE).

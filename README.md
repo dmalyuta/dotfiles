@@ -1,12 +1,12 @@
 # Danylo's dotfiles
 
-CachyOS (COSMIC desktop) setup after a fresh install.
+CachyOS (KDE Plasma) setup after a fresh install.
 
 ## Fresh machine
 
 On a brand new install, run:
 ```bash
-curl -fsSL https://raw.githubusercontent.com/dmalyuta/dotfiles/master/start_fresh.sh | bash
+curl -fsSL https://raw.githubusercontent.com/dmalyuta/dotfiles/cachyos/start_fresh.sh | bash
 ```
 
 This clones this repo to `~/sw/dotfiles`, symlinks the dotfiles into the home

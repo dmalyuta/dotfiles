@@ -1,6 +1,0 @@
-(
-    workspace_mode: OutputBound,
-    workspace_layout: Horizontal,
-    action_on_typing: r#None,
-    workspace_wraparound: true,
-)

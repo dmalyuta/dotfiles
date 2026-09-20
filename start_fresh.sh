@@ -124,6 +124,14 @@ plasma_ids() {
 	plasma_script "print($1.map(x => x.id).join(' '))" | sed -E "s/^\('(.*)',\)$/\1/"
 }
 
+# Config group of the panel applet with the given plugin, printed as "containment applet".
+applet_group() {
+	awk -F'[][]' -v want="plugin=$1" '
+		/^\[Containments]\[[0-9]+]\[Applets]\[[0-9]+]$/ { c = $4; a = $8 }
+		$0 == want { print c, a; exit }
+	' ~/.config/plasma-org.kde.plasma.desktop-appletsrc
+}
+
 # Qt key code of a "Mod+Mod+Key" binding, as kglobalaccel's D-Bus API takes it.
 qt_keycode() {
 	local part code=0
@@ -377,6 +385,47 @@ if [ -n "${want_pdfx:-}" ]; then
 	wine msiexec /i EditorV11.x64.msi
 fi
 
+# Ship our own top-level launcher that runs the exe directly, and hide Wine's. This makes sure
+# that the icon can be pinned to the task manager etc.
+if [ -x "$pdfx_dir/PDF Editor/PXCEditor.exe" ]; then
+	pdfx_icon=application-pdf
+	for f in ~/.local/share/icons/hicolor/48x48/apps/*_PXCEditor.0.png; do
+		[ -e "$f" ] && pdfx_icon=$(basename "$f" .png) && break
+	done
+	cat >~/.local/share/applications/pdf-xchange-editor.desktop <<EOF
+[Desktop Entry]
+Type=Application
+Name=PDF-XChange Editor
+GenericName=PDF Editor
+Comment=View and edit PDF documents
+Exec=env WINEPREFIX=$HOME/.wine WINEDEBUG=fixme-all wine "$pdfx_dir/PDF Editor/PXCEditor.exe" %f
+Icon=$pdfx_icon
+Terminal=false
+StartupNotify=true
+StartupWMClass=pxceditor.exe
+Categories=Office;Viewer;
+MimeType=application/pdf;
+EOF
+	set_desktop_key ~/.local/share/applications/wine/Programs/PDF-XChange/"PDF-XChange Editor.desktop" \
+		NoDisplay true
+	update-desktop-database ~/.local/share/applications
+	kbuildsycoca6 >/dev/null 2>&1
+fi
+
+# Silence Wine from logging the spammy "fixme:" channel to stderr. Keep "err:" and "warn:", so real
+# faults get reported.
+mkdir -p ~/.config/environment.d
+cat >~/.config/environment.d/50-winedebug.conf <<'EOF'
+# Silence Wine's "fixme:" chatter, which otherwise floods the systemd journal.
+# Real problems still log: the err: and warn: channels are left enabled.
+WINEDEBUG=fixme-all
+EOF
+# environment.d only applies to sessions started after it, so cover the launchers directly too.
+while IFS= read -r -d '' f; do
+	grep -q '^Exec=env .*wine' "$f" && ! grep -q WINEDEBUG "$f" &&
+		sed -i 's|^Exec=env |Exec=env "WINEDEBUG=fixme-all" |' "$f"
+done < <(find ~/.local/share/applications -name '*.desktop' -print0 2>/dev/null)
+
 # Flameshot's Wayland clipboard copy is lost on non-Gnome desktops because the capture window closes
 # too early. Run the daemon under XWayland instead, for both ways it gets started: autostart and
 # D-Bus activation.
@@ -408,6 +457,15 @@ if install_script_file 90-usb-wakeup.rules /etc/udev/rules.d/90-usb-wakeup.rules
 	sudo udevadm trigger --action=add --subsystem-match=usb
 fi
 install_script_file usb-wakeup /usr/lib/systemd/system-sleep/usb-wakeup 0755
+
+# Explicitly set the journald size (default 50 MB).
+if write_root_file /etc/systemd/journald.conf.d/99-size.conf <<'EOF'
+[Journal]
+SystemMaxUse=256M
+EOF
+then
+	sudo systemctl restart systemd-journald
+fi
 
 # --------------------------------------------------------------------------------------------------
 # KDE desktop configuration.
@@ -473,7 +531,7 @@ EOF
 # Virtual desktops, in one row. Existing ones are renamed rather than recreated so their windows
 # stay put.
 vdm() { kwin /VirtualDesktopManager "org.kde.KWin.VirtualDesktopManager.$1" "${@:2}"; }
-desktop_names=(code browsing windows)
+desktop_names=(code browsing)
 # The desktops property is a list of (position, id, name).
 mapfile -t ids < <(dbus_call org.kde.KWin /VirtualDesktopManager \
 	org.freedesktop.DBus.Properties.Get org.kde.KWin.VirtualDesktopManager desktops |
@@ -534,7 +592,34 @@ for id in $(plasma_ids 'desktops()'); do
 	plasma_conf plasma-org.kde.plasma.desktop-appletsrc --group Containments --group "$id" \
 		--key plugin org.kde.desktopcontainment
 done
+# Task manager launchers: exactly these, in this order. The whole list is rewritten, so anything
+# else that was pinned is dropped.
+read -r tm_cont tm_applet < <(applet_group org.kde.plasma.icontasks)
+if [ -n "${tm_applet:-}" ]; then
+	pins=(org.kde.dolphin brave-browser kitty code obsidian)
+	[ -f ~/.local/share/applications/pdf-xchange-editor.desktop ] && pins+=(pdf-xchange-editor)
+	list=$(printf ',applications:%s.desktop' "${pins[@]}")
+	plasma_conf plasma-org.kde.plasma.desktop-appletsrc \
+		--group Containments --group "$tm_cont" --group Applets --group "$tm_applet" \
+		--group Configuration --group General --key launchers "${list#,}"
+fi
+
 [ "$restart_plasmashell" -eq 1 ] && systemctl --user restart plasma-plasmashell.service
+# Kickoff favorites: only System Settings. They live in the activity manager's database rather
+# than the applet config, so go through its D-Bus API; reading the database is safe while the
+# daemon holds it open, but only in mode=ro, which sees writes still sitting in the WAL.
+fav_agent=org.kde.plasma.favorites.applications
+fav_want=applications:systemsettings.desktop
+fav_link() {
+	dbus_call org.kde.ActivityManager /ActivityManager/Resources/Linking \
+		"org.kde.ActivityManager.ResourcesLinking.$1" "$fav_agent" "$2" :global >/dev/null
+}
+while read -r res; do
+	[ -z "$res" ] || [ "$res" = "$fav_want" ] || fav_link UnlinkResourceFromActivity "$res"
+done < <(sqlite3 "file:$HOME/.local/share/kactivitymanagerd/resources/database?mode=ro" \
+	"select targettedResource from ResourceLink where initiatingAgent='$fav_agent';" 2>/dev/null)
+fav_link LinkResourceToActivity "$fav_want"
+
 # The shortcuts and OSD already show the current desktop, so drop the pager.
 plasma_script 'panels().forEach(p =>
 	p.widgets("org.kde.plasma.pager").forEach(w => w.remove()))' >/dev/null

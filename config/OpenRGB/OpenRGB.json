@@ -1969,12 +1969,12 @@
     },
     "UserInterface": {
         "geometry": {
-            "height": 529,
+            "height": 843,
             "load_geometry": true,
             "save_on_exit": true,
-            "width": 899,
+            "width": 1286,
             "x": 0,
-            "y": 28
+            "y": 0
         },
         "minimize_on_close": true,
         "run_zone_checks": false

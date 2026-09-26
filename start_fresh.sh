@@ -198,9 +198,9 @@ pdfx_dir=~/.wine/drive_c/"Program Files/PDF-XChange"
 # Packages.
 # --------------------------------------------------------------------------------------------------
 
-repo=(
+pacman_apps=(
 	base-devel git curl wget unzip openssh paru
-	bat btop htop tree fzf fd ripgrep shfmt
+	bat btop htop tree fzf fd ripgrep shfmt gping
 	kitty tmux ttf-cascadia-code-nerd
 	proton-pass obsidian brave-bin okular inkscape obs-studio gimp
 	vlc vlc-plugins-all flameshot nextcloud-client
@@ -208,21 +208,27 @@ repo=(
 	openrazer-daemon python-openrazer
 	flatpak rustup nodejs npm grafana wine winetricks
 )
-aur=(
+aur_apps=(
 	visual-studio-code-bin polychromatic oh-my-posh-bin fsearch pureref
 	xnviewmp nordvpn-bin nordvpn-gui-bin
 )
+flatpak_apps=(
+	com.github.tchx84.Flatseal
+	io.github.tanaybhomia.Whisp
+	io.github.amit9838.mousam
+)
+
 groups=(plugdev nordvpn)
 services=(grafana nordvpnd)
 
-[ -n "${want_coolercontrol:-}" ] && repo+=(coolercontrol) && services+=(coolercontrold)
-[ -n "${want_openrgb:-}" ] && repo+=(openrgb i2c-tools) && groups+=(i2c)
-[ -n "${want_asusctl:-}" ] && repo+=(asusctl) && services+=(asusd)
-[ -n "${want_envycontrol:-}" ] && aur+=(envycontrol)
-[ -n "${want_brother:-}" ] && repo+=(cups) && aur+=(brother-mfc-j805dw) && services+=(cups)
+[ -n "${want_coolercontrol:-}" ] && pacman_apps+=(coolercontrol) && services+=(coolercontrold)
+[ -n "${want_openrgb:-}" ] && pacman_apps+=(openrgb i2c-tools) && groups+=(i2c)
+[ -n "${want_asusctl:-}" ] && pacman_apps+=(asusctl) && services+=(asusd)
+[ -n "${want_envycontrol:-}" ] && aur_apps+=(envycontrol)
+[ -n "${want_brother:-}" ] && pacman_apps+=(cups) && aur_apps+=(brother-mfc-j805dw) && services+=(cups)
 
-sudo pacman -Syu --needed --noconfirm "${repo[@]}"
-paru -S --needed --noconfirm --skipreview --sudoloop "${aur[@]}"
+sudo pacman -Syu --needed --noconfirm "${pacman_apps[@]}"
+paru -S --needed --noconfirm --skipreview --sudoloop "${aur_apps[@]}"
 
 # Bash as the login shell (CachyOS defaults to fish).
 [[ $(getent passwd "$USER" | cut -d: -f7) == */bash ]] || sudo chsh -s /usr/bin/bash "$USER"
@@ -237,7 +243,6 @@ rustup toolchain list 2>/dev/null | grep -q stable || rustup default stable
 # Flatpak apps, plus the GL extension matching the Nvidia driver so they get hardware rendering
 # under Wayland.
 flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-flatpak_apps=(com.github.tchx84.Flatseal io.github.tanaybhomia.Whisp)
 nvidia_version=$(modinfo -F version nvidia 2>/dev/null)
 [ -n "$nvidia_version" ] &&
 	flatpak_apps+=("org.freedesktop.Platform.GL.nvidia-${nvidia_version//./-}")

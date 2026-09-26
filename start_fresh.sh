@@ -186,9 +186,9 @@ elif ask coolercontrol "Install CoolerControl?"; then
 fi
 
 installed openrgb || ask openrgb "Install OpenRGB?" && want_openrgb=1
-installed asusctl || ask asusctl "Install asusctl?" && want_asusctl=1
-installed envycontrol || ask envycontrol "Install envycontrol hybrid GPU switching?" &&
-	want_envycontrol=1
+# Also taken when already installed, so an install from another repo moves to the OGC one.
+installed asusctl || ask asusctl "Install asusctl and ROG Control Center?" && want_asusctl=1
+installed cardwire || ask cardwire "Install cardwire hybrid GPU manager?" && want_cardwire=1
 installed brother-mfc-j805dw || ask brother "Install Brother printer driver?" && want_brother=1
 
 pdfx_dir=~/.wine/drive_c/"Program Files/PDF-XChange"
@@ -223,9 +223,23 @@ services=(grafana nordvpnd)
 
 [ -n "${want_coolercontrol:-}" ] && pacman_apps+=(coolercontrol) && services+=(coolercontrold)
 [ -n "${want_openrgb:-}" ] && pacman_apps+=(openrgb i2c-tools) && groups+=(i2c)
-[ -n "${want_asusctl:-}" ] && pacman_apps+=(asusctl) && services+=(asusd)
-[ -n "${want_envycontrol:-}" ] && aur_apps+=(envycontrol)
+[ -n "${want_asusctl:-}" ] && pacman_apps+=(asusctl rog-control-center) && services+=(asusd)
+[ -n "${want_cardwire:-}" ] && pacman_apps+=(cardwire) && services+=(cardwired)
 [ -n "${want_brother:-}" ] && pacman_apps+=(cups) && aur_apps+=(brother-mfc-j805dw) && services+=(cups)
+
+# OpenGamingCollective's repo, for asusctl and cardwire straight from upstream. It goes first
+# because pacman takes a package from the first repo that has it, and extra has asusctl too.
+ogc_key=F79100EF8C802DAB81C323BB8EEA5962FE510E19
+if [ -n "${want_asusctl:-}${want_cardwire:-}" ]; then
+	if ! sudo pacman-key --list-keys "$ogc_key" >/dev/null 2>&1; then
+		sudo pacman-key --recv-keys "$ogc_key"
+		sudo pacman-key --lsign-key "$ogc_key"
+	fi
+	grep -q '^\[ogc\]' /etc/pacman.conf ||
+		awk '!done && /^\[/ && !/^\[options\]/ {
+			print "[ogc]\nServer = https://pacman.opengamingcollective.org\n"; done = 1
+		} 1' /etc/pacman.conf | write_root_file /etc/pacman.conf
+fi
 
 sudo pacman -Syu --needed --noconfirm "${pacman_apps[@]}"
 paru -S --needed --noconfirm --skipreview --sudoloop "${aur_apps[@]}"
@@ -368,6 +382,11 @@ then
 fi
 
 sudo systemctl enable --now "${services[@]}"
+
+# Also hide /dev/nvidiactl etc. when the dGPU is blocked, so tools like nvtop don't wake it. Only
+# reliable with exactly one iGPU and one Nvidia dGPU.
+[ -n "${want_cardwire:-}" ] && lspci -d 10de: | grep -qE 'VGA|3D' &&
+	cardwire config experimental-nvidia-block true
 
 # Batch mode accepts the license and skips the prompts, including the final one that sets up
 # ~/.bashrc, so do that part with conda init.
@@ -601,7 +620,7 @@ done
 # else that was pinned is dropped.
 read -r tm_cont tm_applet < <(applet_group org.kde.plasma.icontasks)
 if [ -n "${tm_applet:-}" ]; then
-	pins=(org.kde.dolphin brave-browser kitty code obsidian)
+	pins=(org.kde.dolphin brave-browser kitty com.microsoft.VSCode obsidian)
 	[ -f ~/.local/share/applications/pdf-xchange-editor.desktop ] && pins+=(pdf-xchange-editor)
 	list=$(printf ',applications:%s.desktop' "${pins[@]}")
 	plasma_conf plasma-org.kde.plasma.desktop-appletsrc \

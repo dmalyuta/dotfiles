@@ -33,8 +33,9 @@ while getopts c opt; do
 	esac
 done
 
-# Use this checkout if running from one, else clone to ~/sw/dotfiles below.
-dotfiles=~/sw/dotfiles
+# Use this checkout if running from one, else clone to ~/Projects/dotfiles below.
+mkdir -p ~/Projects
+dotfiles=~/Projects/dotfiles
 this_script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 if [ -f "$this_script_dir/home/.bash_aliases" ] && [ -d "$this_script_dir/.git" ]; then
 	dotfiles=$this_script_dir

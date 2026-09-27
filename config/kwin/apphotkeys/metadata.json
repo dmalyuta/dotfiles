@@ -1,0 +1,12 @@
+{
+    "KPackageStructure": "KWin/Script",
+    "KPlugin": {
+        "Authors": [{ "Name": "Danylo Malyuta" }],
+        "Description": "Meta+letter hotkeys that focus an app's window on any virtual desktop, or launch it.",
+        "Id": "apphotkeys",
+        "License": "MIT",
+        "Name": "App Hotkeys"
+    },
+    "X-Plasma-API": "javascript",
+    "X-Plasma-MainScript": "code/main.js"
+}

@@ -69,6 +69,14 @@ ask() {
 	[ "${answers[$key]}" = y ]
 }
 
+# Whether $1 lists VS Code workspaces as "<letter>:<absolute path>,..." (or is empty), with distinct
+# letters.
+valid_workspaces() {
+	local entry="[A-Z]:/[^,;]*[^,;/]"
+	[[ $1 =~ ^($entry(,$entry)*)?$ ]] &&
+		[ -z "$(tr , '\n' <<<"$1" | cut -c1 | sort | uniq -d)" ]
+}
+
 # Write stdin to a root-owned file. Returns 0 only if the content changed.
 write_root_file() {
 	local dest=$1 tmp
@@ -136,8 +144,8 @@ applet_group() {
 qt_keycode() {
 	local part code=0
 	local -A codes=([Shift]=0x02000000 [Ctrl]=0x04000000 [Alt]=0x08000000
-		[Meta]=0x10000000 [Del]=0x01000007 [Left]=0x01000012 [Up]=0x01000013
-		[Right]=0x01000014 [None]=0)
+		[Meta]=0x10000000 [Tab]=0x01000001 [Print]=0x01000009 [Del]=0x01000007 [Left]=0x01000012
+		[Up]=0x01000013 [Right]=0x01000014 [None]=0)
 	for part in ${1//+/ }; do
 		if [[ $part == [A-Z] ]]; then
 			((code += $(printf %d "'$part")))
@@ -149,6 +157,42 @@ qt_keycode() {
 		fi
 	done
 	echo "$code"
+}
+
+# Remove the key with Qt key code $1 from the actions that have it, except action $3 of component
+# $2, keeping their other keys. kglobalaccel does not let two actions share a key.
+take_key() {
+	local action action_name component component_name keys
+	while IFS='|' read -r action action_name component component_name keys; do
+		[ "$component|$action" = "$2|$3" ] && continue
+		keys=$(tr -d ' ' <<<"$keys" | tr , '\n' | grep -vx "$1" | paste -sd ,)
+		dbus_call org.kde.kglobalaccel /kglobalaccel org.kde.KGlobalAccel.setForeignShortcut \
+			"['$component','$action','$component_name','$action_name']" "[${keys:-0}]" >/dev/null
+	done < <(dbus_call org.kde.kglobalaccel /kglobalaccel org.kde.KGlobalAccel.globalShortcutsByKey \
+		"([$1],)" "(0,)" | grep -oP "\('[^']*', '[^']*', '[^']*', '[^']*', '[^']*', '[^']*', \[[^]]*\]" |
+		sed -E "s/^\('([^']*)', '([^']*)', '([^']*)', '([^']*)', '[^']*', '[^']*', \[(.*)\]$/\1|\2|\3|\4|\5/")
+}
+
+# Bind a global shortcut, taking the key from any other action that has it. Args: component, its
+# friendly name, action, its friendly name, keys (see qt_keycode, or None to unbind).
+set_shortcut() {
+	local id code try
+	# Skip on error: an empty key list would unbind the action.
+	code=$(qt_keycode "$5") || return
+	id="['$1','$3','$2','$4']"
+	[ "$code" -ne 0 ] && take_key "$code" "$1" "$3"
+	# kglobalaccel ignores a desktop entry's shortcut until it notices the entry, which for a new one
+	# takes a few seconds after kbuildsycoca6, so retry while it is missing.
+	for try in {1..20}; do
+		dbus_call org.kde.kglobalaccel /kglobalaccel org.kde.KGlobalAccel.doRegister "$id" >/dev/null
+		dbus_call org.kde.kglobalaccel /kglobalaccel org.kde.KGlobalAccel.setForeignShortcut \
+			"$id" "[$code]" >/dev/null
+		[[ $1 == *.desktop ]] && [ -f ~/.local/share/applications/"$1" ] || return 0
+		dbus_call org.kde.kglobalaccel "/component/${1//[^A-Za-z0-9]/_}" \
+			org.kde.kglobalaccel.Component.shortcutNames 2>/dev/null | grep -qF "'$3'" && return
+		sleep 0.5
+	done
+	echo "Could not register the $2 shortcut." >&2
 }
 
 # --------------------------------------------------------------------------------------------------
@@ -194,6 +238,21 @@ installed brother-mfc-j805dw || ask brother "Install Brother printer driver?" &&
 pdfx_dir=~/.wine/drive_c/"Program Files/PDF-XChange"
 [ -d "$pdfx_dir" ] || { ask pdfx "Install PDF-XChange Editor?" && want_pdfx=1; }
 
+# Kept out of the repo, since the projects may be private. The last answer, or the rejected one on a
+# retry, is pre-filled for editing.
+if [ -z "$use_cached" ] || ! valid_workspaces "${answers[workspaces]-x}"; then
+	echo "VS Code workspaces for Meta+C, Meta+<letter>, as <letter>:<absolute path>,... (empty for"
+	echo "none). Meta+<letter> is taken from whatever else uses it."
+	workspaces=${answers[workspaces]:-}
+	while true; do
+		read -e -i "$workspaces" -p "Workspaces: " -r workspaces || exit
+		valid_workspaces "$workspaces" && break
+		echo "Invalid: expected e.g. M:/home/me/project,X:/home/me/other, with distinct letters and"
+		echo "no trailing slashes."
+	done
+	answers[workspaces]=$workspaces
+fi
+
 # --------------------------------------------------------------------------------------------------
 # Packages.
 # --------------------------------------------------------------------------------------------------
@@ -205,11 +264,11 @@ pacman_apps=(
 	proton-pass obsidian brave-bin okular inkscape obs-studio gimp
 	vlc vlc-plugins-all flameshot nextcloud-client
 	qalculate-gtk speedcrunch
-	openrazer-daemon python-openrazer
+	openrazer-daemon python-openrazer keyd
 	flatpak rustup nodejs npm grafana wine winetricks
 )
 aur_apps=(
-	visual-studio-code-bin polychromatic oh-my-posh-bin fsearch pureref
+	visual-studio-code-bin polychromatic oh-my-posh-bin fsearch pureref otf-sn-pro
 	xnviewmp nordvpn-bin nordvpn-gui-bin
 )
 flatpak_apps=(
@@ -219,7 +278,7 @@ flatpak_apps=(
 )
 
 groups=(plugdev nordvpn)
-services=(grafana nordvpnd)
+services=(grafana nordvpnd keyd)
 
 [ -n "${want_coolercontrol:-}" ] && pacman_apps+=(coolercontrol) && services+=(coolercontrold)
 [ -n "${want_openrgb:-}" ] && pacman_apps+=(openrgb i2c-tools) && groups+=(i2c)
@@ -381,6 +440,9 @@ then
 	sudo systemctl try-restart grafana
 fi
 
+# keyd remaps keys below the display server, see scripts/keyd.conf. A restart applies a new config.
+install_script_file keyd.conf /etc/keyd/default.conf && sudo systemctl try-restart keyd
+
 sudo systemctl enable --now "${services[@]}"
 
 # Also hide /dev/nvidiactl etc. when the dGPU is blocked, so tools like nvtop don't wake it. Only
@@ -523,34 +585,103 @@ done < <(gawk -v RS= '/Handlers=[^\n]*mouse/ &&
 compgen -G '/sys/class/backlight/*' >/dev/null &&
 	say "If System Settings > Display has an auto-brightness toggle, turn it off."
 
+# App hotkeys: a KWin script that focuses an app's window on any desktop, or launches the app. It
+# launches through kglobalaccel, so each app it launches is registered below, with no key of its
+# own.
+mkdir -p ~/.local/share/kwin/scripts
+ln -sfn "$dotfiles"/config/kwin/apphotkeys ~/.local/share/kwin/scripts/apphotkeys
+kconf --file kwinrc --group Plugins --key apphotkeysEnabled true
+
+# VS Code workspaces that Meta+C, Meta+<key> focuses, or opens if no window has them: this repo, and
+# those from the question up front.
+declare -A vscode_workspaces=([D]=$dotfiles)
+IFS=, read -r -a entries <<<"${answers[workspaces]:-}"
+for entry in "${entries[@]}"; do
+	vscode_workspaces[${entry%%:*}]=${entry#*:}
+done
+# The script reads the list from its config on load, so unload it for Scripting.start (below) to load
+# it again.
+kwin /Scripting org.kde.kwin.Scripting.unloadScript apphotkeys
+# A workspace's shortcuts and desktop entry are named by its letter. Drop those of letters no longer
+# in the list, which frees their keys. Only those: re-registering a shortcut right after
+# unregistering it is unreliable.
+while read -r key; do
+	[ -n "${vscode_workspaces[$key]:-}" ] && continue
+	for id in "kwin App Hotkeys: VS Code workspace $key" "vscode-workspace-${key,,}.desktop _launch"; do
+		dbus_call org.kde.kglobalaccel /kglobalaccel org.kde.KGlobalAccel.unregister \
+			"${id%% *}" "${id#* }" >/dev/null
+	done
+	rm -f ~/.local/share/applications/vscode-workspace-"${key,,}".desktop
+done < <({
+	dbus_call org.kde.kglobalaccel /component/kwin org.kde.kglobalaccel.Component.shortcutNames |
+		grep -oP "'App Hotkeys: VS Code workspace \K[A-Z]"
+	dbus_call org.kde.kglobalaccel /kglobalaccel org.kde.KGlobalAccel.allComponents |
+		grep -oP 'vscode_workspace_\K[a-z](?=_desktop)'
+	ls ~/.local/share/applications | grep -oP '^vscode-workspace-\K[a-z](?=\.desktop$)'
+} | tr a-z A-Z | sort -u)
+# Each opens through a hidden desktop entry, so the script can launch it through kglobalaccel.
+workspaces_config=
+for key in "${!vscode_workspaces[@]}"; do
+	dir=${vscode_workspaces[$key]}
+	cat >~/.local/share/applications/vscode-workspace-"${key,,}".desktop <<EOF
+[Desktop Entry]
+Type=Application
+Name=VS Code: ${dir##*/}
+Exec=code "$dir"
+Icon=vscode
+NoDisplay=true
+EOF
+	workspaces_config+="$key=$dir;"
+done
+kconf --file kwinrc --group Script-apphotkeys --key vscodeWorkspaces "$workspaces_config"
+
 # Global shortcuts. Set through kglobalaccel's D-Bus API because it keeps them in memory and
 # overwrites edits to kglobalshortcutsrc. Apps are bound by desktop entry, where the "_launch"
-# action runs its Exec, so first rebuild the cache that kglobalaccel finds the entries in. Quick
-# Tile Top has to release Meta+Up before Maximize can take it.
+# action runs its Exec, so first rebuild the cache that kglobalaccel finds the entries in. Each key
+# is taken from KDE's default action for it, if any, e.g. Meta+Up from Quick Tile Top.
 kbuildsycoca6 >/dev/null 2>&1
-while IFS='|' read -r component component_name action action_name keys; do
-	# Skip on error: an empty key list would unbind the action.
-	code=$(qt_keycode "$keys") || continue
-	id="['$component','$action','$component_name','$action_name']"
-	dbus_call org.kde.kglobalaccel /kglobalaccel org.kde.KGlobalAccel.doRegister "$id" >/dev/null
-	dbus_call org.kde.kglobalaccel /kglobalaccel org.kde.KGlobalAccel.setForeignShortcut \
-		"$id" "[$code]" >/dev/null
+while IFS='|' read -r -a shortcut; do
+	set_shortcut "${shortcut[@]}"
 done <<'EOF'
 kwin|KWin|Window Minimize|Minimize Window|Meta+Del
-kwin|KWin|Window Quick Tile Top|Quick Tile Window to the Top|None
 kwin|KWin|Window Maximize|Maximize Window|Meta+Up
 kwin|KWin|Switch One Desktop to the Left|Switch One Desktop to the Left|Meta+Ctrl+Left
 kwin|KWin|Switch One Desktop to the Right|Switch One Desktop to the Right|Meta+Ctrl+Right
 kwin|KWin|Window One Desktop to the Left|Window One Desktop to the Left|Meta+Ctrl+Shift+Left
 kwin|KWin|Window One Desktop to the Right|Window One Desktop to the Right|Meta+Ctrl+Shift+Right
+kwin|KWin|Overview|Toggle Overview|Meta+Ctrl+Tab
+kwin|KWin|Invert|Toggle Invert Effect|Ctrl+Shift+I
+org.flameshot.Flameshot.desktop|Flameshot|Capture|Flameshot|Print
 org.kde.konsole.desktop|Konsole|_launch|Konsole|None
 kitty.desktop|kitty|_launch|kitty|Ctrl+Alt+T
-org.flameshot.Flameshot.desktop|Flameshot|Capture|Flameshot|Shift+Ctrl+Alt+P
-speedcrunch.desktop|SpeedCrunch|_launch|SpeedCrunch|Shift+Ctrl+Alt+N
-brave-browser.desktop|Brave|_launch|Brave|Shift+Ctrl+Alt+B
-pureref.desktop|PureRef|_launch|PureRef|Shift+Ctrl+Alt+R
-obsidian.desktop|Obsidian|_launch|Obsidian|Shift+Ctrl+Alt+O
+brave-browser.desktop|Brave|_launch|Brave|None
+org.kde.dolphin.desktop|Dolphin|_launch|Dolphin|None
+io.github.cboxdoerfer.FSearch.desktop|FSearch|_launch|FSearch|None
+pureref.desktop|PureRef|_launch|PureRef|None
+obsidian.desktop|Obsidian|_launch|Obsidian|None
+org.inkscape.Inkscape.desktop|Inkscape|_launch|Inkscape|None
+speedcrunch.desktop|SpeedCrunch|_launch|SpeedCrunch|None
+pdf-xchange-editor.desktop|PDF-XChange Editor|_launch|PDF-XChange Editor|None
+com.microsoft.VSCode.desktop|Visual Studio Code|_launch|Visual Studio Code|None
+kwin|KWin|App Hotkeys: Brave|App Hotkeys: Brave|Meta+B
+kwin|KWin|App Hotkeys: New Brave window|App Hotkeys: New Brave window|Meta+Shift+B
+kwin|KWin|App Hotkeys: Terminal|App Hotkeys: Terminal|Meta+W
+kwin|KWin|App Hotkeys: New terminal|App Hotkeys: New terminal|Meta+Shift+W
+kwin|KWin|App Hotkeys: Dolphin|App Hotkeys: Dolphin|Meta+E
+kwin|KWin|App Hotkeys: New Dolphin window|App Hotkeys: New Dolphin window|Meta+Shift+E
+kwin|KWin|App Hotkeys: FSearch|App Hotkeys: FSearch|Meta+S
+kwin|KWin|App Hotkeys: PureRef|App Hotkeys: PureRef|Meta+R
+kwin|KWin|App Hotkeys: Obsidian|App Hotkeys: Obsidian|Meta+O
+kwin|KWin|App Hotkeys: Inkscape|App Hotkeys: Inkscape|Meta+I
+kwin|KWin|App Hotkeys: SpeedCrunch|App Hotkeys: SpeedCrunch|Meta+N
+kwin|KWin|App Hotkeys: PDF-XChange Editor|App Hotkeys: PDF-XChange Editor|Meta+P
+kwin|KWin|App Hotkeys: VS Code|App Hotkeys: VS Code|Meta+C
 EOF
+for key in "${!vscode_workspaces[@]}"; do
+	name="VS Code ${vscode_workspaces[$key]##*/}"
+	set_shortcut vscode-workspace-"${key,,}".desktop "$name" _launch "$name" None
+	set_shortcut kwin KWin "App Hotkeys: VS Code workspace $key" "App Hotkeys: $name" "Meta+$key"
+done
 
 # Virtual desktops, in one row. Existing ones are renamed rather than recreated so their windows
 # stay put.
@@ -583,6 +714,9 @@ kwin /Scripting org.kde.kwin.Scripting.start
 kconf --file ksmserverrc --group General --key loginMode emptySession
 kconf --file ksmserverrc --group General --key confirmLogout false
 kconf --file kdeglobals --group KDE --key AnimationDurationFactor 0
+# Ctrl+Shift+I (set above) inverts the screen colors.
+kconf --file kwinrc --group Plugins --key invertEnabled true
+kwin /Effects org.kde.kwin.Effects.loadEffect invert
 # Also unload the effects, since a reconfigure leaves running ones loaded.
 for effect in wobblywindows magiclamp translucency squash scale fade glide \
 	maximize fullscreen slide fadedesktop; do

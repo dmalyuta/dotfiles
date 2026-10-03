@@ -1,0 +1,94 @@
+#!/bin/bash
+# Keep a failing Logitech C920 from freezing the speakers. The webcam mic clocks the echo-cancelled
+# HDMI output (~/.config/pipewire/pipewire.conf.d/60-echo-cancel.conf), so when the webcam's USB
+# link goes bad (-71 errors, seen after resuming from sleep) the speakers stall with it. A replug
+# fixes it, so this replugs the webcam in software by switching its USB port off and on.
+#   c920-guard cycle      Replug the webcam now.
+#   c920-guard watch      Replug it whenever the kernel logs a USB error from it (c920-guard.service).
+#   c920-guard pre|post   systemd sleep hook: keep the port off while asleep, on again after resume,
+#                         so the webcam enumerates fresh instead of resuming in a bad state.
+# Installed to /usr/local/bin and /usr/lib/systemd/system-sleep by start_fresh.sh.
+
+vendor=046d product=082d
+saved_port=/run/c920-guard.port
+lock=/run/c920-guard.lock
+
+log() { logger -t c920-guard "$*"; }
+
+# The webcam's sysfs device directory, like /sys/bus/usb/devices/10-2.
+find_dev() {
+	local d
+	for d in /sys/bus/usb/devices/*; do
+		[ "$(cat "$d/idVendor" 2>/dev/null)" = "$vendor" ] || continue
+		[ "$(cat "$d/idProduct")" = "$product" ] || continue
+		echo "$d"
+		return 0
+	done
+	return 1
+}
+
+# The hub port the webcam is plugged into, like .../10-0:1.0/usb10-port2.
+find_port() {
+	local dev
+	dev=$(find_dev) && readlink -f "$dev/port"
+}
+
+cycle() {
+	local port
+	port=$(find_port) || { log "webcam not present, nothing to replug"; return 1; }
+	{
+		flock 9
+		log "replugging webcam at $(basename "$port"): $1"
+		echo 1 >"$port/disable"
+		sleep 2
+		echo 0 >"$port/disable"
+	} 9>"$lock"
+}
+
+watch() {
+	local cooldown=20 window=600 max_cycles=3
+	local last=0 now name line
+	local -a recent=()
+	journalctl -k -f -n0 -o cat | while IFS= read -r line; do
+		[[ $line == *-71* || $line == *-110* ]] || continue
+		name=$(find_dev) || continue
+		name=$(basename "$name")
+		# Kernel lines name the device as "usb 10-2: ..." or "uvcvideo 10-2:1.1: ...".
+		[[ $line =~ ^[a-z_-]+\ ${name//./\\.}: ]] || continue
+		now=$(date +%s)
+		# Errors right after a replug come from the replug itself.
+		((now - last < cooldown)) && continue
+		recent=($(for t in "${recent[@]}"; do ((now - t < window)) && echo "$t"; done))
+		if ((${#recent[@]} >= max_cycles)); then
+			log "webcam keeps failing, not replugging again for now: $line"
+			continue
+		fi
+		cycle "$line"
+		last=$(date +%s)
+		recent+=("$last")
+	done
+}
+
+case $1 in
+cycle) cycle "requested" ;;
+watch) watch ;;
+pre)
+	port=$(find_port) || exit 0
+	echo "$port" >"$saved_port"
+	log "webcam port $(basename "$port") off for sleep"
+	echo 1 >"$port/disable"
+	;;
+post)
+	[ -f "$saved_port" ] || exit 0
+	port=$(cat "$saved_port")
+	rm -f "$saved_port"
+	# Give the USB bus time to settle after resume before the webcam enumerates.
+	sleep 3
+	log "webcam port $(basename "$port") on after sleep"
+	echo 0 >"$port/disable"
+	;;
+*)
+	echo "usage: $0 cycle|watch|pre|post" >&2
+	exit 1
+	;;
+esac

@@ -15,6 +15,7 @@ alias sleep='systemctl suspend'
 alias dotfiles='cd ~/Documents/dotfiles && ll'
 alias rgb_on='~/AppImages/openrgb.appimage --profile ~/.config/OpenRGB/danymal-blue.orp'
 alias rgb_off='~/AppImages/openrgb.appimage --profile ~/.config/OpenRGB/danymal-off.orp'
+alias fix_audio='systemctl --user restart pipewire pipewire-pulse wireplumber'
 
 ################################################################################
 # Process management.

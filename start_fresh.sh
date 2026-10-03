@@ -235,6 +235,7 @@ installed openrgb || ask openrgb "Install OpenRGB?" && want_openrgb=1
 installed asusctl || ask asusctl "Install asusctl and ROG Control Center?" && want_asusctl=1
 installed cardwire || ask cardwire "Install cardwire hybrid GPU manager?" && want_cardwire=1
 installed brother-mfc-j805dw || ask brother "Install Brother printer driver?" && want_brother=1
+ask obs "Install the custom OBS configuration?" && want_obs=1
 
 pdfx_dir=~/.wine/drive_c/"Program Files/PDF-XChange"
 [ -d "$pdfx_dir" ] || { ask pdfx "Install PDF-XChange Editor?" && want_pdfx=1; }
@@ -270,7 +271,7 @@ pacman_apps=(
 )
 aur_apps=(
 	visual-studio-code-bin polychromatic oh-my-posh-bin fsearch pureref otf-sn-pro
-	xnviewmp nordvpn-bin nordvpn-gui-bin
+	xnviewmp nordvpn-bin nordvpn-gui-bin raddebugger
 )
 flatpak_apps=(
 	com.github.tchx84.Flatseal
@@ -430,6 +431,42 @@ if [ -n "${want_openrgb:-}" ]; then
 	ln -sf "$dotfiles"/config/OpenRGB/profiles/{blue.json,off.json} ~/.config/OpenRGB/profiles/
 fi
 
+if [ -n "${want_obs:-}" ]; then
+	# OBS profile and scene collection, see config/obs/. Linked by directory, since OBS saves a file
+	# by renaming a new one over it, which would replace a linked file. Existing ones are kept as
+	# *.orig.
+	obs_basic=~/.config/obs-studio/basic
+	mkdir -p "$obs_basic"
+	for d in profiles scenes; do
+		[ -d "$obs_basic/$d" ] && [ ! -L "$obs_basic/$d" ] && mv -T "$obs_basic/$d" "$obs_basic/$d.orig"
+		ln -sfn "$dotfiles/config/obs/$d" "$obs_basic/$d"
+	done
+	# Use that profile and scene collection, else OBS makes empty "Untitled" ones in the repo.
+	# FirstRun skips the first-run auto-configuration wizard, which would overwrite the profile.
+	obs_user=~/.config/obs-studio/user.ini
+	kwriteconfig6 --file "$obs_user" --group General --key FirstRun true
+	kwriteconfig6 --file "$obs_user" --group Basic --key Profile desktop
+	kwriteconfig6 --file "$obs_user" --group Basic --key ProfileDir desktop
+	kwriteconfig6 --file "$obs_user" --group Basic --key SceneCollection desktop_monitor
+	kwriteconfig6 --file "$obs_user" --group Basic --key SceneCollectionFile desktop_monitor.json
+	# Echo-cancelled webcam mic, so calls played on the speakers don't leak into OBS's mic.
+	echo_cancel=~/.config/pipewire/pipewire.conf.d/60-echo-cancel.conf
+	if [ "$(readlink "$echo_cancel")" != "$dotfiles/config/obs/pipewire/60-echo-cancel.conf" ]; then
+		mkdir -p "${echo_cancel%/*}"
+		ln -sf "$dotfiles"/config/obs/pipewire/60-echo-cancel.conf "$echo_cancel"
+		systemctl --user restart pipewire pipewire-pulse wireplumber
+	fi
+	# The webcam mic level that the scene's filters are tuned for. PipeWire takes a moment to bring
+	# the device back after a restart.
+	if [ -e /proc/asound/C920 ]; then
+		for try in {1..20}; do
+			pactl set-source-volume alsa_input.usb-046d_HD_Pro_Webcam_C920_035EF47F-02.analog-stereo 80% \
+				2>/dev/null && break
+			sleep 0.5
+		done
+	fi
+fi
+
 # Grafana needs to read /home. Do NOT chmod -R here.
 chmod o+rx "$HOME"
 if write_root_file /etc/systemd/system/grafana.service.d/override.conf <<'EOF'
@@ -544,6 +581,12 @@ if install_script_file 90-usb-wakeup.rules /etc/udev/rules.d/90-usb-wakeup.rules
 	sudo udevadm trigger --action=add --subsystem-match=usb
 fi
 install_script_file usb-wakeup /usr/lib/systemd/system-sleep/usb-wakeup 0755
+
+# Replug the C920 webcam when its USB link fails, see scripts/c920-guard.
+install_script_file c920-guard.service /etc/systemd/system/c920-guard.service && sudo systemctl daemon-reload
+install_script_file c920-guard /usr/lib/systemd/system-sleep/c920-guard 0755
+install_script_file c920-guard /usr/local/bin/c920-guard 0755 && sudo systemctl try-restart c920-guard
+sudo systemctl enable --now c920-guard
 
 # Explicitly set the journald size (default 50 MB).
 if write_root_file /etc/systemd/journald.conf.d/99-size.conf <<'EOF'

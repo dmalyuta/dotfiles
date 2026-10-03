@@ -1,0 +1,1 @@
+{"rate_control":"VBR","bitrate":12000,"max_bitrate":20000,"keyint_sec":2,"preset":"p6","preset2":"p6","tune":"hq","multipass":"qres","profile":"main","lookahead":true,"adaptive_quantization":true,"bf":2}

@@ -1,0 +1,11 @@
+[Unit]
+Description=Replug the C920 webcam when its USB link fails
+After=systemd-journald.service
+
+[Service]
+ExecStart=/usr/local/bin/c920-guard watch
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

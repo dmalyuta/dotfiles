@@ -267,7 +267,7 @@ pacman_apps=(
 	vlc vlc-plugins-all flameshot nextcloud-client
 	qalculate-gtk speedcrunch
 	openrazer-daemon python-openrazer keyd
-	flatpak rustup nodejs npm grafana wine winetricks
+	flatpak rustup nodejs npm grafana wine winetricks bazelisk
 )
 aur_apps=(
 	visual-studio-code-bin polychromatic oh-my-posh-bin fsearch pureref otf-sn-pro

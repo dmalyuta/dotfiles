@@ -56,6 +56,17 @@ skip() { say "$* already present, skipping."; }
 
 installed() { pacman -Q "$1" >/dev/null 2>&1; }
 
+# Whether this is the laptop rather than the desktop: it has a system battery. A wireless mouse's or
+# pen's battery also shows up, but with scope Device.
+is_laptop() {
+	local p
+	for p in /sys/class/power_supply/*; do
+		[ "$(cat "$p/type" 2>/dev/null)" = Battery ] &&
+			[ "$(cat "$p/scope" 2>/dev/null)" != Device ] && return
+	done
+	return 1
+}
+
 # Yes/no question whose default is the last answer, remembered under key $1. With -c, a remembered
 # answer is used without asking.
 ask() {
@@ -285,6 +296,9 @@ services=(grafana nordvpnd keyd)
 [ -n "${want_coolercontrol:-}" ] && pacman_apps+=(coolercontrol) && services+=(coolercontrold)
 [ -n "${want_openrgb:-}" ] && pacman_apps+=(openrgb i2c-tools) && groups+=(i2c)
 [ -n "${want_asusctl:-}" ] && pacman_apps+=(asusctl rog-control-center) && services+=(asusd)
+# For scripts/asus-power-limits.
+[ -n "${want_asusctl:-}" ] && [ "$(cat /sys/class/dmi/id/board_name 2>/dev/null)" = HN7306WU ] &&
+	pacman_apps+=(acpi_call-dkms)
 [ -n "${want_cardwire:-}" ] && pacman_apps+=(cardwire) && services+=(cardwired)
 [ -n "${want_brother:-}" ] && pacman_apps+=(cups) && aur_apps+=(brother-mfc-j805dw) && services+=(cups)
 
@@ -489,7 +503,8 @@ sudo systemctl enable --now "${services[@]}"
 	cardwire config experimental-nvidia-block true
 
 # Batch mode accepts the license and skips the prompts, including the final one that sets up
-# ~/.bashrc, so do that part with conda init.
+# ~/.bashrc. Good: .local.bashrc sets conda up instead, because the block `conda init` writes delays
+# every prompt by ~1 s. Remove that block if it was added before.
 if [ -d ~/anaconda3 ]; then
 	skip "Anaconda"
 else
@@ -497,7 +512,7 @@ else
 		"https://repo.anaconda.com/archive/Anaconda3-2026.07-1-Linux-x86_64.sh" &&
 		bash anaconda.sh -b -p ~/anaconda3
 fi
-grep -qF 'conda initialize' ~/.bashrc 2>/dev/null || ~/anaconda3/bin/conda init bash
+sed -i '/^# >>> conda initialize >>>$/,/^# <<< conda initialize <<<$/d' ~/.bashrc
 
 [ -f ~/.wine/drive_c/windows/Fonts/arial.ttf ] || winetricks -q corefonts
 if [ -n "${want_pdfx:-}" ]; then
@@ -582,11 +597,96 @@ if install_script_file 90-usb-wakeup.rules /etc/udev/rules.d/90-usb-wakeup.rules
 fi
 install_script_file usb-wakeup /usr/lib/systemd/system-sleep/usb-wakeup 0755
 
+# Laptop sleep. Its only sleep state is s2idle, which reaches the SoC's deepest state only if every
+# device powers off, and the Nvidia driver keeps the dGPU on unless told otherwise, draining ~1.5%/h.
+#
+# Also keep Nvidia out of the initramfs, where chwd puts it. Resuming from hibernation happens in the
+# initramfs, and the kernel must freeze its drivers before jumping into the image, which the freshly
+# loaded Nvidia driver refuses (nv_pmops_freeze returns -EIO), so the image is dropped and the boot
+# is fresh. The panel is on the iGPU, so the dGPU can load later. chwd also drops the kms hook, which
+# the iGPU needs for an early splash, so add it back; it only picks in-tree drivers, not nvidia.
+if is_laptop && [ -n "$nvidia_version" ]; then
+	echo 'options nvidia NVreg_EnableS0ixPowerManagement=1' |
+		write_root_file /etc/modprobe.d/nvidia-s0ix.conf && rebuild_initramfs=1
+	write_root_file /etc/mkinitcpio.conf.d/90-no-nvidia.conf <<'EOF' && rebuild_initramfs=1
+# Hibernation can't resume with Nvidia loaded in the initramfs, see start_fresh.sh.
+MODULES=(${MODULES[@]/#nvidia*/})
+HOOKS=(${HOOKS[@]/modconf/modconf kms})
+EOF
+	# Also rebuild if a past rebuild was skipped or failed, so an initramfs still has Nvidia.
+	sudo find /boot -name 'initramfs-*' ! -name '*fallback*' -exec lsinitcpio {} \; 2>/dev/null |
+		grep -q '/nvidia\.ko' && rebuild_initramfs=1
+	[ -n "${rebuild_initramfs:-}" ] && sudo limine-mkinitcpio
+fi
+
+# Laptop hibernation, to a swapfile as big as RAM (zram can't hold the image). It goes in its own
+# subvolume, since btrfs can't snapshot a subvolume with an active swapfile, and snapper snapshots
+# @. The systemd initramfs finds it on resume through an EFI variable, so no resume= is needed.
+swapfile=/swap/swapfile
+if is_laptop && [ "$(findmnt -no FSTYPE /)" = btrfs ] && [ ! -f "$swapfile" ]; then
+	root_dev=$(findmnt -no SOURCE / | sed 's/\[.*//')
+	top=$(mktemp -d)
+	sudo mount -o subvolid=5 "$root_dev" "$top"
+	sudo btrfs subvolume show "$top/@swap" >/dev/null 2>&1 || sudo btrfs subvolume create "$top/@swap"
+	sudo umount "$top" && rmdir "$top"
+	{
+		sudo cat /etc/fstab
+		grep -q '[[:space:]]/swap[[:space:]]' /etc/fstab ||
+			echo "UUID=$(findmnt -no UUID /) /swap btrfs subvol=/@swap,defaults,noatime 0 0"
+		grep -q "^$swapfile[[:space:]]" /etc/fstab || echo "$swapfile none swap defaults 0 0"
+	} | write_root_file /etc/fstab
+	sudo systemctl daemon-reload
+	sudo mkdir -p /swap
+	mountpoint -q /swap || sudo mount /swap
+	sudo btrfs filesystem mkswapfile --size "$(awk '/MemTotal/ { print int($2 / 1048576) + 1 }' \
+		/proc/meminfo)g" "$swapfile"
+	sudo swapon "$swapfile"
+fi
+
+# Sleep then hibernate after 3 h on battery, to cap the drain overnight. On AC it stays asleep, and
+# the 3 h start when it is unplugged. SleepMode 3 is "Standby, then hibernate".
+if is_laptop && [ -f "$swapfile" ]; then
+	write_root_file /etc/systemd/sleep.conf.d/50-suspend-then-hibernate.conf <<'EOF'
+[Sleep]
+HibernateDelaySec=3h
+HibernateOnACPower=no
+EOF
+	for profile in AC Battery LowBattery; do
+		kconf --file powerdevilrc --group "$profile" --group SuspendAndShutdown --key SleepMode 3
+	done
+fi
+
 # Replug the C920 webcam when its USB link fails, see scripts/c920-guard.
 install_script_file c920-guard.service /etc/systemd/system/c920-guard.service && sudo systemctl daemon-reload
 install_script_file c920-guard /usr/lib/systemd/system-sleep/c920-guard 0755
 install_script_file c920-guard /usr/local/bin/c920-guard 0755 && sudo systemctl try-restart c920-guard
 sudo systemctl enable --now c920-guard
+
+# asusd sets the keyboard backlight, while systemd-backlight restores whatever it saved at
+# shutdown, which can be 0. Also reset the keyboard controller after hibernation, see
+# scripts/asus-kbd-rebind.
+if installed asusctl; then
+	sudo systemctl mask systemd-backlight@leds:asus::kbd_backlight.service
+	install_script_file asus-kbd-rebind /usr/local/bin/asus-kbd-rebind 0755
+	install_script_file asus-kbd-rebind.service /etc/systemd/system/asus-kbd-rebind.service &&
+		sudo systemctl daemon-reload
+	sudo systemctl enable asus-kbd-rebind
+fi
+
+# G-Helper's fan curves, see scripts/asus-fan-curves. asusd saves them.
+if installed asusctl && [ "$(cat /sys/class/dmi/id/board_name 2>/dev/null)" = HN7306WU ]; then
+	"$dotfiles"/scripts/asus-fan-curves >/dev/null
+fi
+
+# Per-profile CPU power limits, lower in Quiet for battery life, see scripts/asus-power-limits.
+if installed acpi_call-dkms && [ "$(cat /sys/class/dmi/id/board_name 2>/dev/null)" = HN7306WU ]; then
+	install_script_file asus-power-limits /usr/lib/systemd/system-sleep/asus-power-limits 0755
+	install_script_file asus-power-limits.service /etc/systemd/system/asus-power-limits.service &&
+		sudo systemctl daemon-reload
+	install_script_file asus-power-limits /usr/local/bin/asus-power-limits 0755 &&
+		sudo systemctl try-restart asus-power-limits
+	sudo systemctl enable --now asus-power-limits
+fi
 
 # Explicitly set the journald size (default 50 MB).
 if write_root_file /etc/systemd/journald.conf.d/99-size.conf <<'EOF'

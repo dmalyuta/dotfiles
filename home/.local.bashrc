@@ -25,3 +25,16 @@ sed \"s/ @@ /\\n/g\" | bat --color=always --style=numbers -l sh -'
 if [ -f ~/.flyline.conf ]; then
     . ~/.flyline.conf
 fi
+
+################################################################################
+# Conda.
+################################################################################
+
+# Replaces the block `conda init` writes, which starts Python twice and delays
+# every prompt by ~1 s. conda.sh only defines the `conda` shell function. Base's
+# binaries go on PATH instead of a full `conda activate base`, so there is no
+# "(base)" marker and base's activate.d hooks don't run.
+if [ -f ~/anaconda3/etc/profile.d/conda.sh ]; then
+    . ~/anaconda3/etc/profile.d/conda.sh
+    export PATH=~/anaconda3/bin:$PATH
+fi

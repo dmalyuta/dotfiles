@@ -1,0 +1,16 @@
+#!/bin/sh
+# After resuming from hibernation, the ASUS keyboard backlight blinks instead of showing asusd's
+# lighting, because the keyboard controller (N-KEY, 0b05:19b6) lost power and never got the startup
+# handshake that hid_asus sends when it probes. Rebinding hid_asus resends it, without replugging the
+# USB device. asusd then needs a restart to pick up the new hidraw nodes and resend the lighting.
+# Run by asus-kbd-rebind.service after the resume, so the wake doesn't wait for it.
+
+drv=/sys/bus/hid/drivers/asus
+for dev in "$drv"/0003:0B05:19B6.*; do
+	[ -e "$dev" ] || { logger -t asus-kbd-rebind "keyboard controller not bound to hid_asus"; exit 0; }
+	id=${dev##*/}
+	echo "$id" >"$drv/unbind"
+	echo "$id" >"$drv/bind"
+done
+logger -t asus-kbd-rebind "rebound hid_asus to the keyboard controller"
+systemctl try-restart asusd

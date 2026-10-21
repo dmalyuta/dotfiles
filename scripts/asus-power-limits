@@ -1,0 +1,126 @@
+#!/usr/bin/python3 -I
+"""Per-profile CPU power limits for the ProArt PX13 (HN7306WU), like G-Helper's.
+
+The kernel's asus-armoury driver has PPT attributes, but only accepts writes for boards in its
+power-limit table, and this board isn't there (only the Intel HN7306EA is). So this makes the same
+ASUS WMI calls G-Helper makes on Windows, through acpi_call: DEVS on \\_SB.ATKD.WMNB.
+
+Measured on this laptop:
+- The firmware's Quiet profile on battery holds ~17 W at full load, set by the 2.0 GHz clock
+  (power-profiles-daemon turns boost off in power-saver, which asusd links to Quiet) rather than by
+  its power limit. With SPL/sPPT/fPPT at 8 W it holds 8.0 W.
+- A profile switch restores the firmware's limits, so they are reapplied after every switch.
+- Limits only cap power under load. At idle (~4 W) they change nothing.
+
+The APU's budget is shared with the iGPU, so low limits also slow graphics.
+
+Usage:
+  asus-power-limits apply     Set the current profile's limits now.
+  asus-power-limits watch     Set them, then again after every profile switch, AC plug or unplug,
+                              and resume (asus-power-limits.service).
+  asus-power-limits pre|post  systemd sleep hook: after resume, tell the service to reapply.
+Installed to /usr/local/bin and /usr/lib/systemd/system-sleep by start_fresh.sh.
+"""
+import os
+import select
+import signal
+import socket
+import struct
+import subprocess
+import sys
+import time
+
+# Watts per platform profile: (SPL sustained, sPPT slow boost, fPPT fast boost). A profile not
+# listed keeps the firmware's limits.
+LIMITS = {
+    "quiet": (8, 10, 15),
+}
+
+PPT_SPL, PPT_SPPT, PPT_FPPT = 0x001200A3, 0x001200A0, 0x001200C1
+DEVS = 0x53564544
+PROFILE = "/sys/firmware/acpi/platform_profile"
+ACPI_CALL = "/proc/acpi/call"
+# Seconds to wait after a change, so the firmware and amd-pmf have set their own limits first.
+SETTLE = 2
+NETLINK_KOBJECT_UEVENT = 15  # from linux/netlink.h; Python's socket module doesn't name it
+
+
+def devs(devid, value):
+    # The method reads a 24-byte argument, like the kernel's struct bios_args: devid, value, zeros.
+    arg = struct.pack("<II16x", devid, value).hex().upper()
+    with open(ACPI_CALL, "w") as f:
+        f.write(f"\\_SB.ATKD.WMNB 0x0 {DEVS:#x} b{arg}")
+    with open(ACPI_CALL) as f:
+        result = f.read().strip("\0\n")
+    if result != "0x1":
+        print(f"DEVS {devid:#010x}={value} failed: {result}", flush=True)
+
+
+def apply():
+    with open(PROFILE) as f:
+        profile = f.read().strip()
+    limits = LIMITS.get(profile)
+    if not limits:
+        return
+    for devid, watts in zip((PPT_SPL, PPT_SPPT, PPT_FPPT), limits):
+        devs(devid, watts)
+    print(f"{profile}: SPL {limits[0]} W, sPPT {limits[1]} W, fPPT {limits[2]} W", flush=True)
+
+
+class Resumed(Exception):
+    pass
+
+
+def resumed(*_):
+    raise Resumed
+
+
+def watch():
+    poll = select.poll()
+    # platform_profile wakes poll() with POLLPRI when it changes.
+    profile = open(PROFILE)
+    profile.read()
+    poll.register(profile, select.POLLPRI | select.POLLERR)
+    # Kernel uevents, for the AC adapter coming and going.
+    uevents = socket.socket(socket.AF_NETLINK, socket.SOCK_DGRAM, NETLINK_KOBJECT_UEVENT)
+    uevents.bind((0, 1))
+    poll.register(uevents, select.POLLIN)
+    # SIGUSR1 from the sleep hook after resume. Python restarts poll() after a signal unless the
+    # handler raises.
+    signal.signal(signal.SIGUSR1, resumed)
+
+    due = time.monotonic()
+    while True:
+        timeout = None if due is None else max(0, due - time.monotonic()) * 1000
+        try:
+            events = poll.poll(timeout)
+        except Resumed:
+            due = time.monotonic() + SETTLE
+            continue
+        for fd, _ in events:
+            if fd == profile.fileno():
+                profile.seek(0)
+                profile.read()
+                due = time.monotonic() + SETTLE
+            elif b"POWER_SUPPLY_TYPE=Mains" in uevents.recv(65536):
+                due = time.monotonic() + SETTLE
+        if due is not None and time.monotonic() >= due:
+            due = None
+            apply()
+
+
+def main():
+    cmd = sys.argv[1] if len(sys.argv) > 1 else ""
+    if cmd == "apply":
+        apply()
+    elif cmd == "watch":
+        watch()
+    elif cmd == "post":
+        subprocess.run(["systemctl", "kill", "--signal=SIGUSR1", "asus-power-limits.service"],
+                       stderr=subprocess.DEVNULL)
+    elif cmd != "pre":
+        sys.exit(__doc__)
+
+
+if __name__ == "__main__":
+    main()

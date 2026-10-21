@@ -1,0 +1,13 @@
+# Per-profile CPU power limits, see /usr/local/bin/asus-power-limits.
+[Unit]
+Description=Set per-profile CPU power limits
+After=asusd.service
+
+[Service]
+ExecStartPre=/usr/bin/modprobe acpi_call
+ExecStart=/usr/local/bin/asus-power-limits watch
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

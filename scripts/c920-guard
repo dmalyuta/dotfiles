@@ -7,7 +7,7 @@
 #   c920-guard watch      Replug it whenever the kernel logs a USB error from it (c920-guard.service).
 #   c920-guard pre|post   systemd sleep hook: keep the port off while asleep, on again after resume,
 #                         so the webcam enumerates fresh instead of resuming in a bad state.
-# Installed to /usr/local/bin and /usr/lib/systemd/system-sleep by start_fresh.sh.
+# Installed to /usr/local/bin and /usr/lib/systemd/system-sleep by scripts/configure_hardware.sh.
 
 vendor=046d product=082d
 saved_port=/run/c920-guard.port

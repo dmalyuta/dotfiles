@@ -19,7 +19,7 @@ Usage:
   asus-power-limits watch     Set them, then again after every profile switch, AC plug or unplug,
                               and resume (asus-power-limits.service).
   asus-power-limits pre|post  systemd sleep hook: after resume, tell the service to reapply.
-Installed to /usr/local/bin and /usr/lib/systemd/system-sleep by start_fresh.sh.
+Installed to /usr/local/bin and /usr/lib/systemd/system-sleep by scripts/configure_hardware.sh.
 """
 import os
 import select

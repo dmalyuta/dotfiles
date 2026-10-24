@@ -1,0 +1,303 @@
+#!/bin/bash
+#
+# Laptop power overview: power source, battery, power draw with a battery runtime estimate, power
+# settings, temperatures and fans, and the NVIDIA dGPU (see gpu-status). Reads only sysfs and
+# procfs, so a sleeping dGPU stays asleep.
+#
+# Usage: power-info
+#
+# On battery, the battery measures what the whole laptop draws. On AC it measures nothing useful,
+# so the runtime estimate there is the APU's draw (CPU + iGPU, which the APU measures itself) plus
+# the rest of the laptop's draw as last measured on battery. Each run on battery saves that rest
+# to ~/.cache/power-info/rest, while the dGPU is off so that it isn't counted.
+#
+# Author: Danylo Malyuta, 2026.
+
+set -u
+here=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
+rest_file=${XDG_CACHE_HOME:-$HOME/.cache}/power-info/rest
+
+if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
+	bold=$'\e[1m' dim=$'\e[2m' red=$'\e[31m' green=$'\e[32m' yellow=$'\e[33m' cyan=$'\e[36m'
+	reset=$'\e[0m'
+else
+	bold='' dim='' red='' green='' yellow='' cyan='' reset=''
+fi
+
+# A section header, after a blank line unless it is the first.
+sections=0
+section() {
+	local rule
+	printf -v rule '%*s' $((60 - ${#1})) ''
+	((sections++)) && echo
+	printf '%s━━ %s %s%s\n' "$bold$cyan" "$1" "${rule// /━}" "$reset"
+}
+row() { printf '  %-18s %s\n' "$1" "$2"; }
+note() { row "" "$dim$1$reset"; }
+
+# Floating point helpers, all through awk. f FORMAT VALUE: printf. lt A B: whether A < B.
+f() { awk -v fmt="$1" -v v="$2" 'BEGIN { printf fmt, v }'; }
+lt() { awk -v a="$1" -v b="$2" 'BEGIN { exit !(a < b) }'; }
+# Hours as "3h 05m".
+hm() { awk -v h="$1" 'BEGIN { m = int(h * 60 + 0.5); printf "%dh %02dm", m / 60, m % 60 }'; }
+# Color a value green below $2, yellow below $3, red otherwise.
+level() {
+	if lt "$1" "$2"; then
+		printf '%s' "$green"
+	elif lt "$1" "$3"; then
+		printf '%s' "$yellow"
+	else
+		printf '%s' "$red"
+	fi
+}
+
+# First hwmon with the given name.
+hwmon() {
+	local h
+	for h in /sys/class/hwmon/hwmon*; do
+		[ "$(cat "$h/name" 2>/dev/null)" = "$1" ] && echo "$h" && return
+	done
+	return 1
+}
+# A sysfs value divided by $2, or nothing if it is missing.
+scaled() {
+	local v
+	v=$(cat "$1" 2>/dev/null) && [ -n "$v" ] && f '%.2f' "$(awk -v v="$v" -v s="$2" \
+		'BEGIN { print v / s }')"
+}
+
+# CPU load over half a second, sampled first so the rest runs during the wait.
+read -r _ u1 n1 s1 i1 w1 q1 sq1 st1 _ </proc/stat
+sleep 0.5
+read -r _ u2 n2 s2 i2 w2 q2 sq2 st2 _ </proc/stat
+busy=$(((u2 + n2 + s2 + q2 + sq2 + st2) - (u1 + n1 + s1 + q1 + sq1 + st1)))
+idle=$(((i2 + w2) - (i1 + w1)))
+cpu_load=$((100 * busy / (busy + idle > 0 ? busy + idle : 1)))
+
+# --------------------------------------------------------------------------------------------------
+# Power source.
+# --------------------------------------------------------------------------------------------------
+
+section "Power source"
+on_ac=0
+for p in /sys/class/power_supply/*; do
+	[ "$(cat "$p/type" 2>/dev/null)" = Mains ] && [ "$(cat "$p/online")" = 1 ] && on_ac=1
+done
+usb_pd=
+for p in /sys/class/power_supply/ucsi-source-psy-*; do
+	[ "$(cat "$p/online" 2>/dev/null)" = 1 ] || continue
+	usb_pd=$(sed -E 's/.*\[([^]]*)\].*/\1/' "$p/usb_type" 2>/dev/null)
+done
+if ((on_ac)); then
+	row "Source" "${green}AC adapter$reset${usb_pd:+ $dim(USB-C $usb_pd)$reset}"
+else
+	row "Source" "${yellow}battery$reset"
+fi
+
+# --------------------------------------------------------------------------------------------------
+# Battery.
+# --------------------------------------------------------------------------------------------------
+
+bat=$(ls -d /sys/class/power_supply/BAT* 2>/dev/null | head -1)
+bat_status= energy_now= energy_full= bat_w=
+if [ -n "$bat" ]; then
+	section "Battery"
+	bat_status=$(cat "$bat/status")
+	capacity=$(cat "$bat/capacity")
+	energy_now=$(scaled "$bat/energy_now" 1000000)
+	energy_full=$(scaled "$bat/energy_full" 1000000)
+	energy_design=$(scaled "$bat/energy_full_design" 1000000)
+	limit=$(cat "$bat/charge_control_end_threshold" 2>/dev/null)
+	# Some batteries report current instead of power.
+	bat_w=$(scaled "$bat/power_now" 1000000)
+	if [ -z "$bat_w" ] && [ -r "$bat/current_now" ]; then
+		bat_w=$(awk -v i="$(cat "$bat/current_now")" -v v="$(cat "$bat/voltage_now")" \
+			'BEGIN { printf "%.2f", i * v / 1e12 }')
+	fi
+
+	# A 20-cell bar, colored by charge.
+	cells=$((capacity / 5))
+	printf -v full '%*s' "$cells" ''
+	printf -v empty '%*s' $((20 - cells)) ''
+	color=$red
+	((capacity >= 20)) && color=$yellow
+	((capacity >= 50)) && color=$green
+	row "Charge" "$color${full// /█}$dim${empty// /░}$reset $bold$capacity%$reset $dim($bat_status)$reset"
+	if [ -n "$energy_now" ]; then
+		row "Energy" "$(f '%.1f' "$energy_now") Wh of $(f '%.1f' "$energy_full") Wh"
+	fi
+	if [ -n "$energy_design" ] && [ -n "$energy_full" ]; then
+		health=$(f '%.0f' "$(awk -v a="$energy_full" -v b="$energy_design" 'BEGIN { print 100 * a / b }')")
+		color=$green
+		((health < 80)) && color=$yellow
+		((health < 60)) && color=$red
+		row "Health" "$color$health%$reset $dim(design capacity $(f '%.1f' "$energy_design") Wh)$reset"
+	fi
+	[ -n "$limit" ] && row "Charge limit" "$limit%"
+	row "Voltage" "$(scaled "$bat/voltage_now" 1000000) V"
+	cycles=$(cat "$bat/cycle_count" 2>/dev/null)
+	[ -n "$cycles" ] && ((cycles > 0)) && row "Cycles" "$cycles"
+fi
+
+# --------------------------------------------------------------------------------------------------
+# Power draw and runtime.
+# --------------------------------------------------------------------------------------------------
+
+section "Power draw"
+amdgpu=$(hwmon amdgpu)
+apu_w=
+if [ -n "$amdgpu" ]; then
+	apu_w=$(scaled "$amdgpu/power1_input" 1000000)
+	[ -z "$apu_w" ] && apu_w=$(scaled "$amdgpu/power1_average" 1000000)
+fi
+dgpu_state=
+for c in /sys/class/drm/card[0-9]*; do
+	[[ $(readlink -f "$c/device/driver" 2>/dev/null) == */nvidia ]] &&
+		dgpu_state=$(cat "$c/device/power_state" 2>/dev/null) && break
+done
+
+total_w= total_how=
+if [ "$bat_status" = Discharging ] && [ -n "$bat_w" ]; then
+	total_w=$bat_w
+	total_how="measured by the battery"
+	# Remember what the laptop draws besides the APU, for estimates on AC.
+	if [ -n "$apu_w" ] && [ "$dgpu_state" != D0 ] && [ "$dgpu_state" != D3hot ] &&
+		lt "$apu_w" "$bat_w"; then
+		mkdir -p "${rest_file%/*}"
+		echo "$(awk -v a="$bat_w" -v b="$apu_w" 'BEGIN { printf "%.2f", a - b }') $(date +%s)" \
+			>"$rest_file"
+	fi
+fi
+rest_w= rest_age=
+if [ -r "$rest_file" ]; then
+	read -r rest_w rest_time <"$rest_file"
+	rest_age=$(($(date +%s) - rest_time))
+	if ((rest_age < 3600)); then
+		rest_age="$((rest_age / 60)) min"
+	elif ((rest_age < 2 * 86400)); then
+		rest_age="$((rest_age / 3600)) h"
+	else
+		rest_age="$((rest_age / 86400)) days"
+	fi
+fi
+if [ -z "$total_w" ] && [ -n "$apu_w" ] && [ -n "$rest_w" ]; then
+	total_w=$(awk -v a="$apu_w" -v b="$rest_w" 'BEGIN { printf "%.2f", a + b }')
+	total_how="estimated: APU + rest of laptop as last measured on battery"
+fi
+
+if [ -n "$total_w" ]; then
+	row "Laptop total" "$(level "$total_w" 10 25)$bold$(f '%.1f' "$total_w") W$reset $dim($total_how)$reset"
+elif [ "$bat_status" = Charging ] && [ -n "$bat_w" ]; then
+	row "Laptop total" "${dim}unknown while charging$reset"
+else
+	row "Laptop total" "${dim}unknown on AC until power-info runs once on battery$reset"
+fi
+[ -n "$apu_w" ] && row "APU (CPU + iGPU)" "$(level "$apu_w" 8 20)$(f '%.1f' "$apu_w") W$reset"
+if [ "$bat_status" = Discharging ] && [ -n "$apu_w" ] && [ -n "$bat_w" ] && lt "$apu_w" "$bat_w"; then
+	row "Rest of laptop" "$(awk -v a="$bat_w" -v b="$apu_w" 'BEGIN { printf "%.1f", a - b }') W $dim(screen, RAM, SSD, Wi-Fi, dGPU, losses)$reset"
+elif [ -n "$rest_w" ]; then
+	row "Rest of laptop" "$(f '%.1f' "$rest_w") W $dim(measured $rest_age ago on battery)$reset"
+fi
+case $dgpu_state in
+D3cold) row "NVIDIA dGPU" "${green}off, ~0 W$reset" ;;
+D0 | D3hot) row "NVIDIA dGPU" "${yellow}awake, draw unknown$reset $dim(not included above)$reset" ;;
+esac
+[ "$bat_status" = Charging ] && [ -n "$bat_w" ] &&
+	row "Charging at" "$(f '%.1f' "$bat_w") W"
+
+section "Battery runtime"
+if [ -z "$bat" ] || [ -z "$energy_now" ]; then
+	note "no battery energy readings"
+elif [ -n "$total_w" ] && lt 0.5 "$total_w"; then
+	left=$(awk -v e="$energy_now" -v p="$total_w" 'BEGIN { print e / p }')
+	full_h=$(awk -v e="$energy_full" -v p="$total_w" 'BEGIN { print e / p }')
+	if [ "$bat_status" = Discharging ]; then
+		label="Remaining"
+	else
+		label="If unplugged now"
+	fi
+	color=$green
+	lt "$left" 3 && color=$yellow
+	lt "$left" 1 && color=$red
+	row "$label" "$color$bold$(hm "$left")$reset $dim(from $(f '%.1f' "$energy_now") Wh at $(f '%.1f' "$total_w") W)$reset"
+	((capacity < 95)) && row "Full charge lasts" "$(hm "$full_h") $dim(at the same draw)$reset"
+elif [ -n "$apu_w" ] && lt 0.5 "$apu_w"; then
+	left=$(awk -v e="$energy_now" -v p="$apu_w" 'BEGIN { print e / p }')
+	row "If unplugged now" "under $(hm "$left") $dim(counting only the APU's $(f '%.1f' "$apu_w") W)$reset"
+	note "Run power-info once on battery for a full estimate."
+else
+	note "no power readings"
+fi
+if [ "$bat_status" = Charging ] && [ -n "$bat_w" ] && lt 0.5 "$bat_w"; then
+	target=$(awk -v f="$energy_full" -v l="${limit:-100}" 'BEGIN { print f * l / 100 }')
+	if lt "$energy_now" "$target"; then
+		row "Full in" "$(hm "$(awk -v t="$target" -v e="$energy_now" -v p="$bat_w" \
+			'BEGIN { print (t - e) / p }')") $dim(to ${limit:-100}%, at the current rate)$reset"
+	fi
+fi
+
+# --------------------------------------------------------------------------------------------------
+# Power settings.
+# --------------------------------------------------------------------------------------------------
+
+section "Power settings"
+profile=$(cat /sys/firmware/acpi/platform_profile 2>/dev/null)
+case $profile in
+low-power | quiet) row "Platform profile" "$green$profile$reset" ;;
+balanced) row "Platform profile" "$profile" ;;
+?*) row "Platform profile" "$yellow$profile$reset" ;;
+esac
+cpufreq=/sys/devices/system/cpu/cpu0/cpufreq
+if [ -r "$cpufreq/scaling_driver" ]; then
+	epp=$(cat "$cpufreq/energy_performance_preference" 2>/dev/null)
+	row "CPU driver" "$(cat "$cpufreq/scaling_driver"), governor $(cat "$cpufreq/scaling_governor")${epp:+, EPP $epp}"
+fi
+mhz=$(cat /sys/devices/system/cpu/cpu*/cpufreq/scaling_cur_freq 2>/dev/null |
+	awk '{ s += $1; if ($1 > m) m = $1 } END { if (NR) printf "%.0f MHz avg, %.0f MHz max", s / NR / 1000, m / 1000 }')
+[ -n "$mhz" ] && row "CPU clock" "$mhz"
+row "CPU load" "$(level "$cpu_load" 25 70)$cpu_load%$reset $dim(over 0.5 s)$reset"
+if [ -n "$amdgpu" ] && [ -r "$amdgpu/device/gpu_busy_percent" ]; then
+	igpu=$(cat "$amdgpu/device/gpu_busy_percent")
+	row "iGPU load" "$(level "$igpu" 25 70)$igpu%$reset"
+fi
+for b in /sys/class/backlight/*; do
+	[ -r "$b/brightness" ] || continue
+	row "Screen brightness" "$((100 * $(cat "$b/brightness") / $(cat "$b/max_brightness")))%"
+	break
+done
+for k in /sys/class/leds/*kbd_backlight; do
+	[ -r "$k/brightness" ] || continue
+	row "Keyboard light" "$(cat "$k/brightness") of $(cat "$k/max_brightness")"
+	break
+done
+
+# --------------------------------------------------------------------------------------------------
+# Temperatures and fans.
+# --------------------------------------------------------------------------------------------------
+
+section "Temperatures and fans"
+temp() {
+	local t
+	t=$(cat "$2" 2>/dev/null) || return
+	t=$((t / 1000))
+	row "$1" "$(level "$t" 60 85)$t °C$reset"
+}
+h=$(hwmon k10temp) && temp "CPU" "$h/temp1_input"
+[ -n "$amdgpu" ] && temp "iGPU" "$amdgpu/temp1_input"
+h=$(hwmon nvme) && temp "SSD" "$h/temp1_input"
+h=$(hwmon mt7925_phy0) && temp "Wi-Fi" "$h/temp1_input"
+if h=$(hwmon asus); then
+	for fan in "$h"/fan*_input; do
+		label=$(cat "${fan%_input}_label" 2>/dev/null)
+		label=${label%_fan}
+		rpm=$(cat "$fan")
+		if ((rpm > 0)); then
+			row "${label^^} fan" "$rpm rpm"
+		else
+			row "${label^^} fan" "${green}off$reset"
+		fi
+	done
+fi
+
+echo
+"$here"/gpu-status

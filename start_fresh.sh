@@ -187,7 +187,8 @@ pacman_apps=(
 	kitty tmux ttf-cascadia-code-nerd
 	proton-pass obsidian brave-bin okular inkscape obs-studio gimp
 	vlc vlc-plugins-all flameshot nextcloud-client
-	qalculate-gtk speedcrunch texlive
+	qalculate-gtk speedcrunch
+	texlive perl-yaml-tiny perl-file-homedir
 	openrazer-daemon python-openrazer keyd
 	flatpak rustup nodejs npm grafana wine winetricks bazelisk
 )
@@ -540,25 +541,45 @@ fi
 # /proc/driver/nvidia/gpus/*/power. Driver 615.78.08 reports it "Not supported" on kernel 7.3 but
 # works on 6.18 LTS.
 #
+# Also turn off the driver's system sleep hook (UseKernelSuspendNotifiers). Since driver 595,
+# nv_pci_shutdown tears the whole driver down, which hangs a hibernation that powers off by shutting
+# devices down (HibernateMode=shutdown or reboot) in two ways: it waits forever for the display
+# driver's power lock (nvkms_pm_lock), which the hook holds from the start of the sleep until the
+# wake, and without the hook it waits forever on the dGPU, which the driver suspends before the image
+# is written and leaves suspended. The default HibernateMode, platform, doesn't shut devices down
+# (the driver's poweroff callback does nothing), and with the hook off it powers off and resumes
+# cleanly; with the hook on it hung too, for a reason not tracked down. "Preserve all video memory"
+# turns off with the hook, leaving the driver's default of saving the allocations it needs. The dGPU
+# is mostly powered off anyway.
+#
 # Also keep Nvidia out of the initramfs, where chwd puts it. Resuming from hibernation happens in the
 # initramfs, and the kernel must freeze its drivers before jumping into the image, which the freshly
 # loaded Nvidia driver refuses (nv_pmops_freeze returns -EIO), so the image is dropped and the boot
-# is fresh. The panel is on the iGPU, so the dGPU can load later. chwd also drops the kms hook, which
-# the iGPU needs for an early splash, so add it back; it only picks in-tree drivers, not nvidia.
+# is fresh. The panel is on the iGPU, so the dGPU can load later.
 if is_laptop && [ -n "$nvidia_version" ]; then
 	sudo rm -f /etc/modprobe.d/nvidia-s0ix.conf
 	write_root_file /etc/modprobe.d/nvidia-power.conf <<'EOF' && rebuild_initramfs=1
 options nvidia NVreg_EnableS0ixPowerManagement=1
 options nvidia NVreg_DynamicPowerManagement=0x02
+options nvidia NVreg_UseKernelSuspendNotifiers=0
 EOF
 	write_root_file /etc/mkinitcpio.conf.d/90-no-nvidia.conf <<'EOF' && rebuild_initramfs=1
 # Hibernation can't resume with Nvidia loaded in the initramfs, see start_fresh.sh.
 MODULES=(${MODULES[@]/#nvidia*/})
-HOOKS=(${HOOKS[@]/modconf/modconf kms})
 EOF
-	# Also rebuild if a past rebuild was skipped or failed, so an initramfs still has Nvidia.
+fi
+# Keep amdgpu out of the initramfs too, by dropping the kms hook that adds it. Otherwise it sets up
+# the iGPU before the resume, and the resumed kernel can't restore an iGPU that a different kernel
+# set up: its firmware stops responding ("MES failed to respond", gfx_v11_0 -110) and the screen
+# stays black. The boot splash draws on the firmware's framebuffer (simpledrm) instead.
+if is_laptop; then
+	write_root_file /etc/mkinitcpio.conf.d/90-no-kms.conf <<'EOF' && rebuild_initramfs=1
+# Hibernation can't resume with amdgpu loaded in the initramfs, see start_fresh.sh.
+HOOKS=(${HOOKS[@]/kms/})
+EOF
+	# Also rebuild if a past rebuild was skipped or failed, so an initramfs still has a GPU driver.
 	sudo find /boot -name 'initramfs-*' ! -name '*fallback*' -exec lsinitcpio {} \; 2>/dev/null |
-		grep -q '/nvidia\.ko' && rebuild_initramfs=1
+		grep -q -E '/(nvidia|amdgpu)\.ko' && rebuild_initramfs=1
 fi
 # Also regenerates the boot entries, with the kernel command line from /etc/default/limine.
 [ -n "${rebuild_initramfs:-}" ] && sudo limine-mkinitcpio
@@ -589,6 +610,8 @@ fi
 
 # Sleep then hibernate after 3 h on battery, to cap the drain overnight. On AC it stays asleep, and
 # the 3 h start when it is unplugged. SleepMode 3 is "Standby, then hibernate".
+#
+# Keep the default HibernateMode (platform), which the Nvidia driver needs, see above.
 if is_laptop && [ -f "$swapfile" ]; then
 	write_root_file /etc/systemd/sleep.conf.d/50-suspend-then-hibernate.conf <<'EOF'
 [Sleep]

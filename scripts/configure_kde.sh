@@ -141,6 +141,8 @@ compgen -G '/sys/class/backlight/*' >/dev/null &&
 # it on the PX13.
 plasma_keyboard=/usr/share/applications/org.kde.plasma.keyboard.desktop
 [ -f "$plasma_keyboard" ] && kconf --file kwinrc --group Wayland --key InputMethod "$plasma_keyboard"
+# It also pops up accented characters when a physical key is held. Holding a key should repeat it.
+kconf --file plasmakeyboardrc --group General --key diacriticsPopupEnabled false
 
 # App hotkeys: a KWin script that focuses an app's window on any desktop, or launches the app. It
 # launches through kglobalaccel, so each app it launches is registered below, with no key of its

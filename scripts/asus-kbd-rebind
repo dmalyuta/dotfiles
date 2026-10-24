@@ -4,8 +4,13 @@
 # handshake that hid_asus sends when it probes. Rebinding hid_asus resends it, without replugging the
 # USB device. asusd then needs a restart to pick up the new hidraw nodes and resend the lighting.
 # Run by asus-kbd-rebind.service after the resume, so the wake doesn't wait for it.
+#
+# asusd's restart also sets the brightness it has saved, which isn't the one set from KDE: that goes
+# through UPower straight to the LED, bypassing asusd. So put back the brightness from before.
 
 drv=/sys/bus/hid/drivers/asus
+led=/sys/class/leds/asus::kbd_backlight
+brightness=$(cat "$led/brightness" 2>/dev/null)
 for dev in "$drv"/0003:0B05:19B6.*; do
 	[ -e "$dev" ] || { logger -t asus-kbd-rebind "keyboard controller not bound to hid_asus"; exit 0; }
 	id=${dev##*/}
@@ -13,4 +18,9 @@ for dev in "$drv"/0003:0B05:19B6.*; do
 	echo "$id" >"$drv/bind"
 done
 logger -t asus-kbd-rebind "rebound hid_asus to the keyboard controller"
+# asusd sets its lighting before it is up on D-Bus, which is when try-restart returns.
 systemctl try-restart asusd
+if [ -n "$brightness" ] && [ -w "$led/brightness" ]; then
+	echo "$brightness" >"$led/brightness"
+	logger -t asus-kbd-rebind "restored keyboard brightness $brightness"
+fi

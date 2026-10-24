@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # Configure the KDE Plasma desktop: input devices, app hotkeys, global shortcuts, virtual desktops,
-# effects, theme and panels. Run by start_fresh.sh, and safe to re-run on its own.
+# effects, theme, icons and panels. Run by start_fresh.sh, and safe to re-run on its own.
 #
 # Usage: configure_kde.sh [WORKSPACES]
 #
@@ -188,6 +188,16 @@ EOF
 done
 kconf --file kwinrc --group Script-apphotkeys --key vscodeWorkspaces "$workspaces_config"
 
+# Cardwire from the menu shows the running copy instead of starting another, whose tray icon would
+# sit next to the first one's. The entry shadows the system one, which it copies.
+cardwire_entry=/usr/share/applications/cardwire-gui.desktop
+if [ -f "$cardwire_entry" ]; then
+	sed "s|^Exec=.*|Exec=\"$dotfiles/bin/cardwire-gui.sh\"|" "$cardwire_entry" \
+		>~/.local/share/applications/cardwire-gui.desktop
+else
+	rm -f ~/.local/share/applications/cardwire-gui.desktop
+fi
+
 # Global shortcuts. Set through kglobalaccel's D-Bus API because it keeps them in memory and
 # overwrites edits to kglobalshortcutsrc. Apps are bound by desktop entry, where the "_launch"
 # action runs its Exec, so first rebuild the cache that kglobalaccel finds the entries in. Each key
@@ -292,6 +302,16 @@ plasma_conf() {
 	kconf --file "$file" "${args[@]}" "$value"
 	restart_plasmashell=1
 }
+# Tela-circle icons, in the dark variant to match Breeze Dark. Set after the look and feel, since
+# applying one resets the icon theme. plasma-changeicons tells running apps to reload icons, but
+# the panel's task manager keeps the icons it already looked up, so restart plasmashell too.
+pacman -Q tela-circle-icon-theme-standard >/dev/null 2>&1 ||
+	sudo pacman -S --needed --noconfirm tela-circle-icon-theme-standard
+icon_theme=Tela-circle-dark
+if [ "$(kreadconfig6 --file kdeglobals --group Icons --key Theme)" != "$icon_theme" ]; then
+	/usr/lib/plasma-changeicons "$icon_theme"
+	restart_plasmashell=1
+fi
 # Panels 40 px tall, opaque (0 is adaptive, 1 opaque, 2 translucent), and never floating, even
 # with no window maximized.
 for id in $(plasma_ids 'panels()'); do

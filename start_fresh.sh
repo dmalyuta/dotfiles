@@ -533,14 +533,21 @@ fi
 # Laptop sleep. Its only sleep state is s2idle, which reaches the SoC's deepest state only if every
 # device powers off, and the Nvidia driver keeps the dGPU on unless told otherwise, draining ~1.5%/h.
 #
+# Also power the dGPU off whenever it is idle (runtime D3), even while KWin holds it open. The
+# driver's default (0x03) leaves this disabled on this laptop, so the dGPU never leaves D0;
+# 0x02 forces it on.
+#
 # Also keep Nvidia out of the initramfs, where chwd puts it. Resuming from hibernation happens in the
 # initramfs, and the kernel must freeze its drivers before jumping into the image, which the freshly
 # loaded Nvidia driver refuses (nv_pmops_freeze returns -EIO), so the image is dropped and the boot
 # is fresh. The panel is on the iGPU, so the dGPU can load later. chwd also drops the kms hook, which
 # the iGPU needs for an early splash, so add it back; it only picks in-tree drivers, not nvidia.
 if is_laptop && [ -n "$nvidia_version" ]; then
-	echo 'options nvidia NVreg_EnableS0ixPowerManagement=1' |
-		write_root_file /etc/modprobe.d/nvidia-s0ix.conf && rebuild_initramfs=1
+	sudo rm -f /etc/modprobe.d/nvidia-s0ix.conf
+	write_root_file /etc/modprobe.d/nvidia-power.conf <<'EOF' && rebuild_initramfs=1
+options nvidia NVreg_EnableS0ixPowerManagement=1
+options nvidia NVreg_DynamicPowerManagement=0x02
+EOF
 	write_root_file /etc/mkinitcpio.conf.d/90-no-nvidia.conf <<'EOF' && rebuild_initramfs=1
 # Hibernation can't resume with Nvidia loaded in the initramfs, see start_fresh.sh.
 MODULES=(${MODULES[@]/#nvidia*/})

@@ -4,3 +4,6 @@ __pycache__/
 # OBS writes these next to its config on every save.
 config/obs/**/*.bak
 config/obs/**/*.tmp
+
+# AI
+.claude/

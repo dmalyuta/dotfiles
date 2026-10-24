@@ -1,20 +1,36 @@
 #!/bin/bash
 #
-# Laptop power overview: power source, battery, power draw with a battery runtime estimate, power
-# settings, temperatures and fans, and the NVIDIA dGPU (see gpu-status). Reads only sysfs and
-# procfs, so a sleeping dGPU stays asleep.
+# Laptop power overview: power source, battery, power draw, battery life, power settings,
+# temperatures and fans, and the NVIDIA dGPU. Reads only sysfs and procfs, so a sleeping dGPU stays
+# asleep.
 #
-# Usage: power-info
+# Usage: power-info [--gpu | --battery]
+#
+#   --gpu      Only the NVIDIA dGPU section.
+#   --battery  Only the battery, power draw and battery life sections.
 #
 # On battery, the battery measures what the whole laptop draws. On AC it measures nothing useful,
-# so the runtime estimate there is the APU's draw (CPU + iGPU, which the APU measures itself) plus
-# the rest of the laptop's draw as last measured on battery. Each run on battery saves that rest
-# to ~/.cache/power-info/rest, while the dGPU is off so that it isn't counted.
+# so the battery life estimate there is the APU's draw (CPU + iGPU, which the APU measures itself)
+# plus the rest of the laptop's draw as last measured on battery. Each run on battery saves that
+# rest to ~/.cache/power-info/rest, while the dGPU is off so that it isn't counted.
 #
 # Author: Danylo Malyuta, 2026.
 
 set -u
-here=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
+usage="Usage: power-info [--gpu | --battery]"
+show=all
+case $# in
+0) ;;
+1)
+	case $1 in
+	--gpu) show=gpu ;;
+	--battery) show=battery ;;
+	-h | --help) echo "$usage" && exit 0 ;;
+	*) echo "$usage" >&2 && exit 2 ;;
+	esac
+	;;
+*) echo "$usage" >&2 && exit 2 ;;
+esac
 rest_file=${XDG_CACHE_HOME:-$HOME/.cache}/power-info/rest
 
 if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
@@ -65,33 +81,162 @@ scaled() {
 	v=$(cat "$1" 2>/dev/null) && [ -n "$v" ] && f '%.2f' "$(awk -v v="$v" -v s="$2" \
 		'BEGIN { print v / s }')"
 }
+# Milliseconds as "1h 02m", "3m 05s" or "12s".
+duration() {
+	local s=$(($1 / 1000))
+	if ((s >= 3600)); then
+		printf '%dh %02dm' $((s / 3600)) $((s % 3600 / 60))
+	elif ((s >= 60)); then
+		printf '%dm %02ds' $((s / 60)) $((s % 60))
+	else
+		printf '%ds' "$s"
+	fi
+}
 
-# CPU load over half a second, sampled first so the rest runs during the wait.
-read -r _ u1 n1 s1 i1 w1 q1 sq1 st1 _ </proc/stat
-sleep 0.5
-read -r _ u2 n2 s2 i2 w2 q2 sq2 st2 _ </proc/stat
-busy=$(((u2 + n2 + s2 + q2 + sq2 + st2) - (u1 + n1 + s1 + q1 + sq1 + st1)))
-idle=$(((i2 + w2) - (i1 + w1)))
-cpu_load=$((100 * busy / (busy + idle > 0 ? busy + idle : 1)))
+# --------------------------------------------------------------------------------------------------
+# NVIDIA dGPU: whether it is powered off, whether the driver can power it off when idle, how much of
+# the time it has been off, and what has it open.
+#
+# Never runs nvidia-smi, NVML or anything else that opens /dev/nvidia*, and never reads the GPU's PCI
+# config space, since each of those powers a sleeping dGPU back on. So the dGPU's own power draw is
+# unknown while it is awake; while it is off (D3cold) its power is cut, so it draws ~0 W.
+# --------------------------------------------------------------------------------------------------
+
+gpu_section() {
+	local bdf= dev d c name= mode= holders= line id device state rtd3 vram off_ms on_ms pct color tgp
+	section "NVIDIA dGPU"
+
+	# The driver lists its GPUs by PCI address. Without the driver, look for an Nvidia display
+	# device.
+	for d in /proc/driver/nvidia/gpus/*; do
+		[ -d "$d" ] && bdf=${d##*/} && break
+	done
+	if [ -z "$bdf" ]; then
+		for d in /sys/bus/pci/devices/*; do
+			if [ "$(cat "$d/vendor" 2>/dev/null)" = 0x10de ] &&
+				[[ $(cat "$d/class" 2>/dev/null) == 0x03* ]]; then
+				bdf=${d##*/}
+				break
+			fi
+		done
+	fi
+	# Cardwire hides the device from /sys/bus/pci while it blocks it, but its DRM card still links
+	# to it.
+	dev=/sys/bus/pci/devices/$bdf
+	if [ -z "$bdf" ] || [ ! -e "$dev" ]; then
+		for c in /sys/class/drm/card[0-9]*; do
+			[[ $(readlink -f "$c/device/driver" 2>/dev/null) == */nvidia ]] || continue
+			dev=$(readlink -f "$c/device")
+			bdf=${dev##*/}
+			break
+		done
+	fi
+	if [ -z "$bdf" ] || [ ! -e "$dev" ]; then
+		row "Status" "${dim}no NVIDIA GPU found$reset"
+		return
+	fi
+
+	# Name and blocking state from cardwire, if it is installed. It answers from its own records.
+	if command -v cardwire >/dev/null; then
+		line=$(cardwire list 2>/dev/null | grep -F " $bdf ")
+		if [ -n "$line" ]; then
+			id=$(awk '{ print $1 }' <<<"$line")
+			name=$(sed -E "s/^[0-9]+ +(.*[^ ]) +$bdf .*/\1/" <<<"$line")
+			holders=$(cardwire gpu --lsof "$id" 2>/dev/null | grep -o '"[^"]*"' | tr -d '"' |
+				grep -vx cardwired | sort -u | paste -sd, | sed 's/,/, /g')
+		fi
+		mode=$(cardwire get 2>/dev/null | sed -n 's/^Current Mode: //p')
+	fi
+	# Otherwise name it from the PCI ID database. The sysfs vendor/device files are cached by the
+	# kernel.
+	if [ -z "$name" ] && [ -r /usr/share/hwdata/pci.ids ]; then
+		device=$(cat "$dev/device")
+		name=$(awk -v dev="${device#0x}" '
+			/^10de/ { in_nv = 1; next }
+			/^[0-9a-f]/ { in_nv = 0 }
+			in_nv && $1 == dev { $1 = ""; sub(/^ /, ""); print; exit }
+		' /usr/share/hwdata/pci.ids)
+	fi
+	printf '  %s%s%s %s(%s)%s\n' "$bold" "${name:-NVIDIA GPU}" "$reset" "$dim" "$bdf" "$reset"
+
+	state=$(cat "$dev/power_state" 2>/dev/null)
+	case $state in
+	D3cold) row "Power" "${green}off$reset (D3cold, power cut, ~0 W)" ;;
+	D3hot) row "Power" "${yellow}sleeping$reset (D3hot, power on, draw unknown)" ;;
+	D0) row "Power" "${yellow}awake$reset (D0, draw unknown without waking it)" ;;
+	*) row "Power" "${state:-unknown}" ;;
+	esac
+
+	if [ -r "/proc/driver/nvidia/gpus/$bdf/power" ]; then
+		rtd3=$(sed -n 's/^Runtime D3 status: *//p' "/proc/driver/nvidia/gpus/$bdf/power")
+		vram=$(sed -n 's/^Video Memory: *//p' "/proc/driver/nvidia/gpus/$bdf/power")
+		if [[ $rtd3 == Enabled* ]]; then
+			row "Auto power-off" "$green$rtd3$reset"
+		else
+			row "Auto power-off" "$red${rtd3:-unknown}$reset"
+			note "The dGPU stays on even when idle. It works on the LTS kernel."
+		fi
+		[ -n "$vram" ] && row "Video memory" "$vram"
+	else
+		row "Driver" "${dim}not loaded$reset"
+	fi
+
+	# Time spent powered off vs on since runtime power management started (about boot).
+	off_ms=$(cat "$dev/power/runtime_suspended_time" 2>/dev/null || echo 0)
+	on_ms=$(cat "$dev/power/runtime_active_time" 2>/dev/null || echo 0)
+	if ((off_ms + on_ms > 0)); then
+		pct=$((100 * off_ms / (off_ms + on_ms)))
+		color=$green
+		((pct < 90)) && color=$yellow
+		((pct < 50)) && color=$red
+		row "Off since boot" "$color$pct%$reset $dim($(duration "$off_ms") off, $(duration "$on_ms") on)$reset"
+	fi
+
+	tgp=$(cat /sys/class/firmware-attributes/asus-armoury/attributes/nv_base_tgp/current_value \
+		2>/dev/null)
+	[ -n "$tgp" ] && row "Base power limit" "$tgp W"
+	[ -n "$mode" ] && row "Cardwire mode" "$mode"
+	[ -f /sys/module/nvidia/version ] &&
+		row "Driver" "$(cat /sys/module/nvidia/version) $dim(kernel $(uname -r))$reset"
+	# Open handles alone don't keep it awake; the driver powers it off once they go idle.
+	[ -n "$holders" ] && row "Open by" "$holders"
+}
+
+if [ "$show" = gpu ]; then
+	gpu_section
+	exit 0
+fi
+
+# CPU load over half a second, for the power settings section.
+if [ "$show" = all ]; then
+	read -r _ u1 n1 s1 i1 w1 q1 sq1 st1 _ </proc/stat
+	sleep 0.5
+	read -r _ u2 n2 s2 i2 w2 q2 sq2 st2 _ </proc/stat
+	busy=$(((u2 + n2 + s2 + q2 + sq2 + st2) - (u1 + n1 + s1 + q1 + sq1 + st1)))
+	idle=$(((i2 + w2) - (i1 + w1)))
+	cpu_load=$((100 * busy / (busy + idle > 0 ? busy + idle : 1)))
+fi
 
 # --------------------------------------------------------------------------------------------------
 # Power source.
 # --------------------------------------------------------------------------------------------------
 
-section "Power source"
-on_ac=0
-for p in /sys/class/power_supply/*; do
-	[ "$(cat "$p/type" 2>/dev/null)" = Mains ] && [ "$(cat "$p/online")" = 1 ] && on_ac=1
-done
-usb_pd=
-for p in /sys/class/power_supply/ucsi-source-psy-*; do
-	[ "$(cat "$p/online" 2>/dev/null)" = 1 ] || continue
-	usb_pd=$(sed -E 's/.*\[([^]]*)\].*/\1/' "$p/usb_type" 2>/dev/null)
-done
-if ((on_ac)); then
-	row "Source" "${green}AC adapter$reset${usb_pd:+ $dim(USB-C $usb_pd)$reset}"
-else
-	row "Source" "${yellow}battery$reset"
+if [ "$show" = all ]; then
+	section "Power source"
+	on_ac=0
+	for p in /sys/class/power_supply/*; do
+		[ "$(cat "$p/type" 2>/dev/null)" = Mains ] && [ "$(cat "$p/online")" = 1 ] && on_ac=1
+	done
+	usb_pd=
+	for p in /sys/class/power_supply/ucsi-source-psy-*; do
+		[ "$(cat "$p/online" 2>/dev/null)" = 1 ] || continue
+		usb_pd=$(sed -E 's/.*\[([^]]*)\].*/\1/' "$p/usb_type" 2>/dev/null)
+	done
+	if ((on_ac)); then
+		row "Source" "${green}AC adapter$reset${usb_pd:+ $dim(USB-C $usb_pd)$reset}"
+	else
+		row "Source" "${yellow}battery$reset"
+	fi
 fi
 
 # --------------------------------------------------------------------------------------------------
@@ -140,7 +285,7 @@ if [ -n "$bat" ]; then
 fi
 
 # --------------------------------------------------------------------------------------------------
-# Power draw and runtime.
+# Power draw and battery life.
 # --------------------------------------------------------------------------------------------------
 
 section "Power draw"
@@ -205,7 +350,7 @@ esac
 [ "$bat_status" = Charging ] && [ -n "$bat_w" ] &&
 	row "Charging at" "$(f '%.1f' "$bat_w") W"
 
-section "Battery runtime"
+section "Battery life"
 if [ -z "$bat" ] || [ -z "$energy_now" ]; then
 	note "no battery energy readings"
 elif [ -n "$total_w" ] && lt 0.5 "$total_w"; then
@@ -235,6 +380,7 @@ if [ "$bat_status" = Charging ] && [ -n "$bat_w" ] && lt 0.5 "$bat_w"; then
 			'BEGIN { print (t - e) / p }')") $dim(to ${limit:-100}%, at the current rate)$reset"
 	fi
 fi
+[ "$show" = battery ] && exit 0
 
 # --------------------------------------------------------------------------------------------------
 # Power settings.
@@ -299,5 +445,4 @@ if h=$(hwmon asus); then
 	done
 fi
 
-echo
-"$here"/gpu-status
+gpu_section

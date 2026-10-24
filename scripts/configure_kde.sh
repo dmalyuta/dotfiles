@@ -316,6 +316,13 @@ if [ -n "${tm_applet:-}" ]; then
 		--group Containments --group "$tm_cont" --group Applets --group "$tm_applet" \
 		--group Configuration --group General --key launchers "${list#,}"
 fi
+# Start menu button icon.
+read -r ko_cont ko_applet < <(applet_group org.kde.plasma.kickoff)
+if [ -n "${ko_applet:-}" ]; then
+	plasma_conf plasma-org.kde.plasma.desktop-appletsrc \
+		--group Containments --group "$ko_cont" --group Applets --group "$ko_applet" \
+		--group Configuration --group General --key icon "$dotfiles"/config/icons/start_menu.svg
+fi
 
 [ "$restart_plasmashell" -eq 1 ] && systemctl --user restart plasma-plasmashell.service
 # Kickoff favorites: only System Settings. They live in the activity manager's database rather

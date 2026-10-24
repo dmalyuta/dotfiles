@@ -286,7 +286,8 @@ fi
 # SSH and dotfiles.
 # --------------------------------------------------------------------------------------------------
 
-[ -f ~/.ssh/id_ed25519 ] || ssh-keygen -t ed25519 -C "$(git config --global user.email)"
+mkdir -p -m 700 ~/.ssh
+[ -f ~/.ssh/id_ed25519 ] || ssh-keygen -q -t ed25519 -C "$(git config --global user.email)" -f ~/.ssh/id_ed25519 -N ""
 eval "$(ssh-agent -s)"
 ssh-add ~/.ssh/id_ed25519
 ssh-keygen -F github.com >/dev/null 2>&1 || ssh-keyscan github.com >>~/.ssh/known_hosts 2>/dev/null

@@ -1,8 +1,8 @@
 #!/bin/bash
 #
 # Laptop power overview: power source, battery, power draw, battery life, power settings,
-# temperatures and fans, and the NVIDIA dGPU. Reads only sysfs and procfs, so a sleeping dGPU stays
-# asleep.
+# temperatures and fans, and the NVIDIA dGPU. Reads sysfs and procfs (plus KDE's battery estimate
+# over D-Bus), never the dGPU itself, so a sleeping dGPU stays asleep.
 #
 # Usage: power-info [--gpu | --battery]
 #
@@ -365,6 +365,18 @@ elif [ -n "$total_w" ] && lt 0.5 "$total_w"; then
 	lt "$left" 3 && color=$yellow
 	lt "$left" 1 && color=$red
 	row "$label" "$color$bold$(hm "$left")$reset $dim(from $(f '%.1f' "$energy_now") Wh at $(f '%.1f' "$total_w") W)$reset"
+	# KDE's battery applet shows a time based on a running average of the draw, so it lags behind
+	# changes in load. It is in milliseconds, and 0 when not discharging.
+	qdbus=$(command -v qdbus6 || command -v qdbus)
+	if [ "$bat_status" = Discharging ] && [ -n "$qdbus" ]; then
+		kde_ms=$(timeout 1 "$qdbus" org.kde.Solid.PowerManagement /org/kde/Solid/PowerManagement \
+			org.kde.Solid.PowerManagement.smoothedBatteryRemainingTime 2>/dev/null)
+		if [[ $kde_ms =~ ^[0-9]+$ ]] && ((kde_ms > 0)); then
+			kde_h=$(awk -v ms="$kde_ms" 'BEGIN { print ms / 3600000 }')
+			row "Running average" "$(hm "$kde_h") $dim(at $(f '%.1f' "$(awk -v e="$energy_now" \
+				-v h="$kde_h" 'BEGIN { print e / h }')") W, averaged over recent draw by KDE)$reset"
+		fi
+	fi
 	((capacity < 95)) && row "Full charge lasts" "$(hm "$full_h") $dim(at the same draw)$reset"
 elif [ -n "$apu_w" ] && lt 0.5 "$apu_w"; then
 	left=$(awk -v e="$energy_now" -v p="$apu_w" 'BEGIN { print e / p }')

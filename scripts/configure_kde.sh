@@ -137,6 +137,10 @@ done < <(gawk -v RS= '/Handlers=[^\n]*mouse/ &&
 	}' /proc/bus/input/devices)
 compgen -G '/sys/class/backlight/*' >/dev/null &&
 	say "If System Settings > Display has an auto-brightness toggle, turn it off."
+# The on-screen keyboard, shown when a text field is tapped in tablet mode. start_fresh.sh installs
+# it on the PX13.
+plasma_keyboard=/usr/share/applications/org.kde.plasma.keyboard.desktop
+[ -f "$plasma_keyboard" ] && kconf --file kwinrc --group Wayland --key InputMethod "$plasma_keyboard"
 
 # App hotkeys: a KWin script that focuses an app's window on any desktop, or launches the app. It
 # launches through kglobalaccel, so each app it launches is registered below, with no key of its

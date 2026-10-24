@@ -56,16 +56,8 @@ skip() { say "$* already present, skipping."; }
 
 installed() { pacman -Q "$1" >/dev/null 2>&1; }
 
-# Whether this is the laptop rather than the desktop: it has a system battery. A wireless mouse's or
-# pen's battery also shows up, but with scope Device.
-is_laptop() {
-	local p
-	for p in /sys/class/power_supply/*; do
-		[ "$(cat "$p/type" 2>/dev/null)" = Battery ] &&
-			[ "$(cat "$p/scope" 2>/dev/null)" != Device ] && return
-	done
-	return 1
-}
+# Whether this is the laptop, an ASUS ProArt PX13 (HN7306WU), rather than the desktop.
+is_laptop() { [ "$(cat /sys/class/dmi/id/board_name 2>/dev/null)" = HN7306WU ]; }
 
 # Yes/no question whose default is the last answer, remembered under key $1. With -c, a remembered
 # answer is used without asking.
@@ -195,7 +187,7 @@ pacman_apps=(
 	kitty tmux ttf-cascadia-code-nerd
 	proton-pass obsidian brave-bin okular inkscape obs-studio gimp
 	vlc vlc-plugins-all flameshot nextcloud-client
-	qalculate-gtk speedcrunch
+	qalculate-gtk speedcrunch texlive
 	openrazer-daemon python-openrazer keyd
 	flatpak rustup nodejs npm grafana wine winetricks bazelisk
 )
@@ -213,11 +205,12 @@ groups=(plugdev nordvpn)
 services=(grafana nordvpnd keyd)
 
 [ -n "${want_coolercontrol:-}" ] && pacman_apps+=(coolercontrol) && services+=(coolercontrold)
+# The PX13 folds into a tablet, which needs an on-screen keyboard.
+is_laptop && pacman_apps+=(plasma-keyboard)
 [ -n "${want_openrgb:-}" ] && pacman_apps+=(openrgb i2c-tools) && groups+=(i2c)
 [ -n "${want_asusctl:-}" ] && pacman_apps+=(asusctl rog-control-center) && services+=(asusd)
 # For scripts/asus-power-limits.
-[ -n "${want_asusctl:-}" ] && [ "$(cat /sys/class/dmi/id/board_name 2>/dev/null)" = HN7306WU ] &&
-	pacman_apps+=(acpi_call-dkms)
+[ -n "${want_asusctl:-}" ] && is_laptop && pacman_apps+=(acpi_call-dkms)
 [ -n "${want_cardwire:-}" ] && pacman_apps+=(cardwire) && services+=(cardwired)
 [ -n "${want_brother:-}" ] && pacman_apps+=(cups) && aur_apps+=(brother-mfc-j805dw) && services+=(cups)
 
@@ -485,6 +478,15 @@ while IFS= read -r -d '' f; do
 		sed -i 's|^Exec=env |Exec=env "WINEDEBUG=fixme-all" |' "$f"
 done < <(find ~/.local/share/applications -name '*.desktop' -print0 2>/dev/null)
 
+# Electron apps (Obsidian, VS Code, ...) list every GPU through Vulkan at startup, which wakes the
+# NVIDIA dGPU for ~20 s on each launch. Show Vulkan apps only the AMD iGPU, which still accelerates
+# them. bin/nvidia-run runs an app on the dGPU.
+cat >~/.config/environment.d/60-vulkan-igpu.conf <<'EOF'
+# Vulkan apps only see the AMD iGPU, so they don't wake the NVIDIA dGPU. Use nvidia-run for the dGPU.
+VK_DRIVER_FILES=/usr/share/vulkan/icd.d/radeon_icd.json
+VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/radeon_icd.json
+EOF
+
 # Flameshot's Wayland clipboard copy is lost on non-Gnome desktops because the capture window closes
 # too early. Run the daemon under XWayland instead, for both ways it gets started: autostart and
 # D-Bus activation.
@@ -616,18 +618,27 @@ if installed asusctl; then
 fi
 
 # G-Helper's fan curves, see scripts/asus-fan-curves. asusd saves them.
-if installed asusctl && [ "$(cat /sys/class/dmi/id/board_name 2>/dev/null)" = HN7306WU ]; then
+if installed asusctl && is_laptop; then
 	"$dotfiles"/scripts/asus-fan-curves >/dev/null
 fi
 
 # Per-profile CPU power limits, lower in Quiet for battery life, see scripts/asus-power-limits.
-if installed acpi_call-dkms && [ "$(cat /sys/class/dmi/id/board_name 2>/dev/null)" = HN7306WU ]; then
+if installed acpi_call-dkms && is_laptop; then
 	install_script_file asus-power-limits /usr/lib/systemd/system-sleep/asus-power-limits 0755
 	install_script_file asus-power-limits.service /etc/systemd/system/asus-power-limits.service &&
 		sudo systemctl daemon-reload
 	install_script_file asus-power-limits /usr/local/bin/asus-power-limits 0755 &&
 		sudo systemctl try-restart asus-power-limits
 	sudo systemctl enable --now asus-power-limits
+fi
+
+# The PX13 is a 2-in-1, but asus-nb-wmi has no quirk for it, so it never reports tablet mode and KDE
+# stays in laptop mode. It has the lid-flip sensor (WMI device 0x00060062), so use that. The switch
+# is on "Asus WMI hotkeys", which scripts/keyd.conf leaves to libinput. Applies on next boot.
+if is_laptop; then
+	write_root_file /etc/modprobe.d/asus-tablet-mode.conf <<'EOF'
+options asus_nb_wmi tablet_mode_sw=2
+EOF
 fi
 
 # Explicitly set the journald size (default 50 MB).

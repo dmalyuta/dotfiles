@@ -1,0 +1,11 @@
+#!/bin/bash
+#
+# Runs a program on the NVIDIA dGPU. Same as prime-run, but also lets Vulkan see the dGPU again,
+# which ~/.config/environment.d/60-vulkan-igpu.conf hides by default.
+#
+# Usage: nvidia-run COMMAND [ARGS...]
+#
+# Author: Danylo Malyuta, 2026.
+
+unset VK_DRIVER_FILES VK_ICD_FILENAMES
+exec prime-run "$@"

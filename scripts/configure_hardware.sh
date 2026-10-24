@@ -16,35 +16,7 @@ dotfiles=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 # Helpers.
 # --------------------------------------------------------------------------------------------------
 
-installed() { pacman -Q "$1" >/dev/null 2>&1; }
-
-# Whether this is the laptop, an ASUS ProArt PX13 (HN7306WU), rather than the desktop.
-is_laptop() { [ "$(cat /sys/class/dmi/id/board_name 2>/dev/null)" = HN7306WU ]; }
-
-# Write stdin to a root-owned file. Returns 0 only if the content changed.
-write_root_file() {
-	local dest=$1 tmp
-	tmp=$(mktemp)
-	cat >"$tmp"
-	if sudo cmp -s "$tmp" "$dest" 2>/dev/null; then
-		rm -f "$tmp"
-		return 1
-	fi
-	sudo install -Dm644 "$tmp" "$dest"
-	rm -f "$tmp"
-}
-
-# Install a file from scripts/. Returns 0 only if the content changed.
-install_script_file() {
-	local src=$dotfiles/scripts/$1 dest=$2 mode=${3:-644}
-	sudo cmp -s "$src" "$dest" 2>/dev/null && return 1
-	sudo install -Dm "$mode" "$src" "$dest"
-}
-
-kconf() {
-	# --notify makes running programs reload the setting.
-	kwriteconfig6 --notify "$@"
-}
+. "$dotfiles"/scripts/functions.sh
 
 nvidia_version=$(modinfo -F version nvidia 2>/dev/null)
 

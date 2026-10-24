@@ -14,7 +14,7 @@
 # Author: Danylo Malyuta, 2026.
 
 repo_ssh=git@github.com:dmalyuta/dotfiles.git
-raw_url=https://raw.githubusercontent.com/dmalyuta/dotfiles/cachyos/start_fresh.sh
+raw_base=https://raw.githubusercontent.com/dmalyuta/dotfiles/cachyos
 
 # --------------------------------------------------------------------------------------------------
 # Bootstrap.
@@ -24,7 +24,7 @@ raw_url=https://raw.githubusercontent.com/dmalyuta/dotfiles/cachyos/start_fresh.
 # copy with the terminal on stdin instead.
 if [ ! -t 0 ] && [ -z "${DOTFILES_BOOTSTRAP:-}" ]; then
 	self=$(mktemp)
-	curl -fsSL "$raw_url" -o "$self" </dev/tty || exit
+	curl -fsSL "$raw_base/start_fresh.sh" -o "$self" </dev/tty || exit
 	DOTFILES_BOOTSTRAP=$self exec bash "$self" "$@" </dev/tty
 fi
 [ -n "${DOTFILES_BOOTSTRAP:-}" ] && trap 'rm -f "$DOTFILES_BOOTSTRAP"' EXIT
@@ -41,7 +41,7 @@ done
 mkdir -p ~/Projects
 dotfiles=~/Projects/dotfiles
 this_script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-if [ -f "$this_script_dir/home/.bash_aliases" ] && [ -d "$this_script_dir/.git" ]; then
+if [ -f "$this_script_dir/home/.bash_aliases" ] && [ -e "$this_script_dir/.git" ]; then
 	dotfiles=$this_script_dir
 fi
 
@@ -53,15 +53,13 @@ cd "$downloads" || exit
 # Helpers.
 # --------------------------------------------------------------------------------------------------
 
-# Status message, in bold bright blue so it stands out.
-say() { printf '\e[1;94m== %s ==\e[0m\n' "$*"; }
-
-skip() { say "$* already present, skipping."; }
-
-installed() { pacman -Q "$1" >/dev/null 2>&1; }
-
-# Whether this is the laptop, an ASUS ProArt PX13 (HN7306WU), rather than the desktop.
-is_laptop() { [ "$(cat /sys/class/dmi/id/board_name 2>/dev/null)" = HN7306WU ]; }
+# Shared helpers, see scripts/functions.sh. Before the repo is cloned, fetch them from GitHub.
+if [ "$dotfiles" = "$this_script_dir" ]; then
+	. "$dotfiles"/scripts/functions.sh
+else
+	functions=$(curl -fsSL "$raw_base/scripts/functions.sh") || exit
+	eval "$functions"
+fi
 
 # Yes/no question whose default is the last answer, remembered under key $1. With -c, a remembered
 # answer is used without asking.
@@ -83,38 +81,6 @@ valid_workspaces() {
 	local entry="[A-Z]:/[^,;]*[^,;/]"
 	[[ $1 =~ ^($entry(,$entry)*)?$ ]] &&
 		[ -z "$(tr , '\n' <<<"$1" | cut -c1 | sort | uniq -d)" ]
-}
-
-# Write stdin to a root-owned file. Returns 0 only if the content changed.
-write_root_file() {
-	local dest=$1 tmp
-	tmp=$(mktemp)
-	cat >"$tmp"
-	if sudo cmp -s "$tmp" "$dest" 2>/dev/null; then
-		rm -f "$tmp"
-		return 1
-	fi
-	sudo install -Dm644 "$tmp" "$dest"
-	rm -f "$tmp"
-}
-
-# Install a file from scripts/. Returns 0 only if the content changed.
-install_script_file() {
-	local src=$dotfiles/scripts/$1 dest=$2 mode=${3:-644}
-	sudo cmp -s "$src" "$dest" 2>/dev/null && return 1
-	sudo install -Dm "$mode" "$src" "$dest"
-}
-
-# Set a key in a .desktop file's [Desktop Entry] group.
-set_desktop_key() {
-	local file=$1 key=$2 value=$3 sudo_cmd=()
-	[ -f "$file" ] || return 0
-	[ -w "$file" ] || sudo_cmd=(sudo)
-	if grep -q "^${key}=" "$file"; then
-		"${sudo_cmd[@]}" sed -i "s|^${key}=.*|${key}=${value}|" "$file"
-	else
-		"${sudo_cmd[@]}" sed -i "/^\[Desktop Entry\]/a ${key}=${value}" "$file"
-	fi
 }
 
 # --------------------------------------------------------------------------------------------------

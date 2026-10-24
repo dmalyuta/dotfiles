@@ -17,13 +17,8 @@ workspaces=${1:-}
 # Helpers.
 # --------------------------------------------------------------------------------------------------
 
-# Status message, in bold bright blue so it stands out.
-say() { printf '\e[1;94m== %s ==\e[0m\n' "$*"; }
+. "$dotfiles"/scripts/functions.sh
 
-kconf() {
-	# --notify makes running programs reload the setting.
-	kwriteconfig6 --notify "$@"
-}
 dbus_call() {
 	local dest=$1 path=$2 method=$3
 	shift 3

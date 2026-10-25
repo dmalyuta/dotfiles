@@ -1,0 +1,4 @@
+# Let all users read the CPU's RAPL energy counters, for bin/status's CPU power. The kernel makes
+# them root-only because of the PLATYPUS power side channel (CVE-2020-8694, CVE-2020-12912), which
+# matters for SGX enclaves and machines shared with untrusted users, neither of which applies here.
+ACTION=="add", SUBSYSTEM=="powercap", KERNEL=="intel-rapl:*", RUN+="/usr/bin/chmod a+r /sys%p/energy_uj"

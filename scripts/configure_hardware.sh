@@ -1,8 +1,8 @@
 #!/bin/bash
 #
-# Low-level hardware setup: GPUs, kernel command line, initramfs, wake sources, sleep and
-# hibernation, and the ASUS ProArt PX13 laptop's quirks. Run by start_fresh.sh after it installs
-# the software, and safe to re-run on its own.
+# Low-level hardware setup: GPUs, kernel command line, initramfs, wake sources, CPU power readings,
+# sleep and hibernation, and the ASUS ProArt PX13 laptop's quirks. Run by start_fresh.sh after it
+# installs the software, and safe to re-run on its own.
 #
 # Usage: configure_hardware.sh
 #
@@ -67,6 +67,12 @@ if install_script_file 90-usb-wakeup.rules /etc/udev/rules.d/90-usb-wakeup.rules
 	sudo udevadm trigger --action=add --subsystem-match=usb
 fi
 install_script_file usb-wakeup /usr/lib/systemd/system-sleep/usb-wakeup 0755
+
+# CPU power for bin/status, see scripts/90-rapl-read.rules.
+if install_script_file 90-rapl-read.rules /etc/udev/rules.d/90-rapl-read.rules; then
+	sudo udevadm control --reload
+	sudo udevadm trigger --action=add --subsystem-match=powercap
+fi
 
 # Replug the C920 webcam when its USB link fails, see scripts/c920-guard.
 install_script_file c920-guard.service /etc/systemd/system/c920-guard.service && sudo systemctl daemon-reload

@@ -5,7 +5,7 @@
 # Binaries.
 ################################################################################
 
-# The dotfiles repo's bin/ (power-info, ...), linked by start_fresh.sh.
+# The dotfiles repo's bin/ (status, ...), linked by start_fresh.sh.
 export PATH=$PATH:~/.bin
 
 ################################################################################

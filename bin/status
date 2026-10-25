@@ -1,0 +1,658 @@
+#!/bin/bash
+#
+# System status for the laptop and the desktop: power source, battery, power draw per component,
+# battery life, power settings, temperatures and fans, and the NVIDIA GPU. Reads sysfs and procfs
+# (plus KDE's battery estimate over D-Bus). Runs nvidia-smi only on a GPU that is already on and
+# that the driver never powers off, so the laptop's sleeping dGPU stays asleep.
+#
+# Usage: status [--gpu | --power]
+#
+#   --gpu    Only the NVIDIA GPU section.
+#   --power  Only the battery, power draw and battery life sections. --battery does the same.
+#
+# The power draw section starts with the total: on the laptop on battery, what the battery measures;
+# on the desktop, what the PSU puts out. Then the sum of the components that measure their own
+# draw, and those components from highest to lowest.
+#
+# The laptop's battery measures nothing useful on AC, so there the total is an estimate: the known
+# components plus the rest of the laptop's draw as last measured on battery. Each run on battery
+# saves that rest to ~/.cache/status/rest, unless the dGPU is awake with an unknown draw.
+#
+# The desktop's CPU power comes from the RAPL energy counters, which only root can read unless
+# scripts/configure_hardware.sh has opened them up.
+#
+# Author: Danylo Malyuta, 2026.
+
+set -u
+usage="Usage: status [--gpu | --power]"
+show=all
+case $# in
+0) ;;
+1)
+	case $1 in
+	--gpu) show=gpu ;;
+	--power | --battery) show=power ;;
+	-h | --help) echo "$usage" && exit 0 ;;
+	*) echo "$usage" >&2 && exit 2 ;;
+	esac
+	;;
+*) echo "$usage" >&2 && exit 2 ;;
+esac
+cache=${XDG_CACHE_HOME:-$HOME/.cache}
+rest_file=$cache/status/rest
+# From when this script was called power-info.
+if [ -f "$cache/power-info/rest" ] && [ ! -e "$rest_file" ]; then
+	mkdir -p "${rest_file%/*}" && mv "$cache/power-info/rest" "$rest_file"
+	rmdir "$cache/power-info" 2>/dev/null
+fi
+
+if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
+	bold=$'\e[1m' dim=$'\e[2m' red=$'\e[31m' green=$'\e[32m' yellow=$'\e[33m' cyan=$'\e[36m'
+	reset=$'\e[0m'
+else
+	bold='' dim='' red='' green='' yellow='' cyan='' reset=''
+fi
+
+# A section header, after a blank line unless it is the first.
+sections=0
+section() {
+	local rule
+	printf -v rule '%*s' $((60 - ${#1})) ''
+	((sections++)) && echo
+	printf '%s━━ %s %s%s\n' "$bold$cyan" "$1" "${rule// /━}" "$reset"
+}
+row() { printf '  %-18s %s\n' "$1" "$2"; }
+note() { row "" "$dim$1$reset"; }
+
+# Floating point helpers, all through awk. f FORMAT VALUE: printf. lt A B: whether A < B.
+f() { awk -v fmt="$1" -v v="$2" 'BEGIN { printf fmt, v }'; }
+lt() { awk -v a="$1" -v b="$2" 'BEGIN { exit !(a < b) }'; }
+# Hours as "3h 05m".
+hm() { awk -v h="$1" 'BEGIN { m = int(h * 60 + 0.5); printf "%dh %02dm", m / 60, m % 60 }'; }
+# Color a value green below $2, yellow below $3, red otherwise.
+level() {
+	if lt "$1" "$2"; then
+		printf '%s' "$green"
+	elif lt "$1" "$3"; then
+		printf '%s' "$yellow"
+	else
+		printf '%s' "$red"
+	fi
+}
+
+# First hwmon with the given name.
+hwmon() {
+	local h
+	for h in /sys/class/hwmon/hwmon*; do
+		[ "$(cat "$h/name" 2>/dev/null)" = "$1" ] && echo "$h" && return
+	done
+	return 1
+}
+# The input file of the sensor of the given type (power, temp, ...) and label in a hwmon.
+hwmon_input() {
+	local l
+	for l in "$1/$2"*_label; do
+		[ "$(cat "$l" 2>/dev/null)" = "$3" ] && echo "${l%_label}_input" && return
+	done
+	return 1
+}
+# The highest temp1_input among all hwmons with the given name, in °C × 1000.
+max_temp() {
+	local h t max=
+	for h in /sys/class/hwmon/hwmon*; do
+		[ "$(cat "$h/name" 2>/dev/null)" = "$1" ] || continue
+		t=$(cat "$h/temp1_input" 2>/dev/null) || continue
+		[ -z "$max" ] || ((t > max)) && max=$t
+	done
+	[ -n "$max" ] && echo "$max"
+}
+# A sysfs value divided by $2, or nothing if it is missing.
+scaled() {
+	local v
+	v=$(cat "$1" 2>/dev/null) && [ -n "$v" ] && f '%.2f' "$(awk -v v="$v" -v s="$2" \
+		'BEGIN { print v / s }')"
+}
+# Milliseconds as "1h 02m", "3m 05s" or "12s".
+duration() {
+	local s=$(($1 / 1000))
+	if ((s >= 3600)); then
+		printf '%dh %02dm' $((s / 3600)) $((s % 3600 / 60))
+	elif ((s >= 60)); then
+		printf '%dm %02ds' $((s / 60)) $((s % 60))
+	else
+		printf '%ds' "$s"
+	fi
+}
+
+# The laptop has a battery, the desktop doesn't.
+bat=$(ls -d /sys/class/power_supply/BAT* 2>/dev/null | head -1)
+laptop=0
+[ -n "$bat" ] && laptop=1
+
+# --------------------------------------------------------------------------------------------------
+# NVIDIA GPU: find it, and query it with nvidia-smi if that can't wake it.
+#
+# nvidia-smi, NVML and anything else that opens /dev/nvidia*, and reading the GPU's PCI config space,
+# each power a sleeping GPU back on. So the laptop's dGPU is only queried while it is on and runtime
+# D3 is off (then the driver never powers it off anyway). The desktop's GPU is always on.
+# --------------------------------------------------------------------------------------------------
+
+nv_bdf= nv_dev= nv_state= nv_rtd3= nv_w=
+# The driver lists its GPUs by PCI address. Without the driver, look for an Nvidia display device.
+for d in /proc/driver/nvidia/gpus/*; do
+	[ -d "$d" ] && nv_bdf=${d##*/} && break
+done
+if [ -z "$nv_bdf" ]; then
+	for d in /sys/bus/pci/devices/*; do
+		if [ "$(cat "$d/vendor" 2>/dev/null)" = 0x10de ] &&
+			[[ $(cat "$d/class" 2>/dev/null) == 0x03* ]]; then
+			nv_bdf=${d##*/}
+			break
+		fi
+	done
+fi
+# Cardwire hides the device from /sys/bus/pci while it blocks it, but its DRM card still links to it.
+nv_dev=/sys/bus/pci/devices/$nv_bdf
+if [ -z "$nv_bdf" ] || [ ! -e "$nv_dev" ]; then
+	for c in /sys/class/drm/card[0-9]*; do
+		[[ $(readlink -f "$c/device/driver" 2>/dev/null) == */nvidia ]] || continue
+		nv_dev=$(readlink -f "$c/device")
+		nv_bdf=${nv_dev##*/}
+		break
+	done
+fi
+if [ -n "$nv_bdf" ] && [ -e "$nv_dev" ]; then
+	nv_state=$(cat "$nv_dev/power_state" 2>/dev/null)
+	[ -r "/proc/driver/nvidia/gpus/$nv_bdf/power" ] &&
+		nv_rtd3=$(sed -n 's/^Runtime D3 status: *//p' "/proc/driver/nvidia/gpus/$nv_bdf/power")
+	if [ "$nv_state" = D0 ] && [ -n "$nv_rtd3" ] && [[ $nv_rtd3 != Enabled* ]] &&
+		command -v nvidia-smi >/dev/null; then
+		IFS=, read -r nv_w nv_limit nv_util nv_temp nv_mem_used nv_mem_total nv_fan nv_clock \
+			< <(timeout 3 nvidia-smi -i "$nv_bdf" --format=csv,noheader,nounits \
+				--query-gpu=power.draw,power.limit,utilization.gpu,temperature.gpu,memory.used,memory.total,fan.speed,clocks.gr \
+				2>/dev/null)
+		# Drop spaces, and readings the GPU doesn't have ("[N/A]").
+		for v in nv_w nv_limit nv_util nv_temp nv_mem_used nv_mem_total nv_fan nv_clock; do
+			printf -v "$v" '%s' "${!v// /}"
+			[[ ${!v} =~ ^[0-9.]+$ ]] || printf -v "$v" ''
+		done
+	fi
+fi
+
+# --------------------------------------------------------------------------------------------------
+# NVIDIA GPU section: whether it is powered off, whether the driver can power it off when idle, how
+# much of the time it has been off, and what has it open. On a GPU that is always on, its draw, load
+# and memory instead.
+# --------------------------------------------------------------------------------------------------
+
+gpu_section() {
+	local name= mode= holders= line id device vram off_ms on_ms pct color tgp
+	if ((laptop)); then section "NVIDIA dGPU"; else section "NVIDIA GPU"; fi
+	if [ -z "$nv_bdf" ] || [ ! -e "$nv_dev" ]; then
+		row "Status" "${dim}no NVIDIA GPU found$reset"
+		return
+	fi
+
+	# Name and blocking state from cardwire, if it is installed. It answers from its own records.
+	if command -v cardwire >/dev/null; then
+		line=$(cardwire list 2>/dev/null | grep -F " $nv_bdf ")
+		if [ -n "$line" ]; then
+			id=$(awk '{ print $1 }' <<<"$line")
+			name=$(sed -E "s/^[0-9]+ +(.*[^ ]) +$nv_bdf .*/\1/" <<<"$line")
+			holders=$(cardwire gpu --lsof "$id" 2>/dev/null | grep -o '"[^"]*"' | tr -d '"' |
+				grep -vx cardwired | sort -u | paste -sd, | sed 's/,/, /g')
+		fi
+		mode=$(cardwire get 2>/dev/null | sed -n 's/^Current Mode: //p')
+	fi
+	# Otherwise name it from the PCI ID database. The sysfs vendor/device files are cached by the
+	# kernel.
+	if [ -z "$name" ] && [ -r /usr/share/hwdata/pci.ids ]; then
+		device=$(cat "$nv_dev/device")
+		name=$(awk -v dev="${device#0x}" '
+			/^10de/ { in_nv = 1; next }
+			/^[0-9a-f]/ { in_nv = 0 }
+			in_nv && $1 == dev { $1 = ""; sub(/^ /, ""); print; exit }
+		' /usr/share/hwdata/pci.ids)
+	fi
+	printf '  %s%s%s %s(%s)%s\n' "$bold" "${name:-NVIDIA GPU}" "$reset" "$dim" "$nv_bdf" "$reset"
+
+	case $nv_state in
+	D3cold) row "Power" "${green}off$reset (D3cold, power cut, ~0 W)" ;;
+	D3hot) row "Power" "${yellow}sleeping$reset (D3hot, power on, draw unknown)" ;;
+	D0)
+		if [ -n "$nv_w" ]; then
+			row "Power" "on (D0), $(level "$nv_w" 100 350)$(f '%.1f' "$nv_w") W$reset${nv_limit:+ $dim(limit $(f '%.0f' "$nv_limit") W)$reset}"
+		else
+			row "Power" "${yellow}awake$reset (D0, draw unknown without waking it)"
+		fi
+		;;
+	*) row "Power" "${nv_state:-unknown}" ;;
+	esac
+	[ -n "${nv_util:-}" ] && row "Load" "$(level "$nv_util" 25 70)$nv_util%$reset${nv_clock:+ $dim(${nv_clock} MHz)$reset}"
+	[ -n "${nv_mem_used:-}" ] && [ -n "${nv_mem_total:-}" ] &&
+		row "Memory used" "$(f '%.1f' "$(awk -v m="$nv_mem_used" 'BEGIN { print m / 1024 }')") GiB of $(f '%.0f' "$(awk -v m="$nv_mem_total" 'BEGIN { print m / 1024 }')") GiB"
+
+	if [ -r "/proc/driver/nvidia/gpus/$nv_bdf/power" ]; then
+		vram=$(sed -n 's/^Video Memory: *//p' "/proc/driver/nvidia/gpus/$nv_bdf/power")
+		# Only the laptop's dGPU needs to power off when idle.
+		if ((laptop)); then
+			if [[ $nv_rtd3 == Enabled* ]]; then
+				row "Auto power-off" "$green$nv_rtd3$reset"
+			else
+				row "Auto power-off" "$red${nv_rtd3:-unknown}$reset"
+				note "The dGPU stays on even when idle. It works on the LTS kernel."
+			fi
+			[ -n "$vram" ] && row "Video memory" "$vram"
+		fi
+	else
+		row "Driver" "${dim}not loaded$reset"
+	fi
+
+	# Time spent powered off vs on since runtime power management started (about boot).
+	if ((laptop)) || [[ $nv_rtd3 == Enabled* ]]; then
+		off_ms=$(cat "$nv_dev/power/runtime_suspended_time" 2>/dev/null || echo 0)
+		on_ms=$(cat "$nv_dev/power/runtime_active_time" 2>/dev/null || echo 0)
+		if ((off_ms + on_ms > 0)); then
+			pct=$((100 * off_ms / (off_ms + on_ms)))
+			color=$green
+			((pct < 90)) && color=$yellow
+			((pct < 50)) && color=$red
+			row "Off since boot" "$color$pct%$reset $dim($(duration "$off_ms") off, $(duration "$on_ms") on)$reset"
+		fi
+	fi
+
+	tgp=$(cat /sys/class/firmware-attributes/asus-armoury/attributes/nv_base_tgp/current_value \
+		2>/dev/null)
+	[ -n "$tgp" ] && row "Base power limit" "$tgp W"
+	[ -n "$mode" ] && row "Cardwire mode" "$mode"
+	[ -f /sys/module/nvidia/version ] &&
+		row "Driver" "$(cat /sys/module/nvidia/version) $dim(kernel $(uname -r))$reset"
+	# Open handles alone don't keep it awake; the driver powers it off once they go idle.
+	[ -n "$holders" ] && row "Open by" "$holders"
+}
+
+if [ "$show" = gpu ]; then
+	gpu_section
+	exit 0
+fi
+
+# --------------------------------------------------------------------------------------------------
+# CPU load and RAPL energy over half a second.
+# --------------------------------------------------------------------------------------------------
+
+# The RAPL zone with the given name, if it can be read.
+rapl_zone() {
+	local z
+	for z in /sys/class/powercap/intel-rapl:*; do
+		[ "$(cat "$z/name" 2>/dev/null)" = "$1" ] && [ -r "$z/energy_uj" ] && echo "$z" && return
+	done
+	return 1
+}
+# Only the package: on AMD, the "core" zone measures just the first core.
+pkg_zone=$(rapl_zone package-0)
+# Microjoules over nanoseconds, as watts. The counter wraps at max_energy_range_uj.
+rapl_w() {
+	awk -v a="$1" -v b="$2" -v m="$(cat "$3/max_energy_range_uj")" -v dt="$4" \
+		'BEGIN { d = b - a; if (d < 0) d += m; printf "%.2f", d * 1000 / dt }'
+}
+
+stat1=$(grep '^cpu' /proc/stat)
+[ -n "$pkg_zone" ] && pkg1=$(cat "$pkg_zone/energy_uj")
+t1=$(date +%s%N)
+sleep 0.5
+stat2=$(grep '^cpu' /proc/stat)
+[ -n "$pkg_zone" ] && pkg2=$(cat "$pkg_zone/energy_uj")
+t2=$(date +%s%N)
+# The whole CPU's load, and the busiest thread's, which shows a single-threaded spike that barely
+# moves the average over many threads. Fields after the name: user nice system idle iowait irq
+# softirq steal. The counters tick 100 times a second, so a thread's load is in steps of 2%.
+read -r cpu_load thread_load < <(awk '
+	{ busy = $2 + $3 + $4 + $7 + $8 + $9; all = busy + $5 + $6 }
+	NR == FNR { b[$1] = busy; a[$1] = all; next }
+	{ d = all - a[$1]; l = d > 0 ? 100 * (busy - b[$1]) / d : 0 }
+	$1 == "cpu" { total = l; next }
+	l > max { max = l }
+	END { printf "%.1f %.0f\n", total, max }
+' <(echo "$stat1") <(echo "$stat2"))
+pkg_w=
+[ -n "$pkg_zone" ] && pkg_w=$(rapl_w "$pkg1" "$pkg2" "$pkg_zone" $((t2 - t1)))
+
+# --------------------------------------------------------------------------------------------------
+# Power source.
+# --------------------------------------------------------------------------------------------------
+
+psu=$(hwmon corsairpsu)
+if [ "$show" = all ]; then
+	section "Power source"
+	if ((laptop)); then
+		on_ac=0
+		for p in /sys/class/power_supply/*; do
+			[ "$(cat "$p/type" 2>/dev/null)" = Mains ] && [ "$(cat "$p/online")" = 1 ] && on_ac=1
+		done
+		usb_pd=
+		for p in /sys/class/power_supply/ucsi-source-psy-*; do
+			[ "$(cat "$p/online" 2>/dev/null)" = 1 ] || continue
+			usb_pd=$(sed -E 's/.*\[([^]]*)\].*/\1/' "$p/usb_type" 2>/dev/null)
+		done
+		if ((on_ac)); then
+			row "Source" "${green}AC adapter$reset${usb_pd:+ $dim(USB-C $usb_pd)$reset}"
+		else
+			row "Source" "${yellow}battery$reset"
+		fi
+	else
+		v_in=
+		[ -n "$psu" ] && v_in=$(scaled "$(hwmon_input "$psu" in v_in)" 1000)
+		row "Source" "mains${psu:+ $dim(Corsair PSU${v_in:+, $(f '%.0f' "$v_in") V in})$reset}"
+	fi
+fi
+
+# --------------------------------------------------------------------------------------------------
+# Battery.
+# --------------------------------------------------------------------------------------------------
+
+bat_status= energy_now= energy_full= bat_w=
+if ((laptop)); then
+	section "Battery"
+	bat_status=$(cat "$bat/status")
+	capacity=$(cat "$bat/capacity")
+	energy_now=$(scaled "$bat/energy_now" 1000000)
+	energy_full=$(scaled "$bat/energy_full" 1000000)
+	energy_design=$(scaled "$bat/energy_full_design" 1000000)
+	limit=$(cat "$bat/charge_control_end_threshold" 2>/dev/null)
+	# Some batteries report current instead of power.
+	bat_w=$(scaled "$bat/power_now" 1000000)
+	if [ -z "$bat_w" ] && [ -r "$bat/current_now" ]; then
+		bat_w=$(awk -v i="$(cat "$bat/current_now")" -v v="$(cat "$bat/voltage_now")" \
+			'BEGIN { printf "%.2f", i * v / 1e12 }')
+	fi
+
+	# A 20-cell bar, colored by charge.
+	cells=$((capacity / 5))
+	printf -v full '%*s' "$cells" ''
+	printf -v empty '%*s' $((20 - cells)) ''
+	color=$red
+	((capacity >= 20)) && color=$yellow
+	((capacity >= 50)) && color=$green
+	row "Charge" "$color${full// /█}$dim${empty// /░}$reset $bold$capacity%$reset $dim($bat_status)$reset"
+	if [ -n "$energy_now" ]; then
+		row "Energy" "$(f '%.1f' "$energy_now") Wh of $(f '%.1f' "$energy_full") Wh"
+	fi
+	if [ -n "$energy_design" ] && [ -n "$energy_full" ]; then
+		health=$(f '%.0f' "$(awk -v a="$energy_full" -v b="$energy_design" 'BEGIN { print 100 * a / b }')")
+		color=$green
+		((health < 80)) && color=$yellow
+		((health < 60)) && color=$red
+		row "Health" "$color$health%$reset $dim(design capacity $(f '%.1f' "$energy_design") Wh)$reset"
+	fi
+	[ -n "$limit" ] && row "Charge limit" "$limit%"
+	row "Voltage" "$(scaled "$bat/voltage_now" 1000000) V"
+	cycles=$(cat "$bat/cycle_count" 2>/dev/null)
+	[ -n "$cycles" ] && ((cycles > 0)) && row "Cycles" "$cycles"
+fi
+
+# --------------------------------------------------------------------------------------------------
+# Power draw.
+# --------------------------------------------------------------------------------------------------
+
+section "Power draw"
+
+# Components that measure their own draw, one per line: watts, key, parent key, label, note, and
+# the watts above which it shows yellow and red. Only top-level ones (no parent) add up; the others
+# are a part of their parent.
+# Fields are split on a unit separator, since bash merges adjacent tabs and drops empty fields.
+sep=$'\x1f'
+parts=
+part() { parts+=$(printf "%s$sep" "$@")$'\n'; }
+
+amdgpu=$(hwmon amdgpu)
+ppt_w=
+if [ -n "$amdgpu" ]; then
+	ppt_w=$(scaled "$amdgpu/power1_input" 1000000)
+	[ -z "$ppt_w" ] && ppt_w=$(scaled "$amdgpu/power1_average" 1000000)
+fi
+if ((laptop)); then
+	# The laptop's amdgpu measures the whole APU.
+	[ -n "$ppt_w" ] && part "$ppt_w" apu "" "APU (CPU + iGPU)" "" 8 20
+else
+	# The desktop's amdgpu measures only the iGPU, and RAPL the CPU.
+	[ -n "$ppt_w" ] && part "$ppt_w" igpu "" "AMD iGPU" "" 10 30
+	[ -n "$pkg_w" ] && part "$pkg_w" cpu "" "CPU package" "" 60 150
+fi
+gpu_label="NVIDIA GPU"
+((laptop)) && gpu_label="NVIDIA dGPU"
+dgpu_unknown=0
+if [ -n "$nv_w" ]; then
+	part "$nv_w" nvidia "" "$gpu_label" "" 100 350
+elif [ "$nv_state" = D3cold ]; then
+	part 0 nvidia "" "$gpu_label" "off (D3cold), power cut" 1 2
+elif [ "$nv_state" = D0 ] || [ "$nv_state" = D3hot ]; then
+	dgpu_unknown=1
+fi
+known_w=$(awk -F"$sep" '$1 != "" && $3 == "" { s += $1 } END { printf "%.2f", s }' <<<"$parts")
+nparts=$(awk -F"$sep" '$1 != "" && $3 == ""' <<<"$parts" | wc -l)
+
+# The total: measured by the battery or the PSU, or estimated from what the rest of the laptop drew
+# when last on battery.
+total_w= total_how= rest_w= rest_how=
+psu_w=
+[ -n "$psu" ] && psu_w=$(scaled "$(hwmon_input "$psu" power "power total")" 1000000)
+if [ "$bat_status" = Discharging ] && [ -n "$bat_w" ]; then
+	total_w=$bat_w
+	total_how="measured by the battery"
+elif [ -n "$psu_w" ]; then
+	total_w=$psu_w
+	total_how="PSU output, before PSU losses"
+fi
+if [ -n "$total_w" ] && ((nparts)) && lt "$known_w" "$total_w"; then
+	rest_w=$(awk -v a="$total_w" -v b="$known_w" 'BEGIN { printf "%.2f", a - b }')
+	if ((laptop)); then
+		rest_how="screen, RAM, SSD, Wi-Fi, losses"
+		((dgpu_unknown)) && rest_how+=", dGPU"
+		# Remember it, for estimates on AC.
+		if ((!dgpu_unknown)); then
+			mkdir -p "${rest_file%/*}"
+			echo "$rest_w $(date +%s)" >"$rest_file"
+		fi
+	else
+		rest_how="motherboard, RAM, SSD, fans, USB"
+		[ -z "$pkg_w" ] && rest_how="CPU, $rest_how"
+	fi
+fi
+if ((laptop)) && [ -z "$rest_w" ] && [ -r "$rest_file" ]; then
+	read -r rest_w rest_time <"$rest_file"
+	rest_age=$(($(date +%s) - rest_time))
+	if ((rest_age < 3600)); then
+		rest_age="$((rest_age / 60)) min"
+	elif ((rest_age < 2 * 86400)); then
+		rest_age="$((rest_age / 3600)) h"
+	else
+		rest_age="$((rest_age / 86400)) days"
+	fi
+	rest_how="measured $rest_age ago on battery"
+	if ((nparts)); then
+		total_w=$(awk -v a="$known_w" -v b="$rest_w" 'BEGIN { printf "%.2f", a + b }')
+		total_how="estimated: known components + rest of laptop as last measured on battery"
+	fi
+fi
+
+if ((laptop)); then
+	total_lo=10 total_hi=25
+else
+	total_lo=150 total_hi=400
+fi
+if [ -n "$total_w" ]; then
+	row "Total" "$(level "$total_w" $total_lo $total_hi)$bold$(f '%5.1f' "$total_w") W$reset $dim($total_how)$reset"
+	if [ "$total_w" = "$psu_w" ]; then
+		rails=
+		for r in +12v +5v +3.3v; do
+			w=$(scaled "$(hwmon_input "$psu" power "power $r")" 1000000) || continue
+			rails+="${rails:+, }${r^^} $(f '%.1f' "$w") W"
+		done
+		[ -n "$rails" ] && note "$rails"
+	fi
+	((nparts)) && row "Known components" "$(f '%5.1f' "$known_w") W $dim(sum of the parts below)$reset"
+elif ((nparts)); then
+	row "Total" "$(level "$known_w" $total_lo $total_hi)$bold$(f '%5.1f' "$known_w") W$reset $dim(at least: only the parts below)$reset"
+	if [ "$bat_status" = Charging ]; then
+		note "The rest is unknown while charging."
+	elif ((laptop)); then
+		note "The rest is unknown on AC until status runs once on battery."
+	fi
+else
+	row "Total" "${dim}unknown$reset"
+fi
+
+# The parts, highest first, each followed by its own parts.
+print_parts() {
+	local w key parent label text lo hi
+	sort -t"$sep" -k1,1gr <<<"$parts" | while IFS=$sep read -r w key parent label text lo hi; do
+		[ -n "$w" ] && [ "$parent" = "$1" ] || continue
+		row "$2$label" "$(level "$w" "$lo" "$hi")$(f '%5.1f' "$w") W$reset${text:+ $dim($text)$reset}"
+		print_parts "$key" "$2  "
+	done
+}
+print_parts "" "  "
+((dgpu_unknown)) && row "  $gpu_label" "${yellow}awake, draw unknown$reset $dim(not included above)$reset"
+[ -n "$rest_w" ] && row "Rest" "$(f '%5.1f' "$rest_w") W $dim($rest_how)$reset"
+if ((!laptop)) && [ -z "$pkg_w" ] && [ -e /sys/class/powercap/intel-rapl:0/energy_uj ]; then
+	note "CPU not measured: only root can read RAPL. Run scripts/configure_hardware.sh."
+fi
+[ "$bat_status" = Charging ] && [ -n "$bat_w" ] &&
+	row "Charging at" "$(f '%5.1f' "$bat_w") W"
+
+# --------------------------------------------------------------------------------------------------
+# Battery life.
+# --------------------------------------------------------------------------------------------------
+
+if ((laptop)); then
+	section "Battery life"
+	if [ -z "$energy_now" ]; then
+		note "no battery energy readings"
+	elif [ -n "$total_w" ] && lt 0.5 "$total_w"; then
+		left=$(awk -v e="$energy_now" -v p="$total_w" 'BEGIN { print e / p }')
+		full_h=$(awk -v e="$energy_full" -v p="$total_w" 'BEGIN { print e / p }')
+		if [ "$bat_status" = Discharging ]; then
+			label="Remaining"
+		else
+			label="If unplugged now"
+		fi
+		color=$green
+		lt "$left" 3 && color=$yellow
+		lt "$left" 1 && color=$red
+		row "$label" "$color$bold$(hm "$left")$reset $dim(from $(f '%.1f' "$energy_now") Wh at $(f '%.1f' "$total_w") W)$reset"
+		# KDE's battery applet shows a time based on a running average of the draw, so it lags
+		# behind changes in load. It is in milliseconds, and 0 when not discharging.
+		qdbus=$(command -v qdbus6 || command -v qdbus)
+		if [ "$bat_status" = Discharging ] && [ -n "$qdbus" ]; then
+			kde_ms=$(timeout 1 "$qdbus" org.kde.Solid.PowerManagement /org/kde/Solid/PowerManagement \
+				org.kde.Solid.PowerManagement.smoothedBatteryRemainingTime 2>/dev/null)
+			if [[ $kde_ms =~ ^[0-9]+$ ]] && ((kde_ms > 0)); then
+				kde_h=$(awk -v ms="$kde_ms" 'BEGIN { print ms / 3600000 }')
+				row "Running average" "$(hm "$kde_h") $dim(at $(f '%.1f' "$(awk -v e="$energy_now" \
+					-v h="$kde_h" 'BEGIN { print e / h }')") W, averaged over recent draw by KDE)$reset"
+			fi
+		fi
+		((capacity < 95)) && row "Full charge lasts" "$(hm "$full_h") $dim(at the same draw)$reset"
+	elif ((nparts)) && lt 0.5 "$known_w"; then
+		left=$(awk -v e="$energy_now" -v p="$known_w" 'BEGIN { print e / p }')
+		row "If unplugged now" "under $(hm "$left") $dim(counting only the known components' $(f '%.1f' "$known_w") W)$reset"
+		note "Run status once on battery for a full estimate."
+	else
+		note "no power readings"
+	fi
+	if [ "$bat_status" = Charging ] && [ -n "$bat_w" ] && lt 0.5 "$bat_w"; then
+		target=$(awk -v f="$energy_full" -v l="${limit:-100}" 'BEGIN { print f * l / 100 }')
+		if lt "$energy_now" "$target"; then
+			row "Full in" "$(hm "$(awk -v t="$target" -v e="$energy_now" -v p="$bat_w" \
+				'BEGIN { print (t - e) / p }')") $dim(to ${limit:-100}%, at the current rate)$reset"
+		fi
+	fi
+fi
+[ "$show" = power ] && exit 0
+
+# --------------------------------------------------------------------------------------------------
+# Power settings.
+# --------------------------------------------------------------------------------------------------
+
+section "Power settings"
+profile=$(cat /sys/firmware/acpi/platform_profile 2>/dev/null)
+case $profile in
+low-power | quiet) row "Platform profile" "$green$profile$reset" ;;
+balanced) row "Platform profile" "$profile" ;;
+?*) row "Platform profile" "$yellow$profile$reset" ;;
+esac
+cpufreq=/sys/devices/system/cpu/cpu0/cpufreq
+if [ -r "$cpufreq/scaling_driver" ]; then
+	epp=$(cat "$cpufreq/energy_performance_preference" 2>/dev/null)
+	row "CPU driver" "$(cat "$cpufreq/scaling_driver"), governor $(cat "$cpufreq/scaling_governor")${epp:+, EPP $epp}"
+fi
+mhz=$(cat /sys/devices/system/cpu/cpu*/cpufreq/scaling_cur_freq 2>/dev/null |
+	awk '{ s += $1; if ($1 > m) m = $1 } END { if (NR) printf "%.0f MHz avg, %.0f MHz max", s / NR / 1000, m / 1000 }')
+[ -n "$mhz" ] && row "CPU clock" "$mhz"
+row "CPU load" "$(level "$cpu_load" 25 70)$cpu_load%$reset, busiest thread $(level "$thread_load" 50 90)$thread_load%$reset $dim(over 0.5 s)$reset"
+if [ -n "$amdgpu" ] && [ -r "$amdgpu/device/gpu_busy_percent" ]; then
+	igpu=$(cat "$amdgpu/device/gpu_busy_percent")
+	row "iGPU load" "$(level "$igpu" 25 70)$igpu%$reset $dim(right now)$reset"
+fi
+for b in /sys/class/backlight/*; do
+	[ -r "$b/brightness" ] || continue
+	row "Screen brightness" "$((100 * $(cat "$b/brightness") / $(cat "$b/max_brightness")))%"
+	break
+done
+for k in /sys/class/leds/*kbd_backlight; do
+	[ -r "$k/brightness" ] || continue
+	row "Keyboard light" "$(cat "$k/brightness") of $(cat "$k/max_brightness")"
+	break
+done
+
+# --------------------------------------------------------------------------------------------------
+# Temperatures and fans.
+# --------------------------------------------------------------------------------------------------
+
+section "Temperatures and fans"
+# A temperature in °C × 1000, from a file or as a number.
+temp() {
+	local t=$2
+	[[ $t =~ ^[0-9]+$ ]] || t=$(cat "$2" 2>/dev/null) || return
+	[ -n "$t" ] || return
+	t=$((t / 1000))
+	row "$1" "$(level "$t" 60 85)$t °C$reset"
+}
+fan() {
+	if (($2 > 0)); then
+		row "$1" "$2 rpm"
+	else
+		row "$1" "${green}off$reset"
+	fi
+}
+h=$(hwmon k10temp) && temp "CPU" "$h/temp1_input"
+[ -n "$amdgpu" ] && temp "iGPU" "$amdgpu/temp1_input"
+[ -n "${nv_temp:-}" ] && temp "NVIDIA GPU" $((nv_temp * 1000))
+h=$(hwmon nvme) && temp "SSD" "$h/temp1_input"
+t=$(max_temp spd5118) && temp "RAM" "$t"
+t=$(max_temp prom21_xhci) && temp "Chipset" "$t"
+h=$(hwmon nct6799) && temp "Motherboard" "$(hwmon_input "$h" temp SYSTIN)"
+[ -n "$psu" ] && temp "PSU" "$(hwmon_input "$psu" temp "vrm temp")"
+h=$(hwmon mt7925_phy0) && temp "Wi-Fi" "$h/temp1_input"
+# The laptop's fans.
+if h=$(hwmon asus); then
+	for f in "$h"/fan*_input; do
+		[ -r "$f" ] || continue
+		label=$(cat "${f%_input}_label" 2>/dev/null)
+		label=${label%_fan}
+		fan "${label^^} fan" "$(cat "$f")"
+	done
+fi
+# The desktop's fan headers, unlabeled. Stopped ones are mostly empty headers.
+if h=$(hwmon nct6799); then
+	for f in "$h"/fan*_input; do
+		rpm=$(cat "$f" 2>/dev/null) && ((rpm > 0)) || continue
+		n=${f##*/fan}
+		row "Fan ${n%_input}" "$rpm rpm"
+	done
+fi
+[ -n "${nv_fan:-}" ] && row "NVIDIA GPU fans" "$nv_fan%"
+[ -n "$psu" ] && fan "PSU fan" "$(cat "$(hwmon_input "$psu" fan "psu fan")" 2>/dev/null || echo 0)"
+
+gpu_section
+exit 0

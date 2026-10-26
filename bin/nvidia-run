@@ -1,11 +1,13 @@
 #!/bin/bash
 #
-# Runs a program on the NVIDIA dGPU. Same as prime-run, but also lets Vulkan see the dGPU again,
-# which ~/.config/environment.d/60-vulkan-igpu.conf hides by default.
+# Runs a program on the NVIDIA dGPU, through PRIME render offload like Arch's prime-run, which
+# Fedora doesn't have. Also lets Vulkan see the dGPU again, which
+# ~/.config/environment.d/60-vulkan-igpu.conf hides by default.
 #
 # Usage: nvidia-run COMMAND [ARGS...]
 #
 # Author: Danylo Malyuta, 2026.
 
 unset VK_DRIVER_FILES VK_ICD_FILENAMES
-exec prime-run "$@"
+export __NV_PRIME_RENDER_OFFLOAD=1 __VK_LAYER_NV_optimus=NVIDIA_only __GLX_VENDOR_LIBRARY_NAME=nvidia
+exec "$@"

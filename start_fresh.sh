@@ -1,20 +1,21 @@
 #!/bin/bash
 #
-# Set up a fresh CachyOS install. On a new machine, run
+# Set up a fresh Fedora KDE Plasma install. On a new machine, run
 #
-#   curl -fsSL https://raw.githubusercontent.com/dmalyuta/dotfiles/cachyos/start_fresh.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/dmalyuta/dotfiles/fedora/start_fresh.sh | bash
 #
 # Safe to re-run: every step skips what is already done. With -c, reuse the answers from the last
 # run instead of asking again (pass it through curl with `| bash -s -- -c`).
 #
-# This script installs and configures the software. At the end it runs scripts/configure_hardware.sh
-# for low-level hardware setup (GPUs, kernel, sleep and hibernation, laptop quirks) and
-# scripts/configure_kde.sh for the desktop.
+# This script installs and configures the software, including the NVIDIA driver. At the end it runs
+# scripts/configure_hardware.sh for low-level hardware setup (GPUs, kernel, sleep and hibernation,
+# laptop quirks) and scripts/configure_kde.sh for the desktop.
 #
 # Author: Danylo Malyuta, 2026.
 
 repo_ssh=git@github.com:dmalyuta/dotfiles.git
-raw_base=https://raw.githubusercontent.com/dmalyuta/dotfiles/cachyos
+branch=fedora
+raw_base=https://raw.githubusercontent.com/dmalyuta/dotfiles/$branch
 
 # --------------------------------------------------------------------------------------------------
 # Bootstrap.
@@ -48,6 +49,8 @@ fi
 downloads=~/Downloads
 mkdir -p "$downloads" ~/.local/bin ~/.local/share/applications
 cd "$downloads" || exit
+# Apps installed to ~/.local/bin below are run from here too.
+export PATH=$HOME/.local/bin:$PATH
 
 # --------------------------------------------------------------------------------------------------
 # Helpers.
@@ -81,6 +84,31 @@ valid_workspaces() {
 	local entry="[A-Z]:/[^,;]*[^,;/]"
 	[[ $1 =~ ^($entry(,$entry)*)?$ ]] &&
 		[ -z "$(tr , '\n' <<<"$1" | cut -c1 | sort | uniq -d)" ]
+}
+
+# Download $1 to $2 with mode $3 (default 644), replacing $2 only once the download is complete.
+fetch() {
+	local tmp rc
+	tmp=$(mktemp)
+	curl -fsSL "$1" -o "$tmp" && install -Dm "${3:-644}" "$tmp" "$2"
+	rc=$?
+	rm -f "$tmp"
+	return $rc
+}
+
+# Enable COPR repo $1 (owner/project) if it isn't yet.
+copr() {
+	compgen -G "/etc/yum.repos.d/_copr*:${1/\//:}.repo" >/dev/null || sudo dnf copr enable -y "$1"
+}
+
+# The key that signs the kernel modules built here, see "Kernel module signing" below.
+akmods_cert=/etc/pki/akmods/certs/public_key.der
+
+# Whether that key is enrolled in the firmware, or queued for enrollment on the next boot. Its
+# directory is only readable by root.
+mok_key_ok() {
+	sudo test -f "$akmods_cert" &&
+		! sudo mokutil --test-key "$akmods_cert" 2>/dev/null | grep -q 'not enrolled'
 }
 
 # --------------------------------------------------------------------------------------------------
@@ -118,14 +146,14 @@ elif ask coolercontrol "Install CoolerControl?"; then
 fi
 
 installed openrgb || ask openrgb "Install OpenRGB?" && want_openrgb=1
-# Also taken when already installed, so an install from another repo moves to the OGC one.
 installed asusctl || ask asusctl "Install asusctl and ROG Control Center?" && want_asusctl=1
 installed cardwire || ask cardwire "Install cardwire hybrid GPU manager?" && want_cardwire=1
-installed brother-mfc-j805dw || ask brother "Install Brother printer driver?" && want_brother=1
+installed mfcj805dwpdrv || ask brother "Install Brother printer driver?" && want_brother=1
 ask obs "Install the custom OBS configuration?" && want_obs=1
 
 pdfx_dir=~/.wine/drive_c/"Program Files/PDF-XChange"
 [ -d "$pdfx_dir" ] || { ask pdfx "Install PDF-XChange Editor?" && want_pdfx=1; }
+[ -x ~/.local/bin/PureRef ] || { ask pureref "Install PureRef?" && want_pureref=1; }
 
 # Kept out of the repo, since the projects may be private. The last answer, or the rejected one on a
 # retry, is pre-filled for editing.
@@ -142,78 +170,203 @@ if [ -z "$use_cached" ] || ! valid_workspaces "${answers[workspaces]-x}"; then
 	answers[workspaces]=$workspaces
 fi
 
+# A one-time password for enrolling the module signing key, see "Kernel module signing" below.
+# Asked every run until the key is enrolled, and only its hash is kept, for this run only.
+if secure_boot && ! mok_key_ok; then
+	echo "Secure Boot is on, so the NVIDIA driver needs a signing key that the firmware trusts. Pick"
+	echo "a one-time password for adding it: the next boot asks for it once."
+	while true; do
+		read -s -p "Key password: " -r mok_password && echo
+		read -s -p "Again: " -r a && echo
+		[ -n "$mok_password" ] && [ "$mok_password" = "$a" ] && break
+		echo "Empty or different, try again."
+	done
+	mok_hash=$(mokutil --generate-hash="$mok_password")
+	unset mok_password a
+fi
+
+# --------------------------------------------------------------------------------------------------
+# Repositories.
+# --------------------------------------------------------------------------------------------------
+
+# RPM Fusion, for the NVIDIA driver and the codecs that Fedora leaves out.
+fedora=$(rpm -E %fedora)
+if ! installed rpmfusion-free-release || ! installed rpmfusion-nonfree-release; then
+	sudo dnf install -y \
+		"https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$fedora.noarch.rpm" \
+		"https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$fedora.noarch.rpm"
+fi
+
+# Terra, for most of what Fedora doesn't have: cardwire, asusctl, CoolerControl, keyd, OpenRazer,
+# Polychromatic, gping and the Nerd Fonts. Its terra-release package adds the repo and its key.
+# shellcheck disable=SC2016 # $releasever is for dnf.
+installed terra-release ||
+	sudo dnf install -y --nogpgcheck --repofrompath 'terra,https://repos.fyralabs.com/terra$releasever' \
+		terra-release
+
+# COPRs: FSearch from its author, and acpi_call for scripts/asus-power-limits.
+copr cboxdoerfer/fsearch
+[ -n "${want_asusctl:-}" ] && is_laptop && copr rhea/acpi_call
+
+# The vendors' own repos. Fedora has Grafana too, but years behind.
+write_root_file /etc/yum.repos.d/brave-browser.repo <<'EOF'
+[brave-browser]
+name=Brave Browser
+baseurl=https://brave-browser-rpm-release.s3.brave.com/$basearch
+enabled=1
+gpgcheck=1
+gpgkey=https://brave-browser-rpm-release.s3.brave.com/brave-core.asc
+EOF
+write_root_file /etc/yum.repos.d/vscode.repo <<'EOF'
+[code]
+name=Visual Studio Code
+baseurl=https://packages.microsoft.com/yumrepos/vscode
+enabled=1
+autorefresh=1
+type=rpm-md
+gpgcheck=1
+gpgkey=https://packages.microsoft.com/keys/microsoft.asc
+EOF
+write_root_file /etc/yum.repos.d/nordvpn.repo <<'EOF'
+[nordvpn]
+name=NordVPN
+baseurl=https://repo.nordvpn.com/yum/nordvpn/centos/$basearch
+enabled=1
+gpgcheck=1
+gpgkey=https://repo.nordvpn.com/gpg/nordvpn_public.asc
+EOF
+write_root_file /etc/yum.repos.d/grafana.repo <<'EOF'
+[grafana]
+name=Grafana
+baseurl=https://rpm.grafana.com
+enabled=1
+gpgcheck=1
+repo_gpgcheck=1
+gpgkey=https://rpm.grafana.com/gpg.key
+EOF
+
+# --------------------------------------------------------------------------------------------------
+# Kernel module signing.
+# --------------------------------------------------------------------------------------------------
+
+# With Secure Boot on, the kernel only loads modules signed by a key the firmware trusts. akmods
+# builds the NVIDIA and OpenRazer modules and signs them with its own key, and DKMS (acpi_call) is
+# set to use the same one, so that one key is all the firmware needs. mokutil queues it, and on the
+# next boot MOK Manager asks for the password to enroll it. Until then those modules don't load.
+if secure_boot; then
+	sudo dnf install -y akmods kmodtool mokutil openssl
+	sudo test -f "$akmods_cert" || sudo kmodgenca -a
+	write_root_file /etc/dkms/framework.conf.d/akmods-key.conf <<EOF
+# Sign DKMS modules with the akmods key, see start_fresh.sh.
+mok_signing_key="/etc/pki/akmods/private/private_key.priv"
+mok_certificate="$akmods_cert"
+EOF
+	if [ -n "${mok_hash:-}" ] && ! mok_key_ok; then
+		hash_file=$(mktemp)
+		echo "$mok_hash" >"$hash_file"
+		sudo mokutil --import "$akmods_cert" --hash-file "$hash_file" && need_mok_enroll=1
+		rm -f "$hash_file"
+	fi
+fi
+
 # --------------------------------------------------------------------------------------------------
 # Packages.
 # --------------------------------------------------------------------------------------------------
 
-pacman_apps=(
-	base-devel git curl wget unzip openssh paru
-	bat btop htop tree fzf fd ripgrep shfmt gping
-	kitty tmux ttf-cascadia-code-nerd
-	proton-pass obsidian brave-bin okular inkscape obs-studio gimp
-	vlc vlc-plugins-all flameshot nextcloud-client
-	qalculate-gtk speedcrunch
-	texlive perl-yaml-tiny perl-file-homedir
-	openrazer-daemon python-openrazer keyd
-	flatpak rustup nodejs npm grafana wine winetricks bazelisk
-)
-aur_apps=(
-	visual-studio-code-bin polychromatic oh-my-posh-bin fsearch pureref otf-sn-pro
-	xnviewmp nordvpn-bin nordvpn-gui-bin raddebugger
+dnf_apps=(
+	@c-development @development-tools git curl wget unzip openssh-clients
+	bat btop htop tree fzf fd-find ripgrep shfmt gping sqlite
+	kitty tmux cascadiacode-nerd-fonts
+	brave-browser code okular inkscape obs-studio gimp
+	vlc vlc-plugins-all vlc-plugins-freeworld flameshot nextcloud-client
+	qalculate-gtk speedcrunch fsearch
+	texlive-scheme-full texlive-latexindent perl-YAML-Tiny perl-File-HomeDir
+	openrazer-meta akmod-openrazer polychromatic keyd
+	flatpak rustup nodejs npm grafana wine winetricks nordvpn nordvpn-gui
+	# To build RAD Debugger, below.
+	clang lld llvm libX11-devel libXext-devel libXfixes-devel mesa-libGL-devel mesa-libEGL-devel
+	freetype-devel
 )
 flatpak_apps=(
 	com.github.tchx84.Flatseal
 	io.github.tanaybhomia.Whisp
 	io.github.amit9838.mousam
+	md.obsidian.Obsidian
+	me.proton.Pass
+	com.xnview.XnViewMP
 )
 
 groups=(plugdev nordvpn)
-services=(grafana nordvpnd keyd)
+services=(grafana-server nordvpnd keyd)
 
-[ -n "${want_coolercontrol:-}" ] && pacman_apps+=(coolercontrol) && services+=(coolercontrold)
+# The NVIDIA driver, as an akmod: akmods builds it for each new kernel. The CUDA package also has
+# nvidia-smi.
+has_nvidia && dnf_apps+=(akmod-nvidia xorg-x11-drv-nvidia-cuda)
+[ -n "${want_coolercontrol:-}" ] && dnf_apps+=(coolercontrol) && services+=(coolercontrold)
 # The PX13 folds into a tablet, which needs an on-screen keyboard.
-is_laptop && pacman_apps+=(plasma-keyboard)
-[ -n "${want_openrgb:-}" ] && pacman_apps+=(openrgb i2c-tools) && groups+=(i2c)
-[ -n "${want_asusctl:-}" ] && pacman_apps+=(asusctl rog-control-center) && services+=(asusd)
+is_laptop && dnf_apps+=(plasma-keyboard)
+[ -n "${want_openrgb:-}" ] && dnf_apps+=(openrgb i2c-tools) && groups+=(i2c)
+[ -n "${want_asusctl:-}" ] && dnf_apps+=(asusctl asusctl-rog-gui) && services+=(asusd)
 # For scripts/asus-power-limits.
-[ -n "${want_asusctl:-}" ] && is_laptop && pacman_apps+=(acpi_call-dkms)
-[ -n "${want_cardwire:-}" ] && pacman_apps+=(cardwire) && services+=(cardwired)
-[ -n "${want_brother:-}" ] && pacman_apps+=(cups) && aur_apps+=(brother-mfc-j805dw) && services+=(cups)
-
-# OpenGamingCollective's repo, for asusctl and cardwire straight from upstream. It goes first
-# because pacman takes a package from the first repo that has it, and extra has asusctl too.
-ogc_key=F79100EF8C802DAB81C323BB8EEA5962FE510E19
-if [ -n "${want_asusctl:-}${want_cardwire:-}" ]; then
-	if ! sudo pacman-key --list-keys "$ogc_key" >/dev/null 2>&1; then
-		sudo pacman-key --recv-keys "$ogc_key"
-		sudo pacman-key --lsign-key "$ogc_key"
-	fi
-	grep -q '^\[ogc\]' /etc/pacman.conf ||
-		awk '!done && /^\[/ && !/^\[options\]/ {
-			print "[ogc]\nServer = https://pacman.opengamingcollective.org\n"; done = 1
-		} 1' /etc/pacman.conf | write_root_file /etc/pacman.conf
+[ -n "${want_asusctl:-}" ] && is_laptop && dnf_apps+=(acpi_call-dkms)
+[ -n "${want_cardwire:-}" ] && dnf_apps+=(cardwire cardwire-gui) && services+=(cardwired)
+if [ -n "${want_brother:-}" ]; then
+	dnf_apps+=(cups) && services+=(cups)
+	installed mfcj805dwpdrv ||
+		dnf_apps+=(https://download.brother.com/welcome/dlf104570/mfcj805dwpdrv-1.0.5-0.i386.rpm)
 fi
 
-sudo pacman -Syu --needed --noconfirm "${pacman_apps[@]}"
-paru -S --needed --noconfirm --skipreview --sudoloop "${aur_apps[@]}"
+sudo dnf upgrade -y --refresh
+# The full FFmpeg and AMD's hardware video decoding, in place of Fedora's builds without the
+# patented codecs. --allowerasing swaps them for Fedora's. Before the rest, which may need them.
+installed ffmpeg || sudo dnf install -y --allowerasing ffmpeg
+installed mesa-va-drivers-freeworld || sudo dnf install -y --allowerasing mesa-va-drivers-freeworld
+# cardwire replaces switcheroo-control, which Fedora KDE ships, and the two conflict.
+[ -n "${want_cardwire:-}" ] && installed switcheroo-control &&
+	sudo dnf swap -y switcheroo-control cardwire
+# One package gone from a repo shouldn't hold up the rest. Any other problem fails the whole
+# install, and everything after needs it, so stop there.
+if ! sudo dnf install -y --skip-unavailable "${dnf_apps[@]}"; then
+	say "Installing the packages failed, see above. Fix it and run this again." >&2
+	exit 1
+fi
 
-# Bash as the login shell (CachyOS defaults to fish).
-[[ $(getent passwd "$USER" | cut -d: -f7) == */bash ]] || sudo chsh -s /usr/bin/bash "$USER"
+# Build the kernel modules (NVIDIA and OpenRazer with akmods, acpi_call with DKMS) for the newest
+# kernel now, rather than on its first boot, which would hold up the desktop for minutes. The
+# upgrade may have just installed that kernel, before the modules' own hooks were there.
+newest_kernel=$(rpm -q kernel --qf '%{VERSION}-%{RELEASE}.%{ARCH}\n' | sort -V | tail -n 1)
+if installed akmods || installed dkms; then
+	installed "kernel-devel-$newest_kernel" || sudo dnf install -y "kernel-devel-$newest_kernel"
+	installed dkms && sudo dkms autoinstall -k "$newest_kernel"
+fi
+if installed akmods; then
+	sudo akmods --kernels "$newest_kernel"
+	if has_nvidia && ! modinfo -k "$newest_kernel" nvidia >/dev/null 2>&1; then
+		say "The NVIDIA driver failed to build, see /var/cache/akmods/nvidia." >&2
+	fi
+fi
 
 for g in "${groups[@]}"; do
 	getent group "$g" >/dev/null || sudo groupadd --system "$g"
 	sudo usermod -aG "$g" "$USER"
 done
 
-rustup toolchain list 2>/dev/null | grep -q stable || rustup default stable
+# Rust toolchains, in ~/.cargo and ~/.rustup. rustup-init also adds ~/.cargo/bin to PATH in the
+# shell profiles.
+[ -x ~/.cargo/bin/rustup ] || rustup-init -y
 
 # Flatpak apps, plus the GL extension matching the Nvidia driver so they get hardware rendering
 # under Wayland.
-flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-nvidia_version=$(modinfo -F version nvidia 2>/dev/null)
+# System-wide, which needs root.
+sudo flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+nvidia_version=$(nvidia_version)
 [ -n "$nvidia_version" ] &&
 	flatpak_apps+=("org.freedesktop.Platform.GL.nvidia-${nvidia_version//./-}")
-flatpak install -y --noninteractive flathub "${flatpak_apps[@]}"
+sudo flatpak install -y --noninteractive flathub "${flatpak_apps[@]}"
+
+# --------------------------------------------------------------------------------------------------
+# Apps from upstream, installed to ~/.local.
+# --------------------------------------------------------------------------------------------------
 
 # Superluminal: a plain tarball, unpacked user-owned so its updater can write.
 if [ -n "${want_superluminal:-}" ]; then
@@ -241,6 +394,68 @@ EOF
 	fi
 fi
 
+# Oh My Posh, which updates itself with `oh-my-posh upgrade`.
+[ -x ~/.local/bin/oh-my-posh ] ||
+	fetch https://github.com/JanDeDobbeleer/oh-my-posh/releases/latest/download/posh-linux-amd64 \
+		~/.local/bin/oh-my-posh 755
+
+# Bazelisk, which runs the Bazel version that a project asks for. Also as `bazel`.
+if [ ! -x ~/.local/bin/bazelisk ]; then
+	fetch https://github.com/bazelbuild/bazelisk/releases/latest/download/bazelisk-linux-amd64 \
+		~/.local/bin/bazelisk 755 && ln -sf bazelisk ~/.local/bin/bazel
+fi
+
+# SN Pro font.
+sn_pro_dir=~/.local/share/fonts/SN-Pro
+if ! compgen -G "$sn_pro_dir/*.otf" >/dev/null; then
+	mkdir -p "$sn_pro_dir"
+	curl -fsSL -o sn-pro.zip https://github.com/supernotes/sn-pro/releases/latest/download/SN-Pro.zip &&
+		unzip -q -j -o sn-pro.zip '*.otf' -d "$sn_pro_dir" && fc-cache -f "$sn_pro_dir"
+	rm -f sn-pro.zip
+fi
+
+# PureRef, from the .deb on its pay-what-you-want download page, which has no direct link. It
+# holds a static binary, its desktop entry and icons.
+if [ -n "${want_pureref:-}" ]; then
+	until pureref_deb=$(ls -t ./*[Pp]ure[Rr]ef*.deb 2>/dev/null | head -n 1) && [ -n "$pureref_deb" ]; do
+		echo "Download PureRef's Linux .deb from https://www.pureref.com/download.php into $downloads"
+		read -p "Press ENTER to try again... " -r
+	done
+	pureref_tmp=$(mktemp -d)
+	if ar x --output "$pureref_tmp" "$pureref_deb" &&
+		tar xf "$pureref_tmp"/data.tar.* -C ~/.local --strip-components=2 ./usr; then
+		set_desktop_key ~/.local/share/applications/pureref.desktop Exec "$HOME/.local/bin/PureRef %U"
+	else
+		say "Could not unpack $pureref_deb." >&2
+	fi
+	rm -rf "$pureref_tmp"
+fi
+
+# RAD Debugger, built from its latest release, like the AUR package does.
+if [ ! -x ~/.local/bin/raddbg ]; then
+	rad_tag=$(curl -fsSLI -o /dev/null -w '%{url_effective}' \
+		https://github.com/EpicGames/raddebugger/releases/latest)
+	rad_src=$(mktemp -d)
+	if git -c advice.detachedHead=false clone -q --depth 1 -b "${rad_tag##*/}" https://github.com/EpicGames/raddebugger.git "$rad_src" &&
+		(cd "$rad_src" && ./build.sh clang release meta raddbg radbin radlink); then
+		install -Dm755 "$rad_src"/build/{raddbg,radbin,radlink} -t ~/.local/bin
+		install -Dm644 "$rad_src"/data/logo.png ~/.local/share/raddbg/logo.png
+		cat >~/.local/share/applications/raddbg.desktop <<EOF
+[Desktop Entry]
+Type=Application
+Name=RAD Debugger
+Comment=Native graphical debugger
+Exec=$HOME/.local/bin/raddbg
+Icon=$HOME/.local/share/raddbg/logo.png
+Terminal=false
+Categories=Development;Debugger;
+EOF
+	else
+		say "Could not build RAD Debugger." >&2
+	fi
+	rm -rf "$rad_src"
+fi
+
 # --------------------------------------------------------------------------------------------------
 # SSH and dotfiles.
 # --------------------------------------------------------------------------------------------------
@@ -259,7 +474,7 @@ else
 		cat ~/.ssh/id_ed25519.pub
 		read -p $'\nPress ENTER once it is added... ' -r
 	done
-	git clone -b cachyos "$repo_ssh" "$dotfiles"
+	git clone -b "$branch" "$repo_ssh" "$dotfiles"
 fi
 
 git -C "$dotfiles" submodule update --init --recursive
@@ -272,7 +487,6 @@ ln -sf "$dotfiles"/config/kitty/{kitty.conf,default-kitty,resize_split.py} ~/.co
 ln -sf "$dotfiles"/config/tmux-powerline/config.sh ~/.config/tmux-powerline/
 ln -sf "$dotfiles"/config/tmux-powerline/themes/danylo-theme.sh ~/.config/tmux-powerline/themes/
 ln -sf "$dotfiles"/config/.blue-owl-custom.omp.json ~
-compgen -G ~/'.local/share/fonts/caskaydiacove*' >/dev/null || oh-my-posh font install CascadiaCode
 echo 'kitty.desktop' >~/.config/xdg-terminals.list
 
 [ -d ~/.tmux/plugins/tpm ] || git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
@@ -362,13 +576,13 @@ fi
 
 # Grafana needs to read /home. Do NOT chmod -R here.
 chmod o+rx "$HOME"
-if write_root_file /etc/systemd/system/grafana.service.d/override.conf <<'EOF'
+if write_root_file /etc/systemd/system/grafana-server.service.d/override.conf <<'EOF'
 [Service]
 ProtectHome=false
 EOF
 then
 	sudo systemctl daemon-reload
-	sudo systemctl try-restart grafana
+	sudo systemctl try-restart grafana-server
 fi
 
 # keyd remaps keys below the display server, see scripts/keyd.conf. A restart applies a new config.
@@ -480,6 +694,14 @@ bash "$dotfiles"/scripts/configure_hardware.sh
 # KDE desktop configuration, see scripts/configure_kde.sh.
 bash "$dotfiles"/scripts/configure_kde.sh "${answers[workspaces]:-}"
 [ $? -eq 2 ] && need_reboot=1
+
+if [ -n "${need_mok_enroll:-}" ]; then
+	need_reboot=1
+	say "Next boot: enroll the module signing key, or the NVIDIA driver won't load."
+	echo "A blue MOK Manager screen waits 10 s for a key press. Press any key, then pick"
+	echo "Enroll MOK > Continue > Yes, type the password you picked, and pick Reboot. If you miss"
+	echo "it, run this script again and reboot."
+fi
 
 if [ -z "${need_reboot:-}" ]; then
 	say "Done."

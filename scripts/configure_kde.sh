@@ -106,10 +106,20 @@ set_shortcut() {
 # --------------------------------------------------------------------------------------------------
 
 # Exit with status 2 if these change. Writing an unchanged value leaves the file as is.
+kwin_env=~/.config/plasma-workspace/env/kwin-no-vulkan.sh
 kde_files=(~/.config/{kcminputrc,kglobalshortcutsrc,kwinrc,ksmserverrc,kdeglobals,plasmashellrc}
-	~/.config/plasma-org.kde.plasma.desktop-appletsrc)
+	~/.config/plasma-org.kde.plasma.desktop-appletsrc "$kwin_env")
 kde_hash() { cat "${kde_files[@]}" 2>/dev/null | md5sum; }
 kde_before=$(kde_hash)
+
+# Since Plasma 6.7, KWin's Vulkan path keeps a context on the NVIDIA dGPU, which then never
+# suspends. KWin renders with OpenGL on the iGPU anyway. Plasma reads this file at login.
+if has_nvidia; then
+	mkdir -p "${kwin_env%/*}"
+	echo 'export KWIN_DISABLE_VULKAN=1' >"$kwin_env"
+else
+	rm -f "$kwin_env"
+fi
 
 # Input devices.
 kconf --file kcminputrc --group Keyboard --key RepeatDelay 150
@@ -199,18 +209,6 @@ else
 	rm -f ~/.local/share/applications/cardwire-gui.desktop
 fi
 
-# Cachy-Update, from its tray icon, notification or the menu, runs in a new tab of the open kitty
-# instead of a Konsole window. All three open its desktop entry, preferring this one to the system
-# one, which it copies.
-cachy_update_entry=/usr/share/applications/arch-update.desktop
-if [ -f "$cachy_update_entry" ]; then
-	sed -e "s|^Exec=.*|Exec=\"$dotfiles/bin/kitty-tab.sh\" --title Cachy-Update arch-update|" \
-		-e 's|^Terminal=.*|Terminal=false|' "$cachy_update_entry" \
-		>~/.local/share/applications/arch-update.desktop
-else
-	rm -f ~/.local/share/applications/arch-update.desktop
-fi
-
 # Global shortcuts. Set through kglobalaccel's D-Bus API because it keeps them in memory and
 # overwrites edits to kglobalshortcutsrc. Apps are bound by desktop entry, where the "_launch"
 # action runs its Exec, so first rebuild the cache that kglobalaccel finds the entries in. Each key
@@ -234,9 +232,9 @@ brave-browser.desktop|Brave|_launch|Brave|None
 org.kde.dolphin.desktop|Dolphin|_launch|Dolphin|None
 io.github.cboxdoerfer.FSearch.desktop|FSearch|_launch|FSearch|None
 pureref.desktop|PureRef|_launch|PureRef|None
-obsidian.desktop|Obsidian|_launch|Obsidian|None
+md.obsidian.Obsidian.desktop|Obsidian|_launch|Obsidian|None
 org.inkscape.Inkscape.desktop|Inkscape|_launch|Inkscape|None
-speedcrunch.desktop|SpeedCrunch|_launch|SpeedCrunch|None
+org.speedcrunch.SpeedCrunch.desktop|SpeedCrunch|_launch|SpeedCrunch|None
 pdf-xchange-editor.desktop|PDF-XChange Editor|_launch|PDF-XChange Editor|None
 com.microsoft.VSCode.desktop|Visual Studio Code|_launch|Visual Studio Code|None
 kwin|KWin|App Hotkeys: Brave|App Hotkeys: Brave|Meta+B
@@ -318,11 +316,17 @@ plasma_conf() {
 # Tela-circle icons, in the dark variant to match Breeze Dark. Set after the look and feel, since
 # applying one resets the icon theme. plasma-changeicons tells running apps to reload icons, but
 # the panel's task manager keeps the icons it already looked up, so restart plasmashell too.
-pacman -Q tela-circle-icon-theme-standard >/dev/null 2>&1 ||
-	sudo pacman -S --needed --noconfirm tela-circle-icon-theme-standard
+# Fedora doesn't package them, so install them from upstream, to ~/.local/share/icons. The
+# installer defaults to the standard folder color, as Tela-circle, Tela-circle-dark and -light.
 icon_theme=Tela-circle-dark
+if [ ! -d ~/.local/share/icons/"$icon_theme" ]; then
+	tela_src=$(mktemp -d)
+	git clone -q --depth 1 https://github.com/vinceliuice/Tela-circle-icon-theme.git "$tela_src" &&
+		"$tela_src"/install.sh >/dev/null
+	rm -rf "$tela_src"
+fi
 if [ "$(kreadconfig6 --file kdeglobals --group Icons --key Theme)" != "$icon_theme" ]; then
-	/usr/lib/plasma-changeicons "$icon_theme"
+	/usr/libexec/plasma-changeicons "$icon_theme"
 	restart_plasmashell=1
 fi
 # Panels 40 px tall, opaque (0 is adaptive, 1 opaque, 2 translucent), and never floating, even
@@ -342,7 +346,7 @@ done
 # else that was pinned is dropped.
 read -r tm_cont tm_applet < <(applet_group org.kde.plasma.icontasks)
 if [ -n "${tm_applet:-}" ]; then
-	pins=(org.kde.dolphin brave-browser kitty com.microsoft.VSCode obsidian)
+	pins=(org.kde.dolphin brave-browser kitty com.microsoft.VSCode md.obsidian.Obsidian)
 	[ -f ~/.local/share/applications/pdf-xchange-editor.desktop ] && pins+=(pdf-xchange-editor)
 	list=$(printf ',applications:%s.desktop' "${pins[@]}")
 	plasma_conf plasma-org.kde.plasma.desktop-appletsrc \

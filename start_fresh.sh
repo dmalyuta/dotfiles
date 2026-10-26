@@ -524,6 +524,9 @@ fi
 # Per-app configuration.
 # --------------------------------------------------------------------------------------------------
 
+# Edit commit messages and the like in VS Code.
+git config --global core.editor "code --wait"
+
 if [ -n "${want_nct6775:-}" ]; then
 	sudo modprobe nct6775
 	echo nct6775 | write_root_file /etc/modules-load.d/nct6775.conf

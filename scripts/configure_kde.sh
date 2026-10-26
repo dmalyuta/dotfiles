@@ -199,6 +199,18 @@ else
 	rm -f ~/.local/share/applications/cardwire-gui.desktop
 fi
 
+# Cachy-Update, from its tray icon, notification or the menu, runs in a new tab of the open kitty
+# instead of a Konsole window. All three open its desktop entry, preferring this one to the system
+# one, which it copies.
+cachy_update_entry=/usr/share/applications/arch-update.desktop
+if [ -f "$cachy_update_entry" ]; then
+	sed -e "s|^Exec=.*|Exec=\"$dotfiles/bin/kitty-tab.sh\" --title Cachy-Update arch-update|" \
+		-e 's|^Terminal=.*|Terminal=false|' "$cachy_update_entry" \
+		>~/.local/share/applications/arch-update.desktop
+else
+	rm -f ~/.local/share/applications/arch-update.desktop
+fi
+
 # Global shortcuts. Set through kglobalaccel's D-Bus API because it keeps them in memory and
 # overwrites edits to kglobalshortcutsrc. Apps are bound by desktop entry, where the "_launch"
 # action runs its Exec, so first rebuild the cache that kglobalaccel finds the entries in. Each key

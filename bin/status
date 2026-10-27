@@ -14,9 +14,8 @@
 # on the desktop, what the PSU puts out. Then the sum of the components that measure their own
 # draw, and those components from highest to lowest.
 #
-# The laptop's battery measures nothing useful on AC, so there the total is an estimate: the known
-# components plus the rest of the laptop's draw as last measured on battery. Each run on battery
-# saves that rest to ~/.cache/status/rest, unless the dGPU is awake with an unknown draw.
+# The laptop's battery measures nothing useful on AC, so there the total is only the known
+# components, and the rest of the laptop is left out.
 #
 # The desktop's CPU power comes from the RAPL energy counters, which only root can read unless
 # scripts/configure_hardware.sh has opened them up.
@@ -38,13 +37,6 @@ case $# in
 	;;
 *) echo "$usage" >&2 && exit 2 ;;
 esac
-cache=${XDG_CACHE_HOME:-$HOME/.cache}
-rest_file=$cache/status/rest
-# From when this script was called power-info.
-if [ -f "$cache/power-info/rest" ] && [ ! -e "$rest_file" ]; then
-	mkdir -p "${rest_file%/*}" && mv "$cache/power-info/rest" "$rest_file"
-	rmdir "$cache/power-info" 2>/dev/null
-fi
 
 if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
 	bold=$'\e[1m' dim=$'\e[2m' red=$'\e[31m' green=$'\e[32m' yellow=$'\e[33m' cyan=$'\e[36m'
@@ -431,8 +423,7 @@ fi
 known_w=$(awk -F"$sep" '$1 != "" && $3 == "" { s += $1 } END { printf "%.2f", s }' <<<"$parts")
 nparts=$(awk -F"$sep" '$1 != "" && $3 == ""' <<<"$parts" | wc -l)
 
-# The total: measured by the battery or the PSU, or estimated from what the rest of the laptop drew
-# when last on battery.
+# The total: measured by the battery or the PSU.
 total_w= total_how= rest_w= rest_how=
 psu_w=
 [ -n "$psu" ] && psu_w=$(scaled "$(hwmon_input "$psu" power "power total")" 1000000)
@@ -448,30 +439,9 @@ if [ -n "$total_w" ] && ((nparts)) && lt "$known_w" "$total_w"; then
 	if ((laptop)); then
 		rest_how="screen, RAM, SSD, Wi-Fi, losses"
 		((dgpu_unknown)) && rest_how+=", dGPU"
-		# Remember it, for estimates on AC.
-		if ((!dgpu_unknown)); then
-			mkdir -p "${rest_file%/*}"
-			echo "$rest_w $(date +%s)" >"$rest_file"
-		fi
 	else
 		rest_how="motherboard, RAM, SSD, fans, USB"
 		[ -z "$pkg_w" ] && rest_how="CPU, $rest_how"
-	fi
-fi
-if ((laptop)) && [ -z "$rest_w" ] && [ -r "$rest_file" ]; then
-	read -r rest_w rest_time <"$rest_file"
-	rest_age=$(($(date +%s) - rest_time))
-	if ((rest_age < 3600)); then
-		rest_age="$((rest_age / 60)) min"
-	elif ((rest_age < 2 * 86400)); then
-		rest_age="$((rest_age / 3600)) h"
-	else
-		rest_age="$((rest_age / 86400)) days"
-	fi
-	rest_how="measured $rest_age ago on battery"
-	if ((nparts)); then
-		total_w=$(awk -v a="$known_w" -v b="$rest_w" 'BEGIN { printf "%.2f", a + b }')
-		total_how="estimated: known components + rest of laptop as last measured on battery"
 	fi
 fi
 
@@ -493,11 +463,7 @@ if [ -n "$total_w" ]; then
 	((nparts)) && row "Known components" "$(f '%5.1f' "$known_w") W $dim(sum of the parts below)$reset"
 elif ((nparts)); then
 	row "Total" "$(level "$known_w" $total_lo $total_hi)$bold$(f '%5.1f' "$known_w") W$reset $dim(at least: only the parts below)$reset"
-	if [ "$bat_status" = Charging ]; then
-		note "The rest is unknown while charging."
-	elif ((laptop)); then
-		note "The rest is unknown on AC until status runs once on battery."
-	fi
+	((laptop)) && note "The rest of the laptop is only measured on battery."
 else
 	row "Total" "${dim}unknown$reset"
 fi
@@ -556,7 +522,6 @@ if ((laptop)); then
 	elif ((nparts)) && lt 0.5 "$known_w"; then
 		left=$(awk -v e="$energy_now" -v p="$known_w" 'BEGIN { print e / p }')
 		row "If unplugged now" "under $(hm "$left") $dim(counting only the known components' $(f '%.1f' "$known_w") W)$reset"
-		note "Run status once on battery for a full estimate."
 	else
 		note "no power readings"
 	fi

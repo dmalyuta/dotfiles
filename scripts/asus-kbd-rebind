@@ -18,7 +18,10 @@ for dev in "$drv"/0003:0B05:19B6.*; do
 	echo "$id" >"$drv/bind"
 done
 logger -t asus-kbd-rebind "rebound hid_asus to the keyboard controller"
-# asusd sets its lighting before it is up on D-Bus, which is when try-restart returns.
+# asusd sets its lighting before it is up on D-Bus, which is when try-restart returns. Its unit
+# allows 5 starts in 500 s, which a few hibernations in a row reach, after which it stays down; so
+# first reset that count, which is meant for crash loops, not for these restarts.
+systemctl reset-failed asusd
 systemctl try-restart asusd
 if [ -n "$brightness" ] && [ -w "$led/brightness" ]; then
 	echo "$brightness" >"$led/brightness"

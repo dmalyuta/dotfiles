@@ -757,7 +757,7 @@ if ((laptop)); then
 	if [ -z "$energy_now" ]; then
 		note "no battery energy readings"
 	elif [ -n "$total_w" ] && lt 0.5 "$total_w"; then
-		left=$(awk -v e="$energy_now" -v p="$total_w" 'BEGIN { print e / p }')
+		hours_left=$(awk -v e="$energy_now" -v p="$total_w" 'BEGIN { print e / p }')
 		full_h=$(awk -v e="$energy_full" -v p="$total_w" 'BEGIN { print e / p }')
 		if [ "$bat_status" = Discharging ]; then
 			label="Remaining"
@@ -765,9 +765,9 @@ if ((laptop)); then
 			label="If unplugged now"
 		fi
 		color=$green
-		lt "$left" 3 && color=$yellow
-		lt "$left" 1 && color=$red
-		row "$label" "$color$bold$(hm "$left")$reset $dim(from $(f '%.1f' "$energy_now") Wh at $(f '%.1f' "$total_w") W)$reset"
+		lt "$hours_left" 3 && color=$yellow
+		lt "$hours_left" 1 && color=$red
+		row "$label" "$color$bold$(hm "$hours_left")$reset $dim(from $(f '%.1f' "$energy_now") Wh at $(f '%.1f' "$total_w") W)$reset"
 		# KDE's battery applet shows a time based on a running average of the draw, so it lags
 		# behind changes in load. It is in milliseconds, and 0 when not discharging.
 		qdbus=$(command -v qdbus6 || command -v qdbus)
@@ -782,8 +782,8 @@ if ((laptop)); then
 		fi
 		((capacity < 95)) && row "Full charge lasts" "$(hm "$full_h") $dim(at the same draw)$reset"
 	elif ((nparts)) && lt 0.5 "$known_w"; then
-		left=$(awk -v e="$energy_now" -v p="$known_w" 'BEGIN { print e / p }')
-		row "If unplugged now" "under $(hm "$left") $dim(counting only the known components' $(f '%.1f' "$known_w") W)$reset"
+		hours_left=$(awk -v e="$energy_now" -v p="$known_w" 'BEGIN { print e / p }')
+		row "If unplugged now" "under $(hm "$hours_left") $dim(counting only the known components' $(f '%.1f' "$known_w") W)$reset"
 	else
 		note "no power readings"
 	fi

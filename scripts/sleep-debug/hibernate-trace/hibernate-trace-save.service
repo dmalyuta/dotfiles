@@ -1,0 +1,10 @@
+[Unit]
+Description=Save the pm_trace of the last hibernation before resuming it
+DefaultDependencies=no
+After=sys-firmware-efi-efivars.mount
+Before=systemd-hibernate-resume.service
+ConditionPathExists=/etc/initrd-release
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/hibernate-trace-save

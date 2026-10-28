@@ -1,0 +1,271 @@
+#!/bin/bash
+# Debug log for sleep and hibernation, to find the cause the first time one goes wrong: a
+# hibernation that hangs at power-off (screen black, power LED on) and drains the battery overnight,
+# a sleep that doesn't reach the SoC's deepest state or keeps waking up, or a sleep that never comes
+# back.
+# Runs as a systemd-sleep hook around each sleep step (suspend-then-hibernate runs it around its
+# suspend and its hibernate separately, with SYSTEMD_SLEEP_ACTION saying which), and at boot from
+# sleep-debug.service. Installed, and removed again, by setup.sh in this folder, which
+# start_fresh.sh runs as answered.
+#
+# Read it with journalctl -t sleep-debug, and the files in /var/log/sleep-debug:
+# - Before each step, a snapshot of the devices' power state (<time>-<step>.txt). Only sysfs and
+#   procfs reads, which don't wake a powered-off device (lspci and lsusb can), and none of a
+#   driver's own files: /proc/driver/nvidia blocks from nvidia-suspend/-hibernate.service until the
+#   resume. The hook sets everything else up first and waits for the snapshot 10 s at most, since
+#   systemd sleeps without a hook that is still running after a timeout.
+# - After each step: the battery used, and for a suspend, the share of it in hardware sleep (the
+#   SoC's deepest state) and the wakeup sources that fired. A suspend under 90% in hardware sleep is
+#   flagged, with the AMD PMC's debug state in <time>-pmc.txt. A hibernation is flagged as probably
+#   hung if it drew over 1 W on average for 20 min or more, or lost 5% or more (a working one is
+#   off).
+# - For every sleep, the kernel's debug messages (pm_debug_messages: the wakeup source, the AMD
+#   PMC's view of what kept the SoC awake), in the journal. Not pm_print_times: two lines per
+#   device and step overflow the 256 KB kernel log while journald is frozen, and push out the other
+#   messages.
+# - A marker while asleep: at boot, a leftover one means the last boot ended in a sleep it never
+#   came back from (a hang, or the battery died).
+# - During each hibernation, pm_trace: before each device's callback, the kernel writes a hash of
+#   the device and of the callback's file:line into the RTC, which survives a forced power-off, and
+#   handles the devices one at a time so that the last one traced is the one that hung. The next
+#   boot's kernel decodes it ("Magic number", "hash matches"), but resuming the image discards that
+#   kernel's log, so the initramfs saves it to an EFI variable first (hibernate-trace/), and this
+#   script moves it to <time>-trace.txt.
+# - Decode it with pm-trace-decode in this folder, from the "RTC time" line in the trace file, the
+#   time from the hang to that boot (from the journal), and the device names in the hibernation's
+#   snapshot. Not with the kernel's own decode: the RTC keeps ticking, so it is only right if the
+#   laptop was powered on within about 3 minutes, and it is wrong whenever the year written is 00
+#   (read_magic_time takes 2000 for 100 years).
+#
+# Reading a trace after a hung hibernation, against those of working ones: the image is written,
+# then the kernel powers off through ACPI S4 (hibernation_platform_enter, kernel/power/hibernate.c).
+# - A working one (kernel 7.2.12, 2026-10-28) leaves the end of device_suspend_noirq
+#   (drivers/base/power/main.c:1560, TRACE_SUSPEND(error)) on device "faux", the last one powered
+#   off.
+# - The start of a suspend callback (device_suspend*, its TRACE_SUSPEND(0)) of some device: that
+#   device's driver hung powering off.
+# - The same as a working one: all devices were off, and the firmware's S4 entry (ACPI _PTS or the
+#   S4 write) hung or returned, after which the kernel spins forever.
+# - A resume callback (device_resume*): the S4 entry failed and the kernel restored the devices,
+#   then fell back to a plain power-off (kernel_power_off), which hung in a driver's shutdown
+#   (untraced).
+#
+# pm_trace sets the RTC to a made-up date (2000-01-02 in a test), so after it the kernel ignores the
+# RTC and the clock resumes behind by the time spent hibernated. This script writes that time back
+# to the RTC and restarts chronyd, which steps the clock once online. Only the hibernation is
+# traced: during a suspend, the RTC also holds the alarm that wakes the laptop to hibernate, which
+# must stay right.
+
+set -u
+dir=/var/log/sleep-debug
+marker=$dir/asleep
+state=/run/sleep-debug
+var=/sys/firmware/efi/efivars/HibernateTrace-8bc5b097-6e23-408e-9a7d-2bad8e8739d1
+self=$(readlink -f "$0")
+bat=$(ls -d /sys/class/power_supply/BAT* 2>/dev/null | head -n 1)
+action=${SYSTEMD_SLEEP_ACTION:-${2:-}}
+
+log() { logger -t sleep-debug -- "$*"; }
+bat_get() { cat "$bat/$1" 2>/dev/null || echo "$2"; }
+hw_sleep() { cat /sys/power/suspend_stats/total_hw_sleep 2>/dev/null || echo 0; }
+now() { date +%s; }
+uptime_s() { cut -d. -f1 /proc/uptime; }
+
+# A new file in the log named <time>-<kind>.txt, never one that exists.
+new_file() {
+	local f i=1
+	f=$dir/$(date +%Y%m%d-%H%M%S)-$1.txt
+	while [ -e "$f" ]; do f=$dir/$(date +%Y%m%d-%H%M%S)-$1-$((i++)).txt; done
+	echo "$f"
+}
+
+# The wakeup sources' event counts, one "<name>@<device> <count>" per line.
+wakeups() {
+	local w
+	for w in /sys/class/wakeup/*; do
+		echo "$(tr ' ' _ <"$w/name")@$(basename "$(readlink -f "$w/device")") $(cat "$w/event_count")"
+	done 2>/dev/null
+}
+
+# The battery drain of a sleep: seconds, energy before and after (µWh).
+drain() {
+	awk -v t="$1" -v e0="$2" -v e1="$3" -v full="$(bat_get energy_full 1)" 'BEGIN {
+		wh = (e0 - e1) / 1e6; w = (t > 0 ? wh / (t / 3600) : 0)
+		printf "%dh%02dm, used %.2f Wh (%.1f%%), %.2f W avg, %.1f%% per 8 h",
+			t / 3600, t % 3600 / 60, wh, 100 * wh / (full / 1e6), w, 100 * w * 8 / (full / 1e6)
+	}'
+}
+
+snapshot() {
+	echo "# $(date -Is) $*, step $action, up $(uptime_s) s, kernel $(uname -r)"
+	echo "## battery"
+	grep -H . "$bat"/{status,capacity,energy_now,power_now} /sys/class/power_supply/AC*/online 2>/dev/null
+	echo "## /sys/power"
+	grep -H . /sys/power/{disk,mem_sleep,image_size,pm_trace} /sys/power/suspend_stats/* 2>/dev/null
+	echo "## memory"
+	free -m
+	swapon --show
+	echo "## nvidia: driver version, users (its power state is in the pci list)"
+	cat /sys/module/nvidia/version 2>/dev/null
+	timeout 5 fuser -v /dev/nvidia* 2>&1
+	local d
+	echo "## pci: address vendor:device class driver runtime_status power_state d3cold_allowed wakeup"
+	for d in /sys/bus/pci/devices/*; do
+		echo "${d##*/} $(cat "$d/vendor" "$d/device" 2>/dev/null | sed 's/^0x//' | paste -sd:)" \
+			"$(cat "$d/class") $(basename "$(readlink "$d/driver" 2>/dev/null)" 2>/dev/null)" \
+			"$(cat "$d/power/runtime_status" "$d/power_state" "$d/d3cold_allowed" \
+				"$d/power/wakeup" 2>/dev/null | paste -sd' ')"
+	done
+	echo "## usb: device vendor:product name runtime_status wakeup"
+	for d in /sys/bus/usb/devices/*; do
+		[ -f "$d/idVendor" ] || continue
+		echo "${d##*/} $(cat "$d/idVendor"):$(cat "$d/idProduct") '$(cat "$d/product" 2>/dev/null)'" \
+			"$(cat "$d/power/runtime_status" "$d/power/wakeup" 2>/dev/null | paste -sd' ')"
+	done
+	echo "## thunderbolt"
+	for d in /sys/bus/thunderbolt/devices/*; do
+		[ -f "$d/device_name" ] && echo "${d##*/} $(cat "$d/vendor_name" "$d/device_name" | paste -sd' ')"
+	done
+	echo "## acpi wakeup enabled"
+	grep enabled /proc/acpi/wakeup
+	echo "## wakeup sources: name@device event_count"
+	cat "$state.wakeups"
+	echo "## network"
+	rfkill
+	timeout 5 nmcli -t -f DEVICE,TYPE,STATE,CONNECTION device
+	echo "## modules"
+	lsmod
+	echo "## kernel log tail"
+	dmesg | tail -n 40
+	# The names pm_trace hashes, to decode a trace (pm-trace-decode).
+	if [ "$action" = hibernate ]; then
+		echo "## devices"
+		find /sys/devices -name uevent -printf '%h\n' | sed 's|.*/||' | sort -u
+	fi
+}
+
+# Move a pm_trace saved by the initramfs into the log.
+collect_trace() {
+	[ -e "$var" ] || return 0
+	mkdir -p "$dir"
+	local f
+	f=$(new_file trace)
+	tail -c +5 "$var" >"$f"
+	log "$1, its pm_trace ($f): $(grep -v '^rtc:' "$f" | paste -sd' ' | head -c 800)"
+	chattr -i "$var" 2>/dev/null
+	rm -f "$var"
+}
+
+# A marker left by a sleep that never came back.
+check_marker() {
+	[ -f "$marker" ] || return 0
+	log "the last boot ended during a sleep it never came back from (hung, or the battery died):" \
+		"$(cat "$marker"), see journalctl -b -1"
+	rm -f "$marker"
+}
+
+pre() {
+	mkdir -p "$dir"
+	local f pid i
+	f=$(new_file "$action")
+	# The settings first, then the readings that go through drivers (the battery's through the EC),
+	# then the snapshot, so that nothing is left undone, or done after the resume, if one blocks.
+	echo "$action since $(date -Is), snapshot $f" >"$marker"
+	echo 1 >/sys/power/pm_debug_messages
+	if [ "$action" = hibernate ]; then
+		echo 1 >/sys/power/pm_trace
+		log "hibernate: pm_trace on, snapshot $f"
+	fi
+	echo "$(now) $(bat_get energy_now 0) $(bat_get capacity 0) $(hw_sleep) $(bat_get status none)" >"$state"
+	wakeups >"$state.wakeups"
+	# Keep the last 300 snapshots, and every trace and PMC dump.
+	ls -1t "$dir"/*.txt 2>/dev/null | grep -v -e '-trace[-0-9]*\.txt$' -e '-pmc[-0-9]*\.txt$' |
+		tail -n +301 | xargs -r rm -f
+	# The marker must be on disk if the sleep never comes back.
+	sync
+	snapshot "$@" >"$f" 2>&1 &
+	pid=$!
+	for i in $(seq 20); do
+		kill -0 "$pid" 2>/dev/null || return 0
+		sleep 0.5
+	done
+	log "$action: snapshot not done after 10 s, sleeping without waiting for it"
+}
+
+post() {
+	# Undo the hibernation's tracing first, whatever else fails, and give the RTC a sane time again
+	# (the one the clock resumed at, which chronyd then corrects).
+	if [ "$action" = hibernate ]; then
+		echo 0 >/sys/power/pm_trace
+		hwclock --systohc
+	fi
+	rm -f "$marker"
+	collect_trace "resumed from hibernation"
+	[ -f "$state" ] || return 0
+	local t0 e0 c0 h0 s0 t1 e1 c1 h1 s1 woke irq
+	read -r t0 e0 c0 h0 s0 <"$state"
+	t1=$(now) e1=$(bat_get energy_now 0) c1=$(bat_get capacity 0) h1=$(hw_sleep) s1=$(bat_get status none)
+	woke=$(wakeups | awk 'NR == FNR { n[$1] = $2; next } $2 > n[$1] { printf "%s+%d ", $1, $2 - n[$1] }' \
+		"$state.wakeups" -)
+	rm -f "$state" "$state.wakeups"
+
+	if [ "$action" = hibernate ]; then
+		# Percentages, which also work when it was plugged in to boot after the battery died. The
+		# clock is behind until chronyd steps it, so the duration comes from the clock job.
+		local note=
+		[ $((c0 - c1)) -ge 5 ] && note=", PROBABLY HUNG at power-off"
+		log "hibernate: battery $c0% -> $c1% ($s0 -> $s1)$note"
+		systemd-run --no-block --collect --quiet --unit="sleep-debug-clock-$(date +%s%N)" \
+			"$self" clock "$t0" "$(uptime_s)" "$e0" "$e1" "$s0" "$s1"
+		return 0
+	fi
+
+	local t=$((t1 - t0)) hw note= f
+	hw=$(awk -v h="$((h1 - h0))" -v t="$t" 'BEGIN { printf "%.0f", (t > 0 ? 100 * h / 1e6 / t : 0) }')
+	irq=$(cat /sys/power/pm_wakeup_irq 2>/dev/null)
+	[ -n "$irq" ] && irq=", wakeup irq $irq ($(grep -E "^ *$irq:" /proc/interrupts | awk '{ print $NF }'))"
+	if [ "$t" -ge 300 ] && [ "$hw" -lt 90 ]; then
+		f=$(new_file pmc)
+		grep -H . /sys/kernel/debug/amd_pmc/{s0ix_stats,smu_fw_info,amd_pmc_idlemask} >"$f" 2>&1
+		note=", NOT IN DEEP SLEEP most of the time, see $f"
+	fi
+	if [ "$s0" = Discharging ] && [ "$s1" = Discharging ]; then
+		log "$action: $(drain "$t" "$e0" "$e1"), hw sleep $hw%$note, woke: ${woke:-none}$irq"
+	else
+		log "$action: $((t / 3600))h$(printf %02d $((t % 3600 / 60)))m on AC, hw sleep $hw%$note," \
+			"woke: ${woke:-none}$irq"
+	fi
+}
+
+# After a hibernation: step the clock back to the right time, then log how long it lasted.
+clock() {
+	local t0=$1 up1=$2 e0=$3 e1=$4 s0=$5 s1=$6 t1 t
+	systemctl restart chronyd
+	if ! chronyc waitsync 90 1 >/dev/null; then
+		log "hibernate: clock not synced after 15 min (offline?), duration unknown"
+		return
+	fi
+	hwclock --systohc
+	# The wall time when it came back, from the time since then.
+	t1=$(($(now) - ($(uptime_s) - up1)))
+	t=$((t1 - t0))
+	if [ "$s0" != Discharging ] || [ "$s1" != Discharging ]; then
+		log "hibernate: lasted $((t / 3600))h$(printf %02d $((t % 3600 / 60)))m, on AC ($s0 -> $s1)"
+	elif [ "$t" -ge 1200 ] && [ $((e0 - e1)) -gt $((t * 1000000 / 3600)) ]; then
+		log "hibernate: $(drain "$t" "$e0" "$e1"), PROBABLY HUNG at power-off (over 1 W)"
+	else
+		log "hibernate: $(drain "$t" "$e0" "$e1")"
+	fi
+}
+
+case ${1:-} in
+pre) pre "$@" ;;
+post) post "$@" ;;
+clock) shift && clock "$@" ;;
+# A fresh boot: a trace left means an image was there but not resumed.
+boot)
+	check_marker
+	collect_trace "booted without resuming a hibernation"
+	;;
+esac
+exit 0

@@ -153,6 +153,8 @@ installed asusctl || ask asusctl "Install asusctl and ROG Control Center?" && wa
 installed cardwire || ask cardwire "Install cardwire hybrid GPU manager?" && want_cardwire=1
 installed mfcj805dwpdrv || ask brother "Install Brother printer driver?" && want_brother=1
 ask obs "Install the custom OBS configuration?" && want_obs=1
+is_laptop && ask sleep_debug "Turn on the sleep and hibernation debug log (scripts/sleep-debug)?" &&
+	want_sleep_debug=1
 
 pdfx_dir=~/.wine/drive_c/"Program Files/PDF-XChange"
 [ -d "$pdfx_dir" ] || { ask pdfx "Install PDF-XChange Editor?" && want_pdfx=1; }
@@ -749,6 +751,13 @@ fi
 # scripts/configure_hardware.sh.
 bash "$dotfiles"/scripts/configure_hardware.sh
 [ $? -eq 2 ] && need_reboot=1
+
+# The laptop's sleep and hibernation debug log, on or off as answered, see
+# scripts/sleep-debug/setup.sh.
+if is_laptop; then
+	bash "$dotfiles"/scripts/sleep-debug/setup.sh "$([ -n "${want_sleep_debug:-}" ] && echo on || echo off)"
+	[ $? -eq 2 ] && need_reboot=1
+fi
 
 # KDE desktop configuration, see scripts/configure_kde.sh.
 bash "$dotfiles"/scripts/configure_kde.sh "${answers[workspaces]:-}"

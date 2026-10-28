@@ -1,0 +1,29 @@
+#!/bin/bash
+# In the initramfs, before it resumes a hibernation image: save what this kernel decoded from the
+# pm_trace hash in the RTC (see scripts/sleep-debug) to an EFI variable, since the resume discards
+# this kernel's log. sleep-debug moves it to /var/log/sleep-debug.
+
+efi=/sys/firmware/efi/efivars
+var=$efi/HibernateTrace-8bc5b097-6e23-408e-9a7d-2bad8e8739d1
+tmp=/run/hibernate-trace
+
+# Only when there is an image to resume: systemd records where it is before hibernating.
+ls "$efi"/HibernateLocation-* >/dev/null 2>&1 || exit 0
+
+{
+	echo "rtc: $(cat /sys/class/rtc/rtc0/date /sys/class/rtc/rtc0/time 2>/dev/null | tr '\n' ' ')"
+	dmesg | grep -E 'RTC time|Magic number|hash matches'
+	echo "pm_trace_dev_match:"
+	cat /sys/power/pm_trace_dev_match 2>/dev/null
+} >"$tmp.txt" 2>&1
+
+# An EFI variable is its attributes (non-volatile, boot and runtime access) then its data, and
+# efivarfs takes it in a single write: dd's one block, without the truncate efivarfs refuses. Kept
+# small, as some firmware limits a variable's size.
+{ printf '\007\000\000\000'; head -c 1500 "$tmp.txt"; } >"$tmp.bin"
+if [ -e "$var" ]; then
+	chattr -i "$var" 2>/dev/null
+	rm -f "$var"
+fi
+dd if="$tmp.bin" of="$var" bs=8192 count=1 conv=notrunc status=none
+exit 0

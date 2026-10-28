@@ -1,0 +1,99 @@
+#!/usr/bin/env python3
+"""Decode a pm_trace from the RTC reading taken at the next boot, after any delay.
+
+pm_trace (see scripts/sleep-debug) stores a number in the RTC as a date and time, with the seconds
+and the minutes modulo 3 at 0. The RTC keeps ticking, so the kernel's own decode at boot ("Magic
+number") is only right within 3 minutes. But the ticking is exact: the reading minus the elapsed
+time gives back the time written, and the elapsed time is the reading's (minutes modulo 3, seconds)
+plus a whole number of 3-minute steps. This tries every step count in a range of elapsed times and
+keeps the decodes that make sense: a callback (user) value of 0, a file:line among the trace sites
+in drivers/base/power/main.c, and a device that exists. A wrong step count passes the first two by
+chance about once in 1300 tries.
+
+Usage: pm-trace-decode --rtc 'YYYY-MM-DD HH:MM:SS' --elapsed MIN-MAX --main-c main.c \\
+           [--devices names.txt] [--file drivers/base/power/main.c]
+  --rtc      The RTC at boot: the kernel's "PM: RTC time: HH:MM:SS, date: YYYY-MM-DD" line, from the
+             trace file in /var/log/sleep-debug. (The kernel's own decode next to it is wrong when
+             the year is 2000: read_magic_time doesn't take 100 years off then.)
+  --elapsed  Seconds from the hang to that boot, as a range, e.g. from the journal's "hibernation
+             entry" plus the time to write the image, to the boot.
+  --main-c   drivers/base/power/main.c of the running kernel's version.
+  --devices  Device names, one per line (the hibernation snapshot's "devices" section).
+  --decode   Decode the reading as it is, as the kernel does, and stop (to check this script).
+"""
+
+import argparse
+import datetime
+import re
+import sys
+
+USERHASH, FILEHASH, DEVHASH, DEVSEED = 16, 997, 1009, 7919
+
+
+def hash_string(seed, data, mod):
+    # drivers/base/power/trace.c, in unsigned 32-bit arithmetic.
+    for c in data.encode():
+        seed = ((seed << 16) + (seed << 6) - seed + c) & 0xFFFFFFFF
+    return seed % mod
+
+
+def decode(t):
+    # read_magic_time() and late_resume_init() in drivers/base/power/trace.c.
+    val = t.year % 100 + (t.month - 1) * 100 + (t.day - 1) * 100 * 12 + t.hour * 100 * 12 * 28
+    val += (t.minute // 3) * 100 * 12 * 28 * 24
+    return val % USERHASH, val // USERHASH % FILEHASH, val // USERHASH // FILEHASH
+
+
+def main():
+    p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
+    p.add_argument("--rtc", required=True)
+    p.add_argument("--elapsed", default="0-0")
+    p.add_argument("--main-c")
+    p.add_argument("--file", default="drivers/base/power/main.c")
+    p.add_argument("--devices")
+    p.add_argument("--decode", action="store_true")
+    a = p.parse_args()
+
+    # The RTC counts with its own 2-digit year, leap every 4 years, like 2000-2099 do.
+    rtc = datetime.datetime.strptime(a.rtc, "%Y-%m-%d %H:%M:%S")
+    rtc = rtc.replace(year=2000 + rtc.year % 100)
+    if a.decode:
+        print("Magic number: %d:%d:%d" % decode(rtc))
+        return
+
+    sites = {}
+    if a.main_c:
+        for n, line in enumerate(open(a.main_c), 1):
+            m = re.search(r"TRACE_(RESUME|SUSPEND)\((\w+)\)", line)
+            if m:
+                sites[hash_string(n, a.file, FILEHASH)] = "%s:%d %s" % (a.file, n, m.group(0))
+    devices = {}
+    if a.devices:
+        for name in open(a.devices).read().split():
+            devices.setdefault(hash_string(DEVSEED, name, DEVHASH), []).append(name)
+
+    lo, hi = (int(x) for x in a.elapsed.split("-"))
+    rem = (rtc.minute % 3) * 60 + rtc.second
+    found = 0
+    for elapsed in range(rem, hi + 1, 180):
+        if elapsed < lo:
+            continue
+        written = rtc - datetime.timedelta(seconds=elapsed)
+        if written.day > 28:
+            continue
+        user, file, dev = decode(written)
+        site = sites.get(file)
+        if user != 0 or (sites and not site):
+            continue
+        found += 1
+        print("elapsed %dh%02dm%02ds, written %s: %d:%d:%d  %s  devices: %s" % (
+            elapsed // 3600, elapsed % 3600 // 60, elapsed % 60, written.strftime("%m-%d %H:%M"),
+            user, file, dev, site or "(no main.c given)",
+            " ".join(devices.get(dev, ["(none)"])) if devices else "(no list given)"))
+    if not found:
+        print("no decode makes sense in that range", file=sys.stderr)
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()

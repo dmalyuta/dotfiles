@@ -170,15 +170,16 @@ if is_laptop && can_hibernate && [ "$(findmnt -no FSTYPE /)" = btrfs ] && [ ! -f
 	sudo swapon "$swapfile"
 fi
 
-# Sleep then hibernate after 3 h on battery, to cap the drain overnight. On AC it stays asleep, and
-# the 3 h start when it is unplugged. SleepMode 3 is "Standby, then hibernate". Without hibernation,
-# back to plain sleep, else KDE would try to hibernate and fail.
+# Sleep then hibernate after 1 h on battery, to cap the drain overnight: sleep draws ~0.7 W
+# (1.1%/h), hibernation ~0.1 W. On AC it stays asleep, and the hour starts when it is unplugged.
+# SleepMode 3 is "Standby, then hibernate". Without hibernation, back to plain sleep, else KDE would
+# try to hibernate and fail.
 #
 # Keep the default HibernateMode (platform), which the Nvidia driver needs, see above.
 if is_laptop && can_hibernate && [ -f "$swapfile" ]; then
 	write_root_file /etc/systemd/sleep.conf.d/50-suspend-then-hibernate.conf <<'EOF'
 [Sleep]
-HibernateDelaySec=3h
+HibernateDelaySec=1h
 HibernateOnACPower=no
 EOF
 	for profile in AC Battery LowBattery; do

@@ -1,0 +1,9 @@
+[Unit]
+Description=Log a sleep or hibernation the last boot never came back from, see scripts/sleep-debug
+
+[Service]
+Type=oneshot
+ExecStart=/usr/lib/systemd/system-sleep/sleep-debug boot
+
+[Install]
+WantedBy=multi-user.target

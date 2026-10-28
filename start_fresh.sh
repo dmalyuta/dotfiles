@@ -133,32 +133,43 @@ superluminal_dir=~/.local/superluminal
 [ -x "$superluminal_dir"/Superluminal ] ||
 	{ ask superluminal "Install Superluminal profiler?" && want_superluminal=1; }
 
-if installed coolercontrol; then
-	want_coolercontrol=1
-elif ask coolercontrol "Install CoolerControl?"; then
-	want_coolercontrol=1
-	ask nct6775 "Try to find fans on desktop (nct6775)?" && want_nct6775=1
-	if ask cc_backup "Restore CoolerControl settings from backup?"; then
-		while true; do
-			read -e -p "Path to the CoolerControl backup file: " -r cc_backup
-			cc_backup="${cc_backup/#\~/$HOME}"
-			[ -f "$cc_backup" ] && break
-			echo "$cc_backup not found, try again."
-		done
+# CoolerControl on both. The desktop also gets its fan chip's driver (nct6775) and OpenRGB, the
+# laptop the ASUS tools and cardwire for its hybrid GPU.
+want_coolercontrol=1
+if is_laptop; then
+	want_asusctl=1
+	want_cardwire=1
+else
+	want_nct6775=1
+	want_openrgb=1
+fi
+if ! installed coolercontrol && ask cc_backup "Restore CoolerControl settings from backup?"; then
+	while true; do
+		read -e -p "Path to the CoolerControl backup file: " -r cc_backup
+		cc_backup="${cc_backup/#\~/$HOME}"
+		[ -f "$cc_backup" ] && break
+		echo "$cc_backup not found, try again."
+	done
+fi
+
+installed mfcj805dwpdrv || ask brother "Install Brother printer driver?" && want_brother=1
+
+# The OBS configuration, on the desktop. Already installed if its profiles link into the repo.
+obs_basic=~/.config/obs-studio/basic
+if ! is_laptop; then
+	if [ "$(readlink "$obs_basic/profiles")" = "$dotfiles/config/obs/profiles" ]; then
+		want_obs=1
+	elif ask obs "Install the custom OBS configuration?"; then
+		want_obs=1
 	fi
 fi
 
-installed openrgb || ask openrgb "Install OpenRGB?" && want_openrgb=1
-installed asusctl || ask asusctl "Install asusctl and ROG Control Center?" && want_asusctl=1
-installed cardwire || ask cardwire "Install cardwire hybrid GPU manager?" && want_cardwire=1
-installed mfcj805dwpdrv || ask brother "Install Brother printer driver?" && want_brother=1
-ask obs "Install the custom OBS configuration?" && want_obs=1
 is_laptop && ask sleep_debug "Turn on the sleep and hibernation debug log (scripts/sleep-debug)?" &&
 	want_sleep_debug=1
 
 pdfx_dir=~/.wine/drive_c/"Program Files/PDF-XChange"
 [ -d "$pdfx_dir" ] || { ask pdfx "Install PDF-XChange Editor?" && want_pdfx=1; }
-command -v PureRef >/dev/null || { ask pureref "Install PureRef?" && want_pureref=1; }
+command -v PureRef >/dev/null || want_pureref=1
 
 # Kept out of the repo, since the projects may be private. The last answer, or the rejected one on a
 # retry, is pre-filled for editing.
@@ -558,7 +569,6 @@ if [ -n "${want_obs:-}" ]; then
 	# OBS profile and scene collection, see config/obs/. Linked by directory, since OBS saves a file
 	# by renaming a new one over it, which would replace a linked file. Existing ones are kept as
 	# *.orig.
-	obs_basic=~/.config/obs-studio/basic
 	mkdir -p "$obs_basic"
 	for d in profiles scenes; do
 		[ -d "$obs_basic/$d" ] && [ ! -L "$obs_basic/$d" ] && mv -T "$obs_basic/$d" "$obs_basic/$d.orig"

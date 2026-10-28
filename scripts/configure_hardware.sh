@@ -192,6 +192,10 @@ elif is_laptop; then
 	done
 fi
 
+# The battery drain of each sleep and hibernation, one row per step in /var/log/sleep-stats.csv,
+# for plotting later, see scripts/sleep-stats.
+is_laptop && install_script_file sleep-stats /usr/lib/systemd/system-sleep/sleep-stats 0755
+
 # Only the laptop hibernates. Turn it off elsewhere, so KDE never offers it (it would if a big
 # enough swap showed up).
 if ! is_laptop; then

@@ -1,0 +1,143 @@
+#!/bin/bash
+# The laptop's battery drain in each sleep and hibernation, for plotting later: one CSV row per
+# sleep step in /var/log/sleep-stats.csv. A systemd-sleep hook (installed by
+# scripts/configure_hardware.sh), so it runs around each step: suspend-then-hibernate runs it around
+# its suspend, its wakes to check the battery, and its hibernate, as separate rows under one
+# session.
+#
+# Columns:
+#   session         The sleep operation the step belongs to (its systemd invocation ID).
+#   operation       suspend, hibernate or suspend-then-hibernate, as requested.
+#   phase           suspend, hibernate or suspend-after-failed-hibernate: this step.
+#   start, end      ISO 8601 with time zone; duration_s is end - start.
+#   clock           ok, or unsynced if the end time is unsure (see below).
+#   ac_*, status_*  AC plugged in (1/0), and the battery's status, before and after.
+#   energy_*_wh     Battery energy before and after, used_wh the difference, avg_w used_wh per hour.
+#   capacity_*      Battery percentage before and after.
+#   energy_full_wh  What the battery holds now, and energy_full_design_wh new, for its wear.
+#   hw_sleep_s      Time a suspend spent in the SoC's deepest state (empty for a hibernation).
+#   woke            Wakeup sources that fired during the step, as name@device+count, ;-separated.
+#   wakeup_irq      The interrupt that woke a suspend, as number:name.
+#   kernel          uname -r.
+# A step's energy includes going down and coming back (writing and reading the image for a
+# hibernation), so short steps overstate the steady draw: fit used_wh against duration_s to separate
+# the two, or filter on duration_s. On AC the energy columns show charging, not drain.
+#
+# The hook only reads sysfs, which doesn't block while drivers get ready to sleep (unlike e.g.
+# /proc/driver/nvidia). After a hibernation traced with pm_trace (scripts/sleep-debug), the clock
+# comes back behind by the time spent hibernated until chronyd steps it, so the row is written by a
+# background job once the clock has stepped, or with clock=unsynced after 30 min without.
+
+set -u
+csv=/var/log/sleep-stats.csv
+state=/run/sleep-stats
+self=$(readlink -f "$0")
+bat=$(ls -d /sys/class/power_supply/BAT* 2>/dev/null | head -n 1)
+ac=$(ls -d /sys/class/power_supply/AC* 2>/dev/null | head -n 1)
+phase=${SYSTEMD_SLEEP_ACTION:-${2:-}}
+header=session,operation,phase,start,end,duration_s,clock,ac_start,ac_end,status_start,status_end
+header+=,energy_start_wh,energy_end_wh,used_wh,avg_w,capacity_start,capacity_end,energy_full_wh
+header+=,energy_full_design_wh,hw_sleep_s,woke,wakeup_irq,kernel
+
+get() { cat "$1" 2>/dev/null || echo "$2"; }
+uptime_s() { cut -d. -f1 /proc/uptime; }
+# The kernel log's last timestamp, to find the messages since.
+klog_last() {
+	local k
+	k=$(dmesg 2>/dev/null | tail -n 1 | sed -nE 's/^\[ *([0-9]+)\..*/\1/p')
+	echo "${k:-0}"
+}
+
+# The wakeup sources' event counts, one "<name>@<device> <count>" per line.
+wakeups() {
+	local w
+	for w in /sys/class/wakeup/*; do
+		echo "$(tr ' ,;' ___ <"$w/name")@$(basename "$(readlink -f "$w/device")") $(cat "$w/event_count")"
+	done 2>/dev/null
+}
+
+# AC, battery status, energy, percentage, and time in hardware sleep, as one word each (a status can
+# be "Not charging").
+readings() {
+	echo "$(get "$ac/online" na) $(get "$bat/status" none | tr ' ' _) $(get "$bat/energy_now" 0)" \
+		"$(get "$bat/capacity" 0) $(get /sys/power/suspend_stats/total_hw_sleep 0)"
+}
+
+pre() {
+	echo "$(date +%s) $(klog_last) $(readings)" >"$state"
+	wakeups >"$state.wakeups"
+}
+
+post() {
+	[ -f "$state" ] || return 0
+	local t0 k0 ac0 s0 e0 c0 h0 up1 ac1 s1 e1 c1 h1 woke irq hw= pending
+	read -r t0 k0 ac0 s0 e0 c0 h0 <"$state"
+	up1=$(uptime_s)
+	read -r ac1 s1 e1 c1 h1 <<<"$(readings)"
+	woke=$(wakeups | awk 'NR == FNR { n[$1] = $2; next }
+		$2 > n[$1] { printf "%s%s+%d", sep, $1, $2 - n[$1]; sep = ";" }' "$state.wakeups" -)
+	rm -f "$state" "$state.wakeups"
+	if [ "$phase" != hibernate ]; then
+		hw=$(awk -v h="$((h1 - h0))" 'BEGIN { printf "%.0f", h / 1e6 }')
+		irq=$(cat /sys/power/pm_wakeup_irq 2>/dev/null)
+		[ -n "$irq" ] && irq=$irq:$(awk -v i="$irq:" '$1 == i { print $NF }' /proc/interrupts)
+	fi
+	pending=$state.pending.$(date +%s%N)
+	{
+		printf '%s=%q\n' session "${INVOCATION_ID:-$t0}" operation "${2:-}" phase "$phase" \
+			t0 "$t0" up1 "$up1" ac0 "$ac0" ac1 "$ac1" s0 "$s0" s1 "$s1" e0 "$e0" \
+			e1 "$e1" c0 "$c0" c1 "$c1" hw "$hw" woke "$woke" irq "${irq:-}" \
+			offset1 "$(($(date +%s) - up1))"
+	} >"$pending"
+	# The clock is behind after a hibernation traced with pm_trace, which the kernel reports.
+	if dmesg 2>/dev/null | awk -v k="$k0" '{ t = $0; sub(/^\[ */, "", t)
+		if (t + 0 > k && /Possible incorrect RTC due to pm_trace/) found = 1 } END { exit !found }'; then
+		systemd-run --no-block --collect --quiet --unit="sleep-stats-$(date +%s%N)" \
+			"$self" finish "$pending" wait
+	else
+		finish "$pending"
+	fi
+}
+
+# Write the row of a pending step. With "wait", first wait up to 30 min for chronyd to step the
+# clock, which shows as the wall clock jumping against the uptime.
+finish() {
+	local pending=$1 clock=ok t1 i
+	# shellcheck disable=SC1090
+	. "$pending" || return
+	if [ "${2:-}" = wait ]; then
+		clock=unsynced
+		for i in $(seq 180); do
+			if [ $(($(date +%s) - $(uptime_s) - offset1)) -gt 2 ]; then
+				clock=ok
+				break
+			fi
+			sleep 10
+		done
+	fi
+	# The wall time when it came back, from the time since then.
+	t1=$(($(date +%s) - ($(uptime_s) - up1)))
+	(
+		flock 9
+		[ -s "$csv" ] || echo "$header" >&9
+		awk -v OFS=, -v session="$session" -v operation="$operation" -v phase="$phase" \
+			-v start="$(date -Iseconds -d "@$t0")" -v end="$(date -Iseconds -d "@$t1")" -v t="$((t1 - t0))" -v clock="$clock" \
+			-v ac0="$ac0" -v ac1="$ac1" -v s0="$s0" -v s1="$s1" -v e0="$e0" -v e1="$e1" -v c0="$c0" \
+			-v c1="$c1" -v full="$(get "$bat/energy_full" 0)" -v design="$(get "$bat/energy_full_design" 0)" \
+			-v hw="$hw" -v woke="$woke" -v irq="$irq" -v kernel="$(uname -r)" 'BEGIN {
+			used = (e0 - e1) / 1e6
+			print session, operation, phase, start, end, t, clock, ac0, ac1, s0, s1,
+				sprintf("%.3f", e0 / 1e6), sprintf("%.3f", e1 / 1e6), sprintf("%.3f", used),
+				(t > 0 ? sprintf("%.3f", used / (t / 3600)) : ""), c0, c1,
+				sprintf("%.3f", full / 1e6), sprintf("%.3f", design / 1e6), hw, woke, irq, kernel
+		}' >&9
+	) 9>>"$csv"
+	rm -f "$pending"
+}
+
+case ${1:-} in
+pre) pre ;;
+post) post "$@" ;;
+finish) shift && finish "$@" ;;
+esac
+exit 0

@@ -1,14 +1,17 @@
 #!/bin/bash
 #
-# System status for the laptop and the desktop: power source, battery, power draw per component,
-# battery life, power settings, temperatures and fans, and the NVIDIA GPU. Reads sysfs and procfs
+# System status for the laptop and the desktop: software, power source, battery, power
+# draw per component, battery life, power settings, temperatures and fans, and the NVIDIA GPU, with
+# the hardware in a second column beside them (or below the versions, if the terminal is too
+# narrow or the output isn't a terminal). Reads sysfs and procfs
 # (plus KDE's battery estimate over D-Bus). Runs nvidia-smi only on a GPU that is already on and
 # that the driver never powers off, so the laptop's sleeping dGPU stays asleep.
 #
-# Usage: status [--gpu | --power]
+# Usage: status [--gpu | --power | --about]
 #
 #   --gpu    Only the NVIDIA GPU section.
 #   --power  Only the battery, power draw and battery life sections. --battery does the same.
+#   --about  Only the software and hardware.
 #
 # The power draw section starts with the total: on the laptop on battery, what the battery measures;
 # on the desktop, what the PSU puts out. Then the sum of the components that measure their own
@@ -23,7 +26,7 @@
 # Author: Danylo Malyuta, 2026.
 
 set -u
-usage="Usage: status [--gpu | --power]"
+usage="Usage: status [--gpu | --power | --about]"
 show=all
 case $# in
 0) ;;
@@ -31,6 +34,7 @@ case $# in
 	case $1 in
 	--gpu) show=gpu ;;
 	--power | --battery) show=power ;;
+	--about) show=about ;;
 	-h | --help) echo "$usage" && exit 0 ;;
 	*) echo "$usage" >&2 && exit 2 ;;
 	esac
@@ -257,14 +261,273 @@ gpu_section() {
 		2>/dev/null)
 	[ -n "$tgp" ] && row "Base power limit" "$tgp W"
 	[ -n "$mode" ] && row "Cardwire mode" "$mode"
-	[ -f /sys/module/nvidia/version ] &&
-		row "Driver" "$(cat /sys/module/nvidia/version) $dim(kernel $(uname -r))$reset"
 	# Open handles alone don't keep it awake; the driver powers it off once they go idle.
 	[ -n "$holders" ] && row "Open by" "$holders"
 }
 
 if [ "$show" = gpu ]; then
 	gpu_section
+	exit 0
+fi
+
+# --------------------------------------------------------------------------------------------------
+# Software: the OS, kernel, desktop and drivers.
+# --------------------------------------------------------------------------------------------------
+
+software_section() {
+	local -A ver=()
+	local name v nv
+	section "Software"
+	# Package versions, in one rpm call. Missing packages print a line with more fields.
+	while read -r name v; do
+		[ -n "$v" ] && [[ $v != *" "* ]] && ver[$name]=$v
+	done < <(rpm -q --qf '%{NAME} %{VERSION}\n' plasma-workspace kf6-kcoreaddons qt6-qtbase \
+		mesa-dri-drivers linux-firmware systemd xorg-x11-drv-nvidia asusctl cardwire 2>/dev/null |
+		awk 'NF == 2')
+	row "OS" "$(. /etc/os-release && echo "${PRETTY_NAME:-$NAME}")"
+	row "Kernel" "$(uname -r)"
+	[ -n "${ver[plasma-workspace]:-}" ] &&
+		row "KDE Plasma" "${ver[plasma-workspace]}${XDG_SESSION_TYPE:+ $dim(${XDG_SESSION_TYPE^})$reset}"
+	[ -n "${ver[kf6-kcoreaddons]:-}" ] && row "KDE Frameworks" "${ver[kf6-kcoreaddons]}"
+	[ -n "${ver[qt6-qtbase]:-}" ] && row "Qt" "${ver[qt6-qtbase]}"
+	[ -n "${ver[mesa-dri-drivers]:-}" ] && row "Mesa" "${ver[mesa-dri-drivers]} $dim(AMD graphics)$reset"
+	nv=$(cat /sys/module/nvidia/version 2>/dev/null)
+	if [ -n "$nv" ]; then
+		row "NVIDIA driver" "$nv"
+	elif [ -n "${ver[xorg-x11-drv-nvidia]:-}" ]; then
+		row "NVIDIA driver" "${ver[xorg-x11-drv-nvidia]} $dim(installed, not loaded)$reset"
+	fi
+	[ -n "${ver[linux-firmware]:-}" ] && row "Linux firmware" "${ver[linux-firmware]}"
+	[ -n "${ver[systemd]:-}" ] && row "systemd" "${ver[systemd]}"
+	[ -n "${ver[asusctl]:-}" ] && row "asusctl" "${ver[asusctl]}"
+	[ -n "${ver[cardwire]:-}" ] && row "cardwire" "${ver[cardwire]}"
+}
+
+# --------------------------------------------------------------------------------------------------
+# Hardware: model, board, CPU, GPUs, RAM, storage, displays, network, PSU or battery. Only from
+# sysfs, procfs and kscreen-doctor, all of which leave a sleeping dGPU asleep: the PCI vendor and
+# device files are cached by the kernel, and nvidia-smi was only run above if it was safe.
+# --------------------------------------------------------------------------------------------------
+
+# Vendor names without the legal suffixes, e.g. "ASUSTeK COMPUTER INC." as "ASUS".
+short_vendor() {
+	case $1 in
+	ASUS*) echo ASUS ;;
+	"Advanced Micro Devices"*) echo AMD ;;
+	NVIDIA*) echo NVIDIA ;;
+	MEDIATEK* | MediaTek*) echo MediaTek ;;
+	Intel*) echo Intel ;;
+	*) sed -E 's/,? (Inc\.?|Corporation|Corp\.?|Co\., Ltd\.|Ltd\.|Semiconductor.*)$//' <<<"$1" ;;
+	esac
+}
+# A PCI device's vendor and device name from the PCI ID database, tab-separated.
+pci_name() {
+	[ -r /usr/share/hwdata/pci.ids ] || return 1
+	awk -v v="${1#0x}" -v d="${2#0x}" '
+		/^[0-9a-f]{4} / { in_v = ($1 == v); if (in_v) { vn = $0; sub(/^[^ ]+ +/, "", vn) }; next }
+		in_v && $1 == d { $1 = ""; sub(/^ +/, ""); print vn "\t" $0; exit }
+	' /usr/share/hwdata/pci.ids
+}
+# A monitor's name from its EDID: the name descriptor, else the free text one (laptop panels).
+edid_name() {
+	local -a hex
+	local tag i
+	read -ra hex < <(od -An -tx1 -v -N128 "$1" 2>/dev/null | tr '\n' ' ')
+	((${#hex[@]} == 128)) || return 1
+	for tag in fc fe; do
+		for i in 54 72 90 108; do
+			[ "${hex[i]}${hex[i + 1]}${hex[i + 3]}" = "0000$tag" ] || continue
+			printf '%b' "$(printf '\\x%s' "${hex[@]:i+5:13}")" | tr '\n' ' ' | sed 's/ *$//'
+			return
+		done
+	done
+	return 1
+}
+# Bytes as "4.0 TB" or "512 GB", in decimal units like drives are sold in.
+drive_size() { awk -v b="$1" 'BEGIN { if (b >= 1e12) printf "%.1f TB", b / 1e12; else printf "%.0f GB", b / 1e9 }'; }
+
+hardware_section() {
+	local sections=0 vendor product board v name names d n gpus= count model size label speed std
+	local out mode scale card e code
+	section "Hardware"
+	dmi() { cat "/sys/class/dmi/id/$1" 2>/dev/null; }
+	# Placeholders that board makers leave in unused DMI fields.
+	real() { [ -n "$1" ] && ! [[ $1 =~ ^(System|To [Bb]e [Ff]illed|Default|Not [Aa]pplicable|O\.E\.M) ]]; }
+
+	vendor=$(short_vendor "$(dmi sys_vendor)")
+	# ASUS laptops repeat the model code, as in "ProArt PX13 HN7306WU_HN7306WU".
+	product=$(dmi product_name | sed -E 's/ ([^ ]+)_\1$/ \1/')
+	real "$product" && row "Model" "$vendor $product"
+	board=$(dmi board_name)
+	if real "$board" && [[ $product != *"$board"* ]]; then
+		row "Motherboard" "$(short_vendor "$(dmi board_vendor)") $board"
+	fi
+	v=$(dmi bios_version)
+	[ -n "$v" ] && row "BIOS" "$v $dim($(dmi bios_date | awk -F/ '{ print $3 "-" $1 "-" $2 }'))$reset"
+
+	name=$(sed -n 's/^model name[[:space:]]*: //p' /proc/cpuinfo | head -n 1)
+	name=$(sed -E 's/ [0-9]+-Core Processor$//; s/ +$//' <<<"$name")
+	v=$(awk '/^cpu cores/ { print $4; exit }' /proc/cpuinfo)
+	n=$(awk -v k="$(cat /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq 2>/dev/null)" \
+		'BEGIN { if (k) printf "up to %.2f GHz", k / 1e6 }')
+	[ -n "$name" ] && row "CPU" "$name $dim(${v:+$v cores, }$(nproc) threads${n:+, $n})$reset"
+
+	# Display controllers, plus the NVIDIA GPU found above, which cardwire may hide from this list.
+	for d in /sys/bus/pci/devices/*; do
+		[[ $(cat "$d/class" 2>/dev/null) == 0x03* ]] && gpus+="$(readlink -f "$d")"$'\n'
+	done
+	[ -n "$nv_bdf" ] && [ -e "$nv_dev" ] && [[ $gpus != *"$nv_bdf"* ]] && gpus+="$nv_dev"$'\n'
+	while read -r d; do
+		[ -n "$d" ] || continue
+		IFS=$'\t' read -r vendor name < <(pci_name "$(cat "$d/vendor")" "$(cat "$d/device")")
+		vendor=$(short_vendor "${vendor:-unknown vendor}")
+		# "GB202 [GeForce RTX 5090]" as "GeForce RTX 5090", with the chip after it.
+		model=$name code=
+		if [[ $name =~ ^(.*[^ ])\ +\[(.*)\]$ ]]; then
+			model=${BASH_REMATCH[2]} code=${BASH_REMATCH[1]}
+		fi
+		size=
+		if [ "${d##*/}" = "$nv_bdf" ] && [ -n "${nv_mem_total:-}" ]; then
+			size=$(f '%.0f' "$(awk -v m="$nv_mem_total" 'BEGIN { print m / 1024 }')")
+		elif v=$(cat "$d/mem_info_vram_total" 2>/dev/null) && [ -n "$v" ]; then
+			size=$(awk -v b="$v" 'BEGIN { printf "%.0f", b / 2^30 }')
+		fi
+		row "GPU" "$vendor ${model:-GPU} $dim(${code:+$code, }${size:+$size GiB, }${d##*/})$reset"
+	done <<<"$gpus"
+
+	v=$(awk '/^MemTotal/ { printf "%.1f", $2 / 2^20 }' /proc/meminfo)
+	count=$(for h in /sys/class/hwmon/hwmon*; do cat "$h/name"; done 2>/dev/null | grep -cx spd5118)
+	row "RAM" "$v GiB usable$( ((count)) && echo " $dim($count DDR5 modules)$reset")"
+
+	for d in /sys/block/nvme* /sys/block/sd[a-z]; do
+		[[ ${d##*/} =~ ^(nvme[0-9]+n[0-9]+|sd[a-z])$ ]] && [ -e "$d" ] && [ "$(cat "$d/removable" 2>/dev/null)" != 1 ] || continue
+		model=$(sed 's/ *$//' "$d/device/model" 2>/dev/null)
+		row "Storage" "${model:-${d##*/}} $dim($(drive_size $(($(cat "$d/size") * 512))), ${d##*/})$reset"
+	done
+
+	# Displays, with the current mode from KDE, else the preferred one from the kernel.
+	out=$(timeout 1 kscreen-doctor -o 2>/dev/null | sed 's/\x1b\[[0-9;]*m//g' | awk '
+		function flush() { if (name != "" && on) print name, mode, scale }
+		/^Output:/ { flush(); name = $3; on = 0; mode = ""; scale = 1 }
+		$1 == "enabled" { on = 1 }
+		$1 == "Modes:" {
+			for (i = 2; i <= NF; i++) if ($i ~ /\*/) { mode = $i; sub(/^[0-9]+:/, "", mode); gsub(/[*!]/, "", mode) }
+		}
+		$1 == "Scale:" { scale = $2 }
+		END { flush() }')
+	if [ -z "$out" ]; then
+		for card in /sys/class/drm/card*-*; do
+			[ "$(cat "$card/status" 2>/dev/null)" = connected ] || continue
+			out+="${card#*-} $(head -n 1 "$card/modes") 1"$'\n'
+		done
+	fi
+	while read -r n mode scale; do
+		[ -n "$n" ] || continue
+		e=$(compgen -G "/sys/class/drm/card*-$n" | head -n 1)
+		name=$(edid_name "$e/edid")
+		[ -z "$name" ] && [[ $n == eDP* ]] && name="Built-in panel"
+		if [[ $mode == *@* ]]; then
+			mode="${mode%@*} @ $(f '%.0f' "${mode#*@}") Hz"
+		fi
+		[ "$scale" != 1 ] && mode+=", scale $scale"
+		row "Display" "${name:-$n}${mode:+, $mode} $dim($n)$reset"
+	done <<<"$out"
+
+	# Network adapters on PCI, by chip: the first word with a digit in the name, as in "RTL8126".
+	for d in /sys/class/net/*; do
+		[ -r "$d/device/vendor" ] && [ -r "$d/device/device" ] || continue
+		IFS=$'\t' read -r vendor name < <(pci_name "$(cat "$d/device/vendor")" "$(cat "$d/device/device")")
+		model=$(grep -oE '[^ ]*[0-9][^ ]*' <<<"$name" | head -n 1)
+		label=Ethernet std=
+		if [ -d "$d/wireless" ] || [ -e "$d/phy80211" ]; then
+			label=Wi-Fi std=$(grep -oE '802\.11[a-z]+' <<<"$name" | head -n 1)
+		fi
+		speed=
+		[ "$(cat "$d/operstate" 2>/dev/null)" = up ] && speed=$(cat "$d/speed" 2>/dev/null)
+		[[ $speed =~ ^[0-9]+$ ]] && ((speed > 0)) && speed="up at $(awk -v s="$speed" \
+			'BEGIN { if (s >= 1000) printf "%g Gb/s", s / 1000; else printf "%d Mb/s", s }')" || speed=
+		[ "$(cat "$d/operstate" 2>/dev/null)" = up ] && [ -z "$speed" ] && speed=up
+		row "$label" "$(short_vendor "${vendor:-unknown}") ${model:-${name:-adapter}} $dim(${std:+$std, }${d##*/}${speed:+, $speed})$reset"
+	done
+
+	# The desktop's PSU, named by its USB device.
+	if [ -n "${psu:-}" ]; then
+		d=$(readlink -f "$psu/device")
+		while [ -n "$d" ] && [ "$d" != /sys ] && [ ! -f "$d/product" ]; do d=${d%/*}; done
+		if [ -f "$d/product" ]; then
+			v=$(cat "$d/manufacturer" 2>/dev/null)
+			# "CORSAIR" as "Corsair".
+			[[ $v =~ ^[A-Z]+$ ]] && v=${v,,} && v=${v^}
+			row "PSU" "${v:+$v }$(sed 's/ Power Supply$//' "$d/product")"
+		fi
+	fi
+	if [ -n "$bat" ]; then
+		v=$(scaled "$bat/energy_full_design" 1000000)
+		name="$(cat "$bat/manufacturer" 2>/dev/null) $(cat "$bat/model_name" 2>/dev/null)"
+		name=$(sed -E 's/^ +| +$//g' <<<"$name")
+		row "Battery" "${name:-battery}${v:+ $dim($(f '%.1f' "$v") Wh design)$reset}"
+	fi
+}
+
+# Two blocks of text side by side, the second starting at the top of the first. The first is
+# padded to the widest of its lines that have something beside them.
+# $1 without its color codes, which are all \e[<one or two digits>m.
+plain() {
+	local s=${1//$'\e['[0-9]m/}
+	printf '%s' "${s//$'\e['[0-9][0-9]m/}"
+}
+side_by_side() {
+	local -a l r
+	local i w=64 vis gap=4
+	mapfile -t l <"$1"
+	mapfile -t r <<<"$2"
+	for ((i = 0; i < ${#r[@]} && i < ${#l[@]}; i++)); do
+		vis=$(plain "${l[i]}")
+		((${#vis} > w)) && w=${#vis}
+	done
+	# Too narrow for both: report that, so the caller stacks them instead.
+	local rw=0
+	for i in "${r[@]}"; do
+		vis=$(plain "$i")
+		((${#vis} > rw)) && rw=${#vis}
+	done
+	((w + gap + rw <= cols)) || return 1
+	for ((i = 0; i < ${#l[@]} || i < ${#r[@]}; i++)); do
+		vis=$(plain "${l[i]:-}")
+		if ((i < ${#r[@]})); then
+			printf '%s%*s%s\n' "${l[i]:-}" $((w - ${#vis} + gap)) '' "${r[i]}"
+		else
+			printf '%s\n' "${l[i]}"
+		fi
+	done
+}
+
+# The full report and --about collect the left column in a file, and lay it out with the hardware
+# at the end (see layout). Hardware goes beside it in a terminal wide enough, else after the
+# software section.
+psu=$(hwmon corsairpsu)
+cols=0 left=
+if [ "$show" = all ] || [ "$show" = about ]; then
+	[ -t 1 ] && cols=$(tput cols 2>/dev/null || echo 0)
+	left=$(mktemp)
+	trap 'rm -f "$left"' EXIT
+	exec 3>&1 >"$left"
+	software_section
+	sw_lines=$(wc -l <"$left")
+fi
+layout() {
+	local hw
+	exec >&3 3>&-
+	hw=$(hardware_section)
+	if ! side_by_side "$left" "$hw"; then
+		head -n "$sw_lines" "$left"
+		echo
+		echo "$hw"
+		tail -n +$((sw_lines + 1)) "$left"
+	fi
+}
+if [ "$show" = about ]; then
+	layout
 	exit 0
 fi
 
@@ -313,7 +576,6 @@ pkg_w=
 # Power source.
 # --------------------------------------------------------------------------------------------------
 
-psu=$(hwmon corsairpsu)
 if [ "$show" = all ]; then
 	section "Power source"
 	if ((laptop)); then
@@ -549,7 +811,7 @@ esac
 cpufreq=/sys/devices/system/cpu/cpu0/cpufreq
 if [ -r "$cpufreq/scaling_driver" ]; then
 	epp=$(cat "$cpufreq/energy_performance_preference" 2>/dev/null)
-	row "CPU driver" "$(cat "$cpufreq/scaling_driver"), governor $(cat "$cpufreq/scaling_governor")${epp:+, EPP $epp}"
+	row "CPU policy" "$(cat "$cpufreq/scaling_driver"), governor $(cat "$cpufreq/scaling_governor")${epp:+, EPP $epp}"
 fi
 mhz=$(cat /sys/devices/system/cpu/cpu*/cpufreq/scaling_cur_freq 2>/dev/null |
 	awk '{ s += $1; if ($1 > m) m = $1 } END { if (NR) printf "%.0f MHz avg, %.0f MHz max", s / NR / 1000, m / 1000 }')
@@ -620,4 +882,5 @@ fi
 [ -n "$psu" ] && fan "PSU fan" "$(cat "$(hwmon_input "$psu" fan "psu fan")" 2>/dev/null || echo 0)"
 
 gpu_section
+layout
 exit 0

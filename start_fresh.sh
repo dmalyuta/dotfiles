@@ -121,6 +121,9 @@ answers_file=$dotfiles/.start_fresh_answers
 declare -A answers=()
 [ -f "$answers_file" ] && . "$answers_file"
 
+# Fedora doesn't ship git, and the questions below already need it.
+installed git || sudo dnf install -y git || exit
+
 [ -n "$(git config --global user.name)" ] ||
 	{ read -p "Git name: " -r a && git config --global user.name "$a"; }
 [ -n "$(git config --global user.email)" ] ||
@@ -153,7 +156,7 @@ ask obs "Install the custom OBS configuration?" && want_obs=1
 
 pdfx_dir=~/.wine/drive_c/"Program Files/PDF-XChange"
 [ -d "$pdfx_dir" ] || { ask pdfx "Install PDF-XChange Editor?" && want_pdfx=1; }
-[ -x ~/.local/bin/PureRef ] || { ask pureref "Install PureRef?" && want_pureref=1; }
+command -v PureRef >/dev/null || { ask pureref "Install PureRef?" && want_pureref=1; }
 
 # Kept out of the repo, since the projects may be private. The last answer, or the rejected one on a
 # retry, is pre-filled for editing.
@@ -279,7 +282,7 @@ dnf_apps=(
 	kitty tmux cascadiacode-nerd-fonts
 	brave-browser code okular inkscape obs-studio gimp
 	vlc vlc-plugins-all vlc-plugins-freeworld flameshot nextcloud-client
-	qalculate-gtk speedcrunch fsearch
+	qalculate-gtk speedcrunch fsearch syncthing
 	texlive-scheme-full texlive-latexindent perl-YAML-Tiny perl-File-HomeDir
 	openrazer-meta akmod-openrazer polychromatic keyd
 	flatpak rustup nodejs npm grafana wine winetricks nordvpn nordvpn-gui
@@ -312,8 +315,8 @@ is_laptop && dnf_apps+=(plasma-keyboard)
 [ -n "${want_cardwire:-}" ] && dnf_apps+=(cardwire cardwire-gui) && services+=(cardwired)
 if [ -n "${want_brother:-}" ]; then
 	dnf_apps+=(cups) && services+=(cups)
-	installed mfcj805dwpdrv ||
-		dnf_apps+=(https://download.brother.com/welcome/dlf104570/mfcj805dwpdrv-1.0.5-0.i386.rpm)
+	# The driver is 32-bit, see "Brother printer driver" below.
+	installed mfcj805dwpdrv || dnf_apps+=(glibc.i686 libstdc++.i686 libgcc.i686)
 fi
 
 sudo dnf upgrade -y --refresh
@@ -329,6 +332,22 @@ installed mesa-va-drivers-freeworld || sudo dnf install -y --allowerasing mesa-v
 if ! sudo dnf install -y --skip-unavailable "${dnf_apps[@]}"; then
 	say "Installing the packages failed, see above. Fix it and run this again." >&2
 	exit 1
+fi
+
+# Brother printer driver. Its RPM is from 2003 and has no digests at all, which RPM 6 refuses ("does
+# not verify: no digest"). So check the download against a known hash instead, and install it with
+# rpm's own check off for just this package. Its dependencies are installed above.
+if [ -n "${want_brother:-}" ] && ! installed mfcj805dwpdrv; then
+	brother_rpm=$(mktemp --suffix=.rpm)
+	if curl -fsSL -o "$brother_rpm" \
+		https://download.brother.com/welcome/dlf104570/mfcj805dwpdrv-1.0.5-0.i386.rpm &&
+		sha256sum -c --quiet <<<"0a06e56a530cd8ac8af579872d8dac931ef3fc6d81b10e9a0c7fa2dfda04a09f  $brother_rpm"; then
+		sudo rpm -i --define '_pkgverify_level none' "$brother_rpm" ||
+			say "Could not install the Brother printer driver." >&2
+	else
+		say "The Brother printer driver download failed or changed, skipping." >&2
+	fi
+	rm -f "$brother_rpm"
 fi
 
 # Build the kernel modules (NVIDIA and OpenRazer with akmods, acpi_call with DKMS) for the newest
@@ -414,21 +433,13 @@ if ! compgen -G "$sn_pro_dir/*.otf" >/dev/null; then
 	rm -f sn-pro.zip
 fi
 
-# PureRef, from the .deb on its pay-what-you-want download page, which has no direct link. It
-# holds a static binary, its desktop entry and icons.
+# PureRef, from the .rpm on its pay-what-you-want download page, which has no direct link.
 if [ -n "${want_pureref:-}" ]; then
-	until pureref_deb=$(ls -t ./*[Pp]ure[Rr]ef*.deb 2>/dev/null | head -n 1) && [ -n "$pureref_deb" ]; do
-		echo "Download PureRef's Linux .deb from https://www.pureref.com/download.php into $downloads"
+	until pureref_rpm=$(ls -t ./*[Pp]ure[Rr]ef*.rpm 2>/dev/null | head -n 1) && [ -n "$pureref_rpm" ]; do
+		echo "Download PureRef's Linux .rpm from https://www.pureref.com/download.php into $downloads"
 		read -p "Press ENTER to try again... " -r
 	done
-	pureref_tmp=$(mktemp -d)
-	if ar x --output "$pureref_tmp" "$pureref_deb" &&
-		tar xf "$pureref_tmp"/data.tar.* -C ~/.local --strip-components=2 ./usr; then
-		set_desktop_key ~/.local/share/applications/pureref.desktop Exec "$HOME/.local/bin/PureRef %U"
-	else
-		say "Could not unpack $pureref_deb." >&2
-	fi
-	rm -rf "$pureref_tmp"
+	sudo dnf install -y "$pureref_rpm" || say "Could not install $pureref_rpm." >&2
 fi
 
 # RAD Debugger, built from its latest release, like the AUR package does.
@@ -593,6 +604,51 @@ install_script_file keyd.conf /etc/keyd/default.conf && sudo systemctl try-resta
 
 sudo systemctl enable --now "${services[@]}"
 
+# Syncthing, as a user service that starts at login. Its web UI stays on its default
+# 127.0.0.1:8384, and is also at http://syncthing.localhost: browsers and the system send any
+# *.localhost name to this machine, and a socket proxy forwards port 80 there to the UI. The proxy
+# only listens on loopback. Syncthing accepts *.localhost as a local name, so its check against DNS
+# rebinding (a website pointing its own name at 127.0.0.1) stays on.
+systemctl --user enable --now syncthing.service
+proxy_changed=
+write_root_file /etc/systemd/system/syncthing-gui-proxy.socket <<'EOF' && proxy_changed=1
+[Unit]
+Description=Syncthing web UI at http://syncthing.localhost, see start_fresh.sh
+
+[Socket]
+ListenStream=127.0.0.1:80
+ListenStream=[::1]:80
+
+[Install]
+WantedBy=sockets.target
+EOF
+write_root_file /etc/systemd/system/syncthing-gui-proxy.service <<'EOF' && proxy_changed=1
+[Unit]
+Description=Forward http://syncthing.localhost to the Syncthing web UI
+Requires=syncthing-gui-proxy.socket
+After=syncthing-gui-proxy.socket
+
+[Service]
+ExecStart=/usr/lib/systemd/systemd-socket-proxyd --exit-idle-time=5min 127.0.0.1:8384
+# No root powers: systemd hands it the socket. Nothing here may imply NoNewPrivileges (as
+# DynamicUser= and most other sandboxing options do), which stops SELinux moving it into its own
+# domain, systemd_socket_proxyd_t, leaving it in systemd's, which may not connect to 8384.
+CapabilityBoundingSet=
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+EOF
+# systemd opens the socket under the proxy's SELinux label, which may only use a few ports. These
+# booleans let it listen on port 80 and connect to 8384. They only apply to systemd-socket-proxyd.
+for b in systemd_socket_proxyd_bind_any systemd_socket_proxyd_connect_any; do
+	[ "$(getsebool "$b" 2>/dev/null)" = "$b --> on" ] || { sudo setsebool -P "$b" 1 && proxy_changed=1; }
+done
+if [ -n "$proxy_changed" ]; then
+	sudo systemctl daemon-reload
+	sudo systemctl restart syncthing-gui-proxy.socket
+fi
+sudo systemctl enable --now syncthing-gui-proxy.socket
+
 # Batch mode accepts the license and skips the prompts, including the final one that sets up
 # ~/.bashrc. Good: .local.bashrc sets conda up instead, because the block `conda init` writes delays
 # every prompt by ~1 s. Remove that block if it was added before.
@@ -707,7 +763,7 @@ if [ -n "${need_mok_enroll:-}" ]; then
 fi
 
 if [ -z "${need_reboot:-}" ]; then
-	say "Done."
+	say "Done. Syncthing is at http://syncthing.localhost/"
 else
 	read -r -s -p "$(say "Done. Press ENTER to reboot so the changes take effect...")"
 	echo

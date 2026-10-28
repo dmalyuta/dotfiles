@@ -191,6 +191,17 @@ elif is_laptop; then
 	done
 fi
 
+# Only the laptop hibernates. Turn it off elsewhere, so KDE never offers it (it would if a big
+# enough swap showed up).
+if ! is_laptop; then
+	write_root_file /etc/systemd/sleep.conf.d/50-no-hibernate.conf <<'EOF'
+[Sleep]
+AllowHibernation=no
+AllowSuspendThenHibernate=no
+AllowHybridSleep=no
+EOF
+fi
+
 # --------------------------------------------------------------------------------------------------
 # ASUS laptop.
 # --------------------------------------------------------------------------------------------------

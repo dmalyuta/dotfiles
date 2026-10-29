@@ -8,6 +8,13 @@
 # asusd's restart also sets the brightness it has saved, which isn't the one set from KDE: that goes
 # through UPower straight to the LED, bypassing asusd. So put back the brightness from before.
 
+# Only after a hibernation: the service also follows a plain suspend (which may go on to
+# hibernate), and the keyboard keeps its power while suspended. The kernel's last sleep message says
+# which it was; without one, go ahead.
+case $(dmesg | grep -E 'PM: (suspend exit|hibernation: hibernation exit)' | tail -n 1) in
+*"suspend exit"*) exit 0 ;;
+esac
+
 drv=/sys/bus/hid/drivers/asus
 led=/sys/class/leds/asus::kbd_backlight
 brightness=$(cat "$led/brightness" 2>/dev/null)

@@ -1,11 +1,13 @@
-# Reset the ASUS keyboard controller after hibernation, see /usr/local/bin/asus-kbd-rebind.
+# Reset the ASUS keyboard controller after hibernation, see /usr/local/bin/asus-kbd-rebind. Also
+# after suspend.target, which a plain suspend that went on to hibernate goes through (see
+# scripts/configure_hardware.sh); the script does nothing if the laptop didn't hibernate.
 [Unit]
 Description=Reset the ASUS keyboard controller after hibernation
-After=hibernate.target suspend-then-hibernate.target
+After=hibernate.target suspend-then-hibernate.target suspend.target
 
 [Service]
 Type=oneshot
 ExecStart=/usr/local/bin/asus-kbd-rebind
 
 [Install]
-WantedBy=hibernate.target suspend-then-hibernate.target
+WantedBy=hibernate.target suspend-then-hibernate.target suspend.target

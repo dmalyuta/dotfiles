@@ -175,18 +175,34 @@ fi
 # SleepMode 3 is "Standby, then hibernate". Without hibernation, back to plain sleep, else KDE would
 # try to hibernate and fail.
 #
+# SleepMode covers what PowerDevil puts to sleep (the lid, the power button, idle), but the Sleep
+# button in the Plasma menu asks logind for a plain suspend (SessionManagement::suspend in
+# libkworkspace). So make a plain suspend sleep then hibernate too. It still goes through
+# suspend.target rather than suspend-then-hibernate.target, which the NVIDIA services treat the
+# same, and asus-kbd-rebind also follows.
+#
 # Keep the default HibernateMode (platform), which the Nvidia driver needs, see above.
+suspend_dropin=/etc/systemd/system/systemd-suspend.service.d/50-suspend-then-hibernate.conf
 if is_laptop && can_hibernate && [ -f "$swapfile" ]; then
 	write_root_file /etc/systemd/sleep.conf.d/50-suspend-then-hibernate.conf <<'EOF'
 [Sleep]
 HibernateDelaySec=1h
 HibernateOnACPower=no
 EOF
+	write_root_file "$suspend_dropin" <<'EOF' && sudo systemctl daemon-reload
+[Service]
+ExecStart=
+ExecStart=/usr/lib/systemd/systemd-sleep suspend-then-hibernate
+EOF
 	for profile in AC Battery LowBattery; do
 		kconf --file powerdevilrc --group "$profile" --group SuspendAndShutdown --key SleepMode 3
 	done
 elif is_laptop; then
 	sudo rm -f /etc/systemd/sleep.conf.d/50-suspend-then-hibernate.conf
+	if [ -e "$suspend_dropin" ]; then
+		sudo rm -f "$suspend_dropin"
+		sudo systemctl daemon-reload
+	fi
 	for profile in AC Battery LowBattery; do
 		kconf --file powerdevilrc --group "$profile" --group SuspendAndShutdown --key SleepMode --delete
 	done

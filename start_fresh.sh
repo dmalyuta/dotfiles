@@ -321,7 +321,8 @@ has_nvidia && dnf_apps+=(akmod-nvidia xorg-x11-drv-nvidia-cuda)
 [ -n "${want_coolercontrol:-}" ] && dnf_apps+=(coolercontrol) && services+=(coolercontrold)
 # The PX13 folds into a tablet, which needs an on-screen keyboard.
 is_laptop && dnf_apps+=(plasma-keyboard)
-[ -n "${want_openrgb:-}" ] && dnf_apps+=(openrgb i2c-tools) && groups+=(i2c)
+# OpenRGB itself comes from upstream, below.
+[ -n "${want_openrgb:-}" ] && dnf_apps+=(i2c-tools) && groups+=(i2c)
 [ -n "${want_asusctl:-}" ] && dnf_apps+=(asusctl asusctl-rog-gui) && services+=(asusd)
 # For scripts/asus-power-limits.
 [ -n "${want_asusctl:-}" ] && is_laptop && dnf_apps+=(acpi_call-dkms)
@@ -345,6 +346,32 @@ installed mesa-va-drivers-freeworld || sudo dnf install -y --allowerasing mesa-v
 if ! sudo dnf install -y --skip-unavailable "${dnf_apps[@]}"; then
 	say "Installing the packages failed, see above. Fix it and run this again." >&2
 	exit 1
+fi
+
+# OpenRGB from its latest upstream release. Upstream builds an .rpm per Fedora version, which needs
+# its own hidapi-hotplug library. One transaction swaps them in for Fedora's packages, whose
+# separate openrgb-udev-rules owns the same udev rules file. Re-running this upgrades it.
+if [ -n "${want_openrgb:-}" ]; then
+	# Download URL of the asset matching regex $2 in the latest release of OpenRGB's repo $1.
+	openrgb_asset() {
+		curl -fsSL "https://codeberg.org/api/v1/repos/OpenRGB/$1/releases/latest" |
+			grep -oE '"browser_download_url":"[^"]+"' | cut -d'"' -f4 | grep -E "$2" | head -n 1
+	}
+	openrgb_dir=$(mktemp -d)
+	openrgb_url=$(openrgb_asset OpenRGB "_x86_64_f$(rpm -E %fedora)_[0-9a-f]+\.rpm$")
+	hidapi_url=$(openrgb_asset hidapi-hotplug '/hidapi-hotplug-[0-9][^/]*\.x86_64\.rpm$')
+	if [ -n "$openrgb_url" ] && [ -n "$hidapi_url" ] &&
+		curl -fsSL -o "$openrgb_dir"/openrgb.rpm "$openrgb_url" &&
+		curl -fsSL -o "$openrgb_dir"/hidapi-hotplug.rpm "$hidapi_url" &&
+		sudo dnf do -y --skip-unavailable \
+			--action=install "$openrgb_dir"/{openrgb,hidapi-hotplug}.rpm \
+			--action=remove openrgb-udev-rules; then
+		say "Installed OpenRGB $(rpm -q --qf '%{VERSION}' openrgb) from upstream."
+	else
+		say "Could not install upstream OpenRGB, falling back to Fedora's older one." >&2
+		installed openrgb || sudo dnf install -y openrgb
+	fi
+	rm -rf "$openrgb_dir"
 fi
 
 # Brother printer driver. Its RPM is from 2003 and has no digests at all, which RPM 6 refuses ("does

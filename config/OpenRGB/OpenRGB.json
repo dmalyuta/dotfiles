@@ -1,7 +1,11 @@
 {
     "AutoStart": {
+        "custom_arguments": "",
         "enabled": true,
         "start_minimized": true
+    },
+    "CorsairDominatorSettings": {
+        "model": "CMT"
     },
     "Detectors": {
         "detectors": {
@@ -12,8 +16,11 @@
             "ASRock Deskmini Addressable LED Strip": true,
             "ASRock Motherboard SMBus Controllers": true,
             "ASRock Polychrome USB": true,
+            "ASRock Radeon RX 7900 XTX Phantom Gaming": true,
+            "ASRock Radeon RX 7900 XTX Taichi 24GB OC": true,
             "ASRock Radeon RX 9060 XT Steel Legend": true,
             "ASRock Radeon RX 9070 XT Steel Legend": true,
+            "ASRock Radeon RX 9070 XT Steel Legend Dark": true,
             "ASRock Radeon RX 9070 XT Taichi 16GB OC": true,
             "ASUS AREZ STRIX Radeon RX Vega 56 Gaming OC": true,
             "ASUS Aura Addressable": true,
@@ -169,6 +176,7 @@
             "ASUS ROG STRIX GeForce RTX 4090 Gaming White": true,
             "ASUS ROG STRIX GeForce RTX 4090 Gaming White OC": true,
             "ASUS ROG STRIX GeForce RTX 4090 OC EVA-02": true,
+            "ASUS ROG STRIX GeForce RTX 5070 Gaming OC": true,
             "ASUS ROG STRIX GeForce RTX 5070 Ti Gaming OC": true,
             "ASUS ROG STRIX LC GeForce RTX 3080 Ti Gaming OC": true,
             "ASUS ROG STRIX LC GeForce RTX 3090 Ti Gaming OC": true,
@@ -212,6 +220,7 @@
             "ASUS ROG Strix Impact II Wireless USB": true,
             "ASUS ROG Strix Impact III": true,
             "ASUS ROG Strix LC": true,
+            "ASUS ROG Strix LC III": true,
             "ASUS ROG Strix SCAR 15": true,
             "ASUS ROG Strix SCAR 17": true,
             "ASUS ROG Strix Scope": true,
@@ -383,6 +392,7 @@
             "Cooler Master CK550 V2": true,
             "Cooler Master GD160 ARGB Gaming Desk": true,
             "Cooler Master GM27-FQS ARGB Monitor": true,
+            "Cooler Master GM34-CWQ ARGB Monitor": true,
             "Cooler Master MK730": true,
             "Cooler Master MK750": true,
             "Cooler Master MK850": true,
@@ -448,6 +458,7 @@
             "Corsair K57 RGB (Wired)": true,
             "Corsair K60 RGB PRO": true,
             "Corsair K60 RGB PRO Low Profile": true,
+            "Corsair K60 RGB PRO SE": true,
             "Corsair K60 RGB PRO TKL Black": true,
             "Corsair K60 RGB PRO TKL White": true,
             "Corsair K65 LUX RGB": true,
@@ -498,6 +509,7 @@
             "Corsair SPEC OMEGA RGB": true,
             "Corsair ST100 RGB": true,
             "Corsair Sabre RGB": true,
+            "Corsair Sabre RGB Optical": true,
             "Corsair Scimitar Elite RGB": true,
             "Corsair Scimitar PRO RGB": true,
             "Corsair Scimitar RGB": true,
@@ -710,6 +722,7 @@
             "Gainward GeForce RTX 4090 Phantom": true,
             "Gainward GeForce RTX 5080 Phoenix": true,
             "GameSir Nova 2 Lite": true,
+            "GameSir Nova 2 Lite (Wireless)": true,
             "Genesis Thor 300": true,
             "Genesis Xenon 200": true,
             "Gigabyte AORUS ATC800": true,
@@ -843,6 +856,7 @@
             "Gigabyte GeForce RTX 4070 GAMING OC": true,
             "Gigabyte GeForce RTX 4070 SUPER Aero OC": true,
             "Gigabyte GeForce RTX 4070 SUPER Eagle OC": true,
+            "Gigabyte GeForce RTX 4070 SUPER Eagle OC ICE": true,
             "Gigabyte GeForce RTX 4070 SUPER GAMING OC": true,
             "Gigabyte GeForce RTX 4070 Ti Eagle": true,
             "Gigabyte GeForce RTX 4070 Ti Eagle OC": true,
@@ -850,7 +864,10 @@
             "Gigabyte GeForce RTX 4070 Ti GAMING": true,
             "Gigabyte GeForce RTX 4070 Ti GAMING OC": true,
             "Gigabyte GeForce RTX 4070 Ti Master": true,
+            "Gigabyte GeForce RTX 4070 Ti SUPER AERO OC": true,
+            "Gigabyte GeForce RTX 4070 Ti SUPER AORUS MASTER": true,
             "Gigabyte GeForce RTX 4070 Ti SUPER EAGLE OC": true,
+            "Gigabyte GeForce RTX 4070 Ti SUPER Eagle OC ICE": true,
             "Gigabyte GeForce RTX 4070 Ti SUPER GAMING OC": true,
             "Gigabyte GeForce RTX 4080 AERO OC": true,
             "Gigabyte GeForce RTX 4080 Eagle OC": true,
@@ -859,6 +876,7 @@
             "Gigabyte GeForce RTX 4080 SUPER GAMING OC": true,
             "Gigabyte GeForce RTX 4090 AERO OC": true,
             "Gigabyte GeForce RTX 4090 GAMING OC": true,
+            "Gigabyte GeForce RTX 5060 Ti Aero OC": true,
             "Gigabyte GeForce RTX 5060 Ti Gaming OC": true,
             "Gigabyte GeForce RTX 5070 Aero OC": true,
             "Gigabyte GeForce RTX 5070 Eagle OC": true,
@@ -875,6 +893,7 @@
             "Gigabyte GeForce RTX 5090 GAMING OC": true,
             "Gigabyte GeForce RTX 5090 Gaming OC": true,
             "Gigabyte GeForce RTX 5090 XTREME WATERFORCE": true,
+            "Gigabyte GeForce RTX 5090 XTREME WATERFORCE WB": true,
             "Gigabyte Geforce RTX 4070 Aero OC": true,
             "Gigabyte RGB": true,
             "Gigabyte RGB Fusion": true,
@@ -883,6 +902,7 @@
             "Gigabyte RGB Fusion 2 USB": true,
             "Gigabyte Radeon RX 6700 XT EAGLE 12G": true,
             "Gigabyte Radeon RX 6700 XT GAMING OC 12G": true,
+            "Gigabyte Radeon RX 6750 XT GAMING OC 12G": true,
             "Gigabyte Radeon RX 6800 XT GAMING OC": true,
             "Gigabyte Radeon RX 6900 XT GAMING OC": true,
             "Gigabyte Radeon RX 7600 GAMING OC 8G": true,
@@ -896,7 +916,9 @@
             "Gigabyte Radeon RX 9060 XT GAMING": true,
             "Gigabyte Radeon RX 9060 XT GAMING OC": true,
             "Gigabyte Radeon RX 9060 XT GAMING OC 8G": true,
+            "Gigabyte Radeon RX 9060 XT GAMING OC ICE 16G": true,
             "Gigabyte Radeon RX 9070 GAMING OC": true,
+            "Gigabyte Radeon RX 9070 GRE GAMING OC 12G": true,
             "Gigabyte Radeon RX 9070 XT GAMING": true,
             "Gigabyte Radeon RX 9070 XT GAMING OC": true,
             "Gigabyte Radeon RX 9070 XT GAMING OC ICE": true,
@@ -954,6 +976,7 @@
             "KFA2 GeForce RTX 2080 EX OC": true,
             "KFA2 GeForce RTX 2080 SUPER EX OC": true,
             "KFA2 GeForce RTX 2080 Ti EX OC": true,
+            "KFA2 GeForce RTX 4080 SG 1-Click OC": true,
             "KasaSmart": true,
             "Keychron Gaming Keyboard 1": true,
             "Keychron RGB QMK/ZMK Keyboard": true,
@@ -1049,6 +1072,8 @@
             "MNT Pocket Reform Keyboard": true,
             "MNT Reform Keyboard": true,
             "MSI 3-Zone Laptop": true,
+            "MSI GE68HX Keyboard": true,
+            "MSI GE68HX Lightbar": true,
             "MSI GeForce GTX 1070 Gaming X": true,
             "MSI GeForce GTX 1660 Gaming X": true,
             "MSI GeForce GTX 1660 SUPER Gaming": true,
@@ -1089,6 +1114,7 @@
             "MSI GeForce RTX 3060 Ti Gaming X Trio LHR": true,
             "MSI GeForce RTX 3060 Ti SUPER 3X OC": true,
             "MSI GeForce RTX 3070 Gaming Trio": true,
+            "MSI GeForce RTX 3070 Gaming Trio Plus": true,
             "MSI GeForce RTX 3070 Gaming X Trio": true,
             "MSI GeForce RTX 3070 Suprim": true,
             "MSI GeForce RTX 3070 Suprim LHR": true,
@@ -1143,6 +1169,9 @@
             "MSI GeForce RTX 4090 Suprim Liquid X": true,
             "MSI GeForce RTX 4090 Suprim X": true,
             "MSI GeForce RTX 4090 Suprim X Classic": true,
+            "MSI GeForce RTX 5060 8G Gaming Trio OC": true,
+            "MSI GeForce RTX 5060 Ti 16G Gaming Trio OC": true,
+            "MSI GeForce RTX 5060 Ti Gaming OC": true,
             "MSI GeForce RTX 5070 Gaming Trio": true,
             "MSI GeForce RTX 5070 Ti Gaming Trio OC Plus": true,
             "MSI GeForce RTX 5070 Ti VANGUARD SOC": true,
@@ -1260,9 +1289,11 @@
             "MSI Mystic Light MS_7E09": true,
             "MSI Mystic Light MS_7E10": true,
             "MSI Mystic Light MS_7E20": true,
+            "MSI Mystic Light MS_7E30": true,
             "MSI Mystic Light MS_7E32": true,
             "MSI Mystic Light MS_7E34": true,
             "MSI Mystic Light MS_7E59": true,
+            "MSI Mystic Light MS_7E66": true,
             "MSI Mystic Light MS_7E70": true,
             "MSI Mystic Light MS_7E76": true,
             "MSI Mystic Light MS_7E80": true,
@@ -1332,6 +1363,7 @@
             "OKS Optical Axis RGB": true,
             "PNY GeForce RTX 2060 XLR8 OC EDITION": true,
             "PNY GeForce RTX 3060 XLR8 Revel EPIC-X": true,
+            "PNY GeForce RTX 3070 Ti XLR8 Gaming REVEL EPIC-X": true,
             "PNY GeForce RTX 3070 XLR8 Revel EPIC-X": true,
             "PNY GeForce RTX 3070 XLR8 Revel EPIC-X LHR": true,
             "PNY GeForce RTX 3080 Ti XLR8 Revel EPIC-X": true,
@@ -1580,6 +1612,8 @@
             "Razer Naga Pro (Wireless)": true,
             "Razer Naga Pro V2 (Wired)": true,
             "Razer Naga Pro V2 (Wireless)": true,
+            "Razer Naga Pro V3 (Wired)": true,
+            "Razer Naga Pro V3 (Wireless)": true,
             "Razer Naga Trinity": true,
             "Razer Nommo Chroma": true,
             "Razer Nommo Pro": true,
@@ -1641,6 +1675,7 @@
             "Roccat Vulcan 120-Series Aimo": true,
             "Roccat Vulcan II": true,
             "Roccat Vulcan II Max": true,
+            "Roccat Vulcan II Mini": true,
             "Roccat Vulcan Pro": true,
             "Roccat Vulcan TKL": true,
             "Roccat Vulcan TKL Pro": true,
@@ -1734,6 +1769,7 @@
             "SteelSeries Rival 110": true,
             "SteelSeries Rival 3": true,
             "SteelSeries Rival 3 (Old Firmware)": true,
+            "SteelSeries Rival 3 Wireless": true,
             "SteelSeries Rival 300": true,
             "SteelSeries Rival 300 Black Ops Edition": true,
             "SteelSeries Rival 300 CS:GO Fade Edition": true,
@@ -1902,7 +1938,8 @@
             "iGame GeForce RTX 5060 Ti Ultra W DUO OC": true,
             "iGame GeForce RTX 5060 Ultra W OC": true,
             "iGame GeForce RTX 5070 Ti Ultra W OC": true,
-            "iGame GeForce RTX 5070 Ultra W OC-V": true
+            "iGame GeForce RTX 5070 Ultra W OC-V": true,
+            "iGame GeForce RTX 5080 Ultra W OC": true
         }
     },
     "Gigabyte RGB Fusion 2 SMBus": {
@@ -1950,11 +1987,11 @@
         },
         "service_shutdown_profile": {
             "enabled": false,
-            "name": ""
+            "name": "blue"
         },
         "service_startup_profile": {
             "enabled": false,
-            "name": ""
+            "name": "blue"
         },
         "suspend_profile": {
             "enabled": true,
@@ -1976,7 +2013,9 @@
             "x": 0,
             "y": 0
         },
+        "language": "default",
         "minimize_on_close": true,
+        "monochrome_tray_icon": false,
         "run_zone_checks": false
     }
 }

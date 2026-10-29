@@ -2,13 +2,13 @@
     "name": "desktop_monitor",
     "sources": [
         {
-            "prev_ver": 537001986,
+            "prev_ver": 536936449,
             "name": "Screen Capture (PipeWire)",
             "uuid": "0b723e85-b26d-461c-8180-00ec20e61eb7",
             "id": "pipewire-screen-capture-source",
             "versioned_id": "pipewire-screen-capture-source",
             "settings": {
-                "RestoreToken": "iNX2QQShTRyx_zOpaHGwlQ"
+                "RestoreToken": "71ONhHXUpaRIthPhFGZRhw"
             },
             "mixers": 0,
             "sync": 0,
@@ -28,7 +28,7 @@
             "private_settings": {}
         },
         {
-            "prev_ver": 537001986,
+            "prev_ver": 536936449,
             "name": "Webcam Mic",
             "uuid": "25f040df-fbec-4bf1-aba3-4fdb6dda48b5",
             "id": "pulse_input_capture",
@@ -59,7 +59,7 @@
             "private_settings": {},
             "filters": [
                 {
-                    "prev_ver": 537001986,
+                    "prev_ver": 536936449,
                     "name": "Expander",
                     "uuid": "2a3e38c5-0117-46c1-91c3-2312167cf704",
                     "id": "expander_filter",
@@ -91,7 +91,7 @@
                     "private_settings": {}
                 },
                 {
-                    "prev_ver": 537001986,
+                    "prev_ver": 536936449,
                     "name": "Compressor",
                     "uuid": "54291c0f-234a-487f-8838-2c2c5c6c7f51",
                     "id": "compressor_filter",
@@ -122,7 +122,7 @@
                     "private_settings": {}
                 },
                 {
-                    "prev_ver": 537001986,
+                    "prev_ver": 536936449,
                     "name": "Limiter",
                     "uuid": "8dd1e6a3-d021-4781-9256-c0471945cc18",
                     "id": "limiter_filter",
@@ -151,7 +151,7 @@
             ]
         },
         {
-            "prev_ver": 537001986,
+            "prev_ver": 536936449,
             "name": "Desktop Audio",
             "uuid": "ae498d9d-67ed-4967-8992-867934736eb0",
             "id": "pulse_output_capture",
@@ -182,7 +182,7 @@
             "private_settings": {},
             "filters": [
                 {
-                    "prev_ver": 537001986,
+                    "prev_ver": 536936449,
                     "name": "Gain",
                     "uuid": "2a02c760-1afa-476e-95f0-57fd29399793",
                     "id": "gain_filter",
@@ -208,7 +208,7 @@
                     "private_settings": {}
                 },
                 {
-                    "prev_ver": 537001986,
+                    "prev_ver": 536936449,
                     "name": "Limiter",
                     "uuid": "d56200c1-0c8f-4367-b372-83af51563dfb",
                     "id": "limiter_filter",
@@ -237,7 +237,7 @@
             ]
         },
         {
-            "prev_ver": 537001986,
+            "prev_ver": 536936449,
             "name": "Scene",
             "uuid": "756b66c4-e437-49d2-92b4-838a048438e0",
             "id": "scene",
@@ -481,9 +481,6 @@
     "scaling_level": -6,
     "scaling_off_x": 0.0,
     "scaling_off_y": 0.0,
-    "virtual-camera": {
-        "type2": 3
-    },
     "modules": {
         "scripts-tool": [],
         "output-timer": {

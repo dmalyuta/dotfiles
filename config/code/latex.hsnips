@@ -1,0 +1,127 @@
+# LaTeX HyperSnips.
+#
+#   $      ->  $|$                 Tab jumps past the closing $
+#   "      ->  ``|''               Tab jumps past the closing ''
+#   ''     ->  "                   literal double quote
+#   ;fig   ->  figure environment  pastes the clipboard image into figures/
+#
+# The trigger regexes only fire when the cursor is outside inline math: the
+# text before it on the line must hold an even number of unescaped $. This
+# also stops \$ and \" from triggering.
+
+global
+const fs = require('fs');
+const nodePath = require('path');
+const { fileURLToPath } = require('url');
+const { execFileSync } = require('child_process');
+
+function inMath(context) {
+  return context.scopes.some((s) => s.includes('math'));
+}
+
+function warn(message) {
+  try {
+    require('vscode').window.showWarningMessage(`;fig: ${message}`);
+  } catch (e) {
+    console.warn(message);
+  }
+}
+
+// Turn a label into a safe file name: "Euler rotations_x" -> "euler-rotations-x".
+function figureName(label) {
+  const name = label
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9-]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+  return name || 'figure';
+}
+
+function readClipboardPng() {
+  const wayland = !!process.env.WAYLAND_DISPLAY;
+  const run = (cmd, args) => execFileSync(cmd, args, { maxBuffer: 1 << 28 });
+  const types = wayland
+    ? run('wl-paste', ['--list-types'])
+    : run('xclip', ['-selection', 'clipboard', '-t', 'TARGETS', '-o']);
+  if (!types.toString().split('\n').includes('image/png')) return null;
+  return wayland
+    ? run('wl-paste', ['--type', 'image/png'])
+    : run('xclip', ['-selection', 'clipboard', '-t', 'image/png', '-o']);
+}
+
+// First free figures/<base>[-N].png. `current` (the file we already own) counts as free.
+function freePath(dir, base, current) {
+  let candidate = nodePath.join(dir, `${base}.png`);
+  for (let n = 2; fs.existsSync(candidate) && candidate !== current; n++) {
+    candidate = nodePath.join(dir, `${base}-${n}.png`);
+  }
+  return candidate;
+}
+
+// One state per snippet expansion, keyed on that expansion's match array.
+const FIGURES = new WeakMap();
+
+// Called on expansion and again on every keystroke in the label. The first call
+// saves the clipboard image; later calls rename the file to follow the label.
+// Returns the file name (without .png) to show in \includegraphics.
+function pasteFigure(label, key, docUri) {
+  let state = FIGURES.get(key);
+  if (!state) {
+    state = { dir: null, file: null };
+    FIGURES.set(key, state);
+    try {
+      state.dir = nodePath.join(nodePath.dirname(fileURLToPath(docUri)), 'figures');
+      const png = readClipboardPng();
+      if (!png) {
+        warn('no PNG image on the clipboard, so no file was saved.');
+      } else {
+        fs.mkdirSync(state.dir, { recursive: true });
+        state.file = freePath(state.dir, figureName(label));
+        fs.writeFileSync(state.file, png);
+      }
+    } catch (e) {
+      warn(`could not save the clipboard image (${e.message}).`);
+    }
+  }
+
+  if (!state.file) return figureName(label);
+  try {
+    const target = freePath(state.dir, figureName(label), state.file);
+    if (target !== state.file) {
+      fs.renameSync(state.file, target);
+      state.file = target;
+    }
+  } catch (e) {
+    warn(`could not rename the image (${e.message}).`);
+  }
+  return nodePath.basename(state.file, '.png');
+}
+endglobal
+
+snippet `(?<=^(?:[^$\\]|\\.|\$(?:[^$\\]|\\.)*\$)*)\$$` "Inline math" A
+\$$1\$$0
+endsnippet
+
+# Code blocks start with two backticks, so the opening `` has to come from code.
+context !inMath(context)
+snippet `(?<=^(?:[^$\\]|\\.|\$(?:[^$\\]|\\.)*\$)*)"` "Quotes" A
+``rv = '\x60\x60'``$1''$0
+endsnippet
+
+context !inMath(context)
+snippet `(?<=^(?:[^$\\]|\\.|\$(?:[^$\\]|\\.)*\$)*)(?<!')''` "Literal double quote" A
+"
+endsnippet
+
+# In this hsnips version t[] lists placeholders in document order, so
+# t[0] is the caption and t[1] is the label.
+snippet ;fig "Figure from clipboard" A
+\begin{figure}
+  \centering
+  \includegraphics[width=\linewidth]{figures/``rv = pasteFigure(t[1], m, path)``.png}
+  \caption{$2}
+  \label{fig:$1}
+\end{figure}
+$0
+endsnippet

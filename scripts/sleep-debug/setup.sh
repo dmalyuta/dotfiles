@@ -1,7 +1,9 @@
 #!/bin/bash
 # Turn the laptop's sleep and hibernation debug log on or off: the sleep-debug hook and its boot
 # service, and the hibernate-trace initramfs module, all in this folder (see sleep-debug for what it
-# logs and how to read it). Run by start_fresh.sh, which asks; safe to re-run.
+# logs and how to read it). Also hibernates on AC too, so that a hibernation that hangs at power-off
+# doesn't drain the battery flat, which also resets the RTC and loses the pm_trace in it. Run by
+# start_fresh.sh, which asks; safe to re-run.
 # Usage: setup.sh on|off
 # "off" removes all of it but keeps the logs in /var/log/sleep-debug.
 # Exits with status 2 if the initramfs changed, which takes a reboot to apply.
@@ -15,6 +17,8 @@ conf=/etc/dracut.conf.d/91-sleep-debug.conf
 hook=/usr/lib/systemd/system-sleep/sleep-debug
 unit=/etc/systemd/system/sleep-debug.service
 var=/sys/firmware/efi/efivars/HibernateTrace-8bc5b097-6e23-408e-9a7d-2bad8e8739d1
+# After 50-suspend-then-hibernate.conf from scripts/configure_hardware.sh, so it wins.
+sleep_conf=/etc/systemd/sleep.conf.d/60-sleep-debug.conf
 
 case ${1:-} in
 on)
@@ -31,14 +35,19 @@ EOF
 	install_script_file sleep-debug/sleep-debug "$hook" 0755
 	install_script_file sleep-debug/sleep-debug.service "$unit" && sudo systemctl daemon-reload
 	sudo systemctl enable sleep-debug
+	write_root_file "$sleep_conf" <<'EOF'
+# Debug log of hibernation, see scripts/sleep-debug in the dotfiles: sleep then hibernate on AC too.
+[Sleep]
+HibernateOnACPower=yes
+EOF
 	;;
 off)
-	for f in "$module" "$conf" "$hook" "$unit" "$var"; do
+	for f in "$module" "$conf" "$hook" "$unit" "$sleep_conf" "$var"; do
 		[ -e "$f" ] || continue
 		say "Removing the sleep debug log, keeping its logs in /var/log/sleep-debug."
 		sudo systemctl disable sleep-debug 2>/dev/null
 		sudo chattr -i "$var" 2>/dev/null
-		sudo rm -rf "$module" "$conf" "$hook" "$unit" "$var" /run/sleep-debug*
+		sudo rm -rf "$module" "$conf" "$hook" "$unit" "$sleep_conf" "$var" /run/sleep-debug*
 		sudo systemctl daemon-reload
 		# The hook's kernel settings, normally reset by the next boot.
 		echo 0 | sudo tee /sys/power/pm_trace /sys/power/pm_debug_messages >/dev/null

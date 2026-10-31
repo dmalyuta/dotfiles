@@ -1,0 +1,70 @@
+#!/bin/bash
+# Work around a hibernation deadlock in the CS35L41 speaker amplifier driver (snd_hda_scodec_cs35l41)
+# on the ProArt PX13: now and then a hibernation hung at power-off, with the image already written
+# (screen black, power LED on, ~13 W). Found 2026-10-31 (kernel 7.2.13) from the hung kernel's crash
+# log, see scripts/sleep-debug:
+# - The driver's wake-up callback (cs35l41_system_resume) also runs at the thaw right after the
+#   image is created, and reloads the amps' DSP firmware (fw_load_work), holding the driver's
+#   fw_mutex while it reads the firmware files.
+# - By then the filesystem's own workers (btrfs's, which are freezable) are frozen, so a read that
+#   misses the cache never completes, and the power-off's first step (cs35l41_system_suspend_prep)
+#   waits for that mutex forever. The files are usually cached, hence rare: more likely with memory
+#   full, as setting aside memory for the image evicts them (it hung right after a dnf upgrade).
+# So turn the firmware off (each amp's "DSP1 Firmware Load" ALSA control) before a hibernation, while
+# everything still runs, and back on after it: the thaw then has nothing to load, and unloading reads
+# no file. The speakers play without their DSP until then, while there is no sound anyway.
+# systemd-sleep hook (suspend-then-hibernate runs it around each of its steps, SYSTEMD_SLEEP_ACTION
+# says which). Installed by scripts/configure_hardware.sh.
+# Author: Danylo Malyuta, 2026.
+
+state=/run/cs35l41-hibernate
+action=${SYSTEMD_SLEEP_ACTION:-${2:-}}
+
+log() { logger -t cs35l41-hibernate -- "$*"; }
+
+# "<card> <numid>" of each amp's firmware switch.
+controls() {
+	local c n
+	for c in /proc/asound/card[0-9]*; do
+		n=${c##*card}
+		amixer -c "$n" controls 2>/dev/null |
+			sed -n "s/^numid=\([0-9]*\),.*name='.*DSP1 Firmware Load'\$/$n \1/p"
+	done
+}
+
+is_on() { amixer -c "$1" cget numid="$2" 2>/dev/null | grep -q ': values=on'; }
+
+# Set one, again while the driver refuses as busy (a load or unload in progress, or sound playing),
+# for up to 10 s.
+set_control() {
+	local i
+	for i in $(seq 20); do
+		amixer -q -c "$1" cset numid="$2" "$3" 2>/dev/null && return 0
+		sleep 0.5
+	done
+	return 1
+}
+
+case $1/$action in
+pre/hibernate | pre/hybrid-sleep)
+	: >"$state"
+	controls | while read -r card id; do
+		is_on "$card" "$id" || continue
+		if set_control "$card" "$id" off; then
+			echo "$card $id" >>"$state"
+		else
+			log "couldn't turn a speaker amp's firmware off (card $card, numid $id):" \
+				"this hibernation can hang"
+		fi
+	done
+	;;
+post/*)
+	[ -f "$state" ] || exit 0
+	while read -r card id; do
+		set_control "$card" "$id" on ||
+			log "couldn't turn a speaker amp's firmware back on (card $card, numid $id)"
+	done <"$state"
+	rm -f "$state"
+	;;
+esac
+exit 0

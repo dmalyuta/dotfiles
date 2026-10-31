@@ -213,6 +213,9 @@ fi
 # for plotting later, see scripts/sleep-stats.
 is_laptop && install_script_file sleep-stats /usr/lib/systemd/system-sleep/sleep-stats 0755
 
+# Keep the speaker amps from deadlocking a hibernation at power-off, see scripts/cs35l41-hibernate.
+is_laptop && install_script_file cs35l41-hibernate /usr/lib/systemd/system-sleep/cs35l41-hibernate 0755
+
 # Only the laptop hibernates. Turn it off elsewhere, so KDE never offers it (it would if a big
 # enough swap showed up).
 if ! is_laptop; then

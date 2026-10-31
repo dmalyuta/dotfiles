@@ -224,7 +224,18 @@ installed terra-release ||
 copr cboxdoerfer/fsearch
 [ -n "${want_asusctl:-}" ] && is_laptop && copr rhea/acpi_call
 
-# The vendors' own repos. Fedora has Grafana too, but years behind.
+# The vendors' own repos. Fedora has Grafana too, but years behind. Klassy (a KDE window decoration
+# and application style) from its author's openSUSE Build Service project, rebuilt there as Fedora
+# updates Plasma.
+write_root_file /etc/yum.repos.d/klassy.repo <<EOF
+[klassy]
+name=Klassy (home:paulmcauley, Fedora_$fedora)
+baseurl=https://download.opensuse.org/repositories/home:/paulmcauley/Fedora_$fedora/
+type=rpm-md
+enabled=1
+gpgcheck=1
+gpgkey=https://download.opensuse.org/repositories/home:/paulmcauley/Fedora_$fedora/repodata/repomd.xml.key
+EOF
 write_root_file /etc/yum.repos.d/brave-browser.repo <<'EOF'
 [brave-browser]
 name=Brave Browser
@@ -295,7 +306,7 @@ dnf_apps=(
 	kitty tmux cascadiacode-nerd-fonts
 	brave-browser code okular inkscape obs-studio gimp
 	vlc vlc-plugins-all vlc-plugins-freeworld flameshot nextcloud-client
-	qalculate-gtk speedcrunch fsearch syncthing
+	qalculate-gtk speedcrunch fsearch syncthing klassy
 	texlive-scheme-full texlive-latexindent perl-YAML-Tiny perl-File-HomeDir
 	openrazer-meta akmod-openrazer polychromatic keyd
 	flatpak rustup nodejs npm grafana wine winetricks nordvpn nordvpn-gui

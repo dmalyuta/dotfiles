@@ -9,8 +9,13 @@
 # - Set the chipset's watchdog (sp5100_tco), the hibernation's backstop, to reset after 10 min,
 #   after which the initramfs powers off (hibernate-trace/): only after a reset can it tell that the
 #   watchdog fired, which a power-off clears (2026-10-30 tests). Only the hook arms it, during a
-#   hibernation; otherwise only systemd uses it, to bound a hung reboot (RebootWatchdogSec), which
-#   then also ends powered off.
+#   hibernation.
+# - Keep the watchdogs running through a power-off (watchdog.stop_on_reboot=0, a kernel command
+#   line option): the kernel stops them by default as it starts one, before shutting down the
+#   drivers, so a hibernation that falls back to a plain power-off and hangs in a driver's shutdown
+#   (the 2026-10-30 hang) would be left to drain the battery. And so that systemd's reboot
+#   watchdog (RebootWatchdogSec, the chipset's, 10 min) isn't left running into Windows after a
+#   reboot, turn it off: until now the kernel stopped it at the reboot anyway.
 # - Show what the hook finds wrong in a window in the desktop session (sleep-debug-alert, a user
 #   service for every user).
 # Run by start_fresh.sh, which asks; safe to re-run.
@@ -42,6 +47,9 @@ sleep_conf=/etc/systemd/sleep.conf.d/60-sleep-debug.conf
 # before.
 kmsg_bytes=32768
 pstore_args="efi_pstore.pstore_disable=0 pstore.kmsg_bytes=$kmsg_bytes"
+kernel_args="$pstore_args watchdog.stop_on_reboot=0"
+# After systemd's own system.conf, so it wins.
+system_conf=/etc/systemd/system.conf.d/60-sleep-debug.conf
 tco_conf=/etc/modprobe.d/sleep-debug-tco.conf
 
 case ${1:-} in
@@ -81,7 +89,14 @@ HibernateOnACPower=yes
 EOF
 	# grubby keeps an option once (updating its value), and new kernels take the running one's
 	# command line. The log's size also applies now, through pstorefs.
-	sudo grubby --update-kernel=ALL --args="$pstore_args"
+	sudo grubby --update-kernel=ALL --args="$kernel_args"
+	# Read by systemd when it starts, so at the reboot below.
+	write_root_file "$system_conf" <<'EOF'
+# Debug log of hibernation, see scripts/sleep-debug in the dotfiles: with the kernel keeping the
+# watchdogs running through a reboot, don't arm one for it, which could reset Windows.
+[Manager]
+RebootWatchdogSec=off
+EOF
 	findmnt -n /sys/fs/pstore >/dev/null &&
 		sudo mount -o remount,kmsg_bytes="$kmsg_bytes" /sys/fs/pstore
 	# The driver reads these when it loads, from the initramfs at boot (so rebuild it), and nothing
@@ -101,14 +116,16 @@ EOF
 			cmp -s - "$dotfiles"/scripts/sleep-debug/hibernate-trace/hibernate-trace-save || rebuild=1
 		sudo lsinitrd -f "${tco_conf#/}" "$img" 2>/dev/null | cmp -s - "$tco_conf" || rebuild=1
 	done
-	if ! grep -q 'efi_pstore.pstore_disable=0' /proc/cmdline; then
-		say "Reboot for the hibernation watchdog: until then a hibernation runs without it."
+	if ! grep -q 'efi_pstore.pstore_disable=0' /proc/cmdline ||
+		! grep -q 'watchdog.stop_on_reboot=0' /proc/cmdline; then
+		say "Reboot for the hibernation watchdog: until then a hibernation runs without it, or" \
+			"with it stopped if the power-off falls back to a plain one."
 		reboot=1
 	fi
 	;;
 off)
-	for f in "$module" "$conf" "$hook" "$unit" "$wake_unit" "$alert_bin" "$sleep_conf" "$tco_conf" \
-		"$var" "$crash_off" "$tco_fired"; do
+	for f in "$module" "$conf" "$hook" "$unit" "$wake_unit" "$alert_bin" "$sleep_conf" \
+		"$system_conf" "$tco_conf" "$var" "$crash_off" "$tco_fired"; do
 		[ -e "$f" ] || continue
 		say "Removing the sleep debug log, keeping its logs in /var/log/sleep-debug."
 		sudo systemctl disable sleep-debug sleep-debug-wake 2>/dev/null
@@ -118,13 +135,16 @@ off)
 		systemctl --user stop $alert_units 2>/dev/null
 		sudo chattr -i "$var" "$crash_off" "$tco_fired" 2>/dev/null
 		sudo rm -rf "$module" "$conf" "$hook" "$unit" "$wake_unit" "$alert_bin" "$sleep_conf" \
-			"$tco_conf" "$var" "$crash_off" "$tco_fired" /run/sleep-debug*
+			"$system_conf" "$tco_conf" "$var" "$crash_off" "$tco_fired" /run/sleep-debug*
 		for u in $alert_units; do sudo rm -f "/etc/systemd/user/$u"; done
 		sudo systemctl daemon-reload
 		systemctl --user daemon-reload 2>/dev/null
 		# Also the size an earlier version set.
 		sudo grubby --update-kernel=ALL \
-			--remove-args="$pstore_args pstore.kmsg_bytes=65536 pstore.kmsg_bytes"
+			--remove-args="$kernel_args pstore.kmsg_bytes=65536 pstore.kmsg_bytes"
+		# Both take a reboot: until then, the kernel keeps the watchdogs running through one, and
+		# systemd doesn't arm its own.
+		reboot=1
 		sudo modprobe -r sp5100_tco && sudo modprobe sp5100_tco
 		# The hook's kernel settings, normally reset by the next boot.
 		echo 0 | sudo tee /sys/power/pm_trace /sys/power/pm_debug_messages >/dev/null

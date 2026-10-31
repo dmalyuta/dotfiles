@@ -53,6 +53,10 @@
 #   next boot, that it fired (bootstatus), which the initramfs saves to an EFI variable (as the
 #   resume discards that kernel) before powering off, and this script reports. Not set to power
 #   off itself: that clears what the driver reads (tested 2026-10-30), so it would go unnoticed.
+# - Both keep running if the hibernation falls back to a plain power-off (kernel_power_off), which
+#   by default stops every watchdog before shutting down the drivers (its reboot notifiers), where
+#   the 2026-10-30 hang was: the kernel command line option watchdog.stop_on_reboot=0 (setup.sh)
+#   keeps them.
 # - Every problem found (a hang, a crash, a sleep that never came back) is also an alert: a file in
 #   /var/log/sleep-debug/alerts, which sleep-debug-alert shows in a window in the desktop session,
 #   once, so that a hang at night isn't missed when the session resumes in the morning.
@@ -246,6 +250,9 @@ arm_watchdog() {
 		esac
 	done
 	[ -n "$soft" ] || { log "hibernate: no watchdog, softdog has no device" && return; }
+	[ "$(cat /sys/module/watchdog/parameters/stop_on_reboot 2>/dev/null)" = 0 ] ||
+		log "hibernate: the watchdog stops if the power-off falls back to a plain one" \
+			"(watchdog.stop_on_reboot=0 takes a reboot)"
 	for kv in $crash_sysctls; do
 		saved="$saved ${kv%%=*}=$(cat "$sysctl/${kv%%=*}")"
 	done

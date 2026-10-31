@@ -3,34 +3,66 @@
 # lighting, because the keyboard controller (N-KEY, 0b05:19b6) lost power and never got the startup
 # handshake that hid_asus sends when it probes. Rebinding hid_asus resends it, without replugging the
 # USB device. asusd then needs a restart to pick up the new hidraw nodes and resend the lighting.
-# Run by asus-kbd-rebind.service after the resume, so the wake doesn't wait for it.
+# Run by asus-kbd-rebind.service after the resume, so the wake doesn't wait for it; --force runs it
+# at any time, as to fix the backlight by hand.
 #
 # asusd's restart also sets the brightness it has saved, which isn't the one set from KDE: that goes
 # through UPower straight to the LED, bypassing asusd. So put back the brightness from before.
+#
+# That LED (asus-wmi's) reaches the keyboard only through hid_asus, which signs up for its changes
+# when it probes, after asking the controller what it supports. That query sometimes fails ("Failed
+# to initialize backlight" in the kernel log), seen on 8 of 10 rebinds in a row on 2026-10-30, and
+# then the LED, KDE's backlight key included, no longer reaches the keyboard, which stays at asusd's
+# lighting. So asusd stays stopped during the rebind, so as not to talk to the controller meanwhile,
+# and a failed one is tried again.
 
 # Only after a hibernation: the service also follows a plain suspend (which may go on to
 # hibernate), and the keyboard keeps its power while suspended. The kernel's last sleep message says
 # which it was; without one, go ahead.
-case $(dmesg | grep -E 'PM: (suspend exit|hibernation: hibernation exit)' | tail -n 1) in
-*"suspend exit"*) exit 0 ;;
-esac
+if [ "${1:-}" != --force ]; then
+	case $(dmesg | grep -E 'PM: (suspend exit|hibernation: hibernation exit)' | tail -n 1) in
+	*"suspend exit"*) exit 0 ;;
+	esac
+fi
 
 drv=/sys/bus/hid/drivers/asus
 led=/sys/class/leds/asus::kbd_backlight
+log() { logger -t asus-kbd-rebind "$*"; }
+failures() { dmesg | grep -c '0003:0B05:19B6\.[0-9A-F]*: Failed to initialize backlight'; }
+
 brightness=$(cat "$led/brightness" 2>/dev/null)
-for dev in "$drv"/0003:0B05:19B6.*; do
-	[ -e "$dev" ] || { logger -t asus-kbd-rebind "keyboard controller not bound to hid_asus"; exit 0; }
-	id=${dev##*/}
-	echo "$id" >"$drv/unbind"
-	echo "$id" >"$drv/bind"
-done
-logger -t asus-kbd-rebind "rebound hid_asus to the keyboard controller"
-# asusd sets its lighting before it is up on D-Bus, which is when try-restart returns. Its unit
-# allows 5 starts in 500 s, which a few hibernations in a row reach, after which it stays down; so
-# first reset that count, which is meant for crash loops, not for these restarts.
+ls -d "$drv"/0003:0B05:19B6.* >/dev/null 2>&1 ||
+	{ log "keyboard controller not bound to hid_asus" && exit 0; }
+
+# Its unit allows 5 starts in 500 s, which a few hibernations in a row reach, after which it stays
+# down; so first reset that count, which is meant for crash loops, not for these restarts.
 systemctl reset-failed asusd
-systemctl try-restart asusd
+asusd_was_active=
+systemctl is-active -q asusd && asusd_was_active=1 && systemctl stop asusd
+
+for try in 1 2 3 4 5; do
+	before=$(failures)
+	for dev in "$drv"/0003:0B05:19B6.*; do
+		id=${dev##*/}
+		echo "$id" >"$drv/unbind"
+		echo "$id" >"$drv/bind"
+	done
+	# The kernel log can lose old lines, but not gain this one without a failure.
+	[ "$(failures)" -gt "$before" ] || break
+	[ "$try" = 5 ] && break
+	log "the keyboard backlight didn't initialize (try $try), rebinding again"
+	sleep 1
+done
+if [ "$(failures)" -gt "$before" ]; then
+	log "the keyboard backlight didn't initialize after 5 tries: KDE can't set it until a rebind" \
+		"(sudo /usr/local/bin/asus-kbd-rebind --force) works"
+else
+	log "rebound hid_asus to the keyboard controller"
+fi
+
+# asusd sets its lighting before it is up on D-Bus, which is when start returns.
+[ -n "$asusd_was_active" ] && systemctl start asusd
 if [ -n "$brightness" ] && [ -w "$led/brightness" ]; then
 	echo "$brightness" >"$led/brightness"
-	logger -t asus-kbd-rebind "restored keyboard brightness $brightness"
+	log "restored keyboard brightness $brightness"
 fi

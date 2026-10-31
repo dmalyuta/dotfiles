@@ -70,9 +70,12 @@
 #   device's driver hung powering off.
 # - The same as a working one: all devices were off, and the firmware's S4 entry (ACPI _PTS or the
 #   S4 write) hung or returned, after which the kernel spins forever.
-# - A resume callback (device_resume*): the S4 entry failed and the kernel restored the devices,
-#   then fell back to a plain power-off (kernel_power_off), which hung in a driver's shutdown
-#   (untraced).
+# - The end of a resume pass (main.c:1186 TRACE_RESUME(error), on the newest device): the thaw
+#   after the image was created, so it hung after it, writing the image or in the power-off's
+#   prepare step (device_prepare, untraced). The 2026-10-30 and 2026-10-31 hangs: the speaker amps'
+#   driver deadlocked there (scripts/cs35l41-hibernate), not, as first read, a failed S4 entry.
+# - Another resume callback: the S4 entry failed and the kernel restored the devices, then fell
+#   back to a plain power-off (kernel_power_off), which can hang in a driver's shutdown (untraced).
 #
 # pm_trace sets the RTC to a made-up date (2000-01-02 in a test), so after it the kernel ignores the
 # RTC and the clock resumes behind by the time spent hibernated. This script writes that time back
@@ -300,26 +303,58 @@ join_crash_parts() {
 	done
 }
 
+# The log of a kernel crash from its EFI variables themselves, oldest part first, for when pstorefs
+# doesn't list them (after a resume, 2026-10-31). Each is named dump-type0-<part>-<count>-<time>-
+# <C if compressed>-<guid> and holds its attributes (4 bytes), then the part, zlib-compressed. Read
+# with cat: cp fails on efivarfs.
+decode_crash_vars() {
+	local tmp v
+	tmp=$(mktemp -d) || return
+	for v in $crash_vars; do
+		cat "$v" >"$tmp/${v##*/}" || true
+	done
+	python3 -I - "$tmp" <<'PY'
+import os, re, sys, zlib
+d = sys.argv[1]
+parts = []
+for n in os.listdir(d):
+    m = re.match(r"dump-type0-(\d+)-(\d+)-(\d+)-([CD])-", n)
+    if not m:
+        continue
+    data = open(os.path.join(d, n), "rb").read()[4:]
+    if m.group(4) == "C":
+        try:
+            data = zlib.decompress(data, -15)
+        except zlib.error as e:
+            data = f"[part {m.group(1)} of crash {m.group(2)}: undecodable, {e}]\n".encode()
+    parts.append((int(m.group(3)), int(m.group(2)), -int(m.group(1)), data))
+for *_, data in sorted(parts):
+    sys.stdout.buffer.write(data)
+PY
+	rm -rf "$tmp"
+}
+
 # Move the log of a kernel crash saved in EFI variables (the watchdog's) into the log. The kernel
 # lists them in pstorefs (as dmesg-efi_pstore-<id>) when it is mounted, so mount it again for ones
-# saved since the boot. The EFI variables go only once the log is saved.
+# saved since the boot; failing that, decode the variables directly. The EFI variables go only once
+# the log is saved.
 collect_crash() {
 	local f parts
 	ls $crash_vars >/dev/null 2>&1 || return 0
 	umount "$pstore" 2>/dev/null
-	mount -t pstore pstore "$pstore" || return
+	mount -t pstore pstore "$pstore" 2>/dev/null
 	parts=$(ls -d "$pstore"/dmesg-* 2>/dev/null)
-	if [ -z "$parts" ]; then
-		alert "$1: the kernel crashed (a hibernation hung, and its watchdog crashed it, say), but" \
-			"its log, in EFI variables, isn't listed in pstorefs: left there."
-		return
-	fi
 	f=$(new_file crash)
-	# shellcheck disable=SC2086
-	join_crash_parts $parts >"$f"
+	if [ -n "$parts" ]; then
+		# shellcheck disable=SC2086
+		join_crash_parts $parts >"$f"
+	else
+		decode_crash_vars >"$f"
+	fi
 	if [ ! -s "$f" ]; then
+		rm -f "$f"
 		alert "$1: the kernel crashed (a hibernation hung, and its watchdog crashed it, say), but" \
-			"its log couldn't be saved from pstorefs: left there."
+			"its log couldn't be saved from its EFI variables: left there."
 		return
 	fi
 	# Deleting them from pstorefs deletes the EFI variables; and directly, should that fail, so that
@@ -484,6 +519,8 @@ pre) pre "$@" ;;
 post) post "$@" ;;
 clock) shift && clock "$@" ;;
 disarm) disarm_watchdog ;;
+# By hand, to save a crash log left in EFI variables.
+collect) collect_crash "collected by hand" ;;
 # A fresh boot: a trace left means an image was there but not resumed.
 boot)
 	check_marker

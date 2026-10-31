@@ -1,9 +1,9 @@
 #!/bin/bash
 #
-# System status for the laptop and the desktop: software, power source, battery, power
-# draw per component, battery life, power settings, temperatures and fans, and the NVIDIA GPU, with
-# the hardware in a second column beside them (or below the versions, if the terminal is too
-# narrow or the output isn't a terminal). Reads sysfs and procfs
+# System status for the laptop and the desktop: software, battery, power source and draw per
+# component, battery life and power settings, with a second column beside them of the hardware,
+# temperatures and fans, and the NVIDIA GPU. If the terminal is too narrow or the output isn't a
+# terminal, the hardware goes below the versions and the rest at the end. Reads sysfs and procfs
 # (plus KDE's battery estimate over D-Bus). Runs nvidia-smi only on a GPU that is already on and
 # that the driver never powers off, so the laptop's sleeping dGPU stays asleep.
 #
@@ -13,9 +13,9 @@
 #   --power  Only the battery, power draw and battery life sections. --battery does the same.
 #   --about  Only the software and hardware.
 #
-# The power draw section starts with the total: on the laptop on battery, what the battery measures;
-# on the desktop, what the PSU puts out. Then the sum of the components that measure their own
-# draw, and those components from highest to lowest.
+# The power draw section starts with the power source, then the total: on the laptop on battery,
+# what the battery measures; on the desktop, what the PSU puts out. Then the sum of the components
+# that measure their own draw, and those components from highest to lowest.
 #
 # The laptop's battery measures nothing useful on AC, so there the total is only the known
 # components, and the rest of the laptop is left out.
@@ -502,9 +502,10 @@ side_by_side() {
 	done
 }
 
-# The full report and --about collect the left column in a file, and lay it out with the hardware
-# at the end (see layout). Hardware goes beside it in a terminal wide enough, else after the
-# software section.
+# The full report and --about collect the left column in a file, and lay it out with the second
+# column at the end (see layout). The second column is the hardware, and in the full report also
+# the temperatures and fans and the NVIDIA GPU. It goes beside the left column in a terminal wide
+# enough. Else the hardware goes after the software section, and the rest at the very end.
 psu=$(hwmon corsairpsu)
 cols=0 left=
 if [ "$show" = all ] || [ "$show" = about ]; then
@@ -516,14 +517,18 @@ if [ "$show" = all ] || [ "$show" = about ]; then
 	sw_lines=$(wc -l <"$left")
 fi
 layout() {
-	local hw
+	local hw more= right
 	exec >&3 3>&-
 	hw=$(hardware_section)
-	if ! side_by_side "$left" "$hw"; then
+	# Starts with a blank line, from section.
+	[ "$show" = all ] && more=$(temps_section; gpu_section)
+	right=$hw${more:+$'\n'$more}
+	if ! side_by_side "$left" "$right"; then
 		head -n "$sw_lines" "$left"
 		echo
 		echo "$hw"
 		tail -n +$((sw_lines + 1)) "$left"
+		[ -n "$more" ] && echo "$more"
 	fi
 }
 if [ "$show" = about ]; then
@@ -571,34 +576,6 @@ read -r cpu_load thread_load < <(awk '
 ' <(echo "$stat1") <(echo "$stat2"))
 pkg_w=
 [ -n "$pkg_zone" ] && pkg_w=$(rapl_w "$pkg1" "$pkg2" "$pkg_zone" $((t2 - t1)))
-
-# --------------------------------------------------------------------------------------------------
-# Power source.
-# --------------------------------------------------------------------------------------------------
-
-if [ "$show" = all ]; then
-	section "Power source"
-	if ((laptop)); then
-		on_ac=0
-		for p in /sys/class/power_supply/*; do
-			[ "$(cat "$p/type" 2>/dev/null)" = Mains ] && [ "$(cat "$p/online")" = 1 ] && on_ac=1
-		done
-		usb_pd=
-		for p in /sys/class/power_supply/ucsi-source-psy-*; do
-			[ "$(cat "$p/online" 2>/dev/null)" = 1 ] || continue
-			usb_pd=$(sed -E 's/.*\[([^]]*)\].*/\1/' "$p/usb_type" 2>/dev/null)
-		done
-		if ((on_ac)); then
-			row "Source" "${green}AC adapter$reset${usb_pd:+ $dim(USB-C $usb_pd)$reset}"
-		else
-			row "Source" "${yellow}battery$reset"
-		fi
-	else
-		v_in=
-		[ -n "$psu" ] && v_in=$(scaled "$(hwmon_input "$psu" in v_in)" 1000)
-		row "Source" "mains${psu:+ $dim(Corsair PSU${v_in:+, $(f '%.0f' "$v_in") V in})$reset}"
-	fi
-fi
 
 # --------------------------------------------------------------------------------------------------
 # Battery.
@@ -649,6 +626,28 @@ fi
 # --------------------------------------------------------------------------------------------------
 
 section "Power draw"
+
+# The power source, shown above the total.
+if ((laptop)); then
+	on_ac=0
+	for p in /sys/class/power_supply/*; do
+		[ "$(cat "$p/type" 2>/dev/null)" = Mains ] && [ "$(cat "$p/online")" = 1 ] && on_ac=1
+	done
+	usb_pd=
+	for p in /sys/class/power_supply/ucsi-source-psy-*; do
+		[ "$(cat "$p/online" 2>/dev/null)" = 1 ] || continue
+		usb_pd=$(sed -E 's/.*\[([^]]*)\].*/\1/' "$p/usb_type" 2>/dev/null)
+	done
+	if ((on_ac)); then
+		power_source="${green}AC adapter$reset${usb_pd:+ $dim(USB-C $usb_pd)$reset}"
+	else
+		power_source="${yellow}battery$reset"
+	fi
+else
+	v_in=
+	[ -n "$psu" ] && v_in=$(scaled "$(hwmon_input "$psu" in v_in)" 1000)
+	power_source="mains${psu:+ $dim(Corsair PSU${v_in:+, $(f '%.0f' "$v_in") V in})$reset}"
+fi
 
 # Components that measure their own draw, one per line: watts, key, parent key, label, note, and
 # the watts above which it shows yellow and red. Only top-level ones (no parent) add up; the others
@@ -712,6 +711,15 @@ if ((laptop)); then
 else
 	total_lo=150 total_hi=400
 fi
+# The source starts where the total's number does, which is padded to line up the watts.
+pad=
+if [ -n "$total_w" ]; then
+	pad=$(f '%5.1f' "$total_w")
+elif ((nparts)); then
+	pad=$(f '%5.1f' "$known_w")
+fi
+pad=${pad%%[! ]*}
+row "Source" "$pad$power_source"
 if [ -n "$total_w" ]; then
 	row "Total" "$(level "$total_w" $total_lo $total_hi)$bold$(f '%5.1f' "$total_w") W$reset $dim($total_how)$reset"
 	if [ "$total_w" = "$psu_w" ]; then
@@ -777,7 +785,7 @@ if ((laptop)); then
 			if [[ $kde_ms =~ ^[0-9]+$ ]] && ((kde_ms > 0)); then
 				kde_h=$(awk -v ms="$kde_ms" 'BEGIN { print ms / 3600000 }')
 				row "Running average" "$(hm "$kde_h") $dim(at $(f '%.1f' "$(awk -v e="$energy_now" \
-					-v h="$kde_h" 'BEGIN { print e / h }')") W, averaged over recent draw by KDE)$reset"
+					-v h="$kde_h" 'BEGIN { print e / h }')") W, averaged by KDE)$reset"
 			fi
 		fi
 		((capacity < 95)) && row "Full charge lasts" "$(hm "$full_h") $dim(at the same draw)$reset"
@@ -836,7 +844,6 @@ done
 # Temperatures and fans.
 # --------------------------------------------------------------------------------------------------
 
-section "Temperatures and fans"
 # A temperature in °C × 1000, from a file or as a number.
 temp() {
 	local t=$2
@@ -852,35 +859,39 @@ fan() {
 		row "$1" "${green}off$reset"
 	fi
 }
-h=$(hwmon k10temp) && temp "CPU" "$h/temp1_input"
-[ -n "$amdgpu" ] && temp "iGPU" "$amdgpu/temp1_input"
-[ -n "${nv_temp:-}" ] && temp "NVIDIA GPU" $((nv_temp * 1000))
-h=$(hwmon nvme) && temp "SSD" "$h/temp1_input"
-t=$(max_temp spd5118) && temp "RAM" "$t"
-t=$(max_temp prom21_xhci) && temp "Chipset" "$t"
-h=$(hwmon nct6799) && temp "Motherboard" "$(hwmon_input "$h" temp SYSTIN)"
-[ -n "$psu" ] && temp "PSU" "$(hwmon_input "$psu" temp "vrm temp")"
-h=$(hwmon mt7925_phy0) && temp "Wi-Fi" "$h/temp1_input"
-# The laptop's fans.
-if h=$(hwmon asus); then
-	for f in "$h"/fan*_input; do
-		[ -r "$f" ] || continue
-		label=$(cat "${f%_input}_label" 2>/dev/null)
-		label=${label%_fan}
-		fan "${label^^} fan" "$(cat "$f")"
-	done
-fi
-# The desktop's fan headers, unlabeled. Stopped ones are mostly empty headers.
-if h=$(hwmon nct6799); then
-	for f in "$h"/fan*_input; do
-		rpm=$(cat "$f" 2>/dev/null) && ((rpm > 0)) || continue
-		n=${f##*/fan}
-		row "Fan ${n%_input}" "$rpm rpm"
-	done
-fi
-[ -n "${nv_fan:-}" ] && row "NVIDIA GPU fans" "$nv_fan%"
-[ -n "$psu" ] && fan "PSU fan" "$(cat "$(hwmon_input "$psu" fan "psu fan")" 2>/dev/null || echo 0)"
+temps_section() {
+	local h t f label rpm n
+	section "Temperatures and fans"
+	h=$(hwmon k10temp) && temp "CPU" "$h/temp1_input"
+	[ -n "$amdgpu" ] && temp "iGPU" "$amdgpu/temp1_input"
+	[ -n "${nv_temp:-}" ] && temp "NVIDIA GPU" $((nv_temp * 1000))
+	h=$(hwmon nvme) && temp "SSD" "$h/temp1_input"
+	t=$(max_temp spd5118) && temp "RAM" "$t"
+	t=$(max_temp prom21_xhci) && temp "Chipset" "$t"
+	h=$(hwmon nct6799) && temp "Motherboard" "$(hwmon_input "$h" temp SYSTIN)"
+	[ -n "$psu" ] && temp "PSU" "$(hwmon_input "$psu" temp "vrm temp")"
+	h=$(hwmon mt7925_phy0) && temp "Wi-Fi" "$h/temp1_input"
+	# The laptop's fans.
+	if h=$(hwmon asus); then
+		for f in "$h"/fan*_input; do
+			[ -r "$f" ] || continue
+			label=$(cat "${f%_input}_label" 2>/dev/null)
+			label=${label%_fan}
+			fan "${label^^} fan" "$(cat "$f")"
+		done
+	fi
+	# The desktop's fan headers, unlabeled. Stopped ones are mostly empty headers.
+	if h=$(hwmon nct6799); then
+		for f in "$h"/fan*_input; do
+			rpm=$(cat "$f" 2>/dev/null) && ((rpm > 0)) || continue
+			n=${f##*/fan}
+			row "Fan ${n%_input}" "$rpm rpm"
+		done
+	fi
+	[ -n "${nv_fan:-}" ] && row "NVIDIA GPU fans" "$nv_fan%"
+	[ -n "$psu" ] && fan "PSU fan" "$(cat "$(hwmon_input "$psu" fan "psu fan")" 2>/dev/null || echo 0)"
+}
 
-gpu_section
+# Temperatures and fans, and the NVIDIA GPU, go in the second column below the hardware.
 layout
 exit 0

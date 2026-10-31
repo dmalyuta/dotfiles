@@ -37,6 +37,26 @@
 #   laptop was powered on within about 3 minutes, and it is wrong whenever the year written is 00
 #   (read_magic_time takes 2000 for 100 years).
 #
+# - During each hibernation, a watchdog (softdog, 5 min, armed just before and disarmed first thing
+#   after the resume): if the power-off hangs, it crashes the kernel, which saves its log to EFI
+#   variables (pstore, with efi_pstore.pstore_disable=0 on the kernel command line, see setup.sh)
+#   and reboots (kernel.panic). The initramfs then sees that crash log next to a waiting image and
+#   powers off instead of resuming (hibernate-trace/), so the battery isn't drained by a session
+#   resumed with nobody there; the next power-on resumes it, and this script moves the log to
+#   <time>-crash.txt: the last 64 KB of the kernel's log, then the stacks of the tasks stuck
+#   waiting. A CPU stuck in the kernel crashes it at once instead (a soft or hard lockup), with that
+#   CPU's stack. sleep-debug-wake.service also disarms it after each wake, in case this hook didn't
+#   run.
+# - And the chipset's watchdog (sp5100_tco, 10 min) as the backstop: it resets the laptop even when
+#   the CPU is stuck in the firmware or with interrupts off, where nothing in the kernel runs. No
+#   crash log then, but the image and the pm_trace are kept. Its driver tells, when it loads at the
+#   next boot, that it fired (bootstatus), which the initramfs saves to an EFI variable (as the
+#   resume discards that kernel) before powering off, and this script reports. Not set to power
+#   off itself: that clears what the driver reads (tested 2026-10-30), so it would go unnoticed.
+# - Every problem found (a hang, a crash, a sleep that never came back) is also an alert: a file in
+#   /var/log/sleep-debug/alerts, which sleep-debug-alert shows in a window in the desktop session,
+#   once, so that a hang at night isn't missed when the session resumes in the morning.
+#
 # Reading a trace after a hung hibernation, against those of working ones: the image is written,
 # then the kernel powers off through ACPI S4 (hibernation_platform_enter, kernel/power/hibernate.c).
 # - A working one (kernel 7.2.12, 2026-10-28) leaves the end of device_suspend_noirq
@@ -60,7 +80,20 @@ set -u
 dir=/var/log/sleep-debug
 marker=$dir/asleep
 state=/run/sleep-debug
-var=/sys/firmware/efi/efivars/HibernateTrace-8bc5b097-6e23-408e-9a7d-2bad8e8739d1
+efi=/sys/firmware/efi/efivars
+var=$efi/HibernateTrace-8bc5b097-6e23-408e-9a7d-2bad8e8739d1
+# What efi-pstore names a kernel crash's log (LINUX_EFI_CRASH_GUID), and the initramfs's note that
+# it powered off for one.
+crash_vars=$efi/dump-type0-*-cfc8fc79-be2e-4ddc-97f0-9f98bfe298a0
+crash_off=$efi/HibernateCrashOff-8bc5b097-6e23-408e-9a7d-2bad8e8739d1
+# The initramfs's note that the chipset's watchdog had fired.
+tco_fired=$efi/HibernateTcoFired-8bc5b097-6e23-408e-9a7d-2bad8e8739d1
+alerts=$dir/alerts
+pstore=/sys/fs/pstore
+watchdogs=/sys/class/watchdog
+# setup.sh's settings for the chipset's watchdog.
+tco_conf=/etc/modprobe.d/sleep-debug-tco.conf
+sysctl=/proc/sys/kernel
 self=$(readlink -f "$0")
 bat=$(ls -d /sys/class/power_supply/BAT* 2>/dev/null | head -n 1)
 action=${SYSTEMD_SLEEP_ACTION:-${2:-}}
@@ -71,12 +104,20 @@ hw_sleep() { cat /sys/power/suspend_stats/total_hw_sleep 2>/dev/null || echo 0; 
 now() { date +%s; }
 uptime_s() { cut -d. -f1 /proc/uptime; }
 
-# A new file in the log named <time>-<kind>.txt, never one that exists.
+# A new file in the log (or the folder given) named <time>-<kind>.txt, never one that exists.
 new_file() {
-	local f i=1
-	f=$dir/$(date +%Y%m%d-%H%M%S)-$1.txt
-	while [ -e "$f" ]; do f=$dir/$(date +%Y%m%d-%H%M%S)-$1-$((i++)).txt; done
+	local d=${2:-$dir} f i=1
+	f=$d/$(date +%Y%m%d-%H%M%S)-$1.txt
+	while [ -e "$f" ]; do f=$d/$(date +%Y%m%d-%H%M%S)-$1-$((i++)).txt; done
 	echo "$f"
+}
+
+# Log a problem, and show it in a window in the desktop session (see the top). Moved into the
+# folder whole, as sleep-debug-alert.path starts the window when a file appears there.
+alert() {
+	log "$*"
+	mkdir -p "$alerts"
+	echo "$*" >"$dir/.alert.tmp" && mv "$dir/.alert.tmp" "$(new_file alert "$alerts")"
 }
 
 # The wakeup sources' event counts, one "<name>@<device> <count>" per line.
@@ -144,9 +185,15 @@ snapshot() {
 	fi
 }
 
-# Move a pm_trace saved by the initramfs into the log.
+# Move a pm_trace saved by the initramfs into the log (or drop it, when pm_trace was off for
+# hibernate-loop and the RTC held the real time).
 collect_trace() {
 	[ -e "$var" ] || return 0
+	if [ -e "$state.loop" ]; then
+		chattr -i "$var" 2>/dev/null
+		rm -f "$var"
+		return
+	fi
 	mkdir -p "$dir"
 	local f
 	f=$(new_file trace)
@@ -159,9 +206,158 @@ collect_trace() {
 # A marker left by a sleep that never came back.
 check_marker() {
 	[ -f "$marker" ] || return 0
-	log "the last boot ended during a sleep it never came back from (hung, or the battery died):" \
-		"$(cat "$marker"), see journalctl -b -1"
+	alert "The last boot ended during a sleep it never came back from (it hung, or the battery" \
+		"died): $(cat "$marker"). See journalctl -b -1."
 	rm -f "$marker"
+}
+
+# The kernel settings changed during a hibernation, and their values then: reboot 5 s after a
+# crash; crash at once on a CPU stuck in the kernel, with its stack (a soft lockup, 20 s with
+# interrupts on, or a hard lockup, 10 s with them off); and before saving the crash log, print the
+# stacks of the tasks stuck waiting (blocked_tasks), such as one stuck in a driver's shutdown.
+# panic_sys_info is what replaced the deprecated panic_print.
+crash_sysctls="panic=5 softlockup_panic=1 hardlockup_panic=1 panic_sys_info=blocked_tasks"
+
+# Arm the watchdogs for a hibernation (see the top). The software one crashes the kernel after
+# 5 min, for its log; only with efi-pstore, else the log is lost and the initramfs can't tell, and
+# would resume. The chipset's own (sp5100_tco), set by setup.sh to reset after 10 min (and the
+# initramfs then powers off), is the backstop for a hang that nothing in the kernel can see, in the firmware or with interrupts off:
+# no log, but the image and the RTC's pm_trace are left for the next power-on.
+arm_watchdog() {
+	local w soft= tco= kv saved=
+	if [ "$(cat /sys/module/pstore/parameters/backend 2>/dev/null)" != efi_pstore ]; then
+		log "hibernate: no watchdog, efi-pstore is off (efi_pstore.pstore_disable=0 takes a reboot)"
+		return
+	fi
+	modprobe -r softdog 2>/dev/null
+	modprobe softdog soft_margin=300 soft_panic=1 || return
+	# The chipset's watchdog takes setup.sh's settings when its driver loads: should it have loaded
+	# without them (from an initramfs built before them), load it again with them.
+	for w in "$watchdogs"/*; do
+		if [ "$(cat "$w/identity" 2>/dev/null)" = "SP5100 TCO timer" ] &&
+			[ "$(cat "$w/timeout" 2>/dev/null)" != 600 ] && [ -e "$tco_conf" ]; then
+			modprobe -r sp5100_tco && modprobe sp5100_tco action=0 heartbeat=600
+		fi
+	done
+	for w in "$watchdogs"/*; do
+		case $(cat "$w/identity" 2>/dev/null) in
+		"Software Watchdog") soft=/dev/${w##*/} ;;
+		"SP5100 TCO timer") [ "$(cat "$w/timeout" 2>/dev/null)" = 600 ] && tco=/dev/${w##*/} ;;
+		esac
+	done
+	[ -n "$soft" ] || { log "hibernate: no watchdog, softdog has no device" && return; }
+	for kv in $crash_sysctls; do
+		saved="$saved ${kv%%=*}=$(cat "$sysctl/${kv%%=*}")"
+	done
+	echo "soft=$soft tco=$tco$saved" >"$state.watchdog"
+	for kv in $crash_sysctls; do
+		echo "${kv#*=}" >"$sysctl/${kv%%=*}"
+	done
+	# Opening one starts it, and closing it without writing V leaves it running.
+	printf x >"$soft"
+	[ -n "$tco" ] && printf x >"$tco"
+	log "hibernate: watchdog armed: a crash 5 min from now if this doesn't power off${tco:+,}" \
+		"${tco:+and a reset by the chipset at 10 min, then a power-off}"
+}
+
+# Disarm them (writing V before closing stops one), and put back the kernel settings. Idempotent:
+# both this hook's post and sleep-debug-wake.service call it.
+disarm_watchdog() {
+	local kv
+	(
+		flock 8
+		[ -f "$state.watchdog" ] || exit 0
+		for kv in $(cat "$state.watchdog"); do
+			case $kv in
+			soft= | tco=) ;;
+			soft=* | tco=*) printf V >"${kv#*=}" ;;
+			*=*) echo "${kv#*=}" >"$sysctl/${kv%%=*}" ;;
+			esac
+		done
+		rm -f "$state.watchdog"
+		modprobe -r softdog 2>/dev/null
+		log "watchdog disarmed"
+	) 8>>"$state.lock"
+}
+
+# Join the parts of crash logs into one log, oldest first. Each part starts with a line like
+# "Panic#1 Part114": the crash's number, then the part's, part 1 being the crash log's end. Their
+# file names don't order them: they hold the time each part was written, which can differ.
+join_crash_parts() {
+	local f n m
+	for f in "$@"; do
+		read -r n m < <(head -n 1 "$f" | sed -nE 's/^[A-Za-z]+#([0-9]+) Part([0-9]+).*/\1 \2/p')
+		echo "${n:-0} ${m:-0} $f"
+	done | sort -k1,1n -k2,2nr | while read -r n m f; do
+		cat "$f"
+	done
+}
+
+# Move the log of a kernel crash saved in EFI variables (the watchdog's) into the log. The kernel
+# lists them in pstorefs (as dmesg-efi_pstore-<id>) when it is mounted, so mount it again for ones
+# saved since the boot. The EFI variables go only once the log is saved.
+collect_crash() {
+	local f parts
+	ls $crash_vars >/dev/null 2>&1 || return 0
+	umount "$pstore" 2>/dev/null
+	mount -t pstore pstore "$pstore" || return
+	parts=$(ls -d "$pstore"/dmesg-* 2>/dev/null)
+	if [ -z "$parts" ]; then
+		alert "$1: the kernel crashed (a hibernation hung, and its watchdog crashed it, say), but" \
+			"its log, in EFI variables, isn't listed in pstorefs: left there."
+		return
+	fi
+	f=$(new_file crash)
+	# shellcheck disable=SC2086
+	join_crash_parts $parts >"$f"
+	if [ ! -s "$f" ]; then
+		alert "$1: the kernel crashed (a hibernation hung, and its watchdog crashed it, say), but" \
+			"its log couldn't be saved from pstorefs: left there."
+		return
+	fi
+	# Deleting them from pstorefs deletes the EFI variables; and directly, should that fail, so that
+	# the next wake doesn't collect them again.
+	rm -f "$pstore"/dmesg-*
+	chattr -i $crash_vars "$crash_off" 2>/dev/null
+	rm -f $crash_vars "$crash_off"
+	alert "$1: a hibernation hung, and its watchdog crashed the kernel to get out of it (then it" \
+		"powered off). The hung kernel's log is in $f."
+}
+
+# The initramfs's note that the chipset's watchdog fired before this boot (see the top).
+collect_tco() {
+	[ -e "$tco_fired" ] || return 0
+	chattr -i "$tco_fired" 2>/dev/null
+	rm -f "$tco_fired"
+	if [ "$1" = "resumed from hibernation" ]; then
+		alert "$1: the hibernation hung where nothing in the kernel could react (in the firmware," \
+			"say): 10 min in, the chipset's watchdog restarted the laptop, which then powered" \
+			"off. No crash log then, but the pm_trace saved at this resume tells how far it got."
+	else
+		alert "$1: the chipset's watchdog restarted the laptop (which then powered off), so a" \
+			"hibernation, a shutdown or a reboot hung where nothing in the kernel could react (in" \
+			"the firmware, say)."
+	fi
+}
+
+# At a fresh boot, systemd-pstore has already moved crash logs to /var/lib/systemd/pstore (before
+# sysinit.target), one file per part: join the new ones.
+collect_archived_crash() {
+	local seen=$dir/.pstore-seen f parts
+	mkdir -p "$dir"
+	# The first time, start from now rather than pick up older crashes.
+	[ -f "$seen" ] || touch "$seen"
+	parts=$(find /var/lib/systemd/pstore -type f -name 'dmesg-*' -newer "$seen" 2>/dev/null)
+	if [ -n "$parts" ]; then
+		f=$(new_file crash)
+		# shellcheck disable=SC2086
+		join_crash_parts $parts >"$f"
+		alert "Booted after a kernel crash (a hibernation that hung, whose watchdog crashed it, or" \
+			"another one): its log is in $f."
+	fi
+	touch "$seen"
+	chattr -i "$crash_off" 2>/dev/null
+	rm -f "$crash_off"
 }
 
 pre() {
@@ -173,13 +369,25 @@ pre() {
 	echo "$action since $(date -Is), snapshot $f" >"$marker"
 	echo 1 >/sys/power/pm_debug_messages
 	if [ "$action" = hibernate ]; then
-		echo 1 >/sys/power/pm_trace
-		log "hibernate: pm_trace on, snapshot $f"
+		# While hibernate-loop runs, its file holds how long after this to wake up again: set the
+		# RTC's alarm for it, here rather than in the loop, as a suspend-then-hibernate's own alarm
+		# (the one that brings this hibernation) has fired by now. And no pm_trace, which sets the
+		# RTC's time, so that the alarm would never match.
+		if [ -e "$state.loop" ]; then
+			log "hibernate: pm_trace off (hibernate-loop), snapshot $f"
+			rtcwake -m no -s "$(cat "$state.loop")" >/dev/null &&
+				log "hibernate: the RTC wakes it in $(cat "$state.loop") s (hibernate-loop)"
+		else
+			echo 1 >/sys/power/pm_trace
+			log "hibernate: pm_trace on, snapshot $f"
+		fi
+		arm_watchdog
 	fi
 	echo "$(now) $(bat_get energy_now 0) $(bat_get capacity 0) $(hw_sleep) $(bat_get status none)" >"$state"
 	wakeups >"$state.wakeups"
-	# Keep the last 300 snapshots, and every trace and PMC dump.
-	ls -1t "$dir"/*.txt 2>/dev/null | grep -v -e '-trace[-0-9]*\.txt$' -e '-pmc[-0-9]*\.txt$' |
+	# Keep the last 300 snapshots, and every trace, crash log and PMC dump.
+	ls -1t "$dir"/*.txt 2>/dev/null |
+		grep -v -e '-trace[-0-9]*\.txt$' -e '-crash[-0-9]*\.txt$' -e '-pmc[-0-9]*\.txt$' |
 		tail -n +301 | xargs -r rm -f
 	# The marker must be on disk if the sleep never comes back.
 	sync
@@ -193,14 +401,18 @@ pre() {
 }
 
 post() {
-	# Undo the hibernation's tracing first, whatever else fails, and give the RTC a sane time again
-	# (the one the clock resumed at, which chronyd then corrects).
+	# The watchdog first, which would crash the kernel minutes from now.
+	disarm_watchdog
+	# Undo the hibernation's tracing, whatever else fails, and give the RTC a sane time again (the one
+	# the clock resumed at, which chronyd then corrects).
 	if [ "$action" = hibernate ]; then
 		echo 0 >/sys/power/pm_trace
 		hwclock --systohc
 	fi
 	rm -f "$marker"
 	collect_trace "resumed from hibernation"
+	collect_crash "resumed from hibernation"
+	collect_tco "resumed from hibernation"
 	[ -f "$state" ] || return 0
 	local t0 e0 c0 h0 s0 t1 e1 c1 h1 s1 woke irq
 	read -r t0 e0 c0 h0 s0 <"$state"
@@ -212,9 +424,10 @@ post() {
 	if [ "$action" = hibernate ]; then
 		# Percentages, which also work when it was plugged in to boot after the battery died. The
 		# clock is behind until chronyd steps it, so the duration comes from the clock job.
-		local note=
-		[ $((c0 - c1)) -ge 5 ] && note=", PROBABLY HUNG at power-off"
-		log "hibernate: battery $c0% -> $c1% ($s0 -> $s1)$note"
+		log "hibernate: battery $c0% -> $c1% ($s0 -> $s1)"
+		[ $((c0 - c1)) -ge 5 ] &&
+			alert "A hibernation probably hung at power-off: the battery went from $c0% to $c1%" \
+				"while it was hibernated."
 		systemd-run --no-block --collect --quiet --unit="sleep-debug-clock-$(date +%s%N)" \
 			"$self" clock "$t0" "$(uptime_s)" "$e0" "$e1" "$s0" "$s1"
 		return 0
@@ -252,7 +465,8 @@ clock() {
 	if [ "$s0" != Discharging ] || [ "$s1" != Discharging ]; then
 		log "hibernate: lasted $((t / 3600))h$(printf %02d $((t % 3600 / 60)))m, on AC ($s0 -> $s1)"
 	elif [ "$t" -ge 1200 ] && [ $((e0 - e1)) -gt $((t * 1000000 / 3600)) ]; then
-		log "hibernate: $(drain "$t" "$e0" "$e1"), PROBABLY HUNG at power-off (over 1 W)"
+		alert "A hibernation probably hung at power-off: it drew over 1 W, where a working one" \
+			"is off: $(drain "$t" "$e0" "$e1")."
 	else
 		log "hibernate: $(drain "$t" "$e0" "$e1")"
 	fi
@@ -262,10 +476,14 @@ case ${1:-} in
 pre) pre "$@" ;;
 post) post "$@" ;;
 clock) shift && clock "$@" ;;
+disarm) disarm_watchdog ;;
 # A fresh boot: a trace left means an image was there but not resumed.
 boot)
 	check_marker
 	collect_trace "booted without resuming a hibernation"
+	collect_crash "booted without resuming a hibernation"
+	collect_tco "booted without resuming a hibernation"
+	collect_archived_crash
 	;;
 esac
 exit 0

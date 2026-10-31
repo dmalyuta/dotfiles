@@ -1,0 +1,30 @@
+#!/bin/bash
+# Show in a window, once each, the problems the sleep-debug hook found: a sleep or hibernation that
+# hung, or never came back (see sleep-debug). So that a hang at night isn't missed in the morning,
+# when the session resumes as if nothing happened. The hook writes each one to a file in the
+# folder below, which this script shows until OK is clicked, and then remembers as seen (per user).
+# Run as the user, in the desktop session, by sleep-debug-alert.service at login and by
+# sleep-debug-alert.path whenever the hook adds a file. Installed by setup.sh.
+# Author: Danylo Malyuta, 2026.
+
+alerts=/var/log/sleep-debug/alerts
+seen=${XDG_STATE_HOME:-$HOME/.local/state}/sleep-debug-alert/seen
+mkdir -p "${seen%/*}"
+touch "$seen"
+
+# Again until none is new: one may come while the window is open.
+while :; do
+	new=$(ls "$alerts" 2>/dev/null | grep '\.txt$' | grep -vxF -f "$seen")
+	[ -n "$new" ] || exit 0
+	text=$(for f in $new; do cat "$alerts/$f" && echo; done)
+	text="$text
+
+Its logs: /var/log/sleep-debug and journalctl -t sleep-debug (see scripts/sleep-debug in the dotfiles)."
+	# Failing (no desktop yet, say), they stay new: the service tries again.
+	if command -v kdialog >/dev/null; then
+		kdialog --title "Sleep debug: something hung" --error "$text" || exit 1
+	else
+		notify-send --urgency=critical --wait "Sleep debug: something hung" "$text" || exit 1
+	fi
+	echo "$new" >>"$seen"
+done

@@ -1,0 +1,16 @@
+# A user service: show the problems the sleep-debug hook found in a window, at login and when
+# sleep-debug-alert.path sees a new one, see scripts/sleep-debug.
+[Unit]
+Description=Show a sleep or hibernation that hung, see scripts/sleep-debug
+After=graphical-session.target
+PartOf=graphical-session.target
+
+[Service]
+# Running as long as its window is open.
+Type=exec
+ExecStart=/usr/local/bin/sleep-debug-alert
+Restart=on-failure
+RestartSec=1min
+
+[Install]
+WantedBy=graphical-session.target

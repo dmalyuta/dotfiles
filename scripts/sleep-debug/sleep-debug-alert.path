@@ -1,0 +1,13 @@
+# A user unit: start sleep-debug-alert.service when the sleep-debug hook adds a problem it found,
+# see scripts/sleep-debug.
+[Unit]
+Description=Watch for a sleep or hibernation that hung, see scripts/sleep-debug
+After=graphical-session.target
+PartOf=graphical-session.target
+
+[Path]
+# The hook moves each one in whole, so it is complete when seen.
+PathChanged=/var/log/sleep-debug/alerts
+
+[Install]
+WantedBy=graphical-session.target

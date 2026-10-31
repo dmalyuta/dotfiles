@@ -1,29 +1,69 @@
 #!/bin/bash
-# In the initramfs, before it resumes a hibernation image: save what this kernel decoded from the
-# pm_trace hash in the RTC (see scripts/sleep-debug) to an EFI variable, since the resume discards
-# this kernel's log. sleep-debug moves it to /var/log/sleep-debug.
+# In the initramfs, before it resumes a hibernation image (see scripts/sleep-debug):
+# - Save what this kernel decoded from the pm_trace hash in the RTC to an EFI variable, since the
+#   resume discards this kernel's log. sleep-debug moves it to /var/log/sleep-debug. Only the first
+#   one since the hibernation: after a crash below, the next boot reads an RTC that ticked longer.
+# - If a kernel crash's log waits in EFI variables (pstore) next to the image, a hibernation hung
+#   and its watchdog crashed the kernel, which rebooted here. Power off instead of resuming, once,
+#   so that a session resumed with nobody there doesn't drain the battery: the next power-on
+#   resumes.
+# - At every boot: if the chipset's watchdog (sp5100_tco) reset the laptop, as when a hibernation
+#   hung in the firmware, note it in an EFI variable for sleep-debug to report, then power off, as
+#   setup.sh's watchdog is meant to stop a hang, not to start a session with nobody there. Its
+#   driver tells (bootstatus, from a flag in the chip that it then clears, so it powers off once)
+#   only to this kernel.
 
 efi=/sys/firmware/efi/efivars
 var=$efi/HibernateTrace-8bc5b097-6e23-408e-9a7d-2bad8e8739d1
+crash_off=$efi/HibernateCrashOff-8bc5b097-6e23-408e-9a7d-2bad8e8739d1
+tco_fired=$efi/HibernateTcoFired-8bc5b097-6e23-408e-9a7d-2bad8e8739d1
 tmp=/run/hibernate-trace
-
-# Only when there is an image to resume: systemd records where it is before hibernating.
-ls "$efi"/HibernateLocation-* >/dev/null 2>&1 || exit 0
-
-{
-	echo "rtc: $(cat /sys/class/rtc/rtc0/date /sys/class/rtc/rtc0/time 2>/dev/null | tr '\n' ' ')"
-	dmesg | grep -E 'RTC time|Magic number|hash matches'
-	echo "pm_trace_dev_match:"
-	cat /sys/power/pm_trace_dev_match 2>/dev/null
-} >"$tmp.txt" 2>&1
 
 # An EFI variable is its attributes (non-volatile, boot and runtime access) then its data, and
 # efivarfs takes it in a single write: dd's one block, without the truncate efivarfs refuses. Kept
 # small, as some firmware limits a variable's size.
-{ printf '\007\000\000\000'; head -c 1500 "$tmp.txt"; } >"$tmp.bin"
-if [ -e "$var" ]; then
-	chattr -i "$var" 2>/dev/null
-	rm -f "$var"
+write_var() {
+	{ printf '\007\000\000\000'; head -c 1500; } >"$tmp.bin"
+	dd if="$tmp.bin" of="$1" bs=8192 count=1 conv=notrunc status=none
+}
+
+# Loaded here rather than waiting for udev to; with its settings from modprobe.d, as udev would.
+# WDIOF_CARDRESET (32) in bootstatus: it fired.
+modprobe -q sp5100_tco
+fired=
+for w in /sys/class/watchdog/*; do
+	[ "$(cat "$w/identity" 2>/dev/null)" = "SP5100 TCO timer" ] || continue
+	if [ $(($(cat "$w/bootstatus" 2>/dev/null || echo 0) & 32)) -ne 0 ]; then
+		fired=1
+		[ -e "$tco_fired" ] || echo 1 | write_var "$tco_fired"
+	fi
+done
+# The power-off for it, after the pm_trace is saved.
+tco_off() {
+	[ -n "$fired" ] && systemctl poweroff --force --force
+}
+
+# Only when there is an image to resume: systemd records where it is before hibernating.
+ls "$efi"/HibernateLocation-* >/dev/null 2>&1 || { tco_off; exit 0; }
+
+if [ ! -e "$var" ]; then
+	{
+		echo "rtc: $(cat /sys/class/rtc/rtc0/date /sys/class/rtc/rtc0/time 2>/dev/null | tr '\n' ' ')"
+		dmesg | grep -E 'RTC time|Magic number|hash matches'
+		echo "pm_trace_dev_match:"
+		cat /sys/power/pm_trace_dev_match 2>/dev/null
+	} 2>&1 | write_var "$var"
 fi
-dd if="$tmp.bin" of="$var" bs=8192 count=1 conv=notrunc status=none
+
+# efi-pstore names a crash's log dump-type0-...-<LINUX_EFI_CRASH_GUID>.
+if ls "$efi"/dump-type0-*-cfc8fc79-be2e-4ddc-97f0-9f98bfe298a0 >/dev/null 2>&1; then
+	if [ -e "$crash_off" ]; then
+		chattr -i "$crash_off" 2>/dev/null
+		rm -f "$crash_off"
+	else
+		echo 1 | write_var "$crash_off"
+		systemctl poweroff --force --force
+	fi
+fi
+tco_off
 exit 0

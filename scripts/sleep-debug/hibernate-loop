@@ -1,0 +1,146 @@
+#!/bin/bash
+# Sleep then hibernate, and wake up again, in a loop in the background, to reproduce a hibernation
+# that hangs at power-off without doing it by hand. Each round is a suspend-then-hibernate, as when
+# closing the lid: it sleeps for HibernateDelaySec (see scripts/configure_hardware.sh), hibernates,
+# wakes from the RTC's alarm, lets the resume settle, and starts over.
+#   hibernate-loop start [seconds]  Start, waking each hibernation <seconds> after it starts
+#                                   (default 180: the image takes about a minute to write and power
+#                                   off).
+#   hibernate-loop stop             Stop now (from the resumed session, during the pause after a
+#                                   round).
+#   hibernate-loop status           Whether it runs, and its log.
+# It stops by itself when a round hangs, as the sleep-debug hook reports it (an alert): its watchdog
+# crashes the kernel, which saves its log and reboots, and the initramfs powers off; or the
+# chipset's watchdog resets it and the initramfs powers off. The next power-on resumes the session and this loop, which sees the
+# alert. It also stops after a round that took far too long (a hang not reported, or no wake from
+# the alarm), and when unplugged: only on AC does the alarm wake it from hibernation (on battery it
+# stayed off until the power button). While it runs, KDE doesn't put the laptop to sleep when idle
+# (an idle inhibitor), and a refused sleep (another sleep in progress) is tried again a minute
+# later, up to 3 times in a row.
+# The sleep-debug hook sets the alarm that ends each hibernation, as it starts, from the file
+# below, so that it doesn't clash with the alarm that ends the sleep. And no pm_trace in the
+# meantime: it sets the RTC's time, so the alarm would never match. The crash log tells more anyway.
+# Needs the sleep-debug log on, with its reboot (see setup.sh). Runs as root in the transient unit
+# sleep-debug-loop; asks for sudo.
+# Author: Danylo Malyuta, 2026.
+
+unit=sleep-debug-loop
+# Read by the sleep-debug hook: seconds from the start of a hibernation to the alarm.
+loop=/run/sleep-debug.loop
+dir=/var/log/sleep-debug
+self=$(readlink -f "$0")
+ac=$(ls -d /sys/class/power_supply/AC* 2>/dev/null | head -n 1)
+
+log() { logger -t sleep-debug -- "loop: $*"; }
+# The value systemd uses for a sleep.conf setting: the last one in its files.
+sleep_conf() {
+	systemd-analyze cat-config systemd/sleep.conf 2>/dev/null |
+		awk -F= -v k="$1" '$1 == k { v = $2 } END { print v }'
+}
+
+case ${1:-} in
+start)
+	[ "$(id -u)" = 0 ] || exec sudo "$self" "$@"
+	if [ ! -x /usr/lib/systemd/system-sleep/sleep-debug ] ||
+		[ "$(cat /sys/module/pstore/parameters/backend 2>/dev/null)" != efi_pstore ]; then
+		echo "The sleep-debug log isn't on, or its reboot is missing: see setup.sh." >&2
+		exit 1
+	fi
+	# On battery, the firmware didn't wake from hibernation on the RTC's alarm (2026-10-30: it stayed
+	# off until the power button, while 10 rounds on AC woke on time).
+	if [ "$(cat "$ac/online" 2>/dev/null)" != 1 ]; then
+		echo "Plug in the charger: on battery the alarm doesn't wake it from hibernation." >&2
+		exit 1
+	fi
+	if [ "$(sleep_conf HibernateOnACPower)" = no ]; then
+		echo "HibernateOnACPower=no: on AC, a round would sleep without ever hibernating." >&2
+		exit 1
+	fi
+	if systemctl is-active -q "$unit"; then
+		echo "Already running: $self stop"
+		exit 0
+	fi
+	# Through bash: systemd can't execute a script in a home directory under SELinux. With an idle
+	# inhibitor, so that KDE doesn't put the laptop to sleep itself when idle, which refuses the
+	# loop's sleep as another sleep in progress.
+	systemd-run --quiet --unit="$unit" --collect \
+		--description="Sleep, hibernate and wake in a loop, see scripts/sleep-debug/hibernate-loop" \
+		systemd-inhibit --what=idle --who=hibernate-loop --why="Hibernating in a loop" \
+		/bin/bash "$self" run "${2:-180}"
+	echo "Started. Its log: journalctl -t sleep-debug -f. Stop it with: $self stop"
+	;;
+stop)
+	[ "$(id -u)" = 0 ] || exec sudo "$self" "$@"
+	systemctl stop "$unit" 2>/dev/null
+	# Should it have been killed outright.
+	rm -f "$loop"
+	rtcwake -m disable >/dev/null 2>&1
+	echo "Stopped."
+	;;
+status)
+	systemctl is-active -q "$unit" && echo "Running." || echo "Not running."
+	journalctl -t sleep-debug --no-pager -n 300 | grep 'loop:' | tail -n 10
+	;;
+run)
+	wake=${2:-180}
+	delay=$(systemd-analyze timespan "$(sleep_conf HibernateDelaySec)" 2>/dev/null |
+		awk '/μs:/ { print int($2 / 1000000) }')
+	delay=${delay:-7200}
+	start=$(date +%s)
+	round=0
+	fails=0
+	echo "$wake" >"$loop"
+	trap 'rm -f "$loop"; rtcwake -m disable >/dev/null 2>&1; log "stopped after $round rounds"' EXIT
+	trap 'exit 0' TERM INT
+	# Whether to stop, before each round and after it.
+	check() {
+		# The resumed session after a round that hung: the hook has reported it by now (its watchdog's
+		# crash log, or the chipset's watchdog having fired).
+		local a
+		a=$(find "$dir/alerts" -maxdepth 1 -name '*.txt' -newermt "@$start" 2>/dev/null | head -n 1)
+		if [ -n "$a" ]; then
+			log "round $round hung ($(head -c 300 "$a")): stopping"
+			exit 0
+		fi
+		if [ -n "${t0:-}" ] && [ $(($(date +%s) - t0)) -gt $((delay + wake + 900)) ]; then
+			log "round $round took $((($(date +%s) - t0) / 60)) min: it hung without a crash log," \
+				"or the RTC didn't wake it: stopping"
+			exit 0
+		fi
+		if [ "$(cat "$ac/online" 2>/dev/null)" != 1 ]; then
+			log "unplugged, and on battery the alarm doesn't wake it from hibernation: stopping"
+			exit 0
+		fi
+	}
+	log "started: sleep ${delay} s, hibernate, wake ${wake} s after the hibernation starts, repeat"
+	while :; do
+		check
+		round=$((round + 1))
+		t0=$(date +%s)
+		log "round $round: sleeping, hibernating at $(date -d "@$((t0 + delay))" +%T)"
+		# Refused while another sleep is in progress, say: try again in a minute (the loop is frozen
+		# during that sleep), up to 3 times in a row.
+		if ! systemctl suspend-then-hibernate --check-inhibitors=no; then
+			fails=$((fails + 1))
+			if [ "$fails" -ge 3 ]; then
+				log "round $round: systemctl suspend-then-hibernate failed 3 times in a row: stopping"
+				exit 1
+			fi
+			log "round $round: systemctl suspend-then-hibernate failed, trying again in 60 s"
+			round=$((round - 1))
+			t0=
+			sleep 60
+			continue
+		fi
+		fails=0
+		# The suspend and the hibernation freeze this sleep, which goes on after the resume: time for
+		# sleep-debug's post step and the clock.
+		sleep 90
+		check
+	done
+	;;
+*)
+	sed -n '2,/^# Author/p' "$0" | sed 's/^# \{0,1\}//'
+	exit 1
+	;;
+esac

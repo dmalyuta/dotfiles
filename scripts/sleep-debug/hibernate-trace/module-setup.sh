@@ -6,8 +6,13 @@ check() { return 255; }
 
 depends() { echo systemd; }
 
+installkernel() {
+	# The chipset's watchdog, which it asks whether it fired.
+	instmods sp5100_tco
+}
+
 install() {
-	inst_multiple dmesg grep head cat ls tr chattr rm dd
+	inst_multiple dmesg grep head cat ls tr chattr rm dd systemctl modprobe
 	inst_script "$moddir/hibernate-trace-save" /usr/bin/hibernate-trace-save
 	inst_simple "$moddir/hibernate-trace-save.service" \
 		"$systemdsystemunitdir/hibernate-trace-save.service"

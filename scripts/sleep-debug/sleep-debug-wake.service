@@ -1,0 +1,12 @@
+# Disarm the hibernation watchdog after each wake, in case the sleep-debug hook's post step didn't
+# run, see scripts/sleep-debug.
+[Unit]
+Description=Disarm the hibernation watchdog after a wake, see scripts/sleep-debug
+After=suspend.target hibernate.target suspend-then-hibernate.target hybrid-sleep.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/lib/systemd/system-sleep/sleep-debug disarm
+
+[Install]
+WantedBy=suspend.target hibernate.target suspend-then-hibernate.target hybrid-sleep.target

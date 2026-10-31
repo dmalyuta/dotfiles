@@ -1,5 +1,5 @@
 [Unit]
-Description=Save the pm_trace of the last hibernation before resuming it
+Description=Save the last hibernation's pm_trace and whether the chipset's watchdog fired, or power off after a crash
 DefaultDependencies=no
 After=sys-firmware-efi-efivars.mount
 Before=systemd-hibernate-resume.service

@@ -342,12 +342,16 @@ for id in $(plasma_ids 'desktops()'); do
 	plasma_conf plasma-org.kde.plasma.desktop-appletsrc --group Containments --group "$id" \
 		--key plugin org.kde.desktopcontainment
 done
+# Whether the app with this desktop file ID (without .desktop) is installed.
+app_installed() {
+	[ -f ~/.local/share/applications/"$1".desktop ] || [ -f /usr/share/applications/"$1".desktop ]
+}
 # Task manager launchers: exactly these, in this order. The whole list is rewritten, so anything
 # else that was pinned is dropped.
 read -r tm_cont tm_applet < <(applet_group org.kde.plasma.icontasks)
 if [ -n "${tm_applet:-}" ]; then
 	pins=(org.kde.dolphin brave-browser kitty com.microsoft.VSCode md.obsidian.Obsidian)
-	[ -f ~/.local/share/applications/pdf-xchange-editor.desktop ] && pins+=(pdf-xchange-editor)
+	app_installed ai.storyteller.pdfcraft && pins+=(ai.storyteller.pdfcraft)
 	list=$(printf ',applications:%s.desktop' "${pins[@]}")
 	plasma_conf plasma-org.kde.plasma.desktop-appletsrc \
 		--group Containments --group "$tm_cont" --group Applets --group "$tm_applet" \
@@ -362,20 +366,34 @@ if [ -n "${ko_applet:-}" ]; then
 fi
 
 [ "$restart_plasmashell" -eq 1 ] && systemctl --user restart plasma-plasmashell.service
-# Kickoff favorites: only System Settings. They live in the activity manager's database rather
-# than the applet config, so go through its D-Bus API; reading the database is safe while the
-# daemon holds it open, but only in mode=ro, which sees writes still sitting in the WAL.
+# Kickoff favorites: System Settings, then the hardware tools that are installed, in this order.
+# They live in the activity manager's database rather than the applet config, so go through its
+# D-Bus API; reading the database is safe while the daemon holds it open, but only in mode=ro,
+# which sees writes still sitting in the WAL.
 fav_agent=org.kde.plasma.favorites.applications
-fav_want=applications:systemsettings.desktop
+favs=(systemsettings)
+for app in cardwire-gui org.opengamingcollective.rog-control-center \
+	org.coolercontrol.CoolerControl org.openrgb.OpenRGB; do
+	app_installed "$app" && favs+=("$app")
+done
 fav_link() {
 	dbus_call org.kde.ActivityManager /ActivityManager/Resources/Linking \
 		"org.kde.ActivityManager.ResourcesLinking.$1" "$fav_agent" "$2" :global >/dev/null
 }
+fav_want=" $(printf 'applications:%s.desktop ' "${favs[@]}")"
 while read -r res; do
-	[ -z "$res" ] || [ "$res" = "$fav_want" ] || fav_link UnlinkResourceFromActivity "$res"
+	[ -z "$res" ] || [[ $fav_want == *" $res "* ]] || fav_link UnlinkResourceFromActivity "$res"
 done < <(sqlite3 "file:$HOME/.local/share/kactivitymanagerd/resources/database?mode=ro" \
 	"select targettedResource from ResourceLink where initiatingAgent='$fav_agent';" 2>/dev/null)
-fav_link LinkResourceToActivity "$fav_want"
+# Kickoff shows them in the order kept for each of its instances, if it has one, else as linked.
+order=$(printf ',%s.desktop' "${favs[@]}")
+while read -r group; do
+	kconf --file kactivitymanagerd-statsrc --group "$group" --key ordering "${order#,}"
+done < <(sed -n 's/^\[\(Favorites-org\.kde\.plasma\.kickoff\.[^]]*\)\]$/\1/p' \
+	~/.config/kactivitymanagerd-statsrc 2>/dev/null)
+for app in "${favs[@]}"; do
+	fav_link LinkResourceToActivity "applications:$app.desktop"
+done
 
 # The shortcuts and OSD already show the current desktop, so drop the pager.
 plasma_script 'panels().forEach(p =>

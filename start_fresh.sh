@@ -493,6 +493,20 @@ if [ -n "${want_pureref:-}" ]; then
 	sudo dnf install -y "$pureref_rpm" || say "Could not install $pureref_rpm." >&2
 fi
 
+# PdfCraft, from the .rpm in its latest GitHub release. Re-running this upgrades it.
+pdfcraft_tag=$(curl -fsSLI -o /dev/null -w '%{url_effective}' \
+	https://github.com/storytold/pdfcraft/releases/latest)
+pdfcraft_tag=${pdfcraft_tag##*/}
+pdfcraft_ver=${pdfcraft_tag#v}
+if [[ ! $pdfcraft_ver =~ ^[0-9][0-9.]*$ ]]; then
+	say "Could not find the latest PdfCraft release, skipping." >&2
+elif [ "$(rpm -q --qf '%{VERSION}' pdfcraft 2>/dev/null)" = "$pdfcraft_ver" ]; then
+	skip "PdfCraft"
+else
+	sudo dnf install -y "https://github.com/storytold/pdfcraft/releases/download/$pdfcraft_tag/pdfcraft-$pdfcraft_ver-linux-x86_64.rpm" ||
+		say "Could not install PdfCraft." >&2
+fi
+
 # RAD Debugger, built from its latest release, like the AUR package does.
 if [ ! -x ~/.local/bin/raddbg ]; then
 	rad_tag=$(curl -fsSLI -o /dev/null -w '%{url_effective}' \

@@ -6,4 +6,6 @@ config/obs/**/*.bak
 config/obs/**/*.tmp
 
 # AI
-.claude/
+.claude/*
+!.claude/settings.json
+!.claude/CLAUDE.md

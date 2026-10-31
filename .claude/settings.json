@@ -1,0 +1,14 @@
+{
+    "theme": "dark",
+    "permissions": {
+        "allow": [
+            "Bash(git worktree remove *)",
+            "Bash(git worktree prune *)",
+            "Bash(git branch -d *)",
+            "Bash(git branch -D *)"
+        ]
+    },
+    "worktree": {
+        "bgIsolation": "none"
+    }
+}

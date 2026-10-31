@@ -24,12 +24,14 @@ nvidia_version=$(nvidia_version)
 # GPUs.
 # --------------------------------------------------------------------------------------------------
 
-# Electron apps (Obsidian, VS Code, ...) list every GPU through Vulkan at startup, which wakes the
-# NVIDIA dGPU for ~20 s on each launch. Show Vulkan apps only the AMD iGPU, which still accelerates
-# them. bin/nvidia-run runs an app on the dGPU.
+# On the laptop, Electron apps (Obsidian, VS Code, ...) list every GPU through Vulkan at startup,
+# which wakes the NVIDIA dGPU for ~20 s on each launch. Show Vulkan apps only the AMD iGPU, which
+# drives the screen and still accelerates them. bin/nvidia-run runs an app on the dGPU. Not on the
+# desktop: its screens run on the NVIDIA card, and an app drawing on the iGPU there can't show its
+# window ("importing the supplied dmabufs failed", e.g. PdfCraft).
 vulkan_conf=~/.config/environment.d/60-vulkan-igpu.conf
 radeon_icd=/usr/share/vulkan/icd.d/radeon_icd.x86_64.json
-if [ -n "$nvidia_version" ] && lspci -d 1002: | grep -qE 'VGA|3D|Display'; then
+if is_laptop && [ -n "$nvidia_version" ] && lspci -d 1002: | grep -qE 'VGA|3D|Display'; then
 	mkdir -p ~/.config/environment.d
 	cat >"$vulkan_conf" <<EOF
 # Vulkan apps only see the AMD iGPU, so they don't wake the NVIDIA dGPU. Use nvidia-run for the dGPU.

@@ -170,9 +170,9 @@ if is_laptop && can_hibernate && [ "$(findmnt -no FSTYPE /)" = btrfs ] && [ ! -f
 	sudo swapon "$swapfile"
 fi
 
-# Sleep then hibernate after 2 h on battery, to cap the drain overnight: sleep draws ~0.7 W
+# Sleep then hibernate after 1 h on battery, to cap the drain overnight: sleep draws ~0.7 W
 # (1.1%/h), while a hibernation costs ~0.57 Wh to enter and leave, then ~0.01 W (measured
-# 2026-10). On AC it stays asleep, and the 2 h start when it is unplugged.
+# 2026-10). On AC it stays asleep, and the hour starts when it is unplugged.
 # SleepMode 3 is "Standby, then hibernate". Without hibernation, back to plain sleep, else KDE would
 # try to hibernate and fail.
 #
@@ -187,7 +187,7 @@ suspend_dropin=/etc/systemd/system/systemd-suspend.service.d/50-suspend-then-hib
 if is_laptop && can_hibernate && [ -f "$swapfile" ]; then
 	write_root_file /etc/systemd/sleep.conf.d/50-suspend-then-hibernate.conf <<'EOF'
 [Sleep]
-HibernateDelaySec=2h
+HibernateDelaySec=1h
 HibernateOnACPower=no
 EOF
 	write_root_file "$suspend_dropin" <<'EOF' && sudo systemctl daemon-reload

@@ -1,7 +1,7 @@
 # shellcheck shell=bash
 #
-# Helpers shared by start_fresh.sh, configure_hardware.sh and configure_kde.sh. Source it, don't run
-# it. install_script_file reads $dotfiles, which the sourcing script sets to the repo root.
+# Helpers shared by start_fresh, configure_hardware and configure_kde. Source it, don't run it.
+# install_script_file reads $dotfiles, which the sourcing script sets to the repo root.
 #
 # Author: Danylo Malyuta, 2026.
 

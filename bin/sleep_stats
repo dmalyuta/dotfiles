@@ -2,8 +2,9 @@
 #
 # The laptop's sleep and hibernation battery drain as a web page: starts a small local server and
 # opens the page in the browser. The page plots /var/log/sleep-stats.csv (written by
-# scripts/sleep-stats) with robust line fits, the battery now, and the predicted battery use of
-# suspend, hibernation and suspend-then-hibernate. The work is done in ui/sleep_stats/server.py.
+# scripts/sleep-hooks/sleep-stats) with robust line fits, the battery now, and the predicted battery
+# use of suspend, hibernation and suspend-then-hibernate. The work is done in
+# ui/sleep_stats/server.py.
 #
 # Usage: sleep_stats [--port N] [--csv PATH] [--no-browser] [--dump]
 #

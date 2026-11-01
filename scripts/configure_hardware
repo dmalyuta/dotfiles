@@ -1,10 +1,10 @@
 #!/bin/bash
 #
 # Low-level hardware setup: GPUs, kernel command line, initramfs, wake sources, CPU power readings,
-# sleep and hibernation, and the ASUS ProArt PX13 laptop's quirks. Run by start_fresh.sh after it
+# sleep and hibernation, and the ASUS ProArt PX13 laptop's quirks. Run by start_fresh after it
 # installs the software, and safe to re-run on its own.
 #
-# Usage: configure_hardware.sh
+# Usage: configure_hardware
 #
 # Exits with status 2 if a setting changed that takes a reboot to apply.
 #
@@ -69,22 +69,24 @@ fi
 
 # Wake sources, and a working display after suspend. systemd only scans
 # /usr/lib/systemd/system-sleep, not /etc.
-if install_script_file 90-usb-wakeup.rules /etc/udev/rules.d/90-usb-wakeup.rules; then
+if install_script_file udev/90-usb-wakeup.rules /etc/udev/rules.d/90-usb-wakeup.rules; then
 	sudo udevadm control --reload
 	sudo udevadm trigger --action=add --subsystem-match=usb
 fi
-install_script_file usb-wakeup /usr/lib/systemd/system-sleep/usb-wakeup 0755
+install_script_file sleep-hooks/usb-wakeup /usr/lib/systemd/system-sleep/usb-wakeup 0755
 
-# CPU power for bin/status, see scripts/90-rapl-read.rules.
-if install_script_file 90-rapl-read.rules /etc/udev/rules.d/90-rapl-read.rules; then
+# CPU power for bin/status, see scripts/udev/90-rapl-read.rules.
+if install_script_file udev/90-rapl-read.rules /etc/udev/rules.d/90-rapl-read.rules; then
 	sudo udevadm control --reload
 	sudo udevadm trigger --action=add --subsystem-match=powercap
 fi
 
-# Replug the C920 webcam when its USB link fails, see scripts/c920-guard.
-install_script_file c920-guard.service /etc/systemd/system/c920-guard.service && sudo systemctl daemon-reload
-install_script_file c920-guard /usr/lib/systemd/system-sleep/c920-guard 0755
-install_script_file c920-guard /usr/local/bin/c920-guard 0755 && sudo systemctl try-restart c920-guard
+# Replug the C920 webcam when its USB link fails, see scripts/bin/c920-guard.
+install_script_file systemd/c920-guard.service /etc/systemd/system/c920-guard.service &&
+	sudo systemctl daemon-reload
+install_script_file bin/c920-guard /usr/lib/systemd/system-sleep/c920-guard 0755
+install_script_file bin/c920-guard /usr/local/bin/c920-guard 0755 &&
+	sudo systemctl try-restart c920-guard
 sudo systemctl enable --now c920-guard
 
 # --------------------------------------------------------------------------------------------------
@@ -139,7 +141,7 @@ fi
 # systemd finds the swapfile through an EFI variable instead, but needs the module to resume.
 if is_laptop && can_hibernate; then
 	write_root_file /etc/dracut.conf.d/90-hibernate.conf <<'EOF' && rebuild_initramfs=1
-# Hibernation, see scripts/configure_hardware.sh: resume, and without amdgpu, which can't resume
+# Hibernation, see scripts/configure_hardware: resume, and without amdgpu, which can't resume
 # from the initramfs.
 add_dracutmodules+=" resume "
 omit_drivers+=" amdgpu "
@@ -215,11 +217,14 @@ elif is_laptop; then
 fi
 
 # The battery drain of each sleep and hibernation, one row per step in /var/log/sleep-stats.csv,
-# for plotting later, see scripts/sleep-stats.
-is_laptop && install_script_file sleep-stats /usr/lib/systemd/system-sleep/sleep-stats 0755
+# for plotting later, see scripts/sleep-hooks/sleep-stats.
+is_laptop && install_script_file sleep-hooks/sleep-stats \
+	/usr/lib/systemd/system-sleep/sleep-stats 0755
 
-# Keep the speaker amps from deadlocking a hibernation at power-off, see scripts/cs35l41-hibernate.
-is_laptop && install_script_file cs35l41-hibernate /usr/lib/systemd/system-sleep/cs35l41-hibernate 0755
+# Keep the speaker amps from deadlocking a hibernation at power-off, see
+# scripts/sleep-hooks/cs35l41-hibernate.
+is_laptop && install_script_file sleep-hooks/cs35l41-hibernate \
+	/usr/lib/systemd/system-sleep/cs35l41-hibernate 0755
 
 # Only the laptop hibernates. Turn it off elsewhere, so KDE never offers it (it would if a big
 # enough swap showed up).
@@ -238,34 +243,36 @@ fi
 
 # asusd sets the keyboard backlight, while systemd-backlight restores whatever it saved at
 # shutdown, which can be 0. Also reset the keyboard controller after hibernation, see
-# scripts/asus-kbd-rebind.
+# scripts/bin/asus-kbd-rebind.
 if installed asusctl; then
 	sudo systemctl mask systemd-backlight@leds:asus::kbd_backlight.service
-	install_script_file asus-kbd-rebind /usr/local/bin/asus-kbd-rebind 0755
-	install_script_file asus-kbd-rebind.service /etc/systemd/system/asus-kbd-rebind.service &&
+	install_script_file bin/asus-kbd-rebind /usr/local/bin/asus-kbd-rebind 0755
+	install_script_file systemd/asus-kbd-rebind.service \
+		/etc/systemd/system/asus-kbd-rebind.service &&
 		sudo systemctl daemon-reload
 	sudo systemctl enable asus-kbd-rebind
 fi
 
-# G-Helper's fan curves, see scripts/asus-fan-curves. asusd saves them.
+# G-Helper's fan curves, see scripts/bin/asus-fan-curves. asusd saves them.
 if installed asusctl && is_laptop; then
-	"$dotfiles"/scripts/asus-fan-curves >/dev/null
+	"$dotfiles"/scripts/bin/asus-fan-curves >/dev/null
 fi
 
-# Per-profile CPU power limits, lower in Quiet for battery life, see scripts/asus-power-limits. With
-# Secure Boot on, acpi_call only loads once its signing key is enrolled, see start_fresh.sh.
+# Per-profile CPU power limits, lower in Quiet for battery life, see scripts/bin/asus-power-limits.
+# With Secure Boot on, acpi_call only loads once its signing key is enrolled, see start_fresh.
 if installed acpi_call-dkms && is_laptop; then
-	install_script_file asus-power-limits /usr/lib/systemd/system-sleep/asus-power-limits 0755
-	install_script_file asus-power-limits.service /etc/systemd/system/asus-power-limits.service &&
+	install_script_file bin/asus-power-limits /usr/lib/systemd/system-sleep/asus-power-limits 0755
+	install_script_file systemd/asus-power-limits.service \
+		/etc/systemd/system/asus-power-limits.service &&
 		sudo systemctl daemon-reload
-	install_script_file asus-power-limits /usr/local/bin/asus-power-limits 0755 &&
+	install_script_file bin/asus-power-limits /usr/local/bin/asus-power-limits 0755 &&
 		sudo systemctl try-restart asus-power-limits
 	sudo systemctl enable --now asus-power-limits
 fi
 
 # The PX13 is a 2-in-1, but asus-nb-wmi has no quirk for it, so it never reports tablet mode and KDE
 # stays in laptop mode. It has the lid-flip sensor (WMI device 0x00060062), so use that. The switch
-# is on "Asus WMI hotkeys", which scripts/keyd.conf leaves to libinput. Applies on next boot.
+# is on "Asus WMI hotkeys", which scripts/keyd/keyd.conf leaves to libinput. Applies on next boot.
 if is_laptop; then
 	write_root_file /etc/modprobe.d/asus-tablet-mode.conf <<'EOF' && need_reboot=1
 options asus_nb_wmi tablet_mode_sw=2

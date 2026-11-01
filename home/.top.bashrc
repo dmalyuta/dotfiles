@@ -15,12 +15,4 @@ case $- in
 *) return ;;
 esac
 
-# Early-out for TRAMP shells in Emacs.
-IS_TRAMP=0
-if [[ "$TERM" = "dumb" ]]; then
-    PS1="$ "
-    IS_TRAMP=1
-    return
-fi
-
 EARLY_OUT=0

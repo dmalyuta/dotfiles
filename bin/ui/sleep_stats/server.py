@@ -3,8 +3,8 @@
 
 Serves the page in static/ on 127.0.0.1 and opens it in the browser. The page gets its data from
 /api/data, which re-reads everything on each load, so reloading the page picks up new sleeps:
-- /var/log/sleep-stats.csv, one row per sleep step, written by scripts/sleep-stats (its header
-  documents the columns).
+- /var/log/sleep-stats.csv, one row per sleep step, written by scripts/sleep-hooks/sleep-stats (its
+  header documents the columns).
 - The battery in /sys/class/power_supply, for its capacity now, to turn Wh into %.
 - HibernateDelaySec from systemd's sleep.conf, the delay suspend-then-hibernate uses now.
 

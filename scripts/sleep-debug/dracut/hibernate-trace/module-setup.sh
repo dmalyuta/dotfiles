@@ -1,6 +1,6 @@
 #!/bin/bash
 # dracut module: save the pm_trace of the last hibernation before resuming it, see
-# hibernate-trace-save. Included through add_dracutmodules, by ../setup.sh.
+# hibernate-trace-save. Included through add_dracutmodules, by scripts/sleep-debug/setup.
 
 check() { return 255; }
 

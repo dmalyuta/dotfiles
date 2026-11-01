@@ -5,8 +5,8 @@
 # back.
 # Runs as a systemd-sleep hook around each sleep step (suspend-then-hibernate runs it around its
 # suspend and its hibernate separately, with SYSTEMD_SLEEP_ACTION saying which), and at boot from
-# sleep-debug.service. Installed, and removed again, by setup.sh in this folder, which
-# start_fresh.sh runs as answered.
+# sleep-debug.service. Installed, and removed again, by scripts/sleep-debug/setup, which
+# start_fresh runs as answered.
 #
 # Read it with journalctl -t sleep-debug, and the files in /var/log/sleep-debug:
 # - Before each step, a snapshot of the devices' power state (<time>-<step>.txt). Only sysfs and
@@ -29,21 +29,21 @@
 #   the device and of the callback's file:line into the RTC, which survives a forced power-off, and
 #   handles the devices one at a time so that the last one traced is the one that hung. The next
 #   boot's kernel decodes it ("Magic number", "hash matches"), but resuming the image discards that
-#   kernel's log, so the initramfs saves it to an EFI variable first (hibernate-trace/), and this
-#   script moves it to <time>-trace.txt.
-# - Decode it with pm-trace-decode in this folder, from the "RTC time" line in the trace file, the
-#   time from the hang to that boot (from the journal), and the device names in the hibernation's
-#   snapshot. Not with the kernel's own decode: the RTC keeps ticking, so it is only right if the
-#   laptop was powered on within about 3 minutes, and it is wrong whenever the year written is 00
-#   (read_magic_time takes 2000 for 100 years).
+#   kernel's log, so the initramfs saves it to an EFI variable first (../dracut/hibernate-trace/),
+#   and this script moves it to <time>-trace.txt.
+# - Decode it with scripts/sleep-debug/bin/pm-trace-decode, from the "RTC time" line in the trace
+#   file, the time from the hang to that boot (from the journal), and the device names in the
+#   hibernation's snapshot. Not with the kernel's own decode: the RTC keeps ticking, so it is only
+#   right if the laptop was powered on within about 3 minutes, and it is wrong whenever the year
+#   written is 00 (read_magic_time takes 2000 for 100 years).
 #
 # - During each hibernation, a watchdog (softdog, 5 min, armed just before and disarmed first thing
 #   after the resume): if the power-off hangs, it crashes the kernel, which saves its log to EFI
-#   variables (pstore, with efi_pstore.pstore_disable=0 on the kernel command line, see setup.sh)
+#   variables (pstore, with efi_pstore.pstore_disable=0 on the kernel command line, see setup)
 #   and reboots (kernel.panic). The initramfs then sees that crash log next to a waiting image and
-#   powers off instead of resuming (hibernate-trace/), so the battery isn't drained by a session
-#   resumed with nobody there; the next power-on resumes it, and this script moves the log to
-#   <time>-crash.txt: the last 64 KB of the kernel's log, then the stacks of the tasks stuck
+#   powers off instead of resuming (../dracut/hibernate-trace/), so the battery isn't drained by a
+#   session resumed with nobody there; the next power-on resumes it, and this script moves the log
+#   to <time>-crash.txt: the last 64 KB of the kernel's log, then the stacks of the tasks stuck
 #   waiting. A CPU stuck in the kernel crashes it at once instead (a soft or hard lockup), with that
 #   CPU's stack. sleep-debug-wake.service also disarms it after each wake, in case this hook didn't
 #   run.
@@ -55,7 +55,7 @@
 #   off itself: that clears what the driver reads (tested 2026-10-30), so it would go unnoticed.
 # - Both keep running if the hibernation falls back to a plain power-off (kernel_power_off), which
 #   by default stops every watchdog before shutting down the drivers (its reboot notifiers), where
-#   the 2026-10-30 hang was: the kernel command line option watchdog.stop_on_reboot=0 (setup.sh)
+#   the 2026-10-30 hang was: the kernel command line option watchdog.stop_on_reboot=0 (setup)
 #   keeps them.
 # - Every problem found (a hang, a crash, a sleep that never came back) is also an alert: a file in
 #   /var/log/sleep-debug/alerts, which sleep-debug-alert shows in a window in the desktop session,
@@ -73,7 +73,8 @@
 # - The end of a resume pass (main.c:1186 TRACE_RESUME(error), on the newest device): the thaw
 #   after the image was created, so it hung after it, writing the image or in the power-off's
 #   prepare step (device_prepare, untraced). The 2026-10-30 and 2026-10-31 hangs: the speaker amps'
-#   driver deadlocked there (scripts/cs35l41-hibernate), not, as first read, a failed S4 entry.
+#   driver deadlocked there (scripts/sleep-hooks/cs35l41-hibernate), not, as first read, a failed S4
+#   entry.
 # - Another resume callback: the S4 entry failed and the kernel restored the devices, then fell
 #   back to a plain power-off (kernel_power_off), which can hang in a driver's shutdown (untraced).
 #
@@ -98,7 +99,7 @@ tco_fired=$efi/HibernateTcoFired-8bc5b097-6e23-408e-9a7d-2bad8e8739d1
 alerts=$dir/alerts
 pstore=/sys/fs/pstore
 watchdogs=/sys/class/watchdog
-# setup.sh's settings for the chipset's watchdog.
+# setup's settings for the chipset's watchdog.
 tco_conf=/etc/modprobe.d/sleep-debug-tco.conf
 sysctl=/proc/sys/kernel
 self=$(readlink -f "$0")
@@ -227,7 +228,7 @@ crash_sysctls="panic=5 softlockup_panic=1 hardlockup_panic=1 panic_sys_info=bloc
 
 # Arm the watchdogs for a hibernation (see the top). The software one crashes the kernel after
 # 5 min, for its log; only with efi-pstore, else the log is lost and the initramfs can't tell, and
-# would resume. The chipset's own (sp5100_tco), set by setup.sh to reset after 10 min (and the
+# would resume. The chipset's own (sp5100_tco), set by setup to reset after 10 min (and the
 # initramfs then powers off), is the backstop for a hang that nothing in the kernel can see, in the firmware or with interrupts off:
 # no log, but the image and the RTC's pm_trace are left for the next power-on.
 arm_watchdog() {
@@ -238,7 +239,7 @@ arm_watchdog() {
 	fi
 	modprobe -r softdog 2>/dev/null
 	modprobe softdog soft_margin=300 soft_panic=1 || return
-	# The chipset's watchdog takes setup.sh's settings when its driver loads: should it have loaded
+	# The chipset's watchdog takes setup's settings when its driver loads: should it have loaded
 	# without them (from an initramfs built before them), load it again with them.
 	for w in "$watchdogs"/*; do
 		if [ "$(cat "$w/identity" 2>/dev/null)" = "SP5100 TCO timer" ] &&

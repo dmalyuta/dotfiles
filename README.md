@@ -7,7 +7,7 @@ Fedora KDE Plasma setup after a fresh install.
 On a brand new install, run:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/dmalyuta/dotfiles/fedora/start_fresh.sh | bash
+curl -fsSL https://raw.githubusercontent.com/dmalyuta/dotfiles/fedora/start_fresh | bash
 ```
 
 This clones this repo to `~/Projects/dotfiles`, symlinks the dotfiles into the
@@ -24,14 +24,30 @@ It is also safe to re-run (aka *idempotent*): every step checks for what it
 installs and skips it if it is already there. So you can always re-run using:
 
 ```bash
-~/Projects/dotfiles/start_fresh.sh
+~/Projects/dotfiles/start_fresh
 ```
 
 Do re-run using the more recent run's answers to user questions:
 
 ```bash
-~/Projects/dotfiles/start_fresh.sh -c
+~/Projects/dotfiles/start_fresh -c
 ```
+
+## Layout
+
+- `start_fresh`: sets up a machine, see above.
+- `home/`, `config/`: dotfiles, symlinked into `~` and `~/.config`.
+- `bin/`: commands, on `PATH` as `~/.bin`.
+- `scripts/`: system setup, run by `start_fresh`.
+  - `configure_hardware`, `configure_kde`: the setup steps; `functions.sh`, their shared helpers.
+  - What they install or run, one folder per kind: `bin/` (commands, most installed to
+    `/usr/local/bin`), `sleep-hooks/` (to `/usr/lib/systemd/system-sleep`), `systemd/` (units),
+    `udev/` (rules), `keyd/`.
+  - `sleep-debug/`: the hibernation debug log, with its own `setup`, the same folders and a dracut
+    module in `dracut/`.
+
+Scripts you run have no extension; only files that are sourced end in `.sh` (and dracut's
+`module-setup.sh`, whose name dracut sets).
 
 ## License
 

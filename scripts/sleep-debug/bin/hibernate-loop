@@ -1,7 +1,7 @@
 #!/bin/bash
 # Sleep then hibernate, and wake up again, in a loop in the background, to reproduce a hibernation
 # that hangs at power-off without doing it by hand. Each round is a suspend-then-hibernate, as when
-# closing the lid: it sleeps for HibernateDelaySec (see scripts/configure_hardware.sh), hibernates,
+# closing the lid: it sleeps for HibernateDelaySec (see scripts/configure_hardware), hibernates,
 # wakes from the RTC's alarm, lets the resume settle, and starts over.
 #   hibernate-loop start [seconds]  Start, waking each hibernation <seconds> after it starts
 #                                   (default 180: the image takes about a minute to write and power
@@ -20,7 +20,7 @@
 # The sleep-debug hook sets the alarm that ends each hibernation, as it starts, from the file
 # below, so that it doesn't clash with the alarm that ends the sleep. And no pm_trace in the
 # meantime: it sets the RTC's time, so the alarm would never match. The crash log tells more anyway.
-# Needs the sleep-debug log on, with its reboot (see setup.sh). Runs as root in the transient unit
+# Needs the sleep-debug log on, with its reboot (see setup). Runs as root in the transient unit
 # sleep-debug-loop; asks for sudo.
 # Author: Danylo Malyuta, 2026.
 
@@ -43,7 +43,7 @@ start)
 	[ "$(id -u)" = 0 ] || exec sudo "$self" "$@"
 	if [ ! -x /usr/lib/systemd/system-sleep/sleep-debug ] ||
 		[ "$(cat /sys/module/pstore/parameters/backend 2>/dev/null)" != efi_pstore ]; then
-		echo "The sleep-debug log isn't on, or its reboot is missing: see setup.sh." >&2
+		echo "The sleep-debug log isn't on, or its reboot is missing: see setup." >&2
 		exit 1
 	fi
 	# On battery, the firmware didn't wake from hibernation on the RTC's alarm (2026-10-30: it stayed
@@ -64,7 +64,7 @@ start)
 	# inhibitor, so that KDE doesn't put the laptop to sleep itself when idle, which refuses the
 	# loop's sleep as another sleep in progress.
 	systemd-run --quiet --unit="$unit" --collect \
-		--description="Sleep, hibernate and wake in a loop, see scripts/sleep-debug/hibernate-loop" \
+		--description="Sleep, hibernate and wake in a loop, see $self" \
 		systemd-inhibit --what=idle --who=hibernate-loop --why="Hibernating in a loop" \
 		/bin/bash "$self" run "${2:-180}"
 	echo "Started. Its log: journalctl -t sleep-debug -f. Stop it with: $self stop"

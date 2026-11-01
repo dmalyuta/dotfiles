@@ -9,7 +9,7 @@
 #   resumes.
 # - At every boot: if the chipset's watchdog (sp5100_tco) reset the laptop, as when a hibernation
 #   hung in the firmware, note it in an EFI variable for sleep-debug to report, then power off, as
-#   setup.sh's watchdog is meant to stop a hang, not to start a session with nobody there. Its
+#   setup's watchdog is meant to stop a hang, not to start a session with nobody there. Its
 #   driver tells (bootstatus, from a flag in the chip that it then clears, so it powers off once)
 #   only to this kernel.
 

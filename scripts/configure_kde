@@ -1,9 +1,9 @@
 #!/bin/bash
 #
 # Configure the KDE Plasma desktop: input devices, app hotkeys, global shortcuts, virtual desktops,
-# effects, theme, icons and panels. Run by start_fresh.sh, and safe to re-run on its own.
+# effects, theme, icons and panels. Run by start_fresh, and safe to re-run on its own.
 #
-# Usage: configure_kde.sh [WORKSPACES]
+# Usage: configure_kde [WORKSPACES]
 #
 # WORKSPACES lists extra VS Code workspaces for Meta+<letter>, as "<letter>:<absolute path>,...".
 # Exits with status 2 if a setting changed that takes a reboot to apply.
@@ -142,7 +142,7 @@ done < <(gawk -v RS= '/Handlers=[^\n]*mouse/ &&
 	}' /proc/bus/input/devices)
 compgen -G '/sys/class/backlight/*' >/dev/null &&
 	say "If System Settings > Display has an auto-brightness toggle, turn it off."
-# The on-screen keyboard, shown when a text field is tapped in tablet mode. start_fresh.sh installs
+# The on-screen keyboard, shown when a text field is tapped in tablet mode. start_fresh installs
 # it on the PX13.
 plasma_keyboard=/usr/share/applications/org.kde.plasma.keyboard.desktop
 [ -f "$plasma_keyboard" ] && kconf --file kwinrc --group Wayland --key InputMethod "$plasma_keyboard"
@@ -203,7 +203,7 @@ kconf --file kwinrc --group Script-apphotkeys --key vscodeWorkspaces "$workspace
 # sit next to the first one's. The entry shadows the system one, which it copies.
 cardwire_entry=/usr/share/applications/cardwire-gui.desktop
 if [ -f "$cardwire_entry" ]; then
-	sed "s|^Exec=.*|Exec=\"$dotfiles/bin/cardwire-gui.sh\"|" "$cardwire_entry" \
+	sed "s|^Exec=.*|Exec=\"$dotfiles/bin/cardwire-show\"|" "$cardwire_entry" \
 		>~/.local/share/applications/cardwire-gui.desktop
 else
 	rm -f ~/.local/share/applications/cardwire-gui.desktop

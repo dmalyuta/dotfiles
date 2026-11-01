@@ -4,7 +4,7 @@
 # when the session resumes as if nothing happened. The hook writes each one to a file in the
 # folder below, which this script shows until OK is clicked, and then remembers as seen (per user).
 # Run as the user, in the desktop session, by sleep-debug-alert.service at login and by
-# sleep-debug-alert.path whenever the hook adds a file. Installed by setup.sh.
+# sleep-debug-alert.path whenever the hook adds a file. Installed by setup.
 # Author: Danylo Malyuta, 2026.
 
 alerts=/var/log/sleep-debug/alerts

@@ -3,9 +3,9 @@
 // Focusing picks the app's best window across all virtual desktops, switching desktop and
 // un-minimizing as needed. Launching invokes kglobalaccel's "_launch" action of the app's desktop
 // entry, so the app starts just like from the app menu. That action only exists once the entry is
-// registered with kglobalaccel, which start_fresh.sh does.
+// registered with kglobalaccel, which start_fresh does.
 //
-// The keys here are defaults: start_fresh.sh sets the same ones, and they can be changed in System
+// The keys here are defaults: start_fresh sets the same ones, and they can be changed in System
 // Settings > Keyboard > Shortcuts > KWin.
 
 // Desktop entry to launch, and the ids that identify the app's windows (lowercase resource class,
@@ -23,7 +23,7 @@ const apps = {
     vscode: { desktop: "com.microsoft.VSCode.desktop", ids: ["com.microsoft.vscode"] },
 };
 
-// VS Code workspaces for the Meta+C, Meta+<key> sequence. start_fresh.sh keeps the list and passes
+// VS Code workspaces for the Meta+C, Meta+<key> sequence. start_fresh keeps the list and passes
 // it in the script's config as "<key>=<folder path>;...". It also writes the desktop entry that
 // opens each folder. A workspace's window is found by the folder name in its title.
 const vscodeWorkspaces = String(readConfig("vscodeWorkspaces", "")).split(";").filter(s => s)
@@ -139,7 +139,7 @@ for (const workspaceInfo of vscodeWorkspaces) {
     // Titles look like "file.py - WorkspaceTitle - Visual Studio Code".
     const folder = workspaceInfo.folder.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const title = new RegExp("(^| - )" + folder + "( - |$)");
-    // Named by the letter, which start_fresh.sh relies on to drop the shortcuts of removed ones.
+    // Named by the letter, which start_fresh relies on to drop the shortcuts of removed ones.
     registerShortcut("App Hotkeys: VS Code workspace " + workspaceInfo.key,
         "App Hotkeys: VS Code " + workspaceInfo.folder, "Meta+" + workspaceInfo.key, () => {
             if (takeVscodeSequence()) {

@@ -14,7 +14,7 @@
 # everything still runs, and back on after it: the thaw then has nothing to load, and unloading reads
 # no file. The speakers play without their DSP until then, while there is no sound anyway.
 # systemd-sleep hook (suspend-then-hibernate runs it around each of its steps, SYSTEMD_SLEEP_ACTION
-# says which). Installed by scripts/configure_hardware.sh.
+# says which). Installed by scripts/configure_hardware.
 # Author: Danylo Malyuta, 2026.
 
 state=/run/cs35l41-hibernate

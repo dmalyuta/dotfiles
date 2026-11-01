@@ -7,9 +7,9 @@
 # - Let a crashing kernel save its log to EFI variables (efi-pstore, off by default on Fedora), for
 #   the hibernation watchdog: a kernel command line option, which takes a reboot.
 # - Set the chipset's watchdog (sp5100_tco), the hibernation's backstop, to reset after 10 min,
-#   after which the initramfs powers off (hibernate-trace/): only after a reset can it tell that the
-#   watchdog fired, which a power-off clears (2026-10-30 tests). Only the hook arms it, during a
-#   hibernation.
+#   after which the initramfs powers off (dracut/hibernate-trace/): only after a reset can it tell
+#   that the watchdog fired, which a power-off clears (2026-10-30 tests). Only the hook arms it,
+#   during a hibernation.
 # - Keep the watchdogs running through a power-off (watchdog.stop_on_reboot=0, a kernel command
 #   line option): the kernel stops them by default as it starts one, before shutting down the
 #   drivers, so a hibernation that falls back to a plain power-off and hangs in a driver's shutdown
@@ -18,8 +18,8 @@
 #   reboot, turn it off: until now the kernel stopped it at the reboot anyway.
 # - Show what the hook finds wrong in a window in the desktop session (sleep-debug-alert, a user
 #   service for every user).
-# Run by start_fresh.sh, which asks; safe to re-run.
-# Usage: setup.sh on|off
+# Run by start_fresh, which asks; safe to re-run.
+# Usage: setup on|off
 # "off" removes all of it but keeps the logs in /var/log/sleep-debug.
 # Exits with status 2 if the initramfs or the kernel command line changed, which take a reboot.
 # Author: Danylo Malyuta, 2026.
@@ -38,7 +38,7 @@ efi=/sys/firmware/efi/efivars
 var=$efi/HibernateTrace-8bc5b097-6e23-408e-9a7d-2bad8e8739d1
 crash_off=$efi/HibernateCrashOff-8bc5b097-6e23-408e-9a7d-2bad8e8739d1
 tco_fired=$efi/HibernateTcoFired-8bc5b097-6e23-408e-9a7d-2bad8e8739d1
-# After 50-suspend-then-hibernate.conf from scripts/configure_hardware.sh, so it wins.
+# After 50-suspend-then-hibernate.conf from scripts/configure_hardware, so it wins.
 sleep_conf=/etc/systemd/sleep.conf.d/60-sleep-debug.conf
 # How much of the kernel's log a crash saves, counted compressed: 64 KB took 114 EFI variables of
 # ~1 KB for ~190 KB of log (a test crash, 2026-10-30), nearly all of the 128 KB of variables that
@@ -62,16 +62,17 @@ EOF
 	for f in module-setup.sh hibernate-trace-save hibernate-trace-save.service; do
 		mode=0755
 		[ "$f" = hibernate-trace-save.service ] && mode=0644
-		install_script_file "sleep-debug/hibernate-trace/$f" "$module/$f" "$mode" && rebuild=1
+		install_script_file "sleep-debug/dracut/hibernate-trace/$f" "$module/$f" "$mode" &&
+			rebuild=1
 	done
-	install_script_file sleep-debug/sleep-debug "$hook" 0755
-	install_script_file sleep-debug/sleep-debug.service "$unit" && reload=1
-	install_script_file sleep-debug/sleep-debug-wake.service "$wake_unit" && reload=1
+	install_script_file sleep-debug/sleep-hooks/sleep-debug "$hook" 0755
+	install_script_file sleep-debug/systemd/sleep-debug.service "$unit" && reload=1
+	install_script_file sleep-debug/systemd/sleep-debug-wake.service "$wake_unit" && reload=1
 	[ -n "${reload:-}" ] && sudo systemctl daemon-reload
 	sudo systemctl enable sleep-debug sleep-debug-wake
-	install_script_file sleep-debug/sleep-debug-alert "$alert_bin" 0755
+	install_script_file sleep-debug/bin/sleep-debug-alert "$alert_bin" 0755
 	for u in $alert_units; do
-		install_script_file "sleep-debug/$u" "/etc/systemd/user/$u"
+		install_script_file "sleep-debug/systemd/user/$u" "/etc/systemd/user/$u"
 	done
 	sudo mkdir -p /var/log/sleep-debug/alerts
 	# shellcheck disable=SC2086
@@ -113,7 +114,8 @@ EOF
 	for img in /boot/initramfs-*.img; do
 		[[ $img == *rescue* ]] && continue
 		sudo lsinitrd -f usr/bin/hibernate-trace-save "$img" 2>/dev/null |
-			cmp -s - "$dotfiles"/scripts/sleep-debug/hibernate-trace/hibernate-trace-save || rebuild=1
+			cmp -s - "$dotfiles"/scripts/sleep-debug/dracut/hibernate-trace/hibernate-trace-save ||
+			rebuild=1
 		sudo lsinitrd -f "${tco_conf#/}" "$img" 2>/dev/null | cmp -s - "$tco_conf" || rebuild=1
 	done
 	if ! grep -q 'efi_pstore.pstore_disable=0' /proc/cmdline ||

@@ -21,7 +21,7 @@
 # components, and the rest of the laptop is left out.
 #
 # The desktop's CPU power comes from the RAPL energy counters, which only root can read unless
-# scripts/configure_hardware.sh has opened them up.
+# scripts/configure_hardware has opened them up.
 #
 # Author: Danylo Malyuta, 2026.
 
@@ -751,7 +751,7 @@ print_parts "" "  "
 ((dgpu_unknown)) && row "  $gpu_label" "${yellow}awake, draw unknown$reset $dim(not included above)$reset"
 [ -n "$rest_w" ] && row "Rest" "$(f '%5.1f' "$rest_w") W $dim($rest_how)$reset"
 if ((!laptop)) && [ -z "$pkg_w" ] && [ -e /sys/class/powercap/intel-rapl:0/energy_uj ]; then
-	note "CPU not measured: only root can read RAPL. Run scripts/configure_hardware.sh."
+	note "CPU not measured: only root can read RAPL. Run scripts/configure_hardware."
 fi
 [ "$bat_status" = Charging ] && [ -n "$bat_w" ] &&
 	row "Charging at" "$(f '%5.1f' "$bat_w") W"

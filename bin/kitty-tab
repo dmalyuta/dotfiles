@@ -4,7 +4,7 @@
 # kitty if none is running. A running kitty is found by the remote control socket that listen_on
 # in kitty.conf opens, $XDG_RUNTIME_DIR/kitty-<pid>.
 #
-# Usage: kitty-tab.sh [--title TITLE] COMMAND [ARG...]
+# Usage: kitty-tab [--title TITLE] COMMAND [ARG...]
 #
 # Author: Danylo Malyuta, 2026.
 

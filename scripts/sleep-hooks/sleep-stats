@@ -1,7 +1,7 @@
 #!/bin/bash
 # The laptop's battery drain in each sleep and hibernation, for plotting later: one CSV row per
 # sleep step in /var/log/sleep-stats.csv. A systemd-sleep hook (installed by
-# scripts/configure_hardware.sh), so it runs around each step: suspend-then-hibernate runs it around
+# scripts/configure_hardware), so it runs around each step: suspend-then-hibernate runs it around
 # its suspend, its wakes to check the battery, and its hibernate, as separate rows under one
 # session.
 #

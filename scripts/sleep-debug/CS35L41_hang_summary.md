@@ -15,8 +15,8 @@ Cause: a deadlock in the driver for the Cirrus Logic CS35L41 speaker amplifiers,
 created. If a firmware file isn't cached, the read can't complete, because btrfs's worker threads
 are frozen by then. The power-off's first step then waits forever on the lock the reload holds.
 
-Workaround: `scripts/cs35l41-hibernate`, a systemd-sleep hook installed by
-`scripts/configure_hardware.sh`. It turns the amps' firmware off before a hibernation and back on
+Workaround: `scripts/sleep-hooks/cs35l41-hibernate`, a systemd-sleep hook installed by
+`scripts/configure_hardware`. It turns the amps' firmware off before a hibernation and back on
 after the resume, so the thaw has nothing to load.
 
 Not NVIDIA, though that was the first suspect.
@@ -41,7 +41,7 @@ since the hook prunes snapshots after 300 and the journal is capped at 256 MB:
   in `/usr/lib/firmware/cirrus/` (package `cirrus-audio-firmware`):
   `cs35l41-dsp1-spk-prot-10431ed3*`.
 - Sleep is suspend-then-hibernate: `HibernateDelaySec=1h`, `HibernateMode` platform (S4), also on AC
-  while the sleep-debug log is on. See `scripts/configure_hardware.sh`.
+  while the sleep-debug log is on. See `scripts/configure_hardware`.
 
 ## The hangs
 
@@ -50,7 +50,7 @@ since the hook prunes snapshots after 300 and the journal is capped at 256 MB:
 | 2026-10-27 23:51 | battery | none (before the tooling) | unknown |
 | 2026-10-29 12:24 | battery, suspend-then-hibernate from the Plasma menu | battery died, RTC reset to the BIOS date, so the trace was lost | unknown, likely the same |
 | 2026-10-30 10:10 | battery, suspend-then-hibernate | pm_trace: `main.c:1186 TRACE_RESUME(error)` on the newest device (hash 273: lo/tty10/usb1-port1), elapsed 13m03s; forced off after ~14 min at 12.9 W | first misread as a failed S4 entry (see Wrong turns); it is the same signature as 10-31 |
-| 2026-10-31 11:16:46 | battery, `systemctl hibernate` 44 s after `start_fresh.sh` upgraded PipeWire with dnf | crash log + pm_trace `main.c:1186 TRACE_RESUME(error)` (devices wakeup33/watchdog1, the newest), elapsed 5m15s | the deadlock, below |
+| 2026-10-31 11:16:46 | battery, `systemctl hibernate` 44 s after `start_fresh` upgraded PipeWire with dnf | crash log + pm_trace `main.c:1186 TRACE_RESUME(error)` (devices wakeup33/watchdog1, the newest), elapsed 5m15s | the deadlock, below |
 
 Hang rate: about 1 in 20 hibernations (2 of 38 logged by `/var/log/sleep-stats.csv` before 10-31).
 Both logged hangs were on battery, versus 0 of 19 on AC: suggestive but not significant (p ≈ 0.24).
@@ -126,7 +126,8 @@ is somewhere after it: the image write or the prepare step.
 
 ## The workaround
 
-`scripts/cs35l41-hibernate` (systemd-sleep hook, `/usr/lib/systemd/system-sleep/cs35l41-hibernate`):
+`scripts/sleep-hooks/cs35l41-hibernate` (systemd-sleep hook,
+`/usr/lib/systemd/system-sleep/cs35l41-hibernate`):
 
 - `pre` of a hibernate or hybrid-sleep step (`SYSTEMD_SLEEP_ACTION`, so the hibernate step of
   suspend-then-hibernate): for each `... DSP1 Firmware Load` ALSA control that is on, set it off and
@@ -175,7 +176,7 @@ patches@opensource.cirrus.com, list alsa-devel / linux-sound.
 ## Wrong turns (don't repeat)
 
 - **NVIDIA.** The obvious suspect, and its driver's shutdown is known to hang in some states (see
-  `configure_hardware.sh`). But the card was awake (`active D0`) at every hibernation, hangs
+  `configure_hardware`). But the card was awake (`active D0`) at every hibernation, hangs
   included, because `nvidia-hibernate.service` wakes it to save its memory. No crash stack involved
   it.
 - **USB controller c5:00.4 in D3cold** at hibernation entry (10-29 hang): ruled out. The 10-30 hang
@@ -190,7 +191,7 @@ patches@opensource.cirrus.com, list alsa-devel / linux-sound.
 
 ## The debug tooling in this folder, and its traps
 
-Everything below is installed by `setup.sh on` (and removed by `setup.sh off`, keeping the logs).
+Everything below is installed by `setup on` (and removed by `setup off`, keeping the logs).
 
 - **`sleep-debug`**, the systemd-sleep hook (plus `sleep-debug.service` at boot and
   `sleep-debug-wake.service` after each wake). It writes:
@@ -200,14 +201,14 @@ Everything below is installed by `setup.sh on` (and removed by `setup.sh off`, k
   - `<time>-trace.txt`: the pm_trace.
   - `<time>-crash.txt`: crash logs.
   - The journal: `journalctl -t sleep-debug`, with drain, hardware-sleep share and wake sources.
-  - `/var/log/sleep-stats.csv`, from `scripts/sleep-stats`: one row per step.
+  - `/var/log/sleep-stats.csv`, from `scripts/sleep-hooks/sleep-stats`: one row per step.
 - **Watchdogs during each hibernation only**, armed in pre and disarmed in post:
   - softdog at 300 s with `soft_panic=1`, plus `softlockup_panic`, `hardlockup_panic`,
     `panic_sys_info=blocked_tasks` and `panic=5`. A hang with the kernel alive becomes a panic.
     efi-pstore saves the log (`efi_pstore.pstore_disable=0 pstore.kmsg_bytes=32768`; the size
-    counts compressed bytes, ~95 KB of log) and the kernel reboots. The initramfs (`hibernate-trace/`)
-    sees the crash next to the image and powers off. The next power-on resumes, and the hook saves
-    the log.
+    counts compressed bytes, ~95 KB of log) and the kernel reboots. The initramfs
+    (`dracut/hibernate-trace/`) sees the crash next to the image and powers off. The next power-on
+    resumes, and the hook saves the log.
   - The chipset watchdog `sp5100_tco` at 600 s with `action=0` (reset): the backstop for hangs with
     nothing in the kernel running. It is reset, not power-off, because a power-off clears the chip's
     "fired" flag (`bootstatus` 32). After a reset the initramfs reads the flag, notes it
@@ -271,15 +272,15 @@ Everything below is installed by `setup.sh on` (and removed by `setup.sh off`, k
 ## Turning the debug tooling off later
 
 Once hibernation has run cleanly for a while (the fix was confirmed 2026-10-31), the debug tooling
-can go. The amp fix, `scripts/cs35l41-hibernate`, is separate: `configure_hardware.sh` installs it,
-and it stays.
+can go. The amp fix, `scripts/sleep-hooks/cs35l41-hibernate`, is separate: `configure_hardware`
+installs it, and it stays.
 
-1. Run `scripts/sleep-debug/setup.sh off`, as your user: it asks for sudo itself. It removes:
+1. Run `scripts/sleep-debug/setup off`, as your user: it asks for sudo itself. It removes:
    - the sleep-debug hook and its boot and wake services;
    - the alert window's user units and `/usr/local/bin/sleep-debug-alert`;
    - the `hibernate-trace` initramfs module and its dracut config, and rebuilds the initramfs;
    - the sleep.conf drop-in, so it no longer hibernates on AC (back to `HibernateOnACPower=no`
-     from `configure_hardware.sh`);
+     from `configure_hardware`);
    - the systemd drop-in (`RebootWatchdogSec=off`) and the sp5100_tco settings (the driver is
      reloaded with its defaults);
    - the kernel options `efi_pstore.pstore_disable=0 pstore.kmsg_bytes=32768
@@ -287,18 +288,18 @@ and it stays.
    - the hook's EFI variables, and `pm_trace` and `pm_debug_messages` for the running kernel.
 
    It keeps the logs in `/var/log/sleep-debug` (snapshots, traces, crash logs, alerts) and
-   `/var/log/sleep-stats.csv`, which `scripts/sleep-stats` keeps writing. It exits with status 2,
-   meaning a reboot is needed.
+   `/var/log/sleep-stats.csv`, which `scripts/sleep-hooks/sleep-stats` keeps writing. It exits with
+   status 2, meaning a reboot is needed.
 2. Reboot. The kernel options and the systemd setting only change at boot. Until then, the kernel
    still keeps watchdogs running through a reboot.
 3. Check after the reboot:
    - `cat /proc/cmdline`: no `efi_pstore`, `pstore.` or `watchdog.stop_on_reboot` options;
    - `ls /usr/lib/systemd/system-sleep/`: no `sleep-debug`, but `cs35l41-hibernate` still there;
    - `systemctl show -p RebootWatchdogUSec`: back to 10min, systemd's default.
-4. `start_fresh.sh` asks about it on the laptop ("Turn on the sleep and hibernation debug log?").
+4. `start_fresh` asks about it on the laptop ("Turn on the sleep and hibernation debug log?").
    It defaults to the last answer, saved in `.start_fresh_answers` (git-ignored) as `sleep_debug`,
    and with `-c` it reuses that answer without asking. So answer `n` the next time, or it gets
-   turned back on. Answering `n` also runs `setup.sh off` by itself.
+   turned back on. Answering `n` also runs `setup off` by itself.
 
 Optional cleanups (none are needed):
 
@@ -309,5 +310,6 @@ Optional cleanups (none are needed):
   systemd-pstore.
 - `rm -rf ~/.local/state/sleep-debug-alert`: the alert window's list of what it showed.
 
-To turn it all back on for a new hang: `scripts/sleep-debug/setup.sh on`, then reboot.
-`hibernate-loop` and `pm-trace-decode` aren't installed anywhere; they run from this folder.
+To turn it all back on for a new hang: `scripts/sleep-debug/setup on`, then reboot.
+`hibernate-loop` and `pm-trace-decode` aren't installed anywhere; they run from `bin/` in this
+folder.

@@ -2,14 +2,14 @@
 #
 # Set up a fresh Fedora KDE Plasma install. On a new machine, run
 #
-#   curl -fsSL https://raw.githubusercontent.com/dmalyuta/dotfiles/fedora/start_fresh.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/dmalyuta/dotfiles/fedora/start_fresh | bash
 #
 # Safe to re-run: every step skips what is already done. With -c, reuse the answers from the last
 # run instead of asking again (pass it through curl with `| bash -s -- -c`).
 #
 # This script installs and configures the software, including the NVIDIA driver. At the end it runs
-# scripts/configure_hardware.sh for low-level hardware setup (GPUs, kernel, sleep and hibernation,
-# laptop quirks) and scripts/configure_kde.sh for the desktop.
+# scripts/configure_hardware for low-level hardware setup (GPUs, kernel, sleep and hibernation,
+# laptop quirks) and scripts/configure_kde for the desktop.
 #
 # Author: Danylo Malyuta, 2026.
 
@@ -25,7 +25,7 @@ raw_base=https://raw.githubusercontent.com/dmalyuta/dotfiles/$branch
 # copy with the terminal on stdin instead.
 if [ ! -t 0 ] && [ -z "${DOTFILES_BOOTSTRAP:-}" ]; then
 	self=$(mktemp)
-	curl -fsSL "$raw_base/start_fresh.sh" -o "$self" </dev/tty || exit
+	curl -fsSL "$raw_base/start_fresh" -o "$self" </dev/tty || exit
 	DOTFILES_BOOTSTRAP=$self exec bash "$self" "$@" </dev/tty
 fi
 [ -n "${DOTFILES_BOOTSTRAP:-}" ] && trap 'rm -f "$DOTFILES_BOOTSTRAP"' EXIT
@@ -220,7 +220,7 @@ installed terra-release ||
 	sudo dnf install -y --nogpgcheck --repofrompath 'terra,https://repos.fyralabs.com/terra$releasever' \
 		terra-release
 
-# COPRs: FSearch from its author, and acpi_call for scripts/asus-power-limits.
+# COPRs: FSearch from its author, and acpi_call for scripts/bin/asus-power-limits.
 copr cboxdoerfer/fsearch
 [ -n "${want_asusctl:-}" ] && is_laptop && copr rhea/acpi_call
 
@@ -284,7 +284,7 @@ if secure_boot; then
 	sudo dnf install -y akmods kmodtool mokutil openssl
 	sudo test -f "$akmods_cert" || sudo kmodgenca -a
 	write_root_file /etc/dkms/framework.conf.d/akmods-key.conf <<EOF
-# Sign DKMS modules with the akmods key, see start_fresh.sh.
+# Sign DKMS modules with the akmods key, see start_fresh.
 mok_signing_key="/etc/pki/akmods/private/private_key.priv"
 mok_certificate="$akmods_cert"
 EOF
@@ -335,7 +335,7 @@ is_laptop && dnf_apps+=(plasma-keyboard)
 # OpenRGB itself comes from upstream, below.
 [ -n "${want_openrgb:-}" ] && dnf_apps+=(i2c-tools) && groups+=(i2c)
 [ -n "${want_asusctl:-}" ] && dnf_apps+=(asusctl asusctl-rog-gui) && services+=(asusd)
-# For scripts/asus-power-limits.
+# For scripts/bin/asus-power-limits.
 [ -n "${want_asusctl:-}" ] && is_laptop && dnf_apps+=(acpi_call-dkms)
 [ -n "${want_cardwire:-}" ] && dnf_apps+=(cardwire cardwire-gui) && services+=(cardwired)
 if [ -n "${want_brother:-}" ]; then
@@ -663,8 +663,9 @@ then
 	sudo systemctl try-restart grafana-server
 fi
 
-# keyd remaps keys below the display server, see scripts/keyd.conf. A restart applies a new config.
-install_script_file keyd.conf /etc/keyd/default.conf && sudo systemctl try-restart keyd
+# keyd remaps keys below the display server, see scripts/keyd/keyd.conf. A restart applies a new
+# config.
+install_script_file keyd/keyd.conf /etc/keyd/default.conf && sudo systemctl try-restart keyd
 
 sudo systemctl enable --now "${services[@]}"
 
@@ -677,7 +678,7 @@ systemctl --user enable --now syncthing.service
 proxy_changed=
 write_root_file /etc/systemd/system/syncthing-gui-proxy.socket <<'EOF' && proxy_changed=1
 [Unit]
-Description=Syncthing web UI at http://syncthing.localhost, see start_fresh.sh
+Description=Syncthing web UI at http://syncthing.localhost, see start_fresh
 
 [Socket]
 ListenStream=127.0.0.1:80
@@ -810,19 +811,20 @@ then
 fi
 
 # Low-level hardware setup (GPUs, kernel, sleep and hibernation, laptop quirks), see
-# scripts/configure_hardware.sh.
-bash "$dotfiles"/scripts/configure_hardware.sh
+# scripts/configure_hardware.
+bash "$dotfiles"/scripts/configure_hardware
 [ $? -eq 2 ] && need_reboot=1
 
 # The laptop's sleep and hibernation debug log, on or off as answered, see
-# scripts/sleep-debug/setup.sh.
+# scripts/sleep-debug/setup.
 if is_laptop; then
-	bash "$dotfiles"/scripts/sleep-debug/setup.sh "$([ -n "${want_sleep_debug:-}" ] && echo on || echo off)"
+	bash "$dotfiles"/scripts/sleep-debug/setup \
+		"$([ -n "${want_sleep_debug:-}" ] && echo on || echo off)"
 	[ $? -eq 2 ] && need_reboot=1
 fi
 
-# KDE desktop configuration, see scripts/configure_kde.sh.
-bash "$dotfiles"/scripts/configure_kde.sh "${answers[workspaces]:-}"
+# KDE desktop configuration, see scripts/configure_kde.
+bash "$dotfiles"/scripts/configure_kde "${answers[workspaces]:-}"
 [ $? -eq 2 ] && need_reboot=1
 
 if [ -n "${need_mok_enroll:-}" ]; then

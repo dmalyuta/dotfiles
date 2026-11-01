@@ -35,11 +35,13 @@ Do re-run using the more recent run's answers to user questions:
 
 ## Layout
 
-- `start_fresh`: sets up a machine, see above.
+- `start_fresh`: sets up a machine, see above, `start_fresh -h` and `man start_fresh`.
+- `man/`: its manual page, linked into `~/.local/share/man`.
 - `home/`, `config/`: dotfiles, symlinked into `~` and `~/.config`.
 - `bin/`: commands, on `PATH` as `~/.bin`.
 - `scripts/`: system setup, run by `start_fresh`.
-  - `configure_hardware`, `configure_kde`: the setup steps; `functions.sh`, their shared helpers.
+  - `configure_hardware`, `configure_kde`: the setup steps; `functions.sh`, their shared helpers;
+    `tui.py`, the progress display that `start_fresh` runs them under.
   - What they install or run, one folder per kind: `bin/` (commands, most installed to
     `/usr/local/bin`), `sleep-hooks/` (to `/usr/lib/systemd/system-sleep`), `systemd/` (units),
     `udev/` (rules), `keyd/`.

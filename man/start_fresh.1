@@ -1,0 +1,147 @@
+.TH START_FRESH 1 2026-11-01 dotfiles "User Commands"
+.SH NAME
+start_fresh \- set up a fresh Fedora KDE Plasma install
+.SH SYNOPSIS
+.B start_fresh
+.RB [ \-c ]
+.RB [ \-p ]
+.RB [ \-h ]
+.PP
+.B curl \-fsSL https://raw.githubusercontent.com/dmalyuta/dotfiles/fedora/start_fresh | bash
+.RB [ "\-s \-\-"
+.IR options ]
+.SH DESCRIPTION
+.B start_fresh
+sets up a Fedora KDE Plasma machine the way its author uses it: software repositories, packages
+and apps, the NVIDIA driver, these dotfiles, low-level hardware settings and the KDE desktop.
+.PP
+It is safe to re-run: every step skips what is already done. Re-running it also updates what it installed from outside the package
+manager, like OpenRGB and PdfCraft, and the Flatpak apps.
+.PP
+It asks all its questions up front, along with the sudo password, so the rest runs unattended.
+The answers are remembered as the defaults for the next run.
+.PP
+On a new machine, run it through
+.B curl
+as shown above. It then clones the dotfiles repository to
+.IR ~/Projects/dotfiles .
+Run from a checkout of the repository, it uses that checkout instead.
+.SH OPTIONS
+.TP
+.B \-c
+Reuse the answers from the last run instead of asking the setup questions again. A question that
+was never answered is still asked.
+.TP
+.B \-p
+Plain output: print everything as is, without the progress display.
+.TP
+.B \-h
+Show a short help message and exit.
+.SH WHAT IT DOES
+In order:
+.IP 1. 4
+Asks the setup questions: which optional apps to install (Superluminal, the Brother printer driver,
+PDF-XChange Editor), whether to restore a CoolerControl backup, the custom OBS configuration on the
+desktop, the sleep debug log on the laptop, and the VS Code workspaces for the Meta+letter hotkeys.
+With Secure Boot on, it also asks for a one-time password for enrolling the kernel module signing
+key.
+.IP 2. 4
+Adds the software repositories: RPM Fusion, Terra, COPRs, and the vendors' own for Klassy, Brave,
+VS Code, NordVPN and Grafana.
+.IP 3. 4
+Sets up kernel module signing, with Secure Boot on.
+.IP 4. 4
+Upgrades the installed packages, installs the missing ones, OpenRGB from upstream on the desktop,
+and builds the kernel modules (NVIDIA, OpenRazer) for the newest kernel.
+.IP 5. 4
+Installs and updates the Flatpak apps, and installs apps from upstream to
+.IR ~/.local :
+Oh My Posh, Bazelisk, the SN Pro font, PdfCraft, RAD Debugger, and Superluminal and PureRef if
+chosen.
+.IP 6. 4
+Sets up the SSH key, clones the dotfiles if needed, and links them into
+.I ~
+and
+.IR ~/.config .
+.IP 7. 4
+Configures the apps and services: Git, OpenRGB, OBS, Grafana, keyd, Syncthing (also at
+.IR http://syncthing.localhost ),
+Anaconda, Wine, Flameshot and the system journal.
+.IP 8. 4
+Runs
+.I scripts/configure_hardware
+(GPUs, kernel, USB wake sources, sleep and hibernation, the ASUS laptop),
+.I scripts/sleep\-debug/setup
+on the laptop, and
+.I scripts/configure_kde
+(input devices, hotkeys, shortcuts, virtual desktops, effects, theme, panels).
+.PP
+At the end, if a change needs a reboot to apply, it lists what needs it and asks: ENTER reboots,
+ESC finishes without rebooting.
+.SH PROGRESS DISPLAY
+In a terminal, and without
+.BR \-p ,
+it shows its progress in place below the terminal's earlier output: a spinner and a bar of how far
+through its steps it is, the current step, and a box with the tail of its output. Questions and
+password prompts appear in the box, and are answered there as usual.
+.PP
+The display is
+.IR scripts/tui.py ,
+which needs the
+.B python3\-pyte
+package; the first run installs it. When the script ends, the last view stays in the terminal, and
+the full output is saved to
+.IR ~/.cache/start_fresh.log .
+.PP
+The display runs the script in a terminal of its own, where sudo would ask for the password
+again. So
+.B start_fresh
+has sudo remember the password across all of the user's terminals, see
+.I /etc/sudoers.d/timestamp\-global
+below: then it doesn't ask if the password was entered in any terminal in the last 5 minutes.
+.SH FILES
+.TP
+.I ~/Projects/dotfiles
+The dotfiles repository, cloned there on a new machine.
+.TP
+.I ~/Projects/dotfiles/.start_fresh_answers
+The answers from the last run (git-ignored).
+.TP
+.I ~/.cache/start_fresh.log
+The full output of the last run under the progress display.
+.TP
+.I ~/Downloads
+Where it works, and where it looks for the installers that need a manual download (PureRef,
+PDF-XChange Editor).
+.TP
+.I /etc/sudoers.d/timestamp\-global
+Has sudo remember the password across all of the user's terminals, for 5 minutes. Delete it to go
+back to sudo's default of one terminal at a time.
+.SH EXIT STATUS
+.TP
+.B 0
+Done.
+.TP
+.B 1
+A bad option, or installing the packages failed.
+.TP
+.B 130
+Stopped with Ctrl+C.
+.SH EXAMPLES
+Set up a new machine:
+.PP
+.RS
+.B curl \-fsSL https://raw.githubusercontent.com/dmalyuta/dotfiles/fedora/start_fresh | bash
+.RE
+.PP
+Re-run from the checkout with the last answers, to apply updates and changes to the dotfiles:
+.PP
+.RS
+.B ~/Projects/dotfiles/start_fresh \-c
+.RE
+.SH SEE ALSO
+.BR sudoers (5),
+.BR dnf (8),
+.BR flatpak (1)
+.SH AUTHOR
+Danylo Malyuta.

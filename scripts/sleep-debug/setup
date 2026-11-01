@@ -52,6 +52,8 @@ kernel_args="$pstore_args watchdog.stop_on_reboot=0"
 system_conf=/etc/systemd/system.conf.d/60-sleep-debug.conf
 tco_conf=/etc/modprobe.d/sleep-debug-tco.conf
 
+step "Setting up the sleep debug log"
+
 case ${1:-} in
 on)
 	is_laptop || { echo "The sleep debug log is only for the laptop." >&2 && exit 1; }
@@ -163,6 +165,7 @@ esac
 
 if [ -n "${rebuild:-}" ]; then
 	sudo dracut -f --regenerate-all
-	exit 2
+	reboot_for "initramfs rebuilt for the sleep debug log"
 fi
-[ -z "${reboot:-}" ] || exit 2
+[ -n "${reboot:-}" ] && reboot_for "kernel options for the sleep debug log"
+[ -z "${need_reboot:-}" ] || exit 2

@@ -8,7 +8,33 @@
 # Status message, in bold bright blue so it stands out.
 say() { printf '\e[1;94m== %s ==\e[0m\n' "$*"; }
 
-skip() { say "$* already present, skipping."; }
+# Note that a reboot is needed to apply $*. Under start_fresh, the reason goes to the file
+# $REBOOT_REASONS, which it lists at the end. Run on its own, a script prints it now. Scripts that
+# call this exit with status 2.
+reboot_for() {
+	need_reboot=1
+	if [ -n "${REBOOT_REASONS:-}" ]; then
+		echo "$*" >>"$REBOOT_REASONS"
+	else
+		say "Reboot needed: $*"
+	fi
+}
+
+# Start a step: `step [WEIGHT] "What it does"`. Under start_fresh's progress display (see
+# scripts/tui.py), which reads these lines from the scripts beforehand to know all the steps, it
+# moves the bar along. WEIGHT is the step's rough share of the time, 1 by default. The description
+# must be a literal string, the same each run. Without the display, it is printed.
+step() {
+	[[ $1 =~ ^[0-9]+$ ]] && shift
+	if [ -n "${START_FRESH_STATUS:-}" ]; then
+		echo "step $*" >>"$START_FRESH_STATUS"
+	else
+		say "$*"
+	fi
+}
+
+# All steps are done: the progress bar fills.
+steps_done() { [ -z "${START_FRESH_STATUS:-}" ] || echo done >>"$START_FRESH_STATUS"; }
 
 installed() { rpm -q "$1" >/dev/null 2>&1; }
 

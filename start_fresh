@@ -5,7 +5,9 @@
 #   curl -fsSL https://raw.githubusercontent.com/dmalyuta/dotfiles/fedora/start_fresh | bash
 #
 # Safe to re-run: every step skips what is already done. With -c, reuse the answers from the last
-# run instead of asking again (pass it through curl with `| bash -s -- -c`).
+# run instead of asking again (pass it through curl with `| bash -s -- -c`). It shows its progress
+# above a box with the tail of its output, see scripts/tui.py. With -p, or without a terminal, it
+# prints its output as is instead.
 #
 # This script installs and configures the software, including the NVIDIA driver. At the end it runs
 # scripts/configure_hardware for low-level hardware setup (GPUs, kernel, sleep and hibernation,
@@ -21,6 +23,36 @@ raw_base=https://raw.githubusercontent.com/dmalyuta/dotfiles/$branch
 # Bootstrap.
 # --------------------------------------------------------------------------------------------------
 
+usage() {
+	cat <<'EOF'
+Usage: start_fresh [-c] [-p] [-h]
+
+Set up a fresh Fedora KDE Plasma install: repositories, packages, apps, the NVIDIA driver, the
+dotfiles, hardware settings and the KDE desktop. Safe to re-run: every step skips what is already
+done.
+
+Options:
+  -c  Reuse the answers from the last run instead of asking the setup questions again.
+  -p  Plain output, without the progress display.
+  -h  Show this help and exit.
+
+On a new machine:
+  curl -fsSL https://raw.githubusercontent.com/dmalyuta/dotfiles/fedora/start_fresh | bash
+
+More in `man start_fresh`.
+EOF
+}
+
+use_cached= plain=
+while getopts cph opt; do
+	case $opt in
+	c) use_cached=1 ;;
+	p) plain=1 ;;
+	h) usage && exit 0 ;;
+	*) usage >&2 && exit 1 ;;
+	esac
+done
+
 # Under `curl ... | bash` stdin is the script itself, so `read` would eat it. Re-exec a downloaded
 # copy with the terminal on stdin instead.
 if [ ! -t 0 ] && [ -z "${DOTFILES_BOOTSTRAP:-}" ]; then
@@ -28,15 +60,6 @@ if [ ! -t 0 ] && [ -z "${DOTFILES_BOOTSTRAP:-}" ]; then
 	curl -fsSL "$raw_base/start_fresh" -o "$self" </dev/tty || exit
 	DOTFILES_BOOTSTRAP=$self exec bash "$self" "$@" </dev/tty
 fi
-[ -n "${DOTFILES_BOOTSTRAP:-}" ] && trap 'rm -f "$DOTFILES_BOOTSTRAP"' EXIT
-
-use_cached=
-while getopts c opt; do
-	case $opt in
-	c) use_cached=1 ;;
-	*) echo "Usage: $0 [-c]" >&2 && exit 1 ;;
-	esac
-done
 
 # Use this checkout if running from one, else clone to ~/Projects/dotfiles below.
 mkdir -p ~/Projects
@@ -63,6 +86,35 @@ else
 	functions=$(curl -fsSL "$raw_base/scripts/functions.sh") || exit
 	eval "$functions"
 fi
+
+# --------------------------------------------------------------------------------------------------
+# Progress display.
+# --------------------------------------------------------------------------------------------------
+
+# Run the rest again under scripts/tui.py, which shows how far through the steps it is (see step in
+# scripts/functions.sh) above a box with the tail of the output. It needs pyte, a terminal emulator
+# library, run by Fedora's own Python, which has it, rather than whichever is first on PATH
+# (Anaconda's). Before the repo is cloned, fetch it from GitHub.
+if [ -z "${START_FRESH_TUI:-}" ] && [ -z "$plain" ] && [ -t 0 ] && [ -t 1 ]; then
+	installed python3-pyte || sudo dnf install -y -q python3-pyte </dev/null
+	tui=$dotfiles/scripts/tui.py
+	if [ ! -f "$tui" ]; then
+		tui=$(mktemp --suffix=.py)
+		curl -fsSL "$raw_base/scripts/tui.py" -o "$tui" || tui=
+	fi
+	if [ -n "$tui" ] && /usr/bin/python3 -I -c 'import pyte' 2>/dev/null; then
+		self=$this_script_dir/${BASH_SOURCE[0]##*/}
+		START_FRESH_TUI=1 exec /usr/bin/python3 -I "$tui" --script "$self" --dotfiles "$dotfiles" \
+			--raw-base "$raw_base" -- bash "$self" "$@"
+	fi
+	say "No progress display, see above." >&2
+fi
+
+# What needs a reboot, one reason per line, from here and the scripts run at the end. See reboot_for
+# in scripts/functions.sh.
+REBOOT_REASONS=$(mktemp)
+export REBOOT_REASONS
+trap 'kill ${sudo_keepalive:-} 2>/dev/null; rm -f "$REBOOT_REASONS" ${DOTFILES_BOOTSTRAP:+"$DOTFILES_BOOTSTRAP"}' EXIT
 
 # Yes/no question whose default is the last answer, remembered under key $1. With -c, a remembered
 # answer is used without asking.
@@ -114,6 +166,26 @@ mok_key_ok() {
 # --------------------------------------------------------------------------------------------------
 # Questions, all up front so the rest runs unattended.
 # --------------------------------------------------------------------------------------------------
+
+step "Asking the setup questions"
+
+# The sudo password, once, with the questions, and kept fresh in the background so a long step
+# doesn't ask again partway through.
+sudo -v || exit
+while kill -0 $$ 2>/dev/null && sleep 60; do sudo -n -v 2>/dev/null || break; done &
+sudo_keepalive=$!
+
+# sudo remembers the password per terminal by default, and the progress display is a terminal of its
+# own, so it would always ask above. Have it remember the password across all of the user's
+# terminals instead, for its usual 5 minutes: then the display doesn't ask if it was just entered
+# elsewhere. Checked with visudo first, since a broken sudoers file locks sudo out.
+sudoers_tmp=$(mktemp)
+echo "Defaults:$USER timestamp_type=global" >"$sudoers_tmp"
+sudoers_conf=/etc/sudoers.d/timestamp-global
+if ! sudo cmp -s "$sudoers_tmp" "$sudoers_conf" && visudo -cqf "$sudoers_tmp"; then
+	sudo install -Z -m 440 "$sudoers_tmp" "$sudoers_conf"
+fi
+rm -f "$sudoers_tmp"
 
 # Last answers, kept in the repo (git-ignored). On a fresh install the repo is cloned later, so they
 # are saved after that.
@@ -205,6 +277,8 @@ fi
 # Repositories.
 # --------------------------------------------------------------------------------------------------
 
+step "Adding the software repositories"
+
 # RPM Fusion, for the NVIDIA driver and the codecs that Fedora leaves out.
 fedora=$(rpm -E %fedora)
 if ! installed rpmfusion-free-release || ! installed rpmfusion-nonfree-release; then
@@ -276,6 +350,8 @@ EOF
 # Kernel module signing.
 # --------------------------------------------------------------------------------------------------
 
+step "Setting up kernel module signing"
+
 # With Secure Boot on, the kernel only loads modules signed by a key the firmware trusts. akmods
 # builds the NVIDIA and OpenRazer modules and signs them with its own key, and DKMS (acpi_call) is
 # set to use the same one, so that one key is all the firmware needs. mokutil queues it, and on the
@@ -344,7 +420,9 @@ if [ -n "${want_brother:-}" ]; then
 	installed mfcj805dwpdrv || dnf_apps+=(glibc.i686 libstdc++.i686 libgcc.i686)
 fi
 
+step 6 "Upgrading the installed packages"
 sudo dnf upgrade -y --refresh
+step 6 "Installing packages"
 # The full FFmpeg and AMD's hardware video decoding, in place of Fedora's builds without the
 # patented codecs. --allowerasing swaps them for Fedora's. Before the rest, which may need them.
 installed ffmpeg || sudo dnf install -y --allowerasing ffmpeg
@@ -352,17 +430,34 @@ installed mesa-va-drivers-freeworld || sudo dnf install -y --allowerasing mesa-v
 # cardwire replaces switcheroo-control, which Fedora KDE ships, and the two conflict.
 [ -n "${want_cardwire:-}" ] && installed switcheroo-control &&
 	sudo dnf swap -y switcheroo-control cardwire
+# Only those not installed yet, else dnf lists each one that is. A name may be a package, a group
+# (@...), something a package provides (nodejs) or a package of another arch (glibc.i686).
+# As root, whose dnf already trusts the repos' keys from the upgrade above: as the user, dnf would
+# ask to import them. No stdin, so it can't wait on a question either.
+installed_groups=" $(sudo dnf -q group list --installed --hidden </dev/null 2>/dev/null |
+	awk 'NR > 1 { printf "%s ", $1 }')"
+dnf_missing=()
+for p in "${dnf_apps[@]}"; do
+	if [[ $p == @* ]]; then
+		[[ $installed_groups == *" ${p#@} "* ]] || dnf_missing+=("$p")
+	else
+		installed "$p" || rpm -q --whatprovides "$p" >/dev/null 2>&1 || dnf_missing+=("$p")
+	fi
+done
 # One package gone from a repo shouldn't hold up the rest. Any other problem fails the whole
 # install, and everything after needs it, so stop there.
-if ! sudo dnf install -y --skip-unavailable "${dnf_apps[@]}"; then
+if [ ${#dnf_missing[@]} -gt 0 ] &&
+	! sudo dnf install -y --skip-unavailable "${dnf_missing[@]}"; then
 	say "Installing the packages failed, see above. Fix it and run this again." >&2
 	exit 1
 fi
 
 # OpenRGB from its latest upstream release. Upstream builds an .rpm per Fedora version, which needs
 # its own hidapi-hotplug library. One transaction swaps them in for Fedora's packages, whose
-# separate openrgb-udev-rules owns the same udev rules file. Re-running this upgrades it.
+# separate openrgb-udev-rules owns the same udev rules file. Re-running this upgrades it, and does
+# nothing if it is up to date.
 if [ -n "${want_openrgb:-}" ]; then
+	step "Installing OpenRGB"
 	# Download URL of the asset matching regex $2 in the latest release of OpenRGB's repo $1.
 	openrgb_asset() {
 		curl -fsSL "https://codeberg.org/api/v1/repos/OpenRGB/$1/releases/latest" |
@@ -371,12 +466,21 @@ if [ -n "${want_openrgb:-}" ]; then
 	openrgb_dir=$(mktemp -d)
 	openrgb_url=$(openrgb_asset OpenRGB "_x86_64_f$(rpm -E %fedora)_[0-9a-f]+\.rpm$")
 	hidapi_url=$(openrgb_asset hidapi-hotplug '/hidapi-hotplug-[0-9][^/]*\.x86_64\.rpm$')
-	if [ -n "$openrgb_url" ] && [ -n "$hidapi_url" ] &&
+	# The file is named for version 1.1, say, and the package inside is 1.1.0. hidapi-hotplug's file
+	# is named for its exact package.
+	openrgb_ver=$(sed -nE 's|.*/openrgb_([0-9.]+)_.*|\1|p' <<<"$openrgb_url")
+	openrgb_have=$(rpm -q --qf '%{VERSION}' openrgb 2>/dev/null)
+	hidapi_rpm=${hidapi_url##*/}
+	if [ -n "$openrgb_ver" ] &&
+		{ [ "$openrgb_have" = "$openrgb_ver" ] || [ "$openrgb_have" = "$openrgb_ver.0" ]; } &&
+		installed "${hidapi_rpm%.x86_64.rpm}" && ! installed openrgb-udev-rules; then
+		: # Up to date.
+	elif [ -n "$openrgb_url" ] && [ -n "$hidapi_url" ] &&
 		curl -fsSL -o "$openrgb_dir"/openrgb.rpm "$openrgb_url" &&
 		curl -fsSL -o "$openrgb_dir"/hidapi-hotplug.rpm "$hidapi_url" &&
 		sudo dnf do -y --skip-unavailable \
 			--action=install "$openrgb_dir"/{openrgb,hidapi-hotplug}.rpm \
-			--action=remove openrgb-udev-rules; then
+			$(installed openrgb-udev-rules && echo --action=remove openrgb-udev-rules); then
 		say "Installed OpenRGB $(rpm -q --qf '%{VERSION}' openrgb) from upstream."
 	else
 		say "Could not install upstream OpenRGB, falling back to Fedora's older one." >&2
@@ -389,6 +493,7 @@ fi
 # not verify: no digest"). So check the download against a known hash instead, and install it with
 # rpm's own check off for just this package. Its dependencies are installed above.
 if [ -n "${want_brother:-}" ] && ! installed mfcj805dwpdrv; then
+	step "Installing the Brother printer driver"
 	brother_rpm=$(mktemp --suffix=.rpm)
 	if curl -fsSL -o "$brother_rpm" \
 		https://download.brother.com/welcome/dlf104570/mfcj805dwpdrv-1.0.5-0.i386.rpm &&
@@ -400,6 +505,8 @@ if [ -n "${want_brother:-}" ] && ! installed mfcj805dwpdrv; then
 	fi
 	rm -f "$brother_rpm"
 fi
+
+step 3 "Building the kernel modules"
 
 # Build the kernel modules (NVIDIA and OpenRazer with akmods, acpi_call with DKMS) for the newest
 # kernel now, rather than on its first boot, which would hold up the desktop for minutes. The
@@ -416,6 +523,7 @@ if installed akmods; then
 	fi
 fi
 
+step "Adding you to groups and installing Rust"
 for g in "${groups[@]}"; do
 	getent group "$g" >/dev/null || sudo groupadd --system "$g"
 	sudo usermod -aG "$g" "$USER"
@@ -425,6 +533,8 @@ done
 # shell profiles.
 [ -x ~/.cargo/bin/rustup ] || rustup-init -y
 
+step 3 "Installing and updating the Flatpak apps"
+
 # Flatpak apps, plus the GL extension matching the Nvidia driver so they get hardware rendering
 # under Wayland.
 # System-wide, which needs root.
@@ -432,7 +542,16 @@ sudo flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flat
 nvidia_version=$(nvidia_version)
 [ -n "$nvidia_version" ] &&
 	flatpak_apps+=("org.freedesktop.Platform.GL.nvidia-${nvidia_version//./-}")
-sudo flatpak install -y --noninteractive flathub "${flatpak_apps[@]}"
+# Only those not installed yet, else flatpak lists each one that is.
+flatpak_missing=()
+for a in "${flatpak_apps[@]}"; do
+	flatpak info --system "$a" >/dev/null 2>&1 || flatpak_missing+=("$a")
+done
+[ ${#flatpak_missing[@]} -eq 0 ] ||
+	sudo flatpak install -y --noninteractive flathub "${flatpak_missing[@]}"
+# Install leaves installed apps as they are, so update them and their runtimes too.
+[ -z "$(flatpak remote-ls --system --updates 2>/dev/null)" ] ||
+	sudo flatpak update -y --noninteractive
 
 # --------------------------------------------------------------------------------------------------
 # Apps from upstream, installed to ~/.local.
@@ -440,6 +559,7 @@ sudo flatpak install -y --noninteractive flathub "${flatpak_apps[@]}"
 
 # Superluminal: a plain tarball, unpacked user-owned so its updater can write.
 if [ -n "${want_superluminal:-}" ]; then
+	step "Installing Superluminal"
 	superluminal_url=$(curl -fsSL https://superluminal.eu/download/ |
 		grep -oE 'https://[^"]*/SuperluminalLinux-[^"]*\.tar\.gz' | head -n 1)
 	if [ -z "$superluminal_url" ]; then
@@ -464,6 +584,8 @@ EOF
 	fi
 fi
 
+step "Installing Oh My Posh, Bazelisk and the SN Pro font"
+
 # Oh My Posh, which updates itself with `oh-my-posh upgrade`.
 [ -x ~/.local/bin/oh-my-posh ] ||
 	fetch https://github.com/JanDeDobbeleer/oh-my-posh/releases/latest/download/posh-linux-amd64 \
@@ -486,12 +608,15 @@ fi
 
 # PureRef, from the .rpm on its pay-what-you-want download page, which has no direct link.
 if [ -n "${want_pureref:-}" ]; then
+	step "Installing PureRef"
 	until pureref_rpm=$(ls -t ./*[Pp]ure[Rr]ef*.rpm 2>/dev/null | head -n 1) && [ -n "$pureref_rpm" ]; do
 		echo "Download PureRef's Linux .rpm from https://www.pureref.com/download.php into $downloads"
 		read -p "Press ENTER to try again... " -r
 	done
 	sudo dnf install -y "$pureref_rpm" || say "Could not install $pureref_rpm." >&2
 fi
+
+step "Installing PdfCraft"
 
 # PdfCraft, from the .rpm in its latest GitHub release. Re-running this upgrades it.
 pdfcraft_tag=$(curl -fsSLI -o /dev/null -w '%{url_effective}' \
@@ -500,15 +625,14 @@ pdfcraft_tag=${pdfcraft_tag##*/}
 pdfcraft_ver=${pdfcraft_tag#v}
 if [[ ! $pdfcraft_ver =~ ^[0-9][0-9.]*$ ]]; then
 	say "Could not find the latest PdfCraft release, skipping." >&2
-elif [ "$(rpm -q --qf '%{VERSION}' pdfcraft 2>/dev/null)" = "$pdfcraft_ver" ]; then
-	skip "PdfCraft"
-else
+elif [ "$(rpm -q --qf '%{VERSION}' pdfcraft 2>/dev/null)" != "$pdfcraft_ver" ]; then
 	sudo dnf install -y "https://github.com/storytold/pdfcraft/releases/download/$pdfcraft_tag/pdfcraft-$pdfcraft_ver-linux-x86_64.rpm" ||
 		say "Could not install PdfCraft." >&2
 fi
 
 # RAD Debugger, built from its latest release, like the AUR package does.
 if [ ! -x ~/.local/bin/raddbg ]; then
+	step 2 "Building RAD Debugger"
 	rad_tag=$(curl -fsSLI -o /dev/null -w '%{url_effective}' \
 		https://github.com/EpicGames/raddebugger/releases/latest)
 	rad_src=$(mktemp -d)
@@ -536,15 +660,13 @@ fi
 # SSH and dotfiles.
 # --------------------------------------------------------------------------------------------------
 
+step "Setting up SSH and the dotfiles"
+
 mkdir -p -m 700 ~/.ssh
 [ -f ~/.ssh/id_ed25519 ] || ssh-keygen -q -t ed25519 -C "$(git config --global user.email)" -f ~/.ssh/id_ed25519 -N ""
-eval "$(ssh-agent -s)"
-ssh-add ~/.ssh/id_ed25519
 ssh-keygen -F github.com >/dev/null 2>&1 || ssh-keyscan github.com >>~/.ssh/known_hosts 2>/dev/null
 
-if [ -d "$dotfiles" ]; then
-	skip "dotfiles repo"
-else
+if [ ! -d "$dotfiles" ]; then
 	until ssh -T git@github.com </dev/null 2>&1 | grep -q 'successfully authenticated'; do
 		echo -e "\nAdd this public key to https://github.com/settings/keys:\n"
 		cat ~/.ssh/id_ed25519.pub
@@ -563,13 +685,14 @@ ln -sf "$dotfiles"/config/kitty/{kitty.conf,default-kitty,resize_split.py} ~/.co
 ln -sf "$dotfiles"/config/tmux-powerline/config.sh ~/.config/tmux-powerline/
 ln -sf "$dotfiles"/config/tmux-powerline/themes/danylo-theme.sh ~/.config/tmux-powerline/themes/
 ln -sf "$dotfiles"/config/.blue-owl-custom.omp.json ~
+# The manual, for `man start_fresh`: man looks in ~/.local/share/man, next to ~/.local/bin on PATH.
+mkdir -p ~/.local/share/man/man1
+ln -sf "$dotfiles"/man/start_fresh.1 ~/.local/share/man/man1/
 echo 'kitty.desktop' >~/.config/xdg-terminals.list
 
 [ -d ~/.tmux/plugins/tpm ] || git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
 
-if grep -qF 'oh-my-posh init bash' ~/.bashrc 2>/dev/null; then
-	skip "bashrc block"
-else
+if ! grep -qF 'oh-my-posh init bash' ~/.bashrc 2>/dev/null; then
 	cat >>~/.bashrc <<'EOF'
 
 # Binaries.
@@ -600,6 +723,8 @@ fi
 # Per-app configuration.
 # --------------------------------------------------------------------------------------------------
 
+step "Configuring Git, the fan sensors and OpenRGB"
+
 # Edit commit messages and the like in VS Code.
 git config --global core.editor "code --wait"
 
@@ -618,6 +743,7 @@ if [ -n "${want_openrgb:-}" ]; then
 fi
 
 if [ -n "${want_obs:-}" ]; then
+	step "Configuring OBS"
 	# OBS profile and scene collection, see config/obs/. Linked by directory, since OBS saves a file
 	# by renaming a new one over it, which would replace a linked file. Existing ones are kept as
 	# *.orig.
@@ -652,6 +778,8 @@ if [ -n "${want_obs:-}" ]; then
 	fi
 fi
 
+step "Configuring Grafana and keyd, and starting services"
+
 # Grafana needs to read /home. Do NOT chmod -R here.
 chmod o+rx "$HOME"
 if write_root_file /etc/systemd/system/grafana-server.service.d/override.conf <<'EOF'
@@ -669,11 +797,15 @@ install_script_file keyd/keyd.conf /etc/keyd/default.conf && sudo systemctl try-
 
 sudo systemctl enable --now "${services[@]}"
 
+step "Setting up Syncthing"
+
 # Syncthing, as a user service that starts at login. Its web UI stays on its default
 # 127.0.0.1:8384, and is also at http://syncthing.localhost: browsers and the system send any
 # *.localhost name to this machine, and a socket proxy forwards port 80 there to the UI. The proxy
 # only listens on loopback. Syncthing accepts *.localhost as a local name, so its check against DNS
 # rebinding (a website pointing its own name at 127.0.0.1) stays on.
+# Its address is shown at the end only when this run sets it up or changes it.
+systemctl --user -q is-enabled syncthing.service 2>/dev/null || syncthing_new=1
 systemctl --user enable --now syncthing.service
 proxy_changed=
 write_root_file /etc/systemd/system/syncthing-gui-proxy.socket <<'EOF' && proxy_changed=1
@@ -714,17 +846,19 @@ if [ -n "$proxy_changed" ]; then
 fi
 sudo systemctl enable --now syncthing-gui-proxy.socket
 
+step 3 "Installing Anaconda"
+
 # Batch mode accepts the license and skips the prompts, including the final one that sets up
 # ~/.bashrc. Good: .local.bashrc sets conda up instead, because the block `conda init` writes delays
 # every prompt by ~1 s. Remove that block if it was added before.
-if [ -d ~/anaconda3 ]; then
-	skip "Anaconda"
-else
+if [ ! -d ~/anaconda3 ]; then
 	curl -fL -o anaconda.sh \
 		"https://repo.anaconda.com/archive/Anaconda3-2026.07-1-Linux-x86_64.sh" &&
 		bash anaconda.sh -b -p ~/anaconda3
 fi
 sed -i '/^# >>> conda initialize >>>$/,/^# <<< conda initialize <<<$/d' ~/.bashrc
+
+step 2 "Setting up Wine and PDF-XChange Editor"
 
 [ -f ~/.wine/drive_c/windows/Fonts/arial.ttf ] || winetricks -q corefonts
 if [ -n "${want_pdfx:-}" ]; then
@@ -777,6 +911,8 @@ while IFS= read -r -d '' f; do
 		sed -i 's|^Exec=env |Exec=env "WINEDEBUG=fixme-all" |' "$f"
 done < <(find ~/.local/share/applications -name '*.desktop' -print0 2>/dev/null)
 
+step "Configuring Flameshot and the system journal"
+
 # Flameshot's Wayland clipboard copy is lost on non-Gnome desktops because the capture window closes
 # too early. Run the daemon under XWayland instead, for both ways it gets started: autostart and
 # D-Bus activation.
@@ -811,34 +947,52 @@ then
 fi
 
 # Low-level hardware setup (GPUs, kernel, sleep and hibernation, laptop quirks), see
-# scripts/configure_hardware.
+# scripts/configure_hardware. These scripts add what needs a reboot to $REBOOT_REASONS.
 bash "$dotfiles"/scripts/configure_hardware
-[ $? -eq 2 ] && need_reboot=1
 
 # The laptop's sleep and hibernation debug log, on or off as answered, see
 # scripts/sleep-debug/setup.
 if is_laptop; then
 	bash "$dotfiles"/scripts/sleep-debug/setup \
 		"$([ -n "${want_sleep_debug:-}" ] && echo on || echo off)"
-	[ $? -eq 2 ] && need_reboot=1
 fi
 
 # KDE desktop configuration, see scripts/configure_kde.
 bash "$dotfiles"/scripts/configure_kde "${answers[workspaces]:-}"
-[ $? -eq 2 ] && need_reboot=1
 
 if [ -n "${need_mok_enroll:-}" ]; then
-	need_reboot=1
+	reboot_for "enroll the module signing key, see above"
 	say "Next boot: enroll the module signing key, or the NVIDIA driver won't load."
 	echo "A blue MOK Manager screen waits 10 s for a key press. Press any key, then pick"
 	echo "Enroll MOK > Continue > Yes, type the password you picked, and pick Reboot. If you miss"
 	echo "it, run this script again and reboot."
 fi
 
-if [ -z "${need_reboot:-}" ]; then
-	say "Done. Syncthing is at http://syncthing.localhost/"
-else
-	read -r -s -p "$(say "Done. Press ENTER to reboot so the changes take effect...")"
-	echo
-	sudo reboot
+# Discover's update notifier (the panel's update icon) checks once at login and then only every so
+# often, and doesn't notice updates made outside Discover, like the ones above. Restart it, so it
+# checks again and stops listing what was just updated. Last, as its check refreshes the package
+# data, which dnf above could have had to wait for.
+systemctl --user try-restart app-org.kde.discover.notifier@autostart.service 2>/dev/null
+
+steps_done
+say "Done."
+[ -n "${syncthing_new:-}${proxy_changed:-}" ] && echo "Syncthing is at http://syncthing.localhost/"
+if [ -s "$REBOOT_REASONS" ]; then
+	echo "Reboot to apply:"
+	sed 's/^/  - /' "$REBOOT_REASONS"
+	say "Press ENTER to reboot, or ESC to finish without rebooting."
+	# IFS= keeps a space or tab as the key read, rather than an empty one like ENTER.
+	while IFS= read -r -s -n 1 key; do
+		case $key in
+		'')
+			sudo reboot
+			break
+			;;
+		$'\e')
+			# Swallow the rest of a key that sends an escape sequence, like an arrow key.
+			read -r -s -t 0.1 -n 10
+			break
+			;;
+		esac
+	done
 fi

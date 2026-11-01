@@ -24,6 +24,8 @@ nvidia_version=$(nvidia_version)
 # GPUs.
 # --------------------------------------------------------------------------------------------------
 
+step "Configuring the GPUs"
+
 # On the laptop, Electron apps (Obsidian, VS Code, ...) list every GPU through Vulkan at startup,
 # which wakes the NVIDIA dGPU for ~20 s on each launch. Show Vulkan apps only the AMD iGPU, which
 # drives the screen and still accelerates them. bin/nvidia-run runs an app on the dGPU. Not on the
@@ -50,6 +52,8 @@ installed cardwire && has_nvidia && cardwire config experimental-nvidia-block tr
 # Kernel.
 # --------------------------------------------------------------------------------------------------
 
+step "Configuring the kernel"
+
 # Zen 5's 32-bit RDSEED is broken until a microcode fix. Without it, the kernel turns RDSEED off
 # (harmless) and prints "RDSEED32 is broken. Please update your firmware." on screen at every boot.
 # The fix ships in the AMD microcode, but the CPU only accepts it once a BIOS with AMD's EntrySign
@@ -60,12 +64,14 @@ installed cardwire && has_nvidia && cardwire config experimental-nvidia-block tr
 if journalctl -k -b 0 -q -g 'RDSEED32 is broken' >/dev/null 2>&1 &&
 	! sudo grubby --info=DEFAULT | grep -q '^args=.*\bloglevel=0\b'; then
 	sudo grubby --update-kernel=ALL --args=loglevel=0
-	need_reboot=1
+	reboot_for "kernel option loglevel=0, which hides the RDSEED32 boot message"
 fi
 
 # --------------------------------------------------------------------------------------------------
 # USB devices and wake sources.
 # --------------------------------------------------------------------------------------------------
+
+step "Configuring USB devices and wake sources"
 
 # Wake sources, and a working display after suspend. systemd only scans
 # /usr/lib/systemd/system-sleep, not /etc.
@@ -93,6 +99,8 @@ sudo systemctl enable --now c920-guard
 # Laptop sleep and hibernation.
 # --------------------------------------------------------------------------------------------------
 
+step 2 "Configuring sleep and hibernation"
+
 # Laptop sleep. Its only sleep state is s2idle, which reaches the SoC's deepest state only if every
 # device powers off, and the Nvidia driver keeps the dGPU on unless told otherwise, draining ~1.5%/h.
 #
@@ -119,11 +127,12 @@ sudo systemctl enable --now c920-guard
 # fresh. RPM Fusion already leaves it out (/usr/lib/dracut/dracut.conf.d/99-nvidia-dracut.conf). The
 # panel is on the iGPU, so the dGPU can load later.
 if is_laptop && [ -n "$nvidia_version" ]; then
-	write_root_file /etc/modprobe.d/nvidia-power.conf <<'EOF' && need_reboot=1
+	write_root_file /etc/modprobe.d/nvidia-power.conf <<'EOF' &&
 options nvidia NVreg_EnableS0ixPowerManagement=1
 options nvidia NVreg_DynamicPowerManagement=0x02
 options nvidia NVreg_UseKernelSuspendNotifiers=0
 EOF
+		reboot_for "NVIDIA power management options (/etc/modprobe.d/nvidia-power.conf)"
 fi
 
 # Hibernation is only possible with Secure Boot off, see can_hibernate in scripts/functions.sh. With
@@ -152,7 +161,7 @@ EOF
 fi
 if [ -n "${rebuild_initramfs:-}" ]; then
 	sudo dracut -f --regenerate-all
-	need_reboot=1
+	reboot_for "initramfs rebuilt for hibernation"
 fi
 
 # Laptop hibernation, to a swapfile as big as RAM (zram can't hold the image). It goes in its own
@@ -241,6 +250,8 @@ fi
 # ASUS laptop.
 # --------------------------------------------------------------------------------------------------
 
+is_laptop && step "Configuring the ASUS laptop"
+
 # asusd sets the keyboard backlight, while systemd-backlight restores whatever it saved at
 # shutdown, which can be 0. Also reset the keyboard controller after hibernation, see
 # scripts/bin/asus-kbd-rebind.
@@ -274,9 +285,10 @@ fi
 # stays in laptop mode. It has the lid-flip sensor (WMI device 0x00060062), so use that. The switch
 # is on "Asus WMI hotkeys", which scripts/keyd/keyd.conf leaves to libinput. Applies on next boot.
 if is_laptop; then
-	write_root_file /etc/modprobe.d/asus-tablet-mode.conf <<'EOF' && need_reboot=1
+	write_root_file /etc/modprobe.d/asus-tablet-mode.conf <<'EOF' &&
 options asus_nb_wmi tablet_mode_sw=2
 EOF
+		reboot_for "tablet mode switch (/etc/modprobe.d/asus-tablet-mode.conf)"
 fi
 
 [ -z "${need_reboot:-}" ] || exit 2

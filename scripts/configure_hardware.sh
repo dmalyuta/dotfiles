@@ -172,9 +172,12 @@ if is_laptop && can_hibernate && [ "$(findmnt -no FSTYPE /)" = btrfs ] && [ ! -f
 	sudo swapon "$swapfile"
 fi
 
-# Sleep then hibernate after 1 h on battery, to cap the drain overnight: sleep draws ~0.7 W
-# (1.1%/h), while a hibernation costs ~0.57 Wh to enter and leave, then ~0.01 W (measured
-# 2026-10). On AC it stays asleep, and the hour starts when it is unplugged.
+# Sleep then hibernate after 50 min on battery, to cap the drain overnight: sleep draws ~0.64 W
+# (1.0%/h), while a hibernation costs ~0.53 Wh to enter and leave, then ~0.006 W (robust fits in
+# bin/sleep_stats, 2026-11). 50 min is when sleeping has cost as much more than hibernating as
+# entering a hibernation does, 0.53 Wh / (0.64 - 0.006) W: wake before then and sleeping was the
+# cheapest, sleep longer and it costs at most one hibernation's 0.53 Wh more than hibernating at
+# once. On AC it stays asleep, and the delay starts when it is unplugged.
 # SleepMode 3 is "Standby, then hibernate". Without hibernation, back to plain sleep, else KDE would
 # try to hibernate and fail.
 #
@@ -189,7 +192,7 @@ suspend_dropin=/etc/systemd/system/systemd-suspend.service.d/50-suspend-then-hib
 if is_laptop && can_hibernate && [ -f "$swapfile" ]; then
 	write_root_file /etc/systemd/sleep.conf.d/50-suspend-then-hibernate.conf <<'EOF'
 [Sleep]
-HibernateDelaySec=1h
+HibernateDelaySec=50min
 HibernateOnACPower=no
 EOF
 	write_root_file "$suspend_dropin" <<'EOF' && sudo systemctl daemon-reload

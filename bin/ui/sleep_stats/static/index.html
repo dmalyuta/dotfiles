@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Sleep stats</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <div>
+    <h1>Sleep stats</h1>
+    <p class="meta" id="meta">Loading…</p>
+  </div>
+  <button type="button" id="reload">Reload</button>
+</header>
+<p class="banner" id="error" hidden></p>
+
+<main>
+  <section class="row two">
+    <article class="card" id="scatter-suspend">
+      <h2>Suspend</h2>
+      <p class="sub">Energy each suspend used against how long it lasted, with a robust line fit.</p>
+      <div class="fit"></div>
+      <div class="legend"></div>
+      <div class="plot" style="--h: 300px"></div>
+    </article>
+    <article class="card" id="scatter-hibernate">
+      <h2>Hibernation</h2>
+      <p class="sub">Energy each hibernation used against how long it lasted, with a robust line fit.</p>
+      <div class="fit"></div>
+      <div class="legend"></div>
+      <div class="plot" style="--h: 300px"></div>
+    </article>
+  </section>
+
+  <section class="card battery">
+    <h2>Battery now</h2>
+    <div class="tiles" id="battery"></div>
+  </section>
+
+  <section class="predictions">
+    <div class="row-head">
+      <div>
+        <h2>Predicted battery use</h2>
+        <p class="sub">From the fits above: fixed cost plus steady draw, in Wh and in % of the battery's full capacity now.</p>
+      </div>
+      <div class="seg" id="horizon" role="group" aria-label="Time span">
+        <button type="button" data-h="12">12 h</button>
+        <button type="button" data-h="24">24 h</button>
+        <button type="button" data-h="48">48 h</button>
+        <button type="button" data-h="168">1 week</button>
+      </div>
+    </div>
+    <div class="row three">
+      <article class="card" id="pred-suspend">
+        <h3>Suspend only</h3>
+        <div class="plot" style="--h: 240px"></div>
+        <p class="readout"></p>
+      </article>
+      <article class="card" id="pred-hibernate">
+        <h3>Hibernate only</h3>
+        <div class="plot" style="--h: 240px"></div>
+        <p class="readout"></p>
+      </article>
+      <article class="card" id="pred-sth">
+        <h3>Suspend, then hibernate</h3>
+        <div class="legend"></div>
+        <div class="plot" style="--h: 240px"></div>
+        <div class="slider">
+          <label for="delay">Hibernate after</label>
+          <input type="range" id="delay" min="0" max="720" step="1">
+          <output id="delay-out" for="delay"></output>
+        </div>
+        <div class="buttons">
+          <button type="button" id="opt"></button>
+          <button type="button" id="sys"></button>
+        </div>
+        <p class="readout"></p>
+        <p class="note" id="opt-note"></p>
+      </article>
+    </div>
+  </section>
+
+  <details class="card table">
+    <summary>All logged steps</summary>
+    <div class="scroll"><table id="rows"></table></div>
+  </details>
+
+  <footer class="note" id="method"></footer>
+</main>
+<div id="tip" role="tooltip" hidden></div>
+<script src="app.js"></script>
+</body>
+</html>

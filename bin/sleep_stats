@@ -1,0 +1,21 @@
+#!/bin/bash
+#
+# The laptop's sleep and hibernation battery drain as a web page: starts a small local server and
+# opens the page in the browser. The page plots /var/log/sleep-stats.csv (written by
+# scripts/sleep-stats) with robust line fits, the battery now, and the predicted battery use of
+# suspend, hibernation and suspend-then-hibernate. The work is done in ui/sleep_stats/server.py.
+#
+# Usage: sleep_stats [--port N] [--csv PATH] [--no-browser] [--dump]
+#
+#   --port N      Port on 127.0.0.1 (default: any free one).
+#   --csv PATH    The sleep stats log (default: /var/log/sleep-stats.csv).
+#   --no-browser  Only print the page's address.
+#   --dump        Print the page's data as JSON and exit.
+#
+# Runs until Ctrl+C. Reload the page to pick up new sleeps.
+#
+# Author: Danylo Malyuta, 2026.
+
+set -eu
+here=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
+exec python3 "$here/ui/sleep_stats/server.py" "$@"

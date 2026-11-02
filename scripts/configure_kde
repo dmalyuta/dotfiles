@@ -363,12 +363,19 @@ done
 app_installed() {
 	[ -f ~/.local/share/applications/"$1".desktop ] || [ -f /usr/share/applications/"$1".desktop ]
 }
+# The PDF editor: PDF-XChange if installed, else PdfCraft. It gets pinned and opens PDF files.
+pdf_app=
+for app in pdf-xchange-editor ai.storyteller.pdfcraft; do
+	app_installed "$app" && pdf_app=$app && break
+done
+[ -z "$pdf_app" ] || [ "$(xdg-mime query default application/pdf)" = "$pdf_app.desktop" ] ||
+	xdg-mime default "$pdf_app.desktop" application/pdf
 # Task manager launchers: exactly these, in this order. The whole list is rewritten, so anything
 # else that was pinned is dropped.
 read -r tm_cont tm_applet < <(applet_group org.kde.plasma.icontasks)
 if [ -n "${tm_applet:-}" ]; then
 	pins=(org.kde.dolphin brave-browser kitty com.microsoft.VSCode md.obsidian.Obsidian)
-	app_installed ai.storyteller.pdfcraft && pins+=(ai.storyteller.pdfcraft)
+	[ -z "$pdf_app" ] || pins+=("$pdf_app")
 	list=$(printf ',applications:%s.desktop' "${pins[@]}")
 	plasma_conf plasma-org.kde.plasma.desktop-appletsrc \
 		--group Containments --group "$tm_cont" --group Applets --group "$tm_applet" \

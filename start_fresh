@@ -871,7 +871,8 @@ if [ -n "${want_pdfx:-}" ]; then
 fi
 
 # Ship our own top-level launcher that runs the exe directly, and hide Wine's. This makes sure
-# that the icon can be pinned to the task manager etc.
+# that the icon can be pinned to the task manager etc. It goes through bin/pdf-xchange-editor,
+# which turns the files to open into Windows paths.
 if [ -x "$pdfx_dir/PDF Editor/PXCEditor.exe" ]; then
 	pdfx_icon=application-pdf
 	for f in ~/.local/share/icons/hicolor/48x48/apps/*_PXCEditor.0.png; do
@@ -883,7 +884,7 @@ Type=Application
 Name=PDF-XChange Editor
 GenericName=PDF Editor
 Comment=View and edit PDF documents
-Exec=env WINEPREFIX=$HOME/.wine WINEDEBUG=fixme-all wine "$pdfx_dir/PDF Editor/PXCEditor.exe" %f
+Exec=$HOME/.bin/pdf-xchange-editor %F
 Icon=$pdfx_icon
 Terminal=false
 StartupNotify=true

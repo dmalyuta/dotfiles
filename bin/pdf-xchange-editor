@@ -1,0 +1,19 @@
+#!/bin/bash
+#
+# Runs PDF-XChange Editor under Wine, opening the given files. Wine passes arguments through as-is,
+# and the editor can't open Linux paths like /home/..., so turn each file into its Windows path
+# (Z:\home\...) first. The desktop launcher uses this, so double-clicking a PDF opens it.
+#
+# Usage: pdf-xchange-editor [FILE...]
+#
+# Author: Danylo Malyuta, 2026.
+
+export WINEPREFIX=${WINEPREFIX:-$HOME/.wine} WINEDEBUG=${WINEDEBUG:-fixme-all}
+exe="$WINEPREFIX/drive_c/Program Files/PDF-XChange/PDF Editor/PXCEditor.exe"
+
+args=()
+for f in "$@"; do
+	[ -e "$f" ] && f=$(winepath -w "$f" 2>/dev/null)
+	args+=("$f")
+done
+exec wine "$exe" "${args[@]}"

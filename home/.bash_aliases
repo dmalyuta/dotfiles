@@ -16,6 +16,7 @@ alias dotfiles='cd ~/Documents/dotfiles && ll'
 alias rgb_on='~/AppImages/openrgb.appimage --profile ~/.config/OpenRGB/danymal-blue.orp'
 alias rgb_off='~/AppImages/openrgb.appimage --profile ~/.config/OpenRGB/danymal-off.orp'
 alias fix_audio='systemctl --user restart pipewire pipewire-pulse wireplumber'
+alias pdfx_wayland='run-detached env -u DISPLAY WINEPREFIX=~/.wine wine "$HOME/.wine/drive_c/Program Files/PDF-XChange/PDF Editor/PXCEditor.exe"'
 
 ################################################################################
 # Process management.
@@ -33,9 +34,9 @@ psgrep() {
 
 # Run a command detached: no terminal blocking, survives terminal close.
 # Default is literal (spaces in arguments are safe):
-#   run_detached xdg-open 'My File.pdf'
+#   run-detached xdg-open 'My File.pdf'
 # Use -c for shell syntax like pipes and redirects (quote the whole command):
-#   run_detached -c 'foo | bar > out.log'
+#   run-detached -c 'foo | bar > out.log'
 run-detached() {
   if [[ $1 == -c ]]; then
     shift

@@ -193,6 +193,17 @@ answers_file=$dotfiles/.start_fresh_answers
 declare -A answers=()
 [ -f "$answers_file" ] && . "$answers_file"
 
+# A newer Fedora release, if there is one: the highest final version on Fedora's download page,
+# which lists betas as "45 Beta" and so on. Asked every run while one is available, rather than
+# remembered, even with -c. The upgrade itself is downloaded at the end, see "Fedora upgrade" below.
+fedora=$(rpm -E %fedora)
+fedora_newest=$(curl -fsSL https://fedoraproject.org/releases.json 2>/dev/null |
+	grep -oE '"version": *"[0-9]+"' | grep -oE '[0-9]+' | sort -n | tail -n 1)
+if [ "${fedora_newest:-0}" -gt "$fedora" ]; then
+	read -p "Fedora $fedora_newest is out. Upgrade to it from Fedora $fedora? [Yn] " -r a
+	[[ ${a:-y} =~ ^[Yy]$ ]] && upgrade_to=$fedora_newest
+fi
+
 # Fedora doesn't ship git, and the questions below already need it.
 installed git || sudo dnf install -y git || exit
 
@@ -280,7 +291,6 @@ fi
 step "Adding the software repositories"
 
 # RPM Fusion, for the NVIDIA driver and the codecs that Fedora leaves out.
-fedora=$(rpm -E %fedora)
 if ! installed rpmfusion-free-release || ! installed rpmfusion-nonfree-release; then
 	sudo dnf install -y \
 		"https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$fedora.noarch.rpm" \
@@ -298,18 +308,7 @@ installed terra-release ||
 copr cboxdoerfer/fsearch
 [ -n "${want_asusctl:-}" ] && is_laptop && copr rhea/acpi_call
 
-# The vendors' own repos. Fedora has Grafana too, but years behind. Klassy (a KDE window decoration
-# and application style) from its author's openSUSE Build Service project, rebuilt there as Fedora
-# updates Plasma.
-write_root_file /etc/yum.repos.d/klassy.repo <<EOF
-[klassy]
-name=Klassy (home:paulmcauley, Fedora_$fedora)
-baseurl=https://download.opensuse.org/repositories/home:/paulmcauley/Fedora_$fedora/
-type=rpm-md
-enabled=1
-gpgcheck=1
-gpgkey=https://download.opensuse.org/repositories/home:/paulmcauley/Fedora_$fedora/repodata/repomd.xml.key
-EOF
+# The vendors' own repos. Fedora has Grafana too, but years behind.
 write_root_file /etc/yum.repos.d/brave-browser.repo <<'EOF'
 [brave-browser]
 name=Brave Browser
@@ -382,7 +381,7 @@ dnf_apps=(
 	kitty tmux cascadiacode-nerd-fonts
 	brave-browser code okular inkscape obs-studio gimp
 	vlc vlc-plugins-all vlc-plugins-freeworld flameshot nextcloud-client
-	qalculate-gtk speedcrunch fsearch syncthing klassy
+	qalculate-gtk speedcrunch fsearch syncthing
 	texlive-scheme-full texlive-latexindent perl-YAML-Tiny perl-File-HomeDir
 	openrazer-meta akmod-openrazer polychromatic keyd
 	flatpak rustup nodejs npm grafana wine winetricks nordvpn nordvpn-gui
@@ -453,19 +452,27 @@ if [ ${#dnf_missing[@]} -gt 0 ] &&
 fi
 
 # OpenRGB from its latest upstream release. Upstream builds an .rpm per Fedora version, which needs
-# its own hidapi-hotplug library. One transaction swaps them in for Fedora's packages, whose
-# separate openrgb-udev-rules owns the same udev rules file. Re-running this upgrades it, and does
-# nothing if it is up to date.
+# its own hidapi-hotplug library. Until upstream builds for a new Fedora release, the build for the
+# latest release before it, which usually still installs. One transaction swaps them in for
+# Fedora's packages, whose separate openrgb-udev-rules owns the same udev rules file. Fedora's are
+# only the fallback, as they are older and can't read the profiles in config/OpenRGB. A Fedora
+# upgrade swaps Fedora's back in, and re-running this then swaps upstream's in again. Re-running
+# this also upgrades it, and does nothing if it is up to date.
 if [ -n "${want_openrgb:-}" ]; then
 	step "Installing OpenRGB"
-	# Download URL of the asset matching regex $2 in the latest release of OpenRGB's repo $1.
-	openrgb_asset() {
+	# Download URLs of the assets matching regex $2 in the latest release of OpenRGB's repo $1.
+	openrgb_assets() {
 		curl -fsSL "https://codeberg.org/api/v1/repos/OpenRGB/$1/releases/latest" |
-			grep -oE '"browser_download_url":"[^"]+"' | cut -d'"' -f4 | grep -E "$2" | head -n 1
+			grep -oE '"browser_download_url":"[^"]+"' | cut -d'"' -f4 | grep -E "$2"
 	}
 	openrgb_dir=$(mktemp -d)
-	openrgb_url=$(openrgb_asset OpenRGB "_x86_64_f$(rpm -E %fedora)_[0-9a-f]+\.rpm$")
-	hidapi_url=$(openrgb_asset hidapi-hotplug '/hidapi-hotplug-[0-9][^/]*\.x86_64\.rpm$')
+	# Files are named for their Fedora release, like openrgb_1.1_x86_64_f44_8e16de2.rpm.
+	openrgb_url=$(openrgb_assets OpenRGB '_x86_64_f[0-9]+_[0-9a-f]+\.rpm$' |
+		awk -v fedora="$fedora" 'match($0, /_f[0-9]+_[0-9a-f]+\.rpm$/) {
+			f = substr($0, RSTART + 2) + 0
+			if (f <= fedora && f > best) { best = f; url = $0 }
+		} END { print url }')
+	hidapi_url=$(openrgb_assets hidapi-hotplug '/hidapi-hotplug-[0-9][^/]*\.x86_64\.rpm$' | head -n 1)
 	# The file is named for version 1.1, say, and the package inside is 1.1.0. hidapi-hotplug's file
 	# is named for its exact package.
 	openrgb_ver=$(sed -nE 's|.*/openrgb_([0-9.]+)_.*|\1|p' <<<"$openrgb_url")
@@ -481,7 +488,7 @@ if [ -n "${want_openrgb:-}" ]; then
 		sudo dnf do -y --skip-unavailable \
 			--action=install "$openrgb_dir"/{openrgb,hidapi-hotplug}.rpm \
 			$(installed openrgb-udev-rules && echo --action=remove openrgb-udev-rules); then
-		say "Installed OpenRGB $(rpm -q --qf '%{VERSION}' openrgb) from upstream."
+		say "Installed OpenRGB $(rpm -q --qf '%{VERSION}' openrgb) from upstream (its build for Fedora $(sed -nE 's|.*_f([0-9]+)_[0-9a-f]+\.rpm$|\1|p' <<<"$openrgb_url"))."
 	else
 		say "Could not install upstream OpenRGB, falling back to Fedora's older one." >&2
 		installed openrgb || sudo dnf install -y openrgb
@@ -961,6 +968,21 @@ fi
 # KDE desktop configuration, see scripts/configure_kde.
 bash "$dotfiles"/scripts/configure_kde "${answers[workspaces]:-}"
 
+# Fedora upgrade, if chosen above. Last, after everything else is installed, so the upgrade takes
+# all of it along. dnf downloads the new release's packages and stores the transaction, and the
+# reboot at the end runs it, with `dnf offline reboot`. Without the upgrade, the packages were
+# still upgraded within this release above.
+if [ -n "${upgrade_to:-}" ]; then
+	step 6 "Downloading the Fedora upgrade"
+	if sudo dnf system-upgrade download -y --releasever="$upgrade_to"; then
+		fedora_upgrade=1
+		reboot_for "upgrade to Fedora $upgrade_to, which installs while it reboots"
+	else
+		say "Could not download the Fedora $upgrade_to upgrade, see above. Staying on Fedora $fedora." >&2
+		echo "If packages conflict, try: sudo dnf system-upgrade download --releasever=$upgrade_to --allowerasing"
+	fi
+fi
+
 if [ -n "${need_mok_enroll:-}" ]; then
 	reboot_for "enroll the module signing key, see above"
 	say "Next boot: enroll the module signing key, or the NVIDIA driver won't load."
@@ -986,12 +1008,19 @@ if [ -s "$REBOOT_REASONS" ]; then
 	while IFS= read -r -s -n 1 key; do
 		case $key in
 		'')
-			sudo reboot
+			if [ -n "${fedora_upgrade:-}" ]; then
+				sudo dnf offline reboot -y
+			else
+				sudo reboot
+			fi
 			break
 			;;
 		$'\e')
 			# Swallow the rest of a key that sends an escape sequence, like an arrow key.
 			read -r -s -t 0.1 -n 10
+			# A plain reboot doesn't install the downloaded upgrade.
+			[ -n "${fedora_upgrade:-}" ] &&
+				echo "To upgrade to Fedora $upgrade_to later, run: sudo dnf offline reboot"
 			break
 			;;
 		esac

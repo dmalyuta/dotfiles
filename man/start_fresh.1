@@ -40,14 +40,17 @@ Show a short help message and exit.
 .SH WHAT IT DOES
 In order:
 .IP 1. 4
-Asks the setup questions: which optional apps to install (Superluminal, the Brother printer driver,
+Asks the setup questions: whether to upgrade to a newer Fedora release, if there is one (yes by
+default, and asked every run while one is available, even with
+.BR \-c ),
+which optional apps to install (Superluminal, the Brother printer driver,
 PDF-XChange Editor), whether to restore a CoolerControl backup, the custom OBS configuration on the
 desktop, the sleep debug log on the laptop, and the VS Code workspaces for the Meta+letter hotkeys.
 With Secure Boot on, it also asks for a one-time password for enrolling the kernel module signing
 key.
 .IP 2. 4
-Adds the software repositories: RPM Fusion, Terra, COPRs, and the vendors' own for Klassy, Brave,
-VS Code, NordVPN and Grafana.
+Adds the software repositories: RPM Fusion, Terra, COPRs, and the vendors' own for Brave, VS Code,
+NordVPN and Grafana.
 .IP 3. 4
 Sets up kernel module signing, with Secure Boot on.
 .IP 4. 4
@@ -75,9 +78,16 @@ Runs
 on the laptop, and
 .I scripts/configure_kde
 (input devices, hotkeys, shortcuts, virtual desktops, effects, theme, panels).
+.IP 9. 4
+If the Fedora upgrade was chosen, downloads it with
+.BR "dnf system\-upgrade download" .
+The reboot at the end installs it. Without it, the packages are still upgraded within the current
+release in step 4.
 .PP
 At the end, if a change needs a reboot to apply, it lists what needs it and asks: ENTER reboots,
-ESC finishes without rebooting.
+ESC finishes without rebooting. With the Fedora upgrade downloaded, ENTER reboots with
+.BR "dnf offline reboot" ,
+which installs it; after ESC, run that later to install it.
 .SH PROGRESS DISPLAY
 In a terminal, and without
 .BR \-p ,

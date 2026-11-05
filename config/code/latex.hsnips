@@ -5,9 +5,10 @@
 #   ''     ->  "                   literal double quote
 #   ;fig   ->  figure environment  pastes the clipboard image into figures/
 #
-# The trigger regexes only fire when the cursor is outside inline math: the
-# text before it on the line must hold an even number of unescaped $. This
-# also stops \$ and \" from triggering.
+# These fire only outside inline math: the paragraph before the trigger must
+# hold an even number of unescaped $ (comments ignored). Counting from the
+# paragraph start, not the line start, keeps this right when the previous $...$
+# wraps onto the current line. This also stops \$ and \" from triggering.
 
 global
 const fs = require('fs');
@@ -17,6 +18,36 @@ const { execFileSync } = require('child_process');
 
 function inMath(context) {
   return context.scopes.some((s) => s.includes('math'));
+}
+
+// True if the text before a trigger of `triggerLength` characters at the cursor
+// is outside inline math and does not end in an escaping backslash. Scans back to
+// the last blank line, since inline math cannot span paragraphs.
+function outsideInlineMath(triggerLength) {
+  const editor = require('vscode').window.activeTextEditor;
+  if (!editor) return true;
+  const doc = editor.document;
+  const cursor = editor.selection.active;
+  let start = cursor.line;
+  while (start > 0 && start > cursor.line - 200 && !doc.lineAt(start - 1).isEmptyOrWhitespace) {
+    start--;
+  }
+  const lines = [];
+  for (let i = start; i < cursor.line; i++) lines.push(doc.lineAt(i).text);
+  lines.push(doc.lineAt(cursor.line).text.slice(0, Math.max(cursor.character - triggerLength, 0)));
+
+  let dollars = 0;
+  let escaped = false;
+  for (const line of lines) {
+    escaped = false;
+    for (const c of line) {
+      if (escaped) escaped = false;
+      else if (c === '\\') escaped = true;
+      else if (c === '%') break;
+      else if (c === '$') dollars++;
+    }
+  }
+  return dollars % 2 === 0 && !escaped;
 }
 
 function warn(message) {
@@ -99,18 +130,19 @@ function pasteFigure(label, key, docUri) {
 }
 endglobal
 
-snippet `(?<=^(?:[^$\\]|\\.|\$(?:[^$\\]|\\.)*\$)*)\$$` "Inline math" A
+context outsideInlineMath(1)
+snippet `\$$` "Inline math" A
 \$$1\$$0
 endsnippet
 
 # Code blocks start with two backticks, so the opening `` has to come from code.
-context !inMath(context)
-snippet `(?<=^(?:[^$\\]|\\.|\$(?:[^$\\]|\\.)*\$)*)"` "Quotes" A
+context !inMath(context) && outsideInlineMath(1)
+snippet `"$` "Quotes" A
 ``rv = '\x60\x60'``$1''$0
 endsnippet
 
-context !inMath(context)
-snippet `(?<=^(?:[^$\\]|\\.|\$(?:[^$\\]|\\.)*\$)*)(?<!')''` "Literal double quote" A
+context !inMath(context) && outsideInlineMath(2)
+snippet `(?<!')''$` "Literal double quote" A
 "
 endsnippet
 

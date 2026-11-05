@@ -519,6 +519,20 @@ step 3 "Building the kernel modules"
 # kernel now, rather than on its first boot, which would hold up the desktop for minutes. The
 # upgrade may have just installed that kernel, before the modules' own hooks were there.
 newest_kernel=$(rpm -q kernel --qf '%{VERSION}-%{RELEASE}.%{ARCH}\n' | sort -V | tail -n 1)
+# acpi_call-dkms's uninstall scripts also run when it is upgraded to a new build of the same
+# version, as on a Fedora upgrade. They then delete the source the new build just installed, and
+# its /etc/modules-load.d file. DKMS calls the module broken and builds nothing, and
+# asus-power-limits fails. A plain reinstall would run them again, so reinstall without scripts.
+# DKMS still has the module registered, so the autoinstall below builds it.
+if installed acpi_call-dkms; then
+	acpi_call_ver=$(rpm -q --qf '%{VERSION}' acpi_call-dkms)
+	if [ ! -f "/usr/src/acpi_call-$acpi_call_ver/dkms.conf" ]; then
+		sudo dnf reinstall -y --setopt=tsflags=noscripts acpi_call-dkms
+		[ -e "/var/lib/dkms/acpi_call/$acpi_call_ver/source" ] ||
+			sudo dkms add -m acpi_call -v "$acpi_call_ver"
+	fi
+	write_root_file /etc/modules-load.d/acpi_call.conf <<<acpi_call
+fi
 if installed akmods || installed dkms; then
 	installed "kernel-devel-$newest_kernel" || sudo dnf install -y "kernel-devel-$newest_kernel"
 	installed dkms && sudo dkms autoinstall -k "$newest_kernel"

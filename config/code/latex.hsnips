@@ -9,12 +9,112 @@
 # hold an even number of unescaped $ (comments ignored). Counting from the
 # paragraph start, not the line start, keeps this right when the previous $...$
 # wraps onto the current line. This also stops \$ and \" from triggering.
+#
+# None of them fire on undo or redo, and a single Ctrl+Z after an expansion
+# removes it together with its trigger (e.g. the whole $$). Ctrl+Y redoes both.
 
 global
 const fs = require('fs');
 const nodePath = require('path');
 const { fileURLToPath } = require('url');
 const { execFileSync } = require('child_process');
+
+// Undo and redo. hsnips expands an automatic snippet as two edits: it deletes
+// the trigger, then inserts the snippet in its place. Ctrl+Z reverts those
+// together, leaving the trigger (e.g. a lone $), which needs a second Ctrl+Z.
+// And hsnips treats any one-character change as a keystroke, so that lone $
+// would expand again. A change listener here fixes both:
+//  - snippets do not fire while the document is in the state an undo or redo
+//    left it in (see typed());
+//  - an undo that exactly reverts an expansion runs one more undo, so the
+//    trigger goes too; a redo that brings the trigger back redoes once more.
+// The listener must run before hsnips' own, which holds for the first load
+// (hsnips loads snippets before it subscribes). So it subscribes only once and
+// calls editWatch.handler, which each reload replaces.
+const EDIT_KEY = Symbol.for('hsnips.latex.editWatch');
+const editWatch = globalThis[EDIT_KEY] || (globalThis[EDIT_KEY] = { docs: new Map(), handler: () => {} });
+if (!editWatch.subscribed) {
+  try {
+    require('vscode').workspace.onDidChangeTextDocument((e) => editWatch.handler(e));
+    editWatch.subscribed = true;
+  } catch (e) {
+    console.warn('hsnips: could not watch for undo', e);
+  }
+}
+
+// Position just after `text` inserted at `start`.
+function endAfter(start, text) {
+  const lines = text.split(/\r\n|\r|\n/);
+  if (lines.length === 1) return start.translate(0, text.length);
+  return new (require('vscode').Position)(start.line + lines.length - 1, lines[lines.length - 1].length);
+}
+
+editWatch.handler = (e) => {
+  const vscode = require('vscode');
+  const { Undo, Redo } = vscode.TextDocumentChangeReason || {};
+  const isUndo = Undo !== undefined && e.reason === Undo;
+  const isRedo = Redo !== undefined && e.reason === Redo;
+  const key = e.document.uri.toString();
+  let d = editWatch.docs.get(key);
+  if (!d) editWatch.docs.set(key, (d = { undoVersion: -1, deleted: null, expansions: [], undone: [] }));
+  d.undoVersion = isUndo || isRedo ? e.document.version : -1;
+  const changes = e.contentChanges;
+  const deleted = d.deleted;
+  d.deleted = null;
+  if (changes.length === 0) return;
+
+  if (!isUndo && !isRedo) {
+    d.undone = []; // a new edit clears VS Code's redo stack too
+    if (changes.length !== 1) return;
+    const c = changes[0];
+    if (c.text === '' && c.range.isSingleLine && c.rangeLength > 0) {
+      d.deleted = { start: c.range.start, length: c.rangeLength };
+    } else if (deleted && c.range.isEmpty && c.range.start.isEqual(deleted.start) && c.text.length >= 2) {
+      // Positions stay valid: undo is last-in first-out, so by the time this
+      // expansion is undone, everything after it has been undone already.
+      d.expansions.push({
+        start: deleted.start,
+        end: endAfter(deleted.start, c.text),
+        inserted: c.text.length,
+        trigger: deleted.length,
+      });
+      if (d.expansions.length > 100) d.expansions.shift();
+    }
+    return;
+  }
+
+  const editor = vscode.window.activeTextEditor;
+  if (!editor || editor.document !== e.document) return;
+  if (isUndo) {
+    const x = d.expansions[d.expansions.length - 1];
+    if (!x) return;
+    // VS Code may report the revert as one replacement or as several pieces.
+    const start = changes.reduce((p, c) => (c.range.start.isBefore(p) ? c.range.start : p), changes[0].range.start);
+    const end = changes.reduce((p, c) => (c.range.end.isAfter(p) ? c.range.end : p), changes[0].range.end);
+    const removed = changes.reduce((n, c) => n + c.rangeLength, 0);
+    const added = changes.reduce((n, c) => n + c.text.length, 0);
+    if (start.isEqual(x.start) && end.isEqual(x.end) && removed === x.inserted && added === x.trigger) {
+      d.expansions.pop();
+      d.undone.push(x);
+      vscode.commands.executeCommand('undo');
+    }
+  } else {
+    const x = d.undone[d.undone.length - 1];
+    if (x && changes.some((c) => c.text && endAfter(c.range.start, c.text).isEqual(x.start.translate(0, x.trigger)))) {
+      d.undone.pop();
+      d.expansions.push(x);
+      vscode.commands.executeCommand('redo');
+    }
+  }
+};
+
+// False while the active document is in the state an undo or redo left it in.
+function typed() {
+  const editor = require('vscode').window.activeTextEditor;
+  if (!editor) return true;
+  const d = editWatch.docs.get(editor.document.uri.toString());
+  return !d || d.undoVersion !== editor.document.version;
+}
 
 function inMath(context) {
   return context.scopes.some((s) => s.includes('math'));
@@ -128,26 +228,120 @@ function pasteFigure(label, key, docUri) {
   }
   return nodePath.basename(state.file, '.png');
 }
+
+// Speed fix for hscopes, which hsnips asks for the scope at the cursor on every
+// keystroke. After each edit hscopes re-tokenizes forward until the grammar
+// state settles, and an unmatched $ (or $$) does not settle until the end of
+// the file. So one $ near the top of a long document cost three passes over the
+// rest of it (type $, delete it, insert $$), about a second on a laptop.
+//
+// This makes hscopes lazy: an edit only marks lines stale, and a scope lookup
+// re-tokenizes from the first stale line up to the cursor, stopping early once
+// the state after the last edited line matches the old one again. Results are
+// the same as before. It patches the class prototype, so it covers documents
+// that are already open and survives snippet reloads; if hscopes changes shape,
+// it does nothing.
+(function makeHscopesLazy() {
+  try {
+    const ext = require('vscode').extensions.getExtension('draivin.hscopes');
+    if (!ext) return;
+    const mod = require(nodePath.join(ext.extensionPath, 'out', 'src', 'document.js'));
+    const P = mod && mod.DocumentController && mod.DocumentController.prototype;
+    if (!P || !['getScopeAt', 'applyChanges', 'reparsePretties'].every((f) => typeof P[f] === 'function')) {
+      return;
+    }
+    // Keep the unpatched methods so a reload patches them, not our wrappers.
+    const original = P.hsnipsOriginal || (P.hsnipsOriginal = { getScopeAt: P.getScopeAt });
+
+    // grammarState[i] is the tokenizer state at the end of line i. Entries from
+    // staleFrom on are only guesses until re-checked; they can be trusted again
+    // once a line at or after staleTo ends in the same state as its guess.
+    function stale(dc) {
+      if (dc.staleFrom === undefined) {
+        dc.staleFrom = Infinity;
+        dc.staleTo = -1;
+      }
+      return dc;
+    }
+
+    function markStale(dc, from, to) {
+      stale(dc);
+      dc.staleFrom = Math.min(dc.staleFrom, from);
+      dc.staleTo = Math.max(dc.staleTo, to);
+    }
+
+    function catchUp(dc, upTo) {
+      stale(dc);
+      const states = dc.grammarState;
+      let i = Math.min(dc.staleFrom, states.length);
+      for (; i < upTo; i++) {
+        const guess = states[i];
+        const state = dc.grammar.tokenizeLine(dc.document.lineAt(i).text, states[i - 1] || null).ruleStack;
+        states[i] = state;
+        if (i >= dc.staleTo && guess && state.equals(guess)) {
+          dc.staleFrom = Infinity;
+          dc.staleTo = -1;
+          return;
+        }
+      }
+      dc.staleFrom = Math.max(dc.staleFrom, i);
+    }
+
+    // Called by the constructor and refresh() with the whole document.
+    P.reparsePretties = function (range) {
+      markStale(this, range.start.line, range.end.line);
+    };
+
+    P.applyChanges = function (changes) {
+      // Last change first, so the line numbers of the earlier ones still hold.
+      const sorted = [...changes].sort((a, b) => b.range.start.compareTo(a.range.start));
+      for (const change of sorted) {
+        const start = change.range.start.line;
+        const end = change.range.end.line;
+        const added = (change.text.match(/\r\n|\r|\n/g) || []).length;
+        const states = this.grammarState;
+        if (states.length > start + 1) {
+          this.grammarState = states.slice(0, start + 1).concat(new Array(added), states.slice(end + 1));
+        }
+        stale(this);
+        if (this.staleTo > end) this.staleTo += added - (end - start);
+        else if (this.staleTo >= start) this.staleTo = start;
+        markStale(this, start, start + added);
+      }
+      if (this.grammarState.length > this.document.lineCount) {
+        this.grammarState.length = this.document.lineCount;
+      }
+    };
+
+    P.getScopeAt = function (position) {
+      if (this.grammar) catchUp(this, this.document.validatePosition(position).line);
+      return original.getScopeAt.call(this, position);
+    };
+  } catch (e) {
+    console.warn('hsnips: could not speed up hscopes', e);
+  }
+})();
 endglobal
 
-context outsideInlineMath(1)
+context typed() && outsideInlineMath(1)
 snippet `\$$` "Inline math" A
 \$$1\$$0
 endsnippet
 
 # Code blocks start with two backticks, so the opening `` has to come from code.
-context !inMath(context) && outsideInlineMath(1)
+context typed() && !inMath(context) && outsideInlineMath(1)
 snippet `"$` "Quotes" A
 ``rv = '\x60\x60'``$1''$0
 endsnippet
 
-context !inMath(context) && outsideInlineMath(2)
+context typed() && !inMath(context) && outsideInlineMath(2)
 snippet `(?<!')''$` "Literal double quote" A
 "
 endsnippet
 
 # In this hsnips version t[] lists placeholders in document order, so
 # t[0] is the caption and t[1] is the label.
+context typed()
 snippet ;fig "Figure from clipboard" A
 \begin{figure}
   \centering

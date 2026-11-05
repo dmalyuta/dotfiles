@@ -269,6 +269,24 @@ if installed asusctl && is_laptop; then
 	"$dotfiles"/scripts/bin/asus-fan-curves >/dev/null
 fi
 
+# The power profile on AC and on battery. asusd and KDE can both switch it when the charger is
+# plugged or unplugged, but KDE's battery menu shows tuned-ppd's profile. tuned-ppd only follows a
+# platform_profile change the kernel makes itself, not one from asusd, and doesn't know asus-wmi's
+# "quiet". So with asusd switching, the menu showed Performance while the laptop ran Quiet. Let KDE
+# switch it (at login too): tuned-ppd then sets platform_profile, which asusd follows. Turn asusd's
+# own switching off, which asusd saves.
+if installed asusctl && is_laptop; then
+	for p in AC:performance Battery:power-saver LowBattery:power-saver; do
+		kconf --file powerdevilrc --group "${p%%:*}" --group Performance --key PowerProfile "${p#*:}"
+	done
+	if systemctl -q is-active asusd; then
+		for src in Ac Battery; do
+			busctl --system set-property xyz.ljones.Asusd /xyz/ljones xyz.ljones.Platform \
+				"ChangePlatformProfileOn$src" b false
+		done
+	fi
+fi
+
 # Per-profile CPU power limits, lower in Quiet for battery life, see scripts/bin/asus-power-limits.
 # With Secure Boot on, acpi_call only loads once its signing key is enrolled, see start_fresh.
 if installed acpi_call-dkms && is_laptop; then

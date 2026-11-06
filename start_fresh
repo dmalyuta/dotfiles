@@ -235,7 +235,7 @@ if ! installed coolercontrol && ask cc_backup "Restore CoolerControl settings fr
 	done
 fi
 
-installed mfcj805dwpdrv || ask brother "Install Brother printer driver?" && want_brother=1
+installed brscan-skey || ask brother "Install the Brother printer and scanner drivers?" && want_brother=1
 
 # The OBS configuration, on the desktop. Already installed if its profiles link into the repo.
 obs_basic=~/.config/obs-studio/basic
@@ -385,6 +385,9 @@ dnf_apps=(
 	texlive-scheme-full texlive-latexindent perl-YAML-Tiny perl-File-HomeDir
 	openrazer-meta akmod-openrazer polychromatic keyd
 	flatpak rustup nodejs npm grafana wine winetricks nordvpn nordvpn-gui
+	# Loads the ntsync kernel module at boot. Wine then does its thread syncing in the kernel,
+	# instead of a slow round trip to wineserver each time.
+	ntsync-autoload
 	# To build RAD Debugger, below.
 	clang lld llvm libX11-devel libXext-devel libXfixes-devel mesa-libGL-devel mesa-libEGL-devel
 	freetype-devel
@@ -392,6 +395,7 @@ dnf_apps=(
 flatpak_apps=(
 	com.github.tchx84.Flatseal
 	io.github.tanaybhomia.Whisp
+	io.github.tanaybhomia.DeepDive
 	io.github.amit9838.mousam
 	md.obsidian.Obsidian
 	me.proton.Pass
@@ -414,9 +418,11 @@ is_laptop && dnf_apps+=(plasma-keyboard)
 [ -n "${want_asusctl:-}" ] && is_laptop && dnf_apps+=(acpi_call-dkms)
 [ -n "${want_cardwire:-}" ] && dnf_apps+=(cardwire cardwire-gui) && services+=(cardwired)
 if [ -n "${want_brother:-}" ]; then
-	dnf_apps+=(cups) && services+=(cups)
-	# The driver is 32-bit, see "Brother printer driver" below.
-	installed mfcj805dwpdrv || dnf_apps+=(glibc.i686 libstdc++.i686 libgcc.i686)
+	# Brother's installer tool, below, needs wget, and the scanner driver is a SANE backend.
+	dnf_apps+=(cups wget sane-backends) && services+=(cups)
+	# The printer driver is 32-bit. Installed here, else the tool would ask dnf for them, and dnf
+	# would wait on its own question.
+	installed brscan-skey || dnf_apps+=(glibc.i686 libstdc++.i686 libgcc.i686)
 fi
 
 step 6 "Upgrading the installed packages"
@@ -496,21 +502,66 @@ if [ -n "${want_openrgb:-}" ]; then
 	rm -rf "$openrgb_dir"
 fi
 
-# Brother printer driver. Its RPM is from 2003 and has no digests at all, which RPM 6 refuses ("does
-# not verify: no digest"). So check the download against a known hash instead, and install it with
-# rpm's own check off for just this package. Its dependencies are installed above.
-if [ -n "${want_brother:-}" ] && ! installed mfcj805dwpdrv; then
-	step "Installing the Brother printer driver"
-	brother_rpm=$(mktemp --suffix=.rpm)
-	if curl -fsSL -o "$brother_rpm" \
-		https://download.brother.com/welcome/dlf104570/mfcj805dwpdrv-1.0.5-0.i386.rpm &&
-		sha256sum -c --quiet <<<"0a06e56a530cd8ac8af579872d8dac931ef3fc6d81b10e9a0c7fa2dfda04a09f  $brother_rpm"; then
-		sudo rpm -i --define '_pkgverify_level none' "$brother_rpm" ||
-			say "Could not install the Brother printer driver." >&2
+# Brother printer and scanner, by Brother's installer tool. It installs the printer driver and adds
+# the printer, then installs the scanner driver (brscan4) and its scan-button tool (brscan-skey) and
+# sets the scanner up. Brother's RPMs have digests but no signatures, which RPM 6 refuses ("does not
+# verify: no signature"), and the tool runs plain rpm. So put an rpm first on its PATH that checks
+# the digests only. The tool asks on stdin, answered here in order: install the packages, accept
+# the printer license, specify the device URI, take the one it finds (A), no test print, accept the
+# two scanner licenses, and the scanner's IP address. The scanner is set up by that address: if the
+# router gives the printer a new one, re-run
+#   sudo brsaneconfig4 -r MFC-J805DW && sudo brsaneconfig4 -a name=MFC-J805DW model=MFC-J805DW ip=<new>
+if [ -n "${want_brother:-}" ] && ! installed brscan-skey; then
+	step "Installing the Brother printer and scanner drivers"
+	brother_ip=$(getent ahostsv4 brwc0b5d7e779d6.local | awk '{ print $1; exit }')
+	brother_dir=$(mktemp -d)
+	brother_tool=$brother_dir/linux-brprinter-installer
+	if [ -z "$brother_ip" ]; then
+		say "The Brother printer isn't on the network, skipping its drivers. Turn it on and run this again." >&2
+	elif curl -fsSL -o "$brother_tool.gz" \
+		https://download.brother.com/welcome/dlf006893/linux-brprinter-installer-2.2.6-1.gz &&
+		sha256sum -c --quiet <<<"ce0f6221f5979804c54994ad562fad87ef74e100f596115afd9218d35a568e73  $brother_tool.gz" &&
+		gunzip "$brother_tool.gz"; then
+		printf '#!/bin/sh\nexec /usr/bin/rpm --define "_pkgverify_level digest" "$@"\n' >"$brother_dir/rpm"
+		chmod +x "$brother_dir/rpm"
+		# The tool installs its own build of the printer driver. Remove any other first, else RPM
+		# keeps both. That also removes the printer, which the tool adds back.
+		installed mfcj805dwpdrv && sudo rpm -e --allmatches mfcj805dwpdrv
+		# It adds the printer through CUPS, which only starts with the other services, further down.
+		sudo systemctl enable --now cups
+		(cd "$brother_dir" && printf '%s\n' y y y A n y y "$brother_ip" |
+			sudo env PATH="$brother_dir:/usr/sbin:/usr/bin" bash "$brother_tool" MFC-J805DW)
+		installed mfcj805dwpdrv && installed brscan4 && installed brscan-skey ||
+			say "Could not install the Brother drivers, see above." >&2
 	else
-		say "The Brother printer driver download failed or changed, skipping." >&2
+		say "The Brother installer tool download failed or changed, skipping." >&2
 	fi
-	rm -f "$brother_rpm"
+	sudo rm -rf "$brother_dir"
+fi
+# Fedora's eSCL scanner backend (sane-airscan) finds the same scanner on the network, so scan dialogs
+# list it twice. Hide it from that backend, leaving Brother's.
+[ -n "${want_brother:-}" ] &&
+	write_root_file /etc/sane.d/airscan.d/brother-mfc-j805dw.conf <<'EOF'
+[blacklist]
+model = "*MFC-J805DW"
+EOF
+# Show the scanner and printer as "Brother MFC-J805DW", rather than the scanner's SANE device name
+# (brother4:net1;dev0, the first network scanner that brsaneconfig4 knows) and the printer queue
+# the tool names MFCJ805DW. A SANE alias also hides the original name from lists.
+if [ -n "${want_brother:-}" ]; then
+	write_root_file /etc/sane.d/dll.aliases <<'EOF'
+alias "Brother MFC-J805DW" brother4:net1;dev0
+EOF
+	# A queue name can't have spaces, so Wine programs, which show it, get Brother_MFC-J805DW.
+	# Other dialogs show the description. CUPS can't rename a queue, so add it again under the new
+	# name, with the old one's device and PPD, then remove the old one. The driver adds MFCJ805DW
+	# back whenever it is reinstalled, so do this whenever it is there.
+	brother_uri=$(lpstat -v MFCJ805DW 2>/dev/null | sed -n 's/^device for MFCJ805DW: //p')
+	if [ -n "$brother_uri" ] &&
+		sudo lpadmin -p Brother_MFC-J805DW -E -v "$brother_uri" -P /etc/cups/ppd/MFCJ805DW.ppd \
+			-D "Brother MFC-J805DW"; then
+		sudo lpadmin -x MFCJ805DW
+	fi
 fi
 
 step 3 "Building the kernel modules"
@@ -881,7 +932,49 @@ sed -i '/^# >>> conda initialize >>>$/,/^# <<< conda initialize <<<$/d' ~/.bashr
 
 step 2 "Setting up Wine and PDF-XChange Editor"
 
+# ntsync-autoload only loads the module from the next boot on. Load it now, before wineserver first
+# starts, so Wine uses it from the start.
+[ -e /dev/ntsync ] || sudo modprobe ntsync
+
 [ -f ~/.wine/drive_c/windows/Fonts/arial.ttf ] || winetricks -q corefonts
+
+# Fedora's wine-mono, Wine's .NET runtime, is broken: its libmono needs iconv.dll and
+# libgcc_s_dw2-1.dll from the MinGW packages, in a folder Wine never searches. So .NET programs
+# fail with "Could not load Mono". Install WineHQ's build into the prefix instead: it bundles those,
+# and Wine prefers it over the system one. Take the version this Wine asks for, and check the
+# download against the hashes that Wine itself carries.
+appwiz=$(rpm -ql wine-core | grep -m1 'x86_64-windows/appwiz\.cpl$')
+mono_msi=$(strings -el "$appwiz" | grep -m1 -xE 'wine-mono-[0-9.]+-x86\.msi')
+mono_ver=${mono_msi#wine-mono-} && mono_ver=${mono_ver%-x86.msi}
+if [ -n "$mono_ver" ] && ! grep -A3 '"DisplayName"="Wine Mono Runtime"' ~/.wine/system.reg |
+	grep -q "\"DisplayVersion\"=\"$mono_ver\""; then
+	if curl -fsSL -o "$mono_msi" "https://dl.winehq.org/wine/wine-mono/$mono_ver/$mono_msi" &&
+		strings -n 64 "$appwiz" | grep -qx "$(sha256sum "$mono_msi" | cut -d' ' -f1)"; then
+		wine msiexec /i "$mono_msi" /qn
+	else
+		echo "Couldn't download or verify $mono_msi: .NET programs in Wine won't run."
+	fi
+	rm -f "$mono_msi"
+fi
+
+# Font smoothing. The desktop's LCD has RGB subpixels, so use ClearType for sharper text. The
+# laptop's screen is OLED, whose subpixels aren't in RGB stripes, so ClearType would leave color
+# fringes there: keep grayscale.
+font_smoothing_type=2
+is_laptop && font_smoothing_type=1
+# Only run wine for the values not set yet: each run starts Wine, which is slow and prints warnings.
+# They are in user.reg, as "Name"="text" or "Name"=dword:<8 hex digits>.
+desktop_reg=$(awk '/^\[/ { s = /^\[Control Panel\\\\Desktop\] / } s' ~/.wine/user.reg 2>/dev/null)
+for kv in FontSmoothing:REG_SZ:2 FontSmoothingType:REG_DWORD:$font_smoothing_type \
+	FontSmoothingOrientation:REG_DWORD:1 FontSmoothingGamma:REG_DWORD:1400; do
+	IFS=: read -r name type value <<<"$kv"
+	case $type in
+	REG_SZ) line="\"$name\"=\"$value\"" ;;
+	REG_DWORD) line=$(printf '"%s"=dword:%08x' "$name" "$value") ;;
+	esac
+	grep -qxF "$line" <<<"$desktop_reg" ||
+		wine reg add 'HKCU\Control Panel\Desktop' /v "$name" /t "$type" /d "$value" /f >/dev/null
+done
 if [ -n "${want_pdfx:-}" ]; then
 	while [ ! -f EditorV11.x64.msi ]; do
 		echo "Download PDF-XChange Editor Plus 64-bit MSI installer from"

@@ -1,0 +1,3 @@
+# OBS stamps its version into every source as "prev_ver" on each save, see the obs-prev-ver filter
+# that start_fresh sets up.
+config/obs/scenes/*.json filter=obs-prev-ver

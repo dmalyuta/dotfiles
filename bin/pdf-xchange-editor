@@ -9,6 +9,9 @@
 # Author: Danylo Malyuta, 2026.
 
 export WINEPREFIX=${WINEPREFIX:-$HOME/.wine} WINEDEBUG=${WINEDEBUG:-fixme-all}
+# Load only the network scanner backend in Wine, see config/sane-wine/dll.conf. Without a trailing
+# ":", SANE doesn't fall back to /etc/sane.d's backend list.
+export SANE_CONFIG_DIR=$(dirname "$(readlink -f "$0")")/../config/sane-wine
 exe="$WINEPREFIX/drive_c/Program Files/PDF-XChange/PDF Editor/PXCEditor.exe"
 
 args=()

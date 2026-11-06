@@ -748,6 +748,12 @@ if [ ! -d "$dotfiles" ]; then
 fi
 
 git -C "$dotfiles" submodule update --init --recursive
+# OBS writes its own version into every source in a scene collection ("prev_ver") each time it saves,
+# so an OBS update shows up as a diff. Git sees a fixed value (see .gitattributes) while OBS keeps the
+# real one on disk. OBS reads it to run settings upgrades from older versions, which a fresh clone
+# then gets as if from that fixed version, as after any OBS update.
+git -C "$dotfiles" config filter.obs-prev-ver.clean \
+	"sed -E 's/^( *\"prev_ver\": )[0-9]+,\$/\\1536936449,/'"
 declare -p answers >"$answers_file"
 mkdir -p ~/.config/kitty ~/.config/tmux-powerline/themes
 ln -sf "$dotfiles"/home/{.bash_aliases,.local.bashrc,.dircolors,.wezterm.lua,.alacritty.toml} ~
@@ -974,6 +980,15 @@ for kv in FontSmoothing:REG_SZ:2 FontSmoothingType:REG_DWORD:$font_smoothing_typ
 	esac
 	grep -qxF "$line" <<<"$desktop_reg" ||
 		wine reg add 'HKCU\Control Panel\Desktop' /v "$name" /t "$type" /d "$value" /f >/dev/null
+done
+# Turn off Wine's USB and HID passthrough drivers, which PDF-XChange doesn't need: keyboard and mouse
+# go through Wine's display driver instead. After the PC sleeps or the dock is unplugged, they
+# spin a CPU core at 100%: wineusb's libusb hotplug thread, and winebus re-reading /dev/hidraw nodes
+# that are gone. Their Start value is ignored, so disable them as DLLs (an empty override).
+overrides_reg=$(awk '/^\[/ { s = /^\[Software\\\\Wine\\\\DllOverrides\] / } s' ~/.wine/user.reg 2>/dev/null)
+for dll in wineusb.sys winebus.sys; do
+	grep -qxF "\"$dll\"=\"\"" <<<"$overrides_reg" ||
+		wine reg add 'HKCU\Software\Wine\DllOverrides' /v "$dll" /t REG_SZ /d '' /f >/dev/null
 done
 if [ -n "${want_pdfx:-}" ]; then
 	while [ ! -f EditorV11.x64.msi ]; do

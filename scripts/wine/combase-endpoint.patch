@@ -1,0 +1,35 @@
+combase: Use one RPC endpoint per process, not one per apartment.
+
+Each single-threaded COM apartment registered its own ncalrpc endpoint, \pipe\OLE_<pid><tid>,
+which is never removed. Even an STA that only calls CoWaitForMultipleHandles registers one. rpcrt4's
+listener waits on one handle per endpoint plus one, so at 64 endpoints the wait fails ("err:rpc:
+rpcrt4_protseq_np_wait_for_new_connection wait failed with error 87"), the listener exits, and every
+call between apartments fails from then on. PDF-XChange Editor's worker threads hit that within
+minutes (they make new STAs every minute), then deadlock and crash. See WineHQ bug 46871.
+
+Windows also uses a single endpoint per process. Calls find their apartment from the IPID, set as
+the binding's object UUID, so the endpoint never mattered for that. The high 32 bits of an OXID are
+the process ID (apartment.c), so a client can still derive a server's endpoint from its OXID.
+
+Applied by scripts/wine/patch-combase.
+
+--- a/dlls/combase/rpc.c
++++ b/dlls/combase/rpc.c
+@@ -72,11 +72,14 @@
+     RPC_SERVER_INTERFACE If; /* interface registered with the RPC runtime */
+ };
+
+-/* get the pipe endpoint specified of the specified apartment */
++/* get the pipe endpoint of the process that owns the specified apartment */
+ static inline void get_rpc_endpoint(LPWSTR endpoint, const OXID *oxid)
+ {
+-    /* FIXME: should get endpoint from rpcss */
+-    wsprintfW(endpoint, L"\\pipe\\OLE_%016I64x", *oxid);
++    /* One endpoint per process, as on Windows: calls find their apartment from the IPID, not the
++     * endpoint. One per apartment (the OXID's low 32 bits are the thread ID) adds an endpoint for
++     * each STA, never removed, and rpcrt4's listener fails once there are 64: its wait then has
++     * more than MAXIMUM_WAIT_OBJECTS handles. The high 32 bits are the process ID. */
++    wsprintfW(endpoint, L"\\pipe\\OLE_%08lx", (ULONG)(*oxid >> 32));
+ }
+
+ typedef struct

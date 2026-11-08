@@ -71,7 +71,10 @@ and
 .IP 7. 4
 Configures the apps and services: Git, OpenRGB, OBS, Grafana, keyd, Syncthing (also at
 .IR http://syncthing.localhost ),
-Anaconda, Wine, Flameshot and the system journal.
+Anaconda, Wine, Flameshot and the system journal. Wine gets a patched COM library, which keeps
+PDF-XChange Editor from crashing, see
+.IR scripts/wine/patch\-combase ;
+it is built again after each Wine update.
 .IP 8. 4
 Runs
 .I scripts/configure_hardware

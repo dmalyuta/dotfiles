@@ -951,6 +951,13 @@ step 2 "Setting up Wine and PDF-XChange Editor"
 # starts, so Wine uses it from the start.
 [ -e /dev/ntsync ] || sudo modprobe ntsync
 
+# Wine's COM library, combase.dll, with a fix that keeps PDF-XChange Editor from crashing within an
+# hour of use, see scripts/wine/combase-endpoint.patch. A Wine update or reinstall puts Fedora's DLL
+# back, which this notices and patches again. Before Wine first runs here, so that its programs all
+# use the patched one: the two ends of a COM call must agree.
+"$dotfiles"/scripts/wine/patch-combase ||
+	say "Couldn't patch Wine's combase.dll: PDF-XChange Editor will crash after a while." >&2
+
 [ -f ~/.wine/drive_c/windows/Fonts/arial.ttf ] || winetricks -q corefonts
 
 # Fedora's wine-mono, Wine's .NET runtime, is broken: its libmono needs iconv.dll and

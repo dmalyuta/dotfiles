@@ -1,0 +1,11 @@
+# Load the HID-BPF fix for the AMD Sensor Fusion Hub's accelerometer, see
+# scripts/hid-bpf/amd-sfh-accel.bpf.c. Its sensors are HID devices on bus 0x20 (AMD SFH), vendor
+# 1022, product 0001; the program's probe() picks the accelerometer among them. As written by
+# `udev-hid-bpf install`.
+ACTION!="add|remove", GOTO="hid_bpf_end"
+SUBSYSTEM!="hid", GOTO="hid_bpf_end"
+
+ACTION=="add", ENV{MODALIAS}=="hid:b0020g*v00001022p00000001", RUN{program}+="/usr/bin/udev-hid-bpf add $sys$devpath /etc/udev-hid-bpf/amd-sfh-accel.bpf.o"
+ACTION=="remove", ENV{MODALIAS}=="hid:b0020g*v00001022p00000001", RUN{program}+="/usr/bin/udev-hid-bpf remove $sys$devpath"
+
+LABEL="hid_bpf_end"

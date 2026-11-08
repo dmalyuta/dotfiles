@@ -67,6 +67,20 @@ if journalctl -k -b 0 -q -g 'RDSEED32 is broken' >/dev/null 2>&1 &&
 	reboot_for "kernel option loglevel=0, which hides the RDSEED32 boot message"
 fi
 
+# The hardware clock (RTC) in UTC, Linux's default, unless Windows is installed too, which keeps it
+# in local time. In local time, systemd never updates it, and it is an hour off after each daylight
+# saving change until something syncs it (timedatectl warns about it). The laptop had it from the
+# Windows that came with it, which Linux has since replaced. A Windows boot entry can outlive
+# Windows in the firmware, so look for its boot manager and its NTFS (or BitLocker) partition
+# instead. Setting it writes the system clock, synced, to the RTC.
+if sudo test -e /boot/efi/EFI/Microsoft/Boot/bootmgfw.efi &&
+	lsblk -nro FSTYPE | grep -qixE 'ntfs|bitlocker'; then
+	[ "$(timedatectl show -p LocalRTC --value)" = yes ] ||
+		say "Windows is installed: run 'sudo timedatectl set-local-rtc 1' if its clock is off."
+elif [ "$(timedatectl show -p LocalRTC --value)" = yes ]; then
+	sudo timedatectl set-local-rtc 0
+fi
+
 # --------------------------------------------------------------------------------------------------
 # USB devices and wake sources.
 # --------------------------------------------------------------------------------------------------
@@ -307,6 +321,38 @@ if is_laptop; then
 options asus_nb_wmi tablet_mode_sw=2
 EOF
 		reboot_for "tablet mode switch (/etc/modprobe.d/asus-tablet-mode.conf)"
+fi
+
+# Screen rotation: since kernel 7.1 the accelerometer's readings are all dropped, so a HID-BPF
+# program fixes its report descriptor, see scripts/hid-bpf/amd-sfh-accel.bpf.c. It is built here
+# against the running kernel's types (CO-RE, so it also loads on later kernels), and udev loads it
+# when the sensors appear at boot. The source is kept next to it, to rebuild only when it changes.
+hid_bpf_src=$dotfiles/scripts/hid-bpf/amd-sfh-accel.bpf.c
+hid_bpf_obj=/etc/udev-hid-bpf/amd-sfh-accel.bpf.o
+if is_laptop && installed udev-hid-bpf; then
+	if [ ! -f "$hid_bpf_obj" ] || ! sudo cmp -s "$hid_bpf_src" "${hid_bpf_obj%.o}.c"; then
+		hid_bpf_build=$(mktemp -d)
+		if bpftool btf dump file /sys/kernel/btf/vmlinux format c >"$hid_bpf_build/vmlinux.h" &&
+			clang -O2 -g -target bpf -Wno-missing-declarations -I"$hid_bpf_build" \
+				-c "$hid_bpf_src" -o "$hid_bpf_build/fix.bpf.o"; then
+			sudo install -Z -Dm644 "$hid_bpf_build/fix.bpf.o" "$hid_bpf_obj"
+			sudo install -Z -Dm644 "$hid_bpf_src" "${hid_bpf_obj%.o}.c"
+		else
+			say "Could not build the accelerometer fix, so the screen won't rotate." >&2
+		fi
+		rm -rf "$hid_bpf_build"
+	fi
+	install_script_file udev/99-hid-bpf-amd-sfh-accel.rules \
+		/etc/udev/rules.d/99-hid-bpf-amd-sfh-accel.rules && sudo udevadm control --reload
+	# Also fix the accelerometer now, if it still has the field (see the program's probe()). It
+	# is then set up again, as a new IIO device, so restart iio-sensor-proxy to be sure it uses it.
+	hid_bpf_attached=
+	for dev in /sys/bus/hid/devices/0020:1022:0001.*; do
+		[ -f "$hid_bpf_obj" ] && [ -e "$dev/report_descriptor" ] || continue
+		[[ $(od -An -tx1 -v "$dev/report_descriptor" | tr -d ' \n') == *0a510415002501750895018102c0 ]] &&
+			sudo udev-hid-bpf add "$dev" "$hid_bpf_obj" && hid_bpf_attached=1
+	done
+	[ -n "$hid_bpf_attached" ] && sudo systemctl restart iio-sensor-proxy
 fi
 
 [ -z "${need_reboot:-}" ] || exit 2

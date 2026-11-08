@@ -1,0 +1,16 @@
+{
+    "KPackageStructure": "Plasma/Applet",
+    "KPlugin": {
+        "Authors": [{ "Name": "Danylo Malyuta" }],
+        "Category": "System Information",
+        "Description": "System tray button, shown in tablet mode, that shows or hides the on-screen keyboard.",
+        "EnabledByDefault": true,
+        "Icon": "input-keyboard-virtual-show",
+        "Id": "dotfiles.oskbutton",
+        "License": "MIT",
+        "Name": "On-Screen Keyboard Button"
+    },
+    "X-Plasma-API-Minimum-Version": "6.0",
+    "X-Plasma-NotificationArea": "true",
+    "X-Plasma-NotificationAreaCategory": "Hardware"
+}

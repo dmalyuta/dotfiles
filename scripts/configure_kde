@@ -148,10 +148,18 @@ done < <(gawk -v RS= '/Handlers=[^\n]*mouse/ &&
 	}' /proc/bus/input/devices)
 compgen -G '/sys/class/backlight/*' >/dev/null &&
 	say "If System Settings > Display has an auto-brightness toggle, turn it off."
-# The on-screen keyboard, shown when a text field is tapped in tablet mode. start_fresh installs
-# it on the PX13.
+# The on-screen keyboard. start_fresh installs it on the PX13. KWin would pop it up whenever a text
+# field is tapped, covering the app, so it never shows by itself (VirtualKeyboardMode 0, "Never"):
+# a tray button, shown in tablet mode, brings it up instead, see config/plasma/oskbutton (added to
+# the tray below). KWin reads the mode at login, so also set it live.
 plasma_keyboard=/usr/share/applications/org.kde.plasma.keyboard.desktop
-[ -f "$plasma_keyboard" ] && kconf --file kwinrc --group Wayland --key InputMethod "$plasma_keyboard"
+if [ -f "$plasma_keyboard" ]; then
+	kconf --file kwinrc --group Wayland --key InputMethod "$plasma_keyboard"
+	kconf --file kwinrc --group Wayland --key VirtualKeyboardMode 0
+	kwin /VirtualKeyboard org.freedesktop.DBus.Properties.Set org.kde.kwin.VirtualKeyboard mode '<0>'
+	mkdir -p ~/.local/share/plasma/plasmoids
+	ln -sfn "$dotfiles"/config/plasma/oskbutton ~/.local/share/plasma/plasmoids/dotfiles.oskbutton
+fi
 # It also pops up accented characters when a physical key is held. Holding a key should repeat it.
 kconf --file plasmakeyboardrc --group General --key diacriticsPopupEnabled false
 
@@ -380,6 +388,17 @@ if [ -n "${tm_applet:-}" ]; then
 	plasma_conf plasma-org.kde.plasma.desktop-appletsrc \
 		--group Containments --group "$tm_cont" --group Applets --group "$tm_applet" \
 		--group Configuration --group General --key launchers "${list#,}"
+fi
+# The on-screen keyboard button, in the system tray, next to the clock (see above).
+read -r st_cont st_applet < <(applet_group org.kde.plasma.systemtray)
+if [ -f "$plasma_keyboard" ] && [ -n "${st_applet:-}" ]; then
+	tray=(plasma-org.kde.plasma.desktop-appletsrc --group Containments --group "$st_cont"
+		--group Applets --group "$st_applet" --group General)
+	for key in extraItems knownItems; do
+		items=$(kreadconfig6 --file "${tray[@]}" --key "$key")
+		[[ ,$items, == *,dotfiles.oskbutton,* ]] ||
+			plasma_conf "${tray[@]}" --key "$key" "${items:+$items,}dotfiles.oskbutton"
+	done
 fi
 # Start menu button icon.
 read -r ko_cont ko_applet < <(applet_group org.kde.plasma.kickoff)

@@ -19,8 +19,12 @@
 # - Show what the hook finds wrong in a window in the desktop session (sleep-debug-alert, a user
 #   service for every user).
 # Run by start_fresh, which asks; safe to re-run.
-# Usage: setup on|off
-# "off" removes all of it but keeps the logs in /var/log/sleep-debug.
+# Usage: setup on [trace]|off
+#        setup trace on|off
+# "off" removes all of it but keeps the logs in /var/log/sleep-debug. pm_trace during hibernations
+# is on with "on trace", off with a plain "on", and "trace on|off" switches only it (start_fresh
+# asks): it records in the RTC how far a hung hibernation got, but leaves the clock behind after
+# each one until it syncs online, see sleep-hooks/sleep-debug.
 # Exits with status 2 if the initramfs or the kernel command line changed, which take a reboot.
 # Author: Danylo Malyuta, 2026.
 
@@ -51,6 +55,8 @@ kernel_args="$pstore_args watchdog.stop_on_reboot=0"
 # After systemd's own system.conf, so it wins.
 system_conf=/etc/systemd/system.conf.d/60-sleep-debug.conf
 tco_conf=/etc/modprobe.d/sleep-debug-tco.conf
+# The hook's switch for pm_trace.
+trace_flag=/etc/sleep-debug/pm-trace
 
 step "Setting up the sleep debug log"
 
@@ -77,6 +83,11 @@ EOF
 		install_script_file "sleep-debug/systemd/user/$u" "/etc/systemd/user/$u"
 	done
 	sudo mkdir -p /var/log/sleep-debug/alerts
+	if [ "${2:-}" = trace ]; then
+		sudo install -Z -D -m644 /dev/null "$trace_flag"
+	else
+		sudo rm -rf "${trace_flag%/*}"
+	fi
 	# shellcheck disable=SC2086
 	sudo systemctl --global enable $alert_units
 	# And in this session, without logging in again.
@@ -127,9 +138,26 @@ EOF
 		reboot=1
 	fi
 	;;
+trace)
+	case ${2:-} in
+	on)
+		[ -e "$hook" ] || { echo "Turn the sleep debug log on first: $0 on" >&2 && exit 1; }
+		sudo install -Z -D -m644 /dev/null "$trace_flag"
+		say "Hibernations are traced from the next one on. The clock is behind after each until" \
+			"it syncs online."
+		;;
+	off)
+		sudo rm -rf "${trace_flag%/*}"
+		;;
+	*)
+		echo "Usage: $0 trace on|off" >&2
+		exit 1
+		;;
+	esac
+	;;
 off)
 	for f in "$module" "$conf" "$hook" "$unit" "$wake_unit" "$alert_bin" "$sleep_conf" \
-		"$system_conf" "$tco_conf" "$var" "$crash_off" "$tco_fired"; do
+		"$system_conf" "$tco_conf" "$var" "$crash_off" "$tco_fired" "$trace_flag"; do
 		[ -e "$f" ] || continue
 		say "Removing the sleep debug log, keeping its logs in /var/log/sleep-debug."
 		sudo systemctl disable sleep-debug sleep-debug-wake 2>/dev/null
@@ -139,7 +167,8 @@ off)
 		systemctl --user stop $alert_units 2>/dev/null
 		sudo chattr -i "$var" "$crash_off" "$tco_fired" 2>/dev/null
 		sudo rm -rf "$module" "$conf" "$hook" "$unit" "$wake_unit" "$alert_bin" "$sleep_conf" \
-			"$system_conf" "$tco_conf" "$var" "$crash_off" "$tco_fired" /run/sleep-debug*
+			"$system_conf" "$tco_conf" "$var" "$crash_off" "$tco_fired" "${trace_flag%/*}" \
+			/run/sleep-debug*
 		for u in $alert_units; do sudo rm -f "/etc/systemd/user/$u"; done
 		sudo systemctl daemon-reload
 		systemctl --user daemon-reload 2>/dev/null
@@ -158,7 +187,7 @@ off)
 	done
 	;;
 *)
-	echo "Usage: $0 on|off" >&2
+	echo "Usage: $0 on [trace]|off, or $0 trace on|off" >&2
 	exit 1
 	;;
 esac

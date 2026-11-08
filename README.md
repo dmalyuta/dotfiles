@@ -44,7 +44,7 @@ Do re-run using the more recent run's answers to user questions:
     `tui.py`, the progress display that `start_fresh` runs them under.
   - What they install or run, one folder per kind: `bin/` (commands, most installed to
     `/usr/local/bin`), `sleep-hooks/` (to `/usr/lib/systemd/system-sleep`), `systemd/` (units),
-    `udev/` (rules), `keyd/`.
+    `udev/` (rules), `hid-bpf/` (HID-BPF device fixes, built on the machine), `keyd/`.
   - `sleep-debug/`: the hibernation debug log, with its own `setup`, the same folders and a dracut
     module in `dracut/`.
 

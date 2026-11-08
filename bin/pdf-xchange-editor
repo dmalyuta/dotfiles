@@ -4,6 +4,11 @@
 # and the editor can't open Linux paths like /home/..., so turn each file into its Windows path
 # (Z:\home\...) first. The desktop launcher uses this, so double-clicking a PDF opens it.
 #
+# The editor's window is then brought to the front, through the App Hotkeys KWin script (see
+# config/kwin/apphotkeys). If the editor is already running, Wine starts a second copy that hands
+# the files to it and quits, and the running window would otherwise stay behind, with the launch
+# feedback bouncing until it times out.
+#
 # Usage: pdf-xchange-editor [FILE...]
 #
 # Author: Danylo Malyuta, 2026.
@@ -14,9 +19,29 @@ export WINEPREFIX=${WINEPREFIX:-$HOME/.wine} WINEDEBUG=${WINEDEBUG:-fixme-all}
 export SANE_CONFIG_DIR=$(dirname "$(readlink -f "$0")")/../config/sane-wine
 exe="$WINEPREFIX/drive_c/Program Files/PDF-XChange/PDF Editor/PXCEditor.exe"
 
+# Drive Z: is the root, so a Linux path maps to Z: plus the path with backslashes. That's what
+# winepath -w gives, without starting a Wine process for each file.
 args=()
 for f in "$@"; do
-	[ -e "$f" ] && f=$(winepath -w "$f" 2>/dev/null)
+	if [ -e "$f" ]; then
+		f=$(realpath -s -- "$f")
+		f="Z:${f//\//\\}"
+	fi
 	args+=("$f")
 done
+
+raise() {
+	gdbus call --session --dest org.kde.kglobalaccel --object-path /component/kwin \
+		--method org.kde.kglobalaccel.Component.invokeShortcut \
+		"App Hotkeys: Raise PDF-XChange Editor" >/dev/null 2>&1
+}
+
+if pgrep -u "$(id -u)" -x PXCEditor.exe >/dev/null; then
+	wine "$exe" "${args[@]}"
+	status=$?
+	raise
+	exit $status
+fi
+# Not running yet: the script raises the window once it shows up.
+raise
 exec wine "$exe" "${args[@]}"

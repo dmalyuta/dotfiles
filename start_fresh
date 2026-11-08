@@ -249,6 +249,12 @@ fi
 
 is_laptop && ask sleep_debug "Turn on the sleep and hibernation debug log (scripts/sleep-debug)?" &&
 	want_sleep_debug=1
+# pm_trace records in the RTC where a hung hibernation stopped, for a hang the crash log misses, but
+# the clock is then behind after every hibernation until it syncs online.
+[ -n "${want_sleep_debug:-}" ] &&
+	ask sleep_debug_trace \
+		"Also trace hibernations (pm_trace)? Shows where a hang stopped; clock off after each until online." &&
+	want_sleep_debug_trace=1
 
 pdfx_dir=~/.wine/drive_c/"Program Files/PDF-XChange"
 [ -d "$pdfx_dir" ] || { ask pdfx "Install PDF-XChange Editor?" && want_pdfx=1; }
@@ -411,6 +417,9 @@ has_nvidia && dnf_apps+=(akmod-nvidia xorg-x11-drv-nvidia-cuda)
 [ -n "${want_coolercontrol:-}" ] && dnf_apps+=(coolercontrol) && services+=(coolercontrold)
 # The PX13 folds into a tablet, which needs an on-screen keyboard.
 is_laptop && dnf_apps+=(plasma-keyboard)
+# Its accelerometer, for screen rotation, needs a HID-BPF fix, built and loaded with these, see
+# scripts/hid-bpf/amd-sfh-accel.bpf.c.
+is_laptop && dnf_apps+=(udev-hid-bpf clang bpftool libbpf-devel)
 # OpenRGB itself comes from upstream, below.
 [ -n "${want_openrgb:-}" ] && dnf_apps+=(i2c-tools) && groups+=(i2c)
 [ -n "${want_asusctl:-}" ] && dnf_apps+=(asusctl asusctl-rog-gui) && services+=(asusd)
@@ -1083,8 +1092,11 @@ bash "$dotfiles"/scripts/configure_hardware
 # The laptop's sleep and hibernation debug log, on or off as answered, see
 # scripts/sleep-debug/setup.
 if is_laptop; then
-	bash "$dotfiles"/scripts/sleep-debug/setup \
-		"$([ -n "${want_sleep_debug:-}" ] && echo on || echo off)"
+	if [ -n "${want_sleep_debug:-}" ]; then
+		bash "$dotfiles"/scripts/sleep-debug/setup on ${want_sleep_debug_trace:+trace}
+	else
+		bash "$dotfiles"/scripts/sleep-debug/setup off
+	fi
 fi
 
 # KDE desktop configuration, see scripts/configure_kde.

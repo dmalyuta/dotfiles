@@ -25,8 +25,9 @@
 #   messages.
 # - A marker while asleep: at boot, a leftover one means the last boot ended in a sleep it never
 #   came back from (a hang, or the battery died).
-# - During each hibernation, pm_trace: before each device's callback, the kernel writes a hash of
-#   the device and of the callback's file:line into the RTC, which survives a forced power-off, and
+# - Only if turned on (setup trace on), during each hibernation, pm_trace: before each device's
+#   callback, the kernel writes a hash of the device and of the callback's file:line into the RTC,
+#   which survives a forced power-off, and
 #   handles the devices one at a time so that the last one traced is the one that hung. The next
 #   boot's kernel decodes it ("Magic number", "hash matches"), but resuming the image discards that
 #   kernel's log, so the initramfs saves it to an EFI variable first (../dracut/hibernate-trace/),
@@ -80,9 +81,12 @@
 #
 # pm_trace sets the RTC to a made-up date (2000-01-02 in a test), so after it the kernel ignores the
 # RTC and the clock resumes behind by the time spent hibernated. This script writes that time back
-# to the RTC and restarts chronyd, which steps the clock once online. Only the hibernation is
-# traced: during a suspend, the RTC also holds the alarm that wakes the laptop to hibernate, which
-# must stay right.
+# to the RTC and restarts chronyd, which steps the clock once online. Offline, the clock stays
+# behind (by 27 h after a 2026-11-06 hibernation), which is why pm_trace is off unless turned on:
+# the crash log found the 2026-10-31 hang's cause without it, and it only adds something for a
+# hang no crash log covers (the chipset's watchdog fired). Only the hibernation is traced: during
+# a suspend, the RTC also holds the alarm that wakes the laptop to hibernate, which must stay
+# right.
 
 set -u
 dir=/var/log/sleep-debug
@@ -101,6 +105,8 @@ pstore=/sys/fs/pstore
 watchdogs=/sys/class/watchdog
 # setup's settings for the chipset's watchdog.
 tco_conf=/etc/modprobe.d/sleep-debug-tco.conf
+# setup's switch for pm_trace (setup trace on|off).
+trace_flag=/etc/sleep-debug/pm-trace
 sysctl=/proc/sys/kernel
 self=$(readlink -f "$0")
 bat=$(ls -d /sys/class/power_supply/BAT* 2>/dev/null | head -n 1)
@@ -193,11 +199,17 @@ snapshot() {
 	fi
 }
 
-# Move a pm_trace saved by the initramfs into the log (or drop it, when pm_trace was off for
-# hibernate-loop and the RTC held the real time).
+# Whether the hibernation just over was traced: pre() notes it, and at a fresh boot, whose /run is
+# new, go by the switch.
+traced() {
+	[ -e "$state.trace" ] || { [ ! -e "$state" ] && [ -e "$trace_flag" ]; }
+}
+
+# Move a pm_trace saved by the initramfs into the log (or drop it, when pm_trace was off and the RTC
+# held the real time; the initramfs saves it at every resume).
 collect_trace() {
 	[ -e "$var" ] || return 0
-	if [ -e "$state.loop" ]; then
+	if ! traced; then
 		chattr -i "$var" 2>/dev/null
 		rm -f "$var"
 		return
@@ -416,13 +428,17 @@ pre() {
 		# RTC's alarm for it, here rather than in the loop, as a suspend-then-hibernate's own alarm
 		# (the one that brings this hibernation) has fired by now. And no pm_trace, which sets the
 		# RTC's time, so that the alarm would never match.
+		rm -f "$state.trace"
 		if [ -e "$state.loop" ]; then
 			log "hibernate: pm_trace off (hibernate-loop), snapshot $f"
 			rtcwake -m no -s "$(cat "$state.loop")" >/dev/null &&
 				log "hibernate: the RTC wakes it in $(cat "$state.loop") s (hibernate-loop)"
-		else
+		elif [ -e "$trace_flag" ]; then
 			echo 1 >/sys/power/pm_trace
+			touch "$state.trace"
 			log "hibernate: pm_trace on, snapshot $f"
+		else
+			log "hibernate: snapshot $f"
 		fi
 		arm_watchdog
 	fi
@@ -448,7 +464,9 @@ post() {
 	disarm_watchdog
 	# Undo the hibernation's tracing, whatever else fails, and give the RTC a sane time again (the one
 	# the clock resumed at, which chronyd then corrects).
-	if [ "$action" = hibernate ]; then
+	local was_traced=
+	if [ "$action" = hibernate ] && traced; then
+		was_traced=1
 		echo 0 >/sys/power/pm_trace
 		hwclock --systohc
 	fi
@@ -456,6 +474,7 @@ post() {
 	collect_trace "resumed from hibernation"
 	collect_crash "resumed from hibernation"
 	collect_tco "resumed from hibernation"
+	rm -f "$state.trace"
 	[ -f "$state" ] || return 0
 	local t0 e0 c0 h0 s0 t1 e1 c1 h1 s1 woke irq
 	read -r t0 e0 c0 h0 s0 <"$state"
@@ -465,14 +484,19 @@ post() {
 	rm -f "$state" "$state.wakeups"
 
 	if [ "$action" = hibernate ]; then
-		# Percentages, which also work when it was plugged in to boot after the battery died. The
-		# clock is behind until chronyd steps it, so the duration comes from the clock job.
+		# Percentages, which also work when it was plugged in to boot after the battery died. After a
+		# traced one, the clock is behind until chronyd steps it, so the duration comes from the
+		# clock job.
 		log "hibernate: battery $c0% -> $c1% ($s0 -> $s1)"
 		[ $((c0 - c1)) -ge 5 ] &&
 			alert "A hibernation probably hung at power-off: the battery went from $c0% to $c1%" \
 				"while it was hibernated."
-		systemd-run --no-block --collect --quiet --unit="sleep-debug-clock-$(date +%s%N)" \
-			"$self" clock "$t0" "$(uptime_s)" "$e0" "$e1" "$s0" "$s1"
+		if [ -n "$was_traced" ]; then
+			systemd-run --no-block --collect --quiet --unit="sleep-debug-clock-$(date +%s%N)" \
+				"$self" clock "$t0" "$(uptime_s)" "$e0" "$e1" "$s0" "$s1"
+		else
+			hibernate_drain "$t0" "$t1" "$e0" "$e1" "$s0" "$s1"
+		fi
 		return 0
 	fi
 
@@ -493,9 +517,9 @@ post() {
 	fi
 }
 
-# After a hibernation: step the clock back to the right time, then log how long it lasted.
+# After a traced hibernation: step the clock back to the right time, then log how long it lasted.
 clock() {
-	local t0=$1 up1=$2 e0=$3 e1=$4 s0=$5 s1=$6 t1 t
+	local t0=$1 up1=$2 e0=$3 e1=$4 s0=$5 s1=$6
 	systemctl restart chronyd
 	if ! chronyc waitsync 90 1 >/dev/null; then
 		log "hibernate: clock not synced after 15 min (offline?), duration unknown"
@@ -503,7 +527,13 @@ clock() {
 	fi
 	hwclock --systohc
 	# The wall time when it came back, from the time since then.
-	t1=$(($(now) - ($(uptime_s) - up1)))
+	hibernate_drain "$t0" "$(($(now) - ($(uptime_s) - up1)))" "$e0" "$e1" "$s0" "$s1"
+}
+
+# Log how long a hibernation lasted and what it drew, flagging one that drew too much to have been
+# off. Args: start and end times, battery energy before and after, and status before and after.
+hibernate_drain() {
+	local t0=$1 t1=$2 e0=$3 e1=$4 s0=$5 s1=$6 t
 	t=$((t1 - t0))
 	if [ "$s0" != Discharging ] || [ "$s1" != Discharging ]; then
 		log "hibernate: lasted $((t / 3600))h$(printf %02d $((t % 3600 / 60)))m, on AC ($s0 -> $s1)"

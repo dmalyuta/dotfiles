@@ -3,7 +3,7 @@
 // Focusing picks the app's best window across all virtual desktops, switching desktop and
 // un-minimizing as needed. Launching invokes kglobalaccel's "_launch" action of the app's desktop
 // entry, so the app starts just like from the app menu. That action only exists once the entry is
-// registered with kglobalaccel, which start_fresh does.
+// registered with kglobalaccel, which start_fresh does (scripts/configure_kde).
 //
 // The keys here are defaults: start_fresh sets the same ones, and they can be changed in System
 // Settings > Keyboard > Shortcuts > KWin.
@@ -16,9 +16,9 @@ const apps = {
     dolphin: { desktop: "org.kde.dolphin.desktop", ids: ["org.kde.dolphin"] },
     fsearch: { desktop: "io.github.cboxdoerfer.FSearch.desktop", ids: ["io.github.cboxdoerfer.fsearch"] },
     pureref: { desktop: "pureref.desktop", ids: ["pureref"] },
-    obsidian: { desktop: "obsidian.desktop", ids: ["md.obsidian.obsidian"] },
+    obsidian: { desktop: "md.obsidian.Obsidian.desktop", ids: ["md.obsidian.obsidian"] },
     inkscape: { desktop: "org.inkscape.Inkscape.desktop", ids: ["org.inkscape.inkscape"] },
-    speedcrunch: { desktop: "speedcrunch.desktop", ids: ["org.speedcrunch.speedcrunch"] },
+    speedcrunch: { desktop: "org.speedcrunch.SpeedCrunch.desktop", ids: ["org.speedcrunch.speedcrunch"] },
     pdfxchange: { desktop: "pdf-xchange-editor.desktop", ids: ["pxceditor.exe"] },
     vscode: { desktop: "com.microsoft.VSCode.desktop", ids: ["com.microsoft.vscode"] },
 };

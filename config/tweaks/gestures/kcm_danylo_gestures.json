@@ -1,0 +1,10 @@
+{
+    "KPlugin": {
+        "Description": "Switching windows and desktops with swipes",
+        "Icon": "preferences-desktop-gestures-touch",
+        "Name": "Touchpad Gestures"
+    },
+    "X-KDE-Keywords": "touchpad,gesture,swipe,three fingers,four fingers,window switcher,alt+tab,desktop",
+    "X-KDE-System-Settings-Parent-Category": "danylo-tweaks",
+    "X-KDE-Weight": 2
+}

@@ -1,0 +1,148 @@
+#!/bin/bash
+#
+# Replace a library of one of Fedora's packages with one built with a patch from this folder (each
+# says why it's needed): built from Fedora's source package of the installed version, with
+# Fedora's own build settings (rpmbuild).
+#
+# Package updates put Fedora's library back, so start_fresh runs this every time. It does nothing
+# while the patched library is installed, and builds only for a new version or a changed patch,
+# keeping the latest build of each patch in ~/.cache/patched-libraries. When the patch no longer
+# applies or the build fails, it writes a report for fixing the patch, and lists it among
+# start_fresh's failures.
+#
+# Running programs keep the library they loaded: log out and back in.
+# `rpm -V PACKAGE` lists the replaced file as changed, `sudo dnf reinstall PACKAGE` undoes it.
+#
+# Usage: patch-library [--build-only] [--impact TEXT] PATCH PACKAGE LIBRARY
+#   PATCH          a patch in this folder, e.g. libinput-touchpad-lag.patch
+#   PACKAGE        the installed package with the library, e.g. libinput
+#   LIBRARY        the library, e.g. libinput.so for the package's libinput.so.10.13.0, or a
+#                  plugin, which has no version, e.g. KF6IdleTimeWaylandPlugin.so
+#   --build-only   build it, but don't install it
+#   --impact TEXT  what goes wrong without the patch, for the failure message
+#
+# Author: Danylo Malyuta, 2026.
+
+here=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+dotfiles=$(cd "$here/../.." && pwd)
+. "$dotfiles"/scripts/functions.sh
+
+build_only='' impact=''
+while [[ ${1:-} == --* ]]; do
+	case $1 in
+	--build-only) build_only=1 && shift ;;
+	--impact) impact=$2 && shift 2 ;;
+	*) break ;;
+	esac
+done
+[ $# -eq 3 ] || { sed -n '/^# Usage/,/^#$/p' "$0" | sed 's/^# \?//' >&2; exit 1; }
+patch_file=$here/$1 package=$2 library=$3
+
+[ -f "$patch_file" ] || { echo "No patch $patch_file." >&2; exit 1; }
+installed "$package" || { echo "$package isn't installed." >&2; exit 1; }
+# The source package, e.g. kwin-6.8.2-3.fc45 for kwin-libs.
+srpm_name=$(rpm -q --qf '%{SOURCERPM}' "$package") && srpm_name=${srpm_name%.src.rpm}
+# Fedora's library (the file its symlinks point to), or the plugin.
+lib=$(rpm -ql "$package" | grep -E "/${library//./\\.}\.[0-9]+(\.[0-9]+)+\$" | head -n 1)
+[ -n "$lib" ] || lib=$(rpm -ql "$package" | grep -E "/${library//./\\.}\$" | head -n 1)
+[ -n "$lib" ] || { echo "No $library in $package." >&2; exit 1; }
+
+# The build for this version and this patch.
+cache=~/.cache/patched-libraries/$srpm_name-$(sha256sum "$patch_file" | cut -c1-12)
+built_lib=$cache/$(basename "$lib")
+log=$cache/build.log
+report=$cache/failure-report.txt
+
+# Build the patched library into $cache, working in $1. On failure, sets $failure to what failed,
+# and $kept_source if it kept the source for fixing the patch.
+failure='' kept_source=''
+build() {
+	local tmp=$1 srpm src spec out
+	installed rpm-build || sudo dnf install -y rpm-build || return
+
+	say "Patching ${srpm_name%-*-*}"
+	echo "Building $srpm_name with $(basename "$patch_file"), see $log"
+	rm -rf "$cache"
+	mkdir -p "$cache"
+	basename "$patch_file" >"$cache/patch"
+	# Only from Fedora's source repos: otherwise dnf, not run as root, asks to import the other
+	# repos' signing keys, a question hidden in the log. No input, so a question fails it instead.
+	if ! dnf download -q --repo=fedora-source --repo=updates-source --source --destdir "$tmp" \
+		"$srpm_name" </dev/null >>"$log" 2>&1; then
+		failure="Couldn't download the source package $srpm_name."
+		return 1
+	fi
+	srpm=$(compgen -G "$tmp/*.src.rpm" | head -n 1)
+	# Unpack and prepare the source as Fedora's build does (the spec's %prep). That fails if
+	# build dependencies are missing, so install them then.
+	if ! rpmbuild --define "_topdir $tmp/rpm" -rp "$srpm" >>"$log" 2>&1; then
+		echo "Installing the build dependencies of $srpm_name."
+		if ! { sudo dnf builddep -y "$srpm" &&
+			rpmbuild --define "_topdir $tmp/rpm" -rp "$srpm"; } >>"$log" 2>&1; then
+			failure="Couldn't prepare the source of $srpm_name."
+			return 1
+		fi
+	fi
+	spec=$(compgen -G "$tmp/rpm/SPECS/*.spec" | head -n 1)
+	src=$({ compgen -G "$tmp/rpm/BUILD/*/*/meson.build"
+		compgen -G "$tmp/rpm/BUILD/*/*/CMakeLists.txt"; } | head -n 1)
+	if [ -z "$src" ]; then
+		failure="Couldn't find the unpacked source of $srpm_name (no meson.build or CMakeLists.txt)."
+		return 1
+	fi
+	src=$(dirname "$src")
+	if ! patch -d "$src" -p1 --forward --dry-run <"$patch_file" >>"$log" 2>&1; then
+		# Keep the source for fixing the patch: in git, with the patch applied as far as it goes.
+		git -C "$src" init -q && git -C "$src" add -A &&
+			git -C "$src" -c user.name=patch-library -c user.email=none commit -qm "$srpm_name"
+		patch -d "$src" -p1 --forward <"$patch_file" >>"$log" 2>&1
+		mv "$src" "$cache/source" && kept_source=$cache/source
+		failure="$(basename "$patch_file") no longer applies to $srpm_name."
+		return 1
+	fi
+	patch -d "$src" -p1 --forward -s <"$patch_file" >>"$log" 2>&1
+	# Then the spec's %conf and %build.
+	echo "Compiling, this takes a while."
+	if ! { rpmbuild --define "_topdir $tmp/rpm" -bf --short-circuit "$spec" &&
+		rpmbuild --define "_topdir $tmp/rpm" -bc --short-circuit "$spec"; } >>"$log" 2>&1; then
+		failure="$srpm_name doesn't build with $(basename "$patch_file")."
+		return 1
+	fi
+	out=$(find "$src" -name "$(basename "$lib")" -type f -print -quit)
+	if [ -z "$out" ]; then
+		failure="The build of $srpm_name made no $(basename "$lib")."
+		return 1
+	fi
+	# Without the debug info, as Fedora's (KWin's library is 300MB with it).
+	install -Dm755 "$out" "$built_lib" && strip --strip-debug "$built_lib" || return
+	# Drop the builds, and failed ones, with older versions of the patch or the package.
+	for d in ~/.cache/patched-libraries/*/; do
+		if [ "${d%/}" != "$cache" ] && cmp -s "$d/patch" "$cache/patch"; then
+			rm -rf "$d"
+		fi
+	done
+}
+
+[ -z "$build_only" ] && cmp -s "$built_lib" "$lib" && exit 0
+
+if [ ! -f "$built_lib" ]; then
+	tmp=$(mktemp -d -p /var/tmp patch-library.XXXXXX) || exit
+	trap 'rm -rf "$tmp"' EXIT
+	if ! build "$tmp"; then
+		patch_report "${failure:-Building failed.}" "$patch_file" "$log" "$kept_source" \
+			"${here/#$HOME/\~}/patch-library --build-only $(basename "$patch_file") $package $library" \
+			>"$report"
+		failed "Couldn't patch $package${impact:+: $impact}. To fix the patch, see ${report/#$HOME/\~}"
+		exit 1
+	fi
+fi
+if [ -n "$build_only" ]; then
+	echo "Built $built_lib."
+	exit 0
+fi
+
+# Programs have the library mapped, so put the new one next to it and rename it over, rather
+# than writing into the file they run.
+sudo install -Z -m755 "$built_lib" "$lib.new" && sudo mv -f "$lib.new" "$lib" || exit
+sudo restorecon "$lib"
+echo "Installed the patched $(basename "$lib") of $srpm_name. Log out and back in to use it."

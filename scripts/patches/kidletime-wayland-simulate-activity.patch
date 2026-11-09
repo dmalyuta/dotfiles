@@ -1,0 +1,64 @@
+wayland: make simulateUserActivity() restart the idle timeouts, so the system sleeps again after a wakeup.
+
+PowerDevil suspends after the profile's idle time, through a KIdleTime timeout. When the system
+wakes up by itself and nobody touches it, it should sleep again after that time: PowerDevil calls
+KIdleTime::simulateUserActivity() on resume for that (and when inhibitions change), but on Wayland
+it did nothing. Each timeout's idle notification fires once, and only input re-arms it, so the
+system stayed awake until someone came back (2.5 hours on the lock screen, on 2026-11-09).
+
+Neither idle protocol can reset the idle time, so recreate the notifications: the compositor counts
+each new one from its creation, as simulated activity does on X11. The dim and screen-off actions
+firing again are harmless (both check whether they already did). The old notifications are deleted
+after the event loop's current turn, since this can run from one of their own signals.
+
+To turn it off, set RestartIdleTimers=false in the [Power] group of ~/.config/danylo-tweaksrc
+(System Settings > Danylo's Linux Tweaks > Power & Battery), read each time.
+
+Applied by scripts/patches/patch-library, see scripts/configure_hardware.
+
+diff --git a/src/plugins/wayland/poller.cpp b/src/plugins/wayland/poller.cpp
+index 86294fc..eafb724 100644
+--- a/src/plugins/wayland/poller.cpp
++++ b/src/plugins/wayland/poller.cpp
+@@ -8,9 +8,14 @@
+ #include <QDebug>
+ #include <QGuiApplication>
+ #include <QLoggingCategory>
++#include <QSettings>
++#include <QStandardPaths>
++#include <QTimer>
+ #include <QWaylandClientExtensionTemplate>
+ #include <QtWaylandClientVersion>
+ 
++#include <utility>
++
+ #include "qwayland-ext-idle-notify-v1.h"
+ #include "qwayland-idle.h"
+ 
+@@ -190,6 +195,26 @@ int Poller::forcePollRequest()
+ 
+ void Poller::simulateUserActivity()
+ {
++    // ext-idle-notify has no request to reset the idle time. Recreate the timeouts instead: the
++    // compositor counts each new one from now. Otherwise a timeout that already fired (say, the one
++    // that suspends the system) stays fired until the next input, so after a wakeup nobody touches,
++    // the system never sleeps again. Unless turned off in System Settings > Danylo's Linux Tweaks.
++    const QSettings tweaks(QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation)
++                               + QStringLiteral("/danylo-tweaksrc"),
++                           QSettings::IniFormat);
++    if (!tweaks.value(QStringLiteral("Power/RestartIdleTimers"), true).toBool()) {
++        return;
++    }
++    const auto old = std::exchange(m_timeouts, {});
++    for (const auto &timeout : old) {
++        timeout->disconnect(this);
++    }
++    // This can run from one of their signals (resumed, through KIdleTime::resumingFromIdle), so
++    // delete them after it.
++    QTimer::singleShot(0, this, [old] {});
++    for (auto it = old.keyBegin(); it != old.keyEnd(); ++it) {
++        addTimeout(*it);
++    }
+ }
+ 
+ IdleTimeout* Poller::createTimeout(int timeout)

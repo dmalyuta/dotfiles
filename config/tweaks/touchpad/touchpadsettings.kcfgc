@@ -1,0 +1,7 @@
+File=touchpadsettings.kcfg
+ClassName=TouchpadSettings
+Mutators=true
+DefaultValueGetters=true
+GenerateProperties=true
+ParentInConstructor=true
+Notifiers=true

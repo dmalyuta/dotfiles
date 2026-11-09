@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Read by KWin, see scripts/patches/kwin-touchpad-gestures.patch: the defaults must match. -->
+<kcfg xmlns="http://www.kde.org/standards/kcfg/1.0"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.kde.org/standards/kcfg/1.0 http://www.kde.org/standards/kcfg/1.0/kcfg.xsd">
+  <kcfgfile name="kwinrc"/>
+  <group name="TouchpadGestures">
+    <entry name="threeFingerSwipe" key="ThreeFingerSwipe" type="Enum">
+      <choices><choice name="Windows"/><choice name="Desktops"/><choice name="None"/></choices>
+      <default>Windows</default>
+    </entry>
+    <entry name="desktopsFollowFingers" key="DesktopsFollowFingers" type="Bool"><default>true</default></entry>
+    <entry name="openDistance" key="OpenDistance" type="Double"><default>2.5</default><min>0</min><max>20</max></entry>
+    <entry name="stepDistance" key="StepDistance" type="Double"><default>5</default><min>0.5</min><max>30</max></entry>
+    <entry name="switchRows" key="SwitchRows" type="Bool"><default>true</default></entry>
+    <entry name="rowDistance" key="RowDistance" type="Double"><default>5</default><min>0.5</min><max>30</max></entry>
+    <entry name="axisDistance" key="AxisDistance" type="Double"><default>0.5</default><min>0</min><max>5</max></entry>
+    <entry name="flickTime" key="FlickTime" type="Int"><default>90</default><min>0</min><max>1000</max></entry>
+  </group>
+</kcfg>

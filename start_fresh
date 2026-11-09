@@ -43,7 +43,7 @@ More in `man start_fresh`.
 EOF
 }
 
-use_cached= plain=
+use_cached='' plain=''
 while getopts cph opt; do
 	case $opt in
 	c) use_cached=1 ;;
@@ -110,11 +110,12 @@ if [ -z "${START_FRESH_TUI:-}" ] && [ -z "$plain" ] && [ -t 0 ] && [ -t 1 ]; the
 	say "No progress display, see above." >&2
 fi
 
-# What needs a reboot, one reason per line, from here and the scripts run at the end. See reboot_for
-# in scripts/functions.sh.
-REBOOT_REASONS=$(mktemp)
-export REBOOT_REASONS
-trap 'kill ${sudo_keepalive:-} 2>/dev/null; rm -f "$REBOOT_REASONS" ${DOTFILES_BOOTSTRAP:+"$DOTFILES_BOOTSTRAP"}' EXIT
+# What needs a reboot and what failed, one per line, from here and the scripts run at the end,
+# listed at the end. See reboot_for and failed in scripts/functions.sh.
+REBOOT_REASONS=$(mktemp) FAILURES=$(mktemp)
+export REBOOT_REASONS FAILURES
+trap 'kill ${sudo_keepalive:-} 2>/dev/null
+	rm -f "$REBOOT_REASONS" "$FAILURES" ${DOTFILES_BOOTSTRAP:+"$DOTFILES_BOOTSTRAP"}' EXIT
 
 # Yes/no question whose default is the last answer, remembered under key $1. With -c, a remembered
 # answer is used without asking.
@@ -175,10 +176,9 @@ sudo -v || exit
 while kill -0 $$ 2>/dev/null && sleep 60; do sudo -n -v 2>/dev/null || break; done &
 sudo_keepalive=$!
 
-# sudo remembers the password per terminal by default, and the progress display is a terminal of its
-# own, so it would always ask above. Have it remember the password across all of the user's
-# terminals instead, for its usual 5 minutes: then the display doesn't ask if it was just entered
-# elsewhere. Checked with visudo first, since a broken sudoers file locks sudo out.
+# sudo remembers the password per terminal, and the progress display is a terminal of its own, so
+# have it remember it across the user's terminals (for its usual 5 minutes). Checked with visudo
+# first: a broken sudoers file locks sudo out.
 sudoers_tmp=$(mktemp)
 echo "Defaults:$USER timestamp_type=global" >"$sudoers_tmp"
 sudoers_conf=/etc/sudoers.d/timestamp-global
@@ -191,11 +191,11 @@ rm -f "$sudoers_tmp"
 # are saved after that.
 answers_file=$dotfiles/.start_fresh_answers
 declare -A answers=()
+# shellcheck source=/dev/null
 [ -f "$answers_file" ] && . "$answers_file"
 
-# A newer Fedora release, if there is one: the highest final version on Fedora's download page,
-# which lists betas as "45 Beta" and so on. Asked every run while one is available, rather than
-# remembered, even with -c. The upgrade itself is downloaded at the end, see "Fedora upgrade" below.
+# A newer Fedora release: the highest final version on Fedora's download page. Asked every run while
+# there is one, even with -c. It's downloaded at the end, see "Fedora upgrade" below.
 fedora=$(rpm -E %fedora)
 fedora_newest=$(curl -fsSL https://fedoraproject.org/releases.json 2>/dev/null |
 	grep -oE '"version": *"[0-9]+"' | grep -oE '[0-9]+' | sort -n | tail -n 1)
@@ -358,9 +358,8 @@ EOF
 step "Setting up kernel module signing"
 
 # With Secure Boot on, the kernel only loads modules signed by a key the firmware trusts. akmods
-# builds the NVIDIA and OpenRazer modules and signs them with its own key, and DKMS (acpi_call) is
-# set to use the same one, so that one key is all the firmware needs. mokutil queues it, and on the
-# next boot MOK Manager asks for the password to enroll it. Until then those modules don't load.
+# (NVIDIA, OpenRazer) and DKMS (acpi_call) both sign with akmods' key, which mokutil queues: on the
+# next boot, MOK Manager asks for the password to enroll it. Until then those modules don't load.
 if secure_boot; then
 	sudo dnf install -y akmods kmodtool mokutil openssl
 	sudo test -f "$akmods_cert" || sudo kmodgenca -a
@@ -383,7 +382,7 @@ fi
 
 dnf_apps=(
 	@c-development @development-tools git curl wget unzip openssh-clients
-	bat btop htop tree fzf fd-find ripgrep shfmt gping sqlite
+	bat btop htop tree fzf fd-find ripgrep shfmt ShellCheck gping sqlite
 	kitty tmux cascadiacode-nerd-fonts
 	brave-browser code okular inkscape obs-studio gimp
 	vlc vlc-plugins-all vlc-plugins-freeworld flameshot nextcloud-client
@@ -420,6 +419,8 @@ is_laptop && dnf_apps+=(plasma-keyboard)
 # Its accelerometer, for screen rotation, needs a HID-BPF fix, built and loaded with these, see
 # scripts/hid-bpf/amd-sfh-accel.bpf.c.
 is_laptop && dnf_apps+=(udev-hid-bpf clang bpftool libbpf-devel)
+# libinput record and debug-events, to look at what the touchpad sends, see scripts/patches.
+is_laptop && dnf_apps+=(libinput-utils)
 # OpenRGB itself comes from upstream, below.
 [ -n "${want_openrgb:-}" ] && dnf_apps+=(i2c-tools) && groups+=(i2c)
 [ -n "${want_asusctl:-}" ] && dnf_apps+=(asusctl asusctl-rog-gui) && services+=(asusd)
@@ -445,9 +446,8 @@ installed mesa-va-drivers-freeworld || sudo dnf install -y --allowerasing mesa-v
 [ -n "${want_cardwire:-}" ] && installed switcheroo-control &&
 	sudo dnf swap -y switcheroo-control cardwire
 # Only those not installed yet, else dnf lists each one that is. A name may be a package, a group
-# (@...), something a package provides (nodejs) or a package of another arch (glibc.i686).
-# As root, whose dnf already trusts the repos' keys from the upgrade above: as the user, dnf would
-# ask to import them. No stdin, so it can't wait on a question either.
+# (@...), a capability (nodejs) or another arch's package (glibc.i686). As root, whose dnf already
+# trusts the repos' keys (from the upgrade above), and without stdin, so it can't wait on a question.
 installed_groups=" $(sudo dnf -q group list --installed --hidden </dev/null 2>/dev/null |
 	awk 'NR > 1 { printf "%s ", $1 }')"
 dnf_missing=()
@@ -466,13 +466,10 @@ if [ ${#dnf_missing[@]} -gt 0 ] &&
 	exit 1
 fi
 
-# OpenRGB from its latest upstream release. Upstream builds an .rpm per Fedora version, which needs
-# its own hidapi-hotplug library. Until upstream builds for a new Fedora release, the build for the
-# latest release before it, which usually still installs. One transaction swaps them in for
-# Fedora's packages, whose separate openrgb-udev-rules owns the same udev rules file. Fedora's are
-# only the fallback, as they are older and can't read the profiles in config/OpenRGB. A Fedora
-# upgrade swaps Fedora's back in, and re-running this then swaps upstream's in again. Re-running
-# this also upgrades it, and does nothing if it is up to date.
+# OpenRGB from its latest upstream release, an .rpm per Fedora version (or the latest one before a
+# new release), with its own hidapi-hotplug library. It replaces Fedora's packages, which are older,
+# can't read the profiles in config/OpenRGB, and are only the fallback. A Fedora upgrade puts
+# Fedora's back, which the next run swaps out again.
 if [ -n "${want_openrgb:-}" ]; then
 	step "Installing OpenRGB"
 	# Download URLs of the assets matching regex $2 in the latest release of OpenRGB's repo $1.
@@ -493,6 +490,8 @@ if [ -n "${want_openrgb:-}" ]; then
 	openrgb_ver=$(sed -nE 's|.*/openrgb_([0-9.]+)_.*|\1|p' <<<"$openrgb_url")
 	openrgb_have=$(rpm -q --qf '%{VERSION}' openrgb 2>/dev/null)
 	hidapi_rpm=${hidapi_url##*/}
+	openrgb_actions=(--action=install "$openrgb_dir"/{openrgb,hidapi-hotplug}.rpm)
+	installed openrgb-udev-rules && openrgb_actions+=(--action=remove openrgb-udev-rules)
 	if [ -n "$openrgb_ver" ] &&
 		{ [ "$openrgb_have" = "$openrgb_ver" ] || [ "$openrgb_have" = "$openrgb_ver.0" ]; } &&
 		installed "${hidapi_rpm%.x86_64.rpm}" && ! installed openrgb-udev-rules; then
@@ -500,25 +499,20 @@ if [ -n "${want_openrgb:-}" ]; then
 	elif [ -n "$openrgb_url" ] && [ -n "$hidapi_url" ] &&
 		curl -fsSL -o "$openrgb_dir"/openrgb.rpm "$openrgb_url" &&
 		curl -fsSL -o "$openrgb_dir"/hidapi-hotplug.rpm "$hidapi_url" &&
-		sudo dnf do -y --skip-unavailable \
-			--action=install "$openrgb_dir"/{openrgb,hidapi-hotplug}.rpm \
-			$(installed openrgb-udev-rules && echo --action=remove openrgb-udev-rules); then
-		say "Installed OpenRGB $(rpm -q --qf '%{VERSION}' openrgb) from upstream (its build for Fedora $(sed -nE 's|.*_f([0-9]+)_[0-9a-f]+\.rpm$|\1|p' <<<"$openrgb_url"))."
+		sudo dnf "do" -y --skip-unavailable "${openrgb_actions[@]}"; then
+		say "Installed OpenRGB $(rpm -q --qf '%{VERSION}' openrgb) from upstream."
 	else
-		say "Could not install upstream OpenRGB, falling back to Fedora's older one." >&2
+		failed "Could not install upstream OpenRGB, falling back to Fedora's older one."
 		installed openrgb || sudo dnf install -y openrgb
 	fi
 	rm -rf "$openrgb_dir"
 fi
 
-# Brother printer and scanner, by Brother's installer tool. It installs the printer driver and adds
-# the printer, then installs the scanner driver (brscan4) and its scan-button tool (brscan-skey) and
-# sets the scanner up. Brother's RPMs have digests but no signatures, which RPM 6 refuses ("does not
-# verify: no signature"), and the tool runs plain rpm. So put an rpm first on its PATH that checks
-# the digests only. The tool asks on stdin, answered here in order: install the packages, accept
-# the printer license, specify the device URI, take the one it finds (A), no test print, accept the
-# two scanner licenses, and the scanner's IP address. The scanner is set up by that address: if the
-# router gives the printer a new one, re-run
+# Brother printer and scanner, by Brother's installer tool: the printer driver, the scanner driver
+# (brscan4) and its scan-button tool (brscan-skey). Its RPMs have digests but no signatures, which
+# RPM 6 refuses, so an rpm first on its PATH checks the digests only. Its questions, answered in
+# order: install, accept the license, specify the device URI, take the one found (A), no test
+# print, accept the two scanner licenses, the scanner's IP. If the printer's IP changes, run
 #   sudo brsaneconfig4 -r MFC-J805DW && sudo brsaneconfig4 -a name=MFC-J805DW model=MFC-J805DW ip=<new>
 if [ -n "${want_brother:-}" ] && ! installed brscan-skey; then
 	step "Installing the Brother printer and scanner drivers"
@@ -526,45 +520,42 @@ if [ -n "${want_brother:-}" ] && ! installed brscan-skey; then
 	brother_dir=$(mktemp -d)
 	brother_tool=$brother_dir/linux-brprinter-installer
 	if [ -z "$brother_ip" ]; then
-		say "The Brother printer isn't on the network, skipping its drivers. Turn it on and run this again." >&2
+		say "The Brother printer isn't on the network, skipping its drivers. Turn it on and rerun." >&2
 	elif curl -fsSL -o "$brother_tool.gz" \
 		https://download.brother.com/welcome/dlf006893/linux-brprinter-installer-2.2.6-1.gz &&
 		sha256sum -c --quiet <<<"ce0f6221f5979804c54994ad562fad87ef74e100f596115afd9218d35a568e73  $brother_tool.gz" &&
 		gunzip "$brother_tool.gz"; then
 		printf '#!/bin/sh\nexec /usr/bin/rpm --define "_pkgverify_level digest" "$@"\n' >"$brother_dir/rpm"
 		chmod +x "$brother_dir/rpm"
-		# The tool installs its own build of the printer driver. Remove any other first, else RPM
-		# keeps both. That also removes the printer, which the tool adds back.
+		# The tool installs its own build of the printer driver: remove any other, else RPM keeps
+		# both. That removes the printer too, which the tool adds back.
 		installed mfcj805dwpdrv && sudo rpm -e --allmatches mfcj805dwpdrv
 		# It adds the printer through CUPS, which only starts with the other services, further down.
 		sudo systemctl enable --now cups
 		(cd "$brother_dir" && printf '%s\n' y y y A n y y "$brother_ip" |
 			sudo env PATH="$brother_dir:/usr/sbin:/usr/bin" bash "$brother_tool" MFC-J805DW)
-		installed mfcj805dwpdrv && installed brscan4 && installed brscan-skey ||
-			say "Could not install the Brother drivers, see above." >&2
+		{ installed mfcj805dwpdrv && installed brscan4 && installed brscan-skey; } ||
+			failed "Could not install the Brother drivers, see the full output."
 	else
-		say "The Brother installer tool download failed or changed, skipping." >&2
+		failed "The Brother installer tool download failed or changed, skipping its drivers."
 	fi
 	sudo rm -rf "$brother_dir"
 fi
-# Fedora's eSCL scanner backend (sane-airscan) finds the same scanner on the network, so scan dialogs
-# list it twice. Hide it from that backend, leaving Brother's.
+# Fedora's eSCL backend (sane-airscan) finds the same scanner, so dialogs list it twice: hide it there.
 [ -n "${want_brother:-}" ] &&
 	write_root_file /etc/sane.d/airscan.d/brother-mfc-j805dw.conf <<'EOF'
 [blacklist]
 model = "*MFC-J805DW"
 EOF
-# Show the scanner and printer as "Brother MFC-J805DW", rather than the scanner's SANE device name
-# (brother4:net1;dev0, the first network scanner that brsaneconfig4 knows) and the printer queue
-# the tool names MFCJ805DW. A SANE alias also hides the original name from lists.
+# Show the scanner and printer as "Brother MFC-J805DW", not brother4:net1;dev0 and MFCJ805DW. A
+# SANE alias also hides the original name.
 if [ -n "${want_brother:-}" ]; then
 	write_root_file /etc/sane.d/dll.aliases <<'EOF'
 alias "Brother MFC-J805DW" brother4:net1;dev0
 EOF
-	# A queue name can't have spaces, so Wine programs, which show it, get Brother_MFC-J805DW.
-	# Other dialogs show the description. CUPS can't rename a queue, so add it again under the new
-	# name, with the old one's device and PPD, then remove the old one. The driver adds MFCJ805DW
-	# back whenever it is reinstalled, so do this whenever it is there.
+	# A queue name can't have spaces (Wine shows Brother_MFC-J805DW, other dialogs the description),
+	# and CUPS can't rename one: add it again under the new name, then remove the old one, which a
+	# driver reinstall brings back.
 	brother_uri=$(lpstat -v MFCJ805DW 2>/dev/null | sed -n 's/^device for MFCJ805DW: //p')
 	if [ -n "$brother_uri" ] &&
 		sudo lpadmin -p Brother_MFC-J805DW -E -v "$brother_uri" -P /etc/cups/ppd/MFCJ805DW.ppd \
@@ -575,15 +566,12 @@ fi
 
 step 3 "Building the kernel modules"
 
-# Build the kernel modules (NVIDIA and OpenRazer with akmods, acpi_call with DKMS) for the newest
-# kernel now, rather than on its first boot, which would hold up the desktop for minutes. The
-# upgrade may have just installed that kernel, before the modules' own hooks were there.
+# Build the kernel modules for the newest kernel now, rather than on its first boot, which would
+# hold up the desktop for minutes.
 newest_kernel=$(rpm -q kernel --qf '%{VERSION}-%{RELEASE}.%{ARCH}\n' | sort -V | tail -n 1)
-# acpi_call-dkms's uninstall scripts also run when it is upgraded to a new build of the same
-# version, as on a Fedora upgrade. They then delete the source the new build just installed, and
-# its /etc/modules-load.d file. DKMS calls the module broken and builds nothing, and
-# asus-power-limits fails. A plain reinstall would run them again, so reinstall without scripts.
-# DKMS still has the module registered, so the autoinstall below builds it.
+# acpi_call-dkms's uninstall scripts also run on an upgrade to a new build of the same version (a
+# Fedora upgrade), deleting the new source and its modules-load.d file, so DKMS builds nothing.
+# Reinstall it without scripts then: the autoinstall below builds it.
 if installed acpi_call-dkms; then
 	acpi_call_ver=$(rpm -q --qf '%{VERSION}' acpi_call-dkms)
 	if [ ! -f "/usr/src/acpi_call-$acpi_call_ver/dkms.conf" ]; then
@@ -600,7 +588,7 @@ fi
 if installed akmods; then
 	sudo akmods --kernels "$newest_kernel"
 	if has_nvidia && ! modinfo -k "$newest_kernel" nvidia >/dev/null 2>&1; then
-		say "The NVIDIA driver failed to build, see /var/cache/akmods/nvidia." >&2
+		failed "The NVIDIA driver failed to build, see /var/cache/akmods/nvidia."
 	fi
 fi
 
@@ -616,9 +604,7 @@ done
 
 step 3 "Installing and updating the Flatpak apps"
 
-# Flatpak apps, plus the GL extension matching the Nvidia driver so they get hardware rendering
-# under Wayland.
-# System-wide, which needs root.
+# Flatpak apps, system-wide, plus the GL extension matching the Nvidia driver for hardware rendering.
 sudo flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
 nvidia_version=$(nvidia_version)
 [ -n "$nvidia_version" ] &&
@@ -644,7 +630,7 @@ if [ -n "${want_superluminal:-}" ]; then
 	superluminal_url=$(curl -fsSL https://superluminal.eu/download/ |
 		grep -oE 'https://[^"]*/SuperluminalLinux-[^"]*\.tar\.gz' | head -n 1)
 	if [ -z "$superluminal_url" ]; then
-		say "Could not find the Superluminal download link, skipping." >&2
+		failed "Could not find the Superluminal download link, skipping it."
 	else
 		mkdir -p "$superluminal_dir" ~/.local/share/icons/hicolor/scalable/apps
 		# Entries are ./Superluminal/..., so strip both components.
@@ -690,11 +676,12 @@ fi
 # PureRef, from the .rpm on its pay-what-you-want download page, which has no direct link.
 if [ -n "${want_pureref:-}" ]; then
 	step "Installing PureRef"
+	# shellcheck disable=SC2012 # ls -t picks the newest download
 	until pureref_rpm=$(ls -t ./*[Pp]ure[Rr]ef*.rpm 2>/dev/null | head -n 1) && [ -n "$pureref_rpm" ]; do
 		echo "Download PureRef's Linux .rpm from https://www.pureref.com/download.php into $downloads"
 		read -p "Press ENTER to try again... " -r
 	done
-	sudo dnf install -y "$pureref_rpm" || say "Could not install $pureref_rpm." >&2
+	sudo dnf install -y "$pureref_rpm" || failed "Could not install $pureref_rpm."
 fi
 
 step "Installing PdfCraft"
@@ -705,10 +692,10 @@ pdfcraft_tag=$(curl -fsSLI -o /dev/null -w '%{url_effective}' \
 pdfcraft_tag=${pdfcraft_tag##*/}
 pdfcraft_ver=${pdfcraft_tag#v}
 if [[ ! $pdfcraft_ver =~ ^[0-9][0-9.]*$ ]]; then
-	say "Could not find the latest PdfCraft release, skipping." >&2
+	failed "Could not find the latest PdfCraft release, skipping it."
 elif [ "$(rpm -q --qf '%{VERSION}' pdfcraft 2>/dev/null)" != "$pdfcraft_ver" ]; then
 	sudo dnf install -y "https://github.com/storytold/pdfcraft/releases/download/$pdfcraft_tag/pdfcraft-$pdfcraft_ver-linux-x86_64.rpm" ||
-		say "Could not install PdfCraft." >&2
+		failed "Could not install PdfCraft."
 fi
 
 # RAD Debugger, built from its latest release, like the AUR package does.
@@ -732,7 +719,7 @@ Terminal=false
 Categories=Development;Debugger;
 EOF
 	else
-		say "Could not build RAD Debugger." >&2
+		failed "Could not build RAD Debugger, see the full output."
 	fi
 	rm -rf "$rad_src"
 fi
@@ -743,7 +730,7 @@ fi
 
 step "Setting up SSH and the dotfiles"
 
-mkdir -p -m 700 ~/.ssh
+mkdir -p ~/.ssh && chmod 700 ~/.ssh
 [ -f ~/.ssh/id_ed25519 ] || ssh-keygen -q -t ed25519 -C "$(git config --global user.email)" -f ~/.ssh/id_ed25519 -N ""
 ssh-keygen -F github.com >/dev/null 2>&1 || ssh-keyscan github.com >>~/.ssh/known_hosts 2>/dev/null
 
@@ -757,10 +744,8 @@ if [ ! -d "$dotfiles" ]; then
 fi
 
 git -C "$dotfiles" submodule update --init --recursive
-# OBS writes its own version into every source in a scene collection ("prev_ver") each time it saves,
-# so an OBS update shows up as a diff. Git sees a fixed value (see .gitattributes) while OBS keeps the
-# real one on disk. OBS reads it to run settings upgrades from older versions, which a fresh clone
-# then gets as if from that fixed version, as after any OBS update.
+# OBS writes its version into every source of a scene collection ("prev_ver") when it saves, so an
+# OBS update shows up as a diff: git sees a fixed value instead (see .gitattributes).
 git -C "$dotfiles" config filter.obs-prev-ver.clean \
 	"sed -E 's/^( *\"prev_ver\": )[0-9]+,\$/\\1536936449,/'"
 declare -p answers >"$answers_file"
@@ -832,8 +817,7 @@ fi
 if [ -n "${want_obs:-}" ]; then
 	step "Configuring OBS"
 	# OBS profile and scene collection, see config/obs/. Linked by directory, since OBS saves a file
-	# by renaming a new one over it, which would replace a linked file. Existing ones are kept as
-	# *.orig.
+	# by renaming a new one over it. Existing ones are kept as *.orig.
 	mkdir -p "$obs_basic"
 	for d in profiles scenes; do
 		[ -d "$obs_basic/$d" ] && [ ! -L "$obs_basic/$d" ] && mv -T "$obs_basic/$d" "$obs_basic/$d.orig"
@@ -857,7 +841,7 @@ if [ -n "${want_obs:-}" ]; then
 	# The webcam mic level that the scene's filters are tuned for. PipeWire takes a moment to bring
 	# the device back after a restart.
 	if [ -e /proc/asound/C920 ]; then
-		for try in {1..20}; do
+		for _ in {1..20}; do
 			pactl set-source-volume alsa_input.usb-046d_HD_Pro_Webcam_C920_035EF47F-02.analog-stereo 80% \
 				2>/dev/null && break
 			sleep 0.5
@@ -886,12 +870,9 @@ sudo systemctl enable --now "${services[@]}"
 
 step "Setting up Syncthing"
 
-# Syncthing, as a user service that starts at login. Its web UI stays on its default
-# 127.0.0.1:8384, and is also at http://syncthing.localhost: browsers and the system send any
-# *.localhost name to this machine, and a socket proxy forwards port 80 there to the UI. The proxy
-# only listens on loopback. Syncthing accepts *.localhost as a local name, so its check against DNS
-# rebinding (a website pointing its own name at 127.0.0.1) stays on.
-# Its address is shown at the end only when this run sets it up or changes it.
+# Syncthing, as a user service. Its web UI is on 127.0.0.1:8384, and at http://syncthing.localhost
+# through a loopback-only proxy from port 80 (Syncthing takes *.localhost as local, so its check
+# against DNS rebinding stays on). The address is shown at the end when this run sets it up.
 systemctl --user -q is-enabled syncthing.service 2>/dev/null || syncthing_new=1
 systemctl --user enable --now syncthing.service
 proxy_changed=
@@ -914,16 +895,15 @@ After=syncthing-gui-proxy.socket
 
 [Service]
 ExecStart=/usr/lib/systemd/systemd-socket-proxyd --exit-idle-time=5min 127.0.0.1:8384
-# No root powers: systemd hands it the socket. Nothing here may imply NoNewPrivileges (as
-# DynamicUser= and most other sandboxing options do), which stops SELinux moving it into its own
-# domain, systemd_socket_proxyd_t, leaving it in systemd's, which may not connect to 8384.
+# No root powers, as systemd hands it the socket. Nothing may imply NoNewPrivileges (DynamicUser=
+# and most sandboxing do): SELinux would then keep it out of systemd_socket_proxyd_t, which may
+# connect to 8384.
 CapabilityBoundingSet=
 PrivateTmp=yes
 ProtectSystem=strict
 ProtectHome=yes
 EOF
-# systemd opens the socket under the proxy's SELinux label, which may only use a few ports. These
-# booleans let it listen on port 80 and connect to 8384. They only apply to systemd-socket-proxyd.
+# SELinux lets the proxy use only a few ports: these booleans let it listen on 80 and connect to 8384.
 for b in systemd_socket_proxyd_bind_any systemd_socket_proxyd_connect_any; do
 	[ "$(getsebool "$b" 2>/dev/null)" = "$b --> on" ] || { sudo setsebool -P "$b" 1 && proxy_changed=1; }
 done
@@ -935,9 +915,8 @@ sudo systemctl enable --now syncthing-gui-proxy.socket
 
 step 3 "Installing Anaconda"
 
-# Batch mode accepts the license and skips the prompts, including the final one that sets up
-# ~/.bashrc. Good: .local.bashrc sets conda up instead, because the block `conda init` writes delays
-# every prompt by ~1 s. Remove that block if it was added before.
+# Batch mode accepts the license and doesn't touch ~/.bashrc: .local.bashrc sets conda up instead,
+# since `conda init`'s block delays every prompt by ~1 s. Remove that block if added before.
 if [ ! -d ~/anaconda3 ]; then
 	curl -fL -o anaconda.sh \
 		"https://repo.anaconda.com/archive/Anaconda3-2026.07-1-Linux-x86_64.sh" &&
@@ -947,24 +926,18 @@ sed -i '/^# >>> conda initialize >>>$/,/^# <<< conda initialize <<<$/d' ~/.bashr
 
 step 2 "Setting up Wine and PDF-XChange Editor"
 
-# ntsync-autoload only loads the module from the next boot on. Load it now, before wineserver first
-# starts, so Wine uses it from the start.
+# ntsync-autoload only loads the module from the next boot on, so load it before Wine first runs.
 [ -e /dev/ntsync ] || sudo modprobe ntsync
 
-# Wine's COM library, combase.dll, with a fix that keeps PDF-XChange Editor from crashing within an
-# hour of use, see scripts/wine/combase-endpoint.patch. A Wine update or reinstall puts Fedora's DLL
-# back, which this notices and patches again. Before Wine first runs here, so that its programs all
-# use the patched one: the two ends of a COM call must agree.
-"$dotfiles"/scripts/wine/patch-combase ||
-	say "Couldn't patch Wine's combase.dll: PDF-XChange Editor will crash after a while." >&2
+# Wine's COM library with a fix that keeps PDF-XChange Editor from crashing, see
+# scripts/wine/patch-combase. Before Wine first runs here, so all its programs use the patched one.
+"$dotfiles"/scripts/wine/patch-combase
 
 [ -f ~/.wine/drive_c/windows/Fonts/arial.ttf ] || winetricks -q corefonts
 
-# Fedora's wine-mono, Wine's .NET runtime, is broken: its libmono needs iconv.dll and
-# libgcc_s_dw2-1.dll from the MinGW packages, in a folder Wine never searches. So .NET programs
-# fail with "Could not load Mono". Install WineHQ's build into the prefix instead: it bundles those,
-# and Wine prefers it over the system one. Take the version this Wine asks for, and check the
-# download against the hashes that Wine itself carries.
+# Fedora's wine-mono is broken (its libmono needs MinGW DLLs from a folder Wine never searches), so
+# .NET programs fail with "Could not load Mono". Install WineHQ's build into the prefix instead, the
+# version this Wine asks for, checked against the hashes Wine carries.
 appwiz=$(rpm -ql wine-core | grep -m1 'x86_64-windows/appwiz\.cpl$')
 mono_msi=$(strings -el "$appwiz" | grep -m1 -xE 'wine-mono-[0-9.]+-x86\.msi')
 mono_ver=${mono_msi#wine-mono-} && mono_ver=${mono_ver%-x86.msi}
@@ -974,18 +947,16 @@ if [ -n "$mono_ver" ] && ! grep -A3 '"DisplayName"="Wine Mono Runtime"' ~/.wine/
 		strings -n 64 "$appwiz" | grep -qx "$(sha256sum "$mono_msi" | cut -d' ' -f1)"; then
 		wine msiexec /i "$mono_msi" /qn
 	else
-		echo "Couldn't download or verify $mono_msi: .NET programs in Wine won't run."
+		failed "Couldn't download or verify $mono_msi: .NET programs in Wine won't run."
 	fi
 	rm -f "$mono_msi"
 fi
 
-# Font smoothing. The desktop's LCD has RGB subpixels, so use ClearType for sharper text. The
-# laptop's screen is OLED, whose subpixels aren't in RGB stripes, so ClearType would leave color
-# fringes there: keep grayscale.
+# Font smoothing: ClearType on the desktop's RGB LCD, grayscale on the laptop's OLED, whose
+# subpixels would give ClearType color fringes.
 font_smoothing_type=2
 is_laptop && font_smoothing_type=1
-# Only run wine for the values not set yet: each run starts Wine, which is slow and prints warnings.
-# They are in user.reg, as "Name"="text" or "Name"=dword:<8 hex digits>.
+# Only run wine for the values not set yet in user.reg, since each run is slow.
 desktop_reg=$(awk '/^\[/ { s = /^\[Control Panel\\\\Desktop\] / } s' ~/.wine/user.reg 2>/dev/null)
 for kv in FontSmoothing:REG_SZ:2 FontSmoothingType:REG_DWORD:$font_smoothing_type \
 	FontSmoothingOrientation:REG_DWORD:1 FontSmoothingGamma:REG_DWORD:1400; do
@@ -997,10 +968,9 @@ for kv in FontSmoothing:REG_SZ:2 FontSmoothingType:REG_DWORD:$font_smoothing_typ
 	grep -qxF "$line" <<<"$desktop_reg" ||
 		wine reg add 'HKCU\Control Panel\Desktop' /v "$name" /t "$type" /d "$value" /f >/dev/null
 done
-# Turn off Wine's USB and HID passthrough drivers, which PDF-XChange doesn't need: keyboard and mouse
-# go through Wine's display driver instead. After the PC sleeps or the dock is unplugged, they
-# spin a CPU core at 100%: wineusb's libusb hotplug thread, and winebus re-reading /dev/hidraw nodes
-# that are gone. Their Start value is ignored, so disable them as DLLs (an empty override).
+# Turn off Wine's USB and HID passthrough, which PDF-XChange doesn't need: after a sleep or
+# undocking, they spin a core at 100% (wineusb's hotplug thread, winebus re-reading gone hidraw
+# nodes). Their Start value is ignored, so disable them as DLLs.
 overrides_reg=$(awk '/^\[/ { s = /^\[Software\\\\Wine\\\\DllOverrides\] / } s' ~/.wine/user.reg 2>/dev/null)
 for dll in wineusb.sys winebus.sys; do
 	grep -qxF "\"$dll\"=\"\"" <<<"$overrides_reg" ||
@@ -1015,9 +985,8 @@ if [ -n "${want_pdfx:-}" ]; then
 	wine msiexec /i EditorV11.x64.msi
 fi
 
-# Ship our own top-level launcher that runs the exe directly, and hide Wine's. This makes sure
-# that the icon can be pinned to the task manager etc. It goes through bin/pdf-xchange-editor,
-# which turns the files to open into Windows paths.
+# Our own launcher, which runs the exe directly so its icon can be pinned, and Wine's hidden. It
+# goes through bin/pdf-xchange-editor, which turns the files' paths into Windows ones.
 if [ -x "$pdfx_dir/PDF Editor/PXCEditor.exe" ]; then
 	pdfx_icon=application-pdf
 	for f in ~/.local/share/icons/hicolor/48x48/apps/*_PXCEditor.0.png; do
@@ -1043,12 +1012,10 @@ EOF
 	kbuildsycoca6 >/dev/null 2>&1
 fi
 
-# Silence Wine from logging the spammy "fixme:" channel to stderr. Keep "err:" and "warn:", so real
-# faults get reported.
+# Keep Wine's "fixme:" chatter out of the journal. err: and warn: still log.
 mkdir -p ~/.config/environment.d
 cat >~/.config/environment.d/50-winedebug.conf <<'EOF'
-# Silence Wine's "fixme:" chatter, which otherwise floods the systemd journal.
-# Real problems still log: the err: and warn: channels are left enabled.
+# Wine's "fixme:" chatter floods the journal. err: and warn: still log.
 WINEDEBUG=fixme-all
 EOF
 # environment.d only applies to sessions started after it, so cover the launchers directly too.
@@ -1059,9 +1026,8 @@ done < <(find ~/.local/share/applications -name '*.desktop' -print0 2>/dev/null)
 
 step "Configuring Flameshot and the system journal"
 
-# Flameshot's Wayland clipboard copy is lost on non-Gnome desktops because the capture window closes
-# too early. Run the daemon under XWayland instead, for both ways it gets started: autostart and
-# D-Bus activation.
+# Flameshot's Wayland clipboard copy is lost outside Gnome, as the capture window closes too early.
+# Run it under XWayland instead, both from autostart and from D-Bus activation.
 flameshot_autostart=~/.config/autostart/Flameshot.desktop
 if [ ! -f "$flameshot_autostart" ]; then
 	mkdir -p ~/.config/autostart
@@ -1092,8 +1058,7 @@ then
 	sudo systemctl restart systemd-journald
 fi
 
-# Low-level hardware setup (GPUs, kernel, sleep and hibernation, laptop quirks), see
-# scripts/configure_hardware. These scripts add what needs a reboot to $REBOOT_REASONS.
+# Low-level hardware setup (GPUs, kernel, sleep and hibernation, laptop quirks, patched libraries).
 bash "$dotfiles"/scripts/configure_hardware
 
 # The laptop's sleep and hibernation debug log, on or off as answered, see
@@ -1109,18 +1074,17 @@ fi
 # KDE desktop configuration, see scripts/configure_kde.
 bash "$dotfiles"/scripts/configure_kde "${answers[workspaces]:-}"
 
-# Fedora upgrade, if chosen above. Last, after everything else is installed, so the upgrade takes
-# all of it along. dnf downloads the new release's packages and stores the transaction, and the
-# reboot at the end runs it, with `dnf offline reboot`. Without the upgrade, the packages were
-# still upgraded within this release above.
+# The Fedora upgrade, if chosen above, last so that it takes everything along. dnf downloads it, and
+# the reboot at the end (`dnf offline reboot`) installs it.
 if [ -n "${upgrade_to:-}" ]; then
 	step 6 "Downloading the Fedora upgrade"
 	if sudo dnf system-upgrade download -y --releasever="$upgrade_to"; then
 		fedora_upgrade=1
 		reboot_for "upgrade to Fedora $upgrade_to, which installs while it reboots"
 	else
-		say "Could not download the Fedora $upgrade_to upgrade, see above. Staying on Fedora $fedora." >&2
-		echo "If packages conflict, try: sudo dnf system-upgrade download --releasever=$upgrade_to --allowerasing"
+		failed "Could not download the Fedora $upgrade_to upgrade, staying on Fedora $fedora." \
+			"If packages conflict, try: sudo dnf system-upgrade download" \
+			"--releasever=$upgrade_to --allowerasing"
 	fi
 fi
 
@@ -1132,15 +1096,17 @@ if [ -n "${need_mok_enroll:-}" ]; then
 	echo "it, run this script again and reboot."
 fi
 
-# Discover's update notifier (the panel's update icon) checks once at login and then only every so
-# often, and doesn't notice updates made outside Discover, like the ones above. Restart it, so it
-# checks again and stops listing what was just updated. Last, as its check refreshes the package
-# data, which dnf above could have had to wait for.
+# Discover's update icon doesn't notice updates made outside Discover, so restart it to check again.
+# Last, as its check refreshes the package data, which dnf above would have waited for.
 systemctl --user try-restart app-org.kde.discover.notifier@autostart.service 2>/dev/null
 
 steps_done
 say "Done."
 [ -n "${syncthing_new:-}${proxy_changed:-}" ] && echo "Syncthing is at http://syncthing.localhost/"
+if [ -s "$FAILURES" ]; then
+	printf '\e[1;91m== Failed ==\e[0m\n'
+	sed 's/^/  - /' "$FAILURES"
+fi
 if [ -s "$REBOOT_REASONS" ]; then
 	echo "Reboot to apply:"
 	sed 's/^/  - /' "$REBOOT_REASONS"

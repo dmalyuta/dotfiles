@@ -1,0 +1,7 @@
+File=gesturessettings.kcfg
+ClassName=GesturesSettings
+Mutators=true
+DefaultValueGetters=true
+GenerateProperties=true
+ParentInConstructor=true
+Notifiers=true

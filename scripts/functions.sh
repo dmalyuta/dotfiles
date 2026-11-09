@@ -1,17 +1,57 @@
 # shellcheck shell=bash
 #
-# Helpers shared by start_fresh, configure_hardware and configure_kde. Source it, don't run it.
-# install_script_file reads $dotfiles, which the sourcing script sets to the repo root.
+# Helpers shared by start_fresh and the scripts it runs. Source it, don't run it. Some read
+# $dotfiles, which the sourcing script sets to the repo root.
 #
 # Author: Danylo Malyuta, 2026.
 
 # Status message, in bold bright blue so it stands out.
 say() { printf '\e[1;94m== %s ==\e[0m\n' "$*"; }
 
-# Note that a reboot is needed to apply $*. Under start_fresh, the reason goes to the file
-# $REBOOT_REASONS, which it lists at the end. Run on its own, a script prints it now. Scripts that
-# call this exit with status 2.
+# Report a failure, in bold red. Under start_fresh it also goes to the file $FAILURES, which it
+# lists at the end.
+failed() {
+	printf '\e[1;91m== %s ==\e[0m\n' "$*" >&2
+	[ -z "${FAILURES:-}" ] || echo "$*" >>"$FAILURES"
+}
+
+# Print a report for fixing a patch that failed. Args: what failed, the patch, the build log, the
+# source kept when the patch didn't apply (or ""), the command that tries again.
+patch_report() {
+	local what=$1 patch=$2 log=$3 src=$4 retry=$5
+	echo "$what"
+	echo
+	echo "Patch:     $patch (its description at the top says what it changes and why)"
+	echo "Build log: $log"
+	if [ -n "$src" ]; then
+		echo "Source:    $src"
+		echo "           Fedora's source, prepared as its build does, then committed to git before"
+		echo "           the patch: \`git diff\` there shows the hunks that applied."
+	fi
+	echo
+	echo "To fix it, update the patch for this source, along with its description (or drop it, if"
+	echo "the package now fixes what the patch does). Then try again with:"
+	echo "  $retry"
+	echo
+	if [ -n "$src" ] && [ -n "$(find "$src" -name '*.rej' -print -quit)" ]; then
+		echo "== The hunks that didn't apply"
+		find "$src" -name '*.rej' -printf '%P\n' | sort | while read -r rej; do
+			echo "--- $rej"
+			cat "$src/$rej"
+		done
+	else
+		echo "== Errors in the build log"
+		grep -E '(^|[^-[:alnum:]])error:|Error [0-9]|undefined reference' "$log" | head -n 40
+		echo
+		echo "== The end of the build log"
+		tail -n 40 "$log"
+	fi
+}
+
+# Note that a reboot is needed to apply $*. Under start_fresh it goes to the file $REBOOT_REASONS,
+# which it lists at the end, else it's printed. Scripts that call this exit with status 2.
 reboot_for() {
+	# shellcheck disable=SC2034 # read by the scripts that source this
 	need_reboot=1
 	if [ -n "${REBOOT_REASONS:-}" ]; then
 		echo "$*" >>"$REBOOT_REASONS"
@@ -20,10 +60,10 @@ reboot_for() {
 	fi
 }
 
-# Start a step: `step [WEIGHT] "What it does"`. Under start_fresh's progress display (see
-# scripts/tui.py), which reads these lines from the scripts beforehand to know all the steps, it
-# moves the bar along. WEIGHT is the step's rough share of the time, 1 by default. The description
-# must be a literal string, the same each run. Without the display, it is printed.
+# Start a step: `step [WEIGHT] "What it does"`, which moves start_fresh's progress bar along.
+# scripts/tui.py reads these lines from the scripts beforehand, so the description must be a
+# literal string. WEIGHT is its rough share of the time, 1 by default. Without the bar, it's
+# printed.
 step() {
 	[[ $1 =~ ^[0-9]+$ ]] && shift
 	if [ -n "${START_FRESH_STATUS:-}" ]; then
@@ -34,7 +74,7 @@ step() {
 }
 
 # All steps are done: the progress bar fills.
-steps_done() { [ -z "${START_FRESH_STATUS:-}" ] || echo done >>"$START_FRESH_STATUS"; }
+steps_done() { [ -z "${START_FRESH_STATUS:-}" ] || echo "done" >>"$START_FRESH_STATUS"; }
 
 installed() { rpm -q "$1" >/dev/null 2>&1; }
 
@@ -67,6 +107,7 @@ write_root_file() {
 
 # Install a file from scripts/. Returns 0 only if the content changed.
 install_script_file() {
+	# shellcheck disable=SC2154 # set by the sourcing script
 	local src=$dotfiles/scripts/$1 dest=$2 mode=${3:-644}
 	sudo cmp -s "$src" "$dest" 2>/dev/null && return 1
 	sudo install -Z -Dm "$mode" "$src" "$dest"

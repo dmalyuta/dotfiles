@@ -1,0 +1,421 @@
+Touchpad gestures: switch windows with three fingers, desktops with four, the way the fingers go.
+
+KWin switches virtual desktops with both three- and four-finger sideways swipes, and the desktops
+move like a sheet being dragged: swiping left goes to the desktop on the right. Change it to:
+- Three fingers switch windows, as on Windows (TouchpadGestures, at the end of tabbox.cpp): a
+  sideways swipe opens Alt+Tab's switcher on the previous window, moving the fingers on moves the
+  selection along (sideways one window per step, within its row, and up or down one row), stopping
+  at the edges, and lifting them switches to it. A quick flick switches to the previous window
+  without showing the switcher. A swipe that starts up or down is left to KWin.
+- Desktops move the way the fingers go, as when scrolling: swiping left goes to the desktop on the
+  left (VirtualDesktopManager::initShortcuts()). Touchscreen swipes are left alone.
+
+The settings, in kwinrc's [TouchpadGestures] (System Settings > Danylo's Linux Tweaks > Touchpad
+Gestures), apply when KWin reloads its settings (qdbus6 org.kde.KWin /KWin reconfigure):
+  ThreeFingerSwipe=Windows      (Desktops: KWin's, None: nothing)
+  DesktopsFollowFingers=true    (false: KWin's direction)
+  OpenDistance=2.5              (mm sideways before the switcher opens)
+  StepDistance=5                (mm further for each next window)
+  SwitchRows=true
+  RowDistance=5                 (mm up or down for each next row)
+  AxisDistance=0.5              (mm: the movement counts in pieces this long, each along the axis
+                                it mostly went, and the fingers go this far past a step or row's
+                                edge to change it, so that drift and jitter don't)
+  FlickTime=90                  (ms before the switcher shows: a swipe over before is a flick)
+Out-of-range values give the defaults above.
+
+Made to keep applying to new KWin versions: the window switching uses only TabBox's public
+functions (and finds the rows from the switcher's Qt Quick GridView) and is added at the end of
+tabbox.cpp, with one call at the end of initShortcuts(); the desktop hunk replaces just the four
+touchpad swipe registrations, unchanged since KWin 6.6.
+
+Applied by scripts/patches/patch-library, see scripts/configure_hardware.
+
+diff --git a/src/tabbox/tabbox.cpp b/src/tabbox/tabbox.cpp
+index eaa3ba5..cdf42c0 100644
+--- a/src/tabbox/tabbox.cpp
++++ b/src/tabbox/tabbox.cpp
+@@ -346,6 +346,10 @@ void TabBox::initShortcuts()
+     connect(KGlobalAccel::self(), &KGlobalAccel::globalShortcutChanged, this, [this](QAction *action) {
+         globalShortcutChanged(action, KGlobalAccel::self()->shortcut(action));
+     });
++
++    // Three-finger touchpad swipes switch windows, see the end of this file
++    void initTouchpadGestures(TabBox * tabBox);
++    initTouchpadGestures(this);
+ }
+ 
+ void TabBox::globalShortcutChanged(QAction *action, const QList<QKeySequence> &seq)
+@@ -1153,3 +1157,329 @@ void TabBox::removeTabBoxGrab()
+ } // namespace
+ 
+ #include "moc_tabbox.cpp"
++
++
++// Switching windows with three-finger touchpad swipes, as on Windows. A sideways swipe of
++// OpenDistance opens the switcher on the previous window, FlickTime later. Moving the fingers on
++// moves the selection along, stopping at the edges: a window per StepDistance sideways, within its
++// row, and a row per RowDistance up or down (in a switcher with rows, the thumbnail grid). Lifting
++// them switches to the selected window, and a swipe that ends before the switcher shows, a flick,
++// switches without it. The settings are in kwinrc's [TouchpadGestures], the distances in mm, see
++// kwin-touchpad-gestures.patch.
++//
++// The fingers never move exactly sideways or up and down, so their movement counts in pieces of
++// AxisDistance, each along the axis it mostly went: a little drift doesn't change the row or step.
++//
++// Uses only TabBox's public functions, at the end of the file, so that it fits new KWin versions.
++
++#include "gestures.h"
++#include "globalshortcuts.h"
++#include "main.h"
++#include "options.h"
++
++#include <QGuiApplication>
++#include <QKeyEvent>
++#include <QPointer>
++#include <QQuickItem>
++#include <QQuickWindow>
++
++#include <algorithm>
++#include <cmath>
++#include <memory>
++#include <vector>
++
++namespace KWin
++{
++namespace TabBox
++{
++
++class TouchpadGestures : public QObject
++{
++public:
++    explicit TouchpadGestures(TabBox *tabBox);
++
++private:
++    void reconfigure();
++    void update(const QPointF &delta);
++    void open();
++    void end();
++    // The travel so far, split between the axes (see m_travel)
++    QPointF travel() const;
++    // The step sideways the travel is at: 1 (the previous window) from where the switcher opened
++    // until the fingers have moved a further m_stepDistance either way, and one more for each
++    // m_stepDistance after. Like the row, it only changes once the fingers are m_axisDistance past
++    // its edge, so that jitter there doesn't flip it back and forth.
++    int step() const;
++    int row() const;
++    // Moves the selection to the current step and row
++    void select();
++    // The switcher's columns of windows, or 0 if it doesn't lay them out in a grid
++    int columns(int count) const;
++    // The window that a step selects, counting from where the swipe started
++    Window *target(int step) const;
++
++    TabBox *const m_tabBox;
++    std::vector<std::unique_ptr<SwipeGesture>> m_gestures;
++    QTimer m_openTimer; // FlickTime
++    // In swipe units: unaccelerated 1000 dpi, ~39 per mm
++    qreal m_openDistance = 0;
++    qreal m_stepDistance = 1;
++    qreal m_rowDistance = 1;
++    qreal m_axisDistance = 0;
++    bool m_enabled = true; // ThreeFingerSwipe=Windows
++    bool m_switchRows = true;
++    QPointF m_delta; // the swipe's travel, as the gesture reports it
++    // The travel, each piece of it along the axis it mostly went, and the piece still going
++    QPointF m_travel;
++    QPointF m_piece;
++    qreal m_origin = 0; // where the swipe opened the switcher, at m_openDistance either way
++    bool m_started = false; // the swipe went past m_openDistance
++    bool m_opened = false; // the swipe opened the switcher
++    bool m_endPending = false;
++    QPointer<Window> m_startWindow; // selected when the swipe started
++    int m_step = 0; // the step and row selected
++    int m_row = 0;
++};
++
++TouchpadGestures::TouchpadGestures(TabBox *tabBox)
++    : QObject(tabBox)
++    , m_tabBox(tabBox)
++{
++    m_openTimer.setSingleShot(true);
++    connect(&m_openTimer, &QTimer::timeout, this, &TouchpadGestures::open);
++    // Sideways swipes only: one that starts up or down is left to KWin's other gestures. The
++    // gesture reports the travel up and down too.
++    for (const SwipeDirection direction : {SwipeDirection::Left, SwipeDirection::Right}) {
++        auto gesture = std::make_unique<SwipeGesture>(3);
++        gesture->setDirection(direction);
++        connect(gesture.get(), &SwipeGesture::deltaProgress, this, [this](const QPointF &delta) {
++            m_endPending = false;
++            update(delta);
++        });
++        // Moving back past the starting point cancels the gesture of one direction and goes on
++        // with the other's in the same update, so only end the swipe if no update follows.
++        const auto end = [this]() {
++            m_endPending = true;
++            QTimer::singleShot(0, this, [this]() {
++                if (m_endPending) {
++                    m_endPending = false;
++                    TouchpadGestures::end();
++                }
++            });
++        };
++        connect(gesture.get(), &SwipeGesture::triggered, this, end);
++        connect(gesture.get(), &SwipeGesture::cancelled, this, end);
++        input()->shortcuts()->registerTouchpadSwipe(gesture.get());
++        m_gestures.push_back(std::move(gesture));
++    }
++    reconfigure();
++    connect(Workspace::self(), &Workspace::configChanged, this, &TouchpadGestures::reconfigure);
++}
++
++void TouchpadGestures::reconfigure()
++{
++    const KConfigGroup config = kwinApp()->config()->group(QStringLiteral("TouchpadGestures"));
++    // Out-of-range values give the default
++    const auto mm = [&config](const char *key, qreal defaultMm, qreal minMm) {
++        const qreal mm = config.readEntry(key, defaultMm);
++        return std::isfinite(mm) && mm >= minMm ? mm : defaultMm;
++    };
++    const qreal unitsPerMm = 1000 / 25.4;
++    m_enabled = config.readEntry("ThreeFingerSwipe", QStringLiteral("Windows")) == QLatin1String("Windows");
++    m_openDistance = mm("OpenDistance", 2.5, 0) * unitsPerMm;
++    m_stepDistance = mm("StepDistance", 5, 0.5) * unitsPerMm;
++    m_switchRows = config.readEntry("SwitchRows", true);
++    m_rowDistance = mm("RowDistance", 5, 0.5) * unitsPerMm;
++    m_axisDistance = mm("AxisDistance", 0.5, 0) * unitsPerMm;
++    m_openTimer.setInterval(std::max(0, config.readEntry<int>("FlickTime", 90)));
++}
++
++static QPointF alongAxis(const QPointF &delta)
++{
++    return std::abs(delta.x()) >= std::abs(delta.y()) ? QPointF(delta.x(), 0) : QPointF(0, delta.y());
++}
++
++QPointF TouchpadGestures::travel() const
++{
++    return m_travel + alongAxis(m_piece);
++}
++
++// The step of size `size` that `travel` is at, counting from `first`, changing from `current` only
++// once `margin` past its edge
++static int quantize(qreal travel, qreal size, int first, int current, qreal margin)
++{
++    const auto at = [=](qreal t) {
++        return first + int(std::trunc(t / size));
++    };
++    if (at(travel - margin) > current) {
++        return at(travel - margin);
++    }
++    if (at(travel + margin) < current) {
++        return at(travel + margin);
++    }
++    return current;
++}
++
++int TouchpadGestures::step() const
++{
++    return quantize(travel().x() - m_origin, m_stepDistance, 1, m_step, m_axisDistance);
++}
++
++int TouchpadGestures::row() const
++{
++    return quantize(travel().y(), m_rowDistance, 0, m_row, m_axisDistance);
++}
++
++void TouchpadGestures::update(const QPointF &delta)
++{
++    m_piece += delta - m_delta;
++    m_delta = delta;
++    if (std::hypot(m_piece.x(), m_piece.y()) >= m_axisDistance) {
++        m_travel += alongAxis(m_piece);
++        m_piece = QPointF();
++    }
++    if (!m_started) {
++        // Not while Alt+Tab has the switcher open, nor for a small wobble
++        if (!m_enabled || std::abs(travel().x()) < m_openDistance || m_tabBox->isGrabbed() || m_tabBox->isDisplayed()
++            || !options->focusPolicyIsReasonable()) {
++            return;
++        }
++        m_started = true;
++        m_origin = std::copysign(m_openDistance, travel().x());
++        m_tabBox->setMode(TabBoxWindowsMode);
++        m_tabBox->reset();
++        m_startWindow = m_tabBox->currentClient();
++        m_openTimer.start();
++        return;
++    }
++    if (!m_opened || !m_tabBox->isGrabbed() || !m_tabBox->noModifierGrab()) {
++        return; // not shown yet, or closed during the swipe (Escape)
++    }
++    select();
++}
++
++void TouchpadGestures::open()
++{
++    if (!m_started || m_tabBox->isGrabbed() || m_tabBox->isDisplayed()) {
++        return;
++    }
++    // Opens it without a modifier to hold, as for a screen edge: accept() closes it
++    if (!m_tabBox->toggle(ElectricNone)) {
++        return;
++    }
++    m_opened = true;
++    // On the window the swipe started on: select() moves on from there. Rows count from here,
++    // not from where the fingers were before the switcher showed.
++    m_startWindow = m_tabBox->currentClient();
++    m_step = 0;
++    m_row = row();
++    select();
++}
++
++// The GridView of the switcher's windows, laid out left to right, in item and its children
++static QQuickItem *findGrid(QQuickItem *item, int count)
++{
++    if (item->inherits("QQuickGridView") && item->property("count").toInt() == count
++        && item->property("flow").toInt() == 0) {
++        return item;
++    }
++    const QList<QQuickItem *> children = item->childItems();
++    for (QQuickItem *child : children) {
++        if (QQuickItem *grid = findGrid(child, count)) {
++            return grid;
++        }
++    }
++    return nullptr;
++}
++
++int TouchpadGestures::columns(int count) const
++{
++    // TabBox doesn't say how its switcher lays the windows out: look for the grid in its window
++    const QList<QWindow *> windows = QGuiApplication::topLevelWindows();
++    for (QWindow *window : windows) {
++        auto quickWindow = qobject_cast<QQuickWindow *>(window);
++        if (!quickWindow || !quickWindow->isVisible()) {
++            continue;
++        }
++        if (QQuickItem *grid = findGrid(quickWindow->contentItem(), count)) {
++            const qreal cellWidth = grid->property("cellWidth").toReal();
++            return cellWidth > 0 ? std::max(1, int(grid->width() / cellWidth)) : 0;
++        }
++    }
++    return 0;
++}
++
++void TouchpadGestures::select()
++{
++    const int step = this->step();
++    const int row = this->row();
++    const QList<Window *> windows = m_tabBox->currentClientList();
++    const int count = windows.size();
++    if (count > 0 && (step != m_step || (m_switchRows && row != m_row))) {
++        // From the selected window, so moving back goes back at once after an edge
++        int index = std::max<int>(0, windows.indexOf(m_tabBox->currentClient()));
++        const int columns = this->columns(count);
++        if (step != m_step) {
++            // Within the row, or the whole list without a grid
++            const int first = columns ? index / columns * columns : 0;
++            const int last = columns ? std::min(first + columns, count) - 1 : count - 1;
++            index = std::clamp(index + step - m_step, first, last);
++        }
++        if (columns && m_switchRows && row != m_row) {
++            // From a column the last row doesn't have, to its last window
++            const int rows = (count + columns - 1) / columns;
++            const int targetRow = std::clamp(index / columns + row - m_row, 0, rows - 1);
++            index = std::min(targetRow * columns + index % columns, count - 1);
++        }
++        if (windows.at(index) != m_tabBox->currentClient()) {
++            m_tabBox->setCurrentClient(windows.at(index));
++        }
++        // Without a grid found, as the switcher's arrow keys do, which may wrap around
++        for (int i = m_row; !columns && m_switchRows && i != row; i += row > i ? 1 : -1) {
++            QKeyEvent key(QEvent::KeyPress, row > i ? Qt::Key_Down : Qt::Key_Up, Qt::NoModifier);
++            m_tabBox->grabbedKeyEvent(&key);
++        }
++    }
++    m_step = step;
++    m_row = row;
++}
++
++void TouchpadGestures::end()
++{
++    const bool started = m_started;
++    const bool opened = m_opened;
++    m_started = m_opened = false;
++    m_openTimer.stop();
++    if (opened) {
++        if (m_tabBox->isGrabbed() && m_tabBox->noModifierGrab()) {
++            m_tabBox->accept();
++        }
++    } else if (started && !m_tabBox->isGrabbed() && !m_tabBox->isDisplayed()) {
++        // A flick, switched without showing the switcher
++        if (Window *window = target(step())) {
++            Workspace::self()->activateWindow(window);
++        }
++    }
++    m_startWindow = nullptr;
++    m_delta = m_travel = m_piece = QPointF();
++    m_origin = 0;
++    m_step = m_row = 0;
++}
++
++Window *TouchpadGestures::target(int step) const
++{
++    const QList<Window *> windows = m_tabBox->currentClientList();
++    if (windows.isEmpty()) {
++        return nullptr;
++    }
++    const int start = std::max<int>(0, windows.indexOf(m_startWindow.data()));
++    return windows.at(std::clamp<int>(start + step, 0, windows.size() - 1));
++}
++
++void initTouchpadGestures(TabBox *tabBox)
++{
++    new TouchpadGestures(tabBox);
++}
++
++} // namespace TabBox
++} // namespace KWin
+diff --git a/src/virtualdesktops.cpp b/src/virtualdesktops.cpp
+index 926e63a..217d62d 100644
+--- a/src/virtualdesktops.cpp
++++ b/src/virtualdesktops.cpp
+@@ -810,6 +810,34 @@ void VirtualDesktopManager::initShortcuts()
+     };
+-    input()->registerTouchpadSwipeShortcut(SwipeDirection::Left, 3, m_swipeGestureReleasedX.get(), left);
+-    input()->registerTouchpadSwipeShortcut(SwipeDirection::Right, 3, m_swipeGestureReleasedX.get(), right);
+-    input()->registerTouchpadSwipeShortcut(SwipeDirection::Left, 4, m_swipeGestureReleasedX.get(), left);
+-    input()->registerTouchpadSwipeShortcut(SwipeDirection::Right, 4, m_swipeGestureReleasedX.get(), right);
++    // Touchpad swipes, set in kwinrc's [TouchpadGestures] (see kwin-touchpad-gestures.patch):
++    // three fingers switch desktops only with ThreeFingerSwipe=Desktops (TouchpadGestures in
++    // tabbox/tabbox.cpp switches windows with them), and with DesktopsFollowFingers the desktops
++    // move the way the fingers go, like scrolling.
++    const auto setting = [this](const char *key, const auto &defaultValue) {
++        return m_config ? KConfigGroup(m_config, QStringLiteral("TouchpadGestures")).readEntry(key, defaultValue) : defaultValue;
++    };
++    const auto threeFingerDesktops = [setting]() {
++        return setting("ThreeFingerSwipe", QStringLiteral("Windows")) == QLatin1String("Desktops");
++    };
++    const auto swipe = [left, right, setting, threeFingerDesktops](uint32_t fingers, bool fingersLeft) {
++        return [=](qreal cb) {
++            if (fingers == 3 && !threeFingerDesktops()) {
++                return;
++            }
++            if (fingersLeft == setting("DesktopsFollowFingers", true)) {
++                right(cb);
++            } else {
++                left(cb);
++            }
++        };
++    };
++    auto threeFingerReleased = new QAction(this);
++    connect(threeFingerReleased, &QAction::triggered, this, [this, threeFingerDesktops]() {
++        if (threeFingerDesktops()) {
++            gestureReleasedX();
++        }
++    });
++    input()->registerTouchpadSwipeShortcut(SwipeDirection::Left, 3, threeFingerReleased, swipe(3, true));
++    input()->registerTouchpadSwipeShortcut(SwipeDirection::Right, 3, threeFingerReleased, swipe(3, false));
++    input()->registerTouchpadSwipeShortcut(SwipeDirection::Left, 4, m_swipeGestureReleasedX.get(), swipe(4, true));
++    input()->registerTouchpadSwipeShortcut(SwipeDirection::Right, 4, m_swipeGestureReleasedX.get(), swipe(4, false));
+     input()->registerTouchpadSwipeShortcut(SwipeDirection::Down, 3, m_swipeGestureReleasedY.get(), [this, emitCurrentChanging](qreal cb) {

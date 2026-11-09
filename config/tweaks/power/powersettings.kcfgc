@@ -1,0 +1,7 @@
+File=powersettings.kcfg
+ClassName=PowerSettings
+Mutators=true
+DefaultValueGetters=true
+GenerateProperties=true
+ParentInConstructor=true
+Notifiers=true

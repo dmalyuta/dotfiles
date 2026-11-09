@@ -1,0 +1,40 @@
+#!/bin/bash
+#
+# Build System Settings > Danylo's Linux Tweaks, the settings of scripts/patches, and install it
+# system-wide. Rebuilds only when its sources or KDE Frameworks change, keeping the build in
+# ~/.cache/danylo-tweaks. System Settings shows it the next time it starts.
+#
+# Usage: install
+#
+# Author: Danylo Malyuta, 2026.
+
+here=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+dotfiles=$(cd "$here/../.." && pwd)
+. "$dotfiles"/scripts/functions.sh
+
+deps=(cmake gcc-c++ extra-cmake-modules qt6-qtbase-devel qt6-qtdeclarative-devel
+	kf6-kcmutils-devel kf6-kconfig-devel kf6-kcoreaddons-devel)
+missing=()
+for p in "${deps[@]}"; do installed "$p" || missing+=("$p"); done
+[ ${#missing[@]} -eq 0 ] || sudo dnf install -y "${missing[@]}" || exit
+
+# The build for these sources and these versions of Qt and KDE Frameworks.
+hash=$({ (cd "$here" && find . ../icons/start_menu.svg -type f -print0 | sort -z |
+	xargs -0 sha256sum); rpm -q qt6-qtbase kf6-kcmutils; } | sha256sum | cut -c1-12)
+build=~/.cache/danylo-tweaks/$hash
+log=$build/build.log
+[ -f "$build/installed" ] && exit 0
+
+rm -rf ~/.cache/danylo-tweaks
+mkdir -p "$build"
+if ! { cmake -S "$here" -B "$build" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr \
+	-DKDE_INSTALL_USE_QT_SYS_PATHS=ON && cmake --build "$build" -j"$(nproc)"; } >"$log" 2>&1; then
+	failed "Couldn't build Danylo's Linux Tweaks for System Settings, see ${log/#$HOME/\~}"
+	exit 1
+fi
+if ! { sudo cmake --install "$build" && sudo restorecon -R /usr/lib64/qt6/plugins/plasma/kcms \
+	/usr/share/systemsettings /usr/share/icons/hicolor; } >>"$log" 2>&1; then
+	failed "Couldn't install Danylo's Linux Tweaks for System Settings, see ${log/#$HOME/\~}"
+	exit 1
+fi
+touch "$build/installed"

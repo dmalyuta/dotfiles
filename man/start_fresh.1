@@ -78,18 +78,24 @@ it is built again after each Wine update.
 .IP 8. 4
 Runs
 .I scripts/configure_hardware
-(GPUs, kernel, USB wake sources, sleep and hibernation, the ASUS laptop),
+(GPUs, kernel, wake sources, sleep and hibernation, the ASUS laptop, and the patched libraries of
+.IR scripts/patches ),
 .I scripts/sleep\-debug/setup
 on the laptop, and
 .I scripts/configure_kde
-(input devices, hotkeys, shortcuts, virtual desktops, effects, theme, panels).
+(input devices, hotkeys, shortcuts, virtual desktops, effects, theme, panels, and System Settings >
+Danylo's Linux Tweaks, the settings of the patches, from
+.IR config/tweaks ).
 .IP 9. 4
 If the Fedora upgrade was chosen, downloads it with
 .BR "dnf system\-upgrade download" .
 The reboot at the end installs it. Without it, the packages are still upgraded within the current
 release in step 4.
 .PP
-At the end, if a change needs a reboot to apply, it lists what needs it and asks: ENTER reboots,
+At the end, it lists in red what failed, if anything. When a patch no longer applies to an updated
+package, or doesn't build, the entry names a report for fixing it.
+.PP
+If a change needs a reboot to apply, it lists what needs it and asks: ENTER reboots,
 ESC finishes without rebooting. With the Fedora upgrade downloaded, ENTER reboots with
 .BR "dnf offline reboot" ,
 which installs it; after ESC, run that later to install it.

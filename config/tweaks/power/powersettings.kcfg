@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Read by Plasma and KIdleTime, see scripts/patches/plasma-battery-absent-devices.patch and
+     kidletime-wayland-simulate-activity.patch: the defaults must match. -->
+<kcfg xmlns="http://www.kde.org/standards/kcfg/1.0"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.kde.org/standards/kcfg/1.0 http://www.kde.org/standards/kcfg/1.0/kcfg.xsd">
+  <kcfgfile name="danylo-tweaksrc"/>
+  <group name="Battery">
+    <entry name="hideAbsentDeviceBatteries" key="HideAbsentDeviceBatteries" type="Bool"><default>true</default></entry>
+  </group>
+  <group name="Power">
+    <entry name="restartIdleTimers" key="RestartIdleTimers" type="Bool"><default>true</default></entry>
+  </group>
+</kcfg>

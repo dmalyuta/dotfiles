@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Read by libinput, see scripts/patches/libinput-touchpad-lag.patch: the defaults must match. -->
+<kcfg xmlns="http://www.kde.org/standards/kcfg/1.0"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.kde.org/standards/kcfg/1.0 http://www.kde.org/standards/kcfg/1.0/kcfg.xsd">
+  <kcfgfile name="danylo-tweaksrc"/>
+  <group name="Touchpad">
+    <entry name="moveDuringTap" key="MoveDuringTap" type="Bool"><default>true</default></entry>
+    <entry name="scrollDuringTap" key="ScrollDuringTap" type="Bool"><default>true</default></entry>
+    <entry name="scrollStartDistance" key="ScrollStartDistance" type="Double"><default>0.75</default><min>0</min><max>10</max></entry>
+    <entry name="scrollDecideDistance" key="ScrollDecideDistance" type="Double"><default>0.5</default><min>0</min><max>10</max></entry>
+    <entry name="scrollCatchUp" key="ScrollCatchUp" type="Double"><default>1</default><min>0</min><max>20</max></entry>
+    <entry name="slowSpeedGain" key="SlowSpeedGain" type="Double"><default>1</default><min>0.1</min><max>1</max></entry>
+    <entry name="speedSmoothing" key="SpeedSmoothing" type="Double"><default>0</default><min>0</min><max>200</max></entry>
+  </group>
+</kcfg>

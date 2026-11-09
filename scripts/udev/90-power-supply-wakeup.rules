@@ -1,0 +1,4 @@
+# Power supplies must never wake the machine: plugging or unplugging a charger, or a battery
+# reporting its level. Each change counts as a wakeup event, which ends an s2idle sleep. A battery
+# running critically low still wakes it, through the battery's ACPI device instead.
+ACTION=="add|change", SUBSYSTEM=="power_supply", TEST=="power/wakeup", ATTR{power/wakeup}="disabled"

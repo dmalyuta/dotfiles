@@ -1,0 +1,10 @@
+{
+    "KPlugin": {
+        "Description": "The battery menu, and sleeping again after a wakeup",
+        "Icon": "preferences-system-power-management",
+        "Name": "Power & Battery"
+    },
+    "X-KDE-Keywords": "battery,pen,stylus,sleep,suspend,idle,wake",
+    "X-KDE-System-Settings-Parent-Category": "danylo-tweaks",
+    "X-KDE-Weight": 3
+}

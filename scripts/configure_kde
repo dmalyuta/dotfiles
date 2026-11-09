@@ -58,7 +58,7 @@ qt_keycode() {
 		elif [ -n "${codes[$part]:-}" ]; then
 			((code += codes[$part]))
 		else
-			echo "Unknown key '$part' in '$1'" >&2
+			failed "Unknown key '$part' in the shortcut '$1'"
 			return 1
 		fi
 	done
@@ -82,14 +82,14 @@ take_key() {
 # Bind a global shortcut, taking the key from any other action that has it. Args: component, its
 # friendly name, action, its friendly name, keys (see qt_keycode, or None to unbind).
 set_shortcut() {
-	local id code try
+	local id code
 	# Skip on error: an empty key list would unbind the action.
 	code=$(qt_keycode "$5") || return
 	id="['$1','$3','$2','$4']"
 	[ "$code" -ne 0 ] && take_key "$code" "$1" "$3"
 	# kglobalaccel ignores a desktop entry's shortcut until it notices the entry, which for a new one
 	# takes a few seconds after kbuildsycoca6, so retry while it is missing.
-	for try in {1..20}; do
+	for _ in {1..20}; do
 		dbus_call org.kde.kglobalaccel /kglobalaccel org.kde.KGlobalAccel.doRegister "$id" >/dev/null
 		dbus_call org.kde.kglobalaccel /kglobalaccel org.kde.KGlobalAccel.setForeignShortcut \
 			"$id" "[$code]" >/dev/null
@@ -98,7 +98,7 @@ set_shortcut() {
 			org.kde.kglobalaccel.Component.shortcutNames 2>/dev/null | grep -qF "'$3'" && return
 		sleep 0.5
 	done
-	echo "Could not register the $2 shortcut." >&2
+	failed "Could not register the $2 shortcut."
 }
 
 # --------------------------------------------------------------------------------------------------
@@ -146,12 +146,15 @@ done < <(gawk -v RS= '/Handlers=[^\n]*mouse/ &&
 	match($0, /Vendor=(\w+) Product=(\w+).*N: Name="([^"]*)"/, m) {
 		print strtonum("0x" m[1]) "|" strtonum("0x" m[2]) "|" m[3]
 	}' /proc/bus/input/devices)
+# Three-finger swipes switch windows (and rows) every 2.5mm the fingers move, rather than 5mm, see
+# scripts/patches/kwin-touchpad-gestures.patch. KWin reads it at the reconfigure below.
+kconf --file kwinrc --group TouchpadGestures --key StepDistance 2.5
+kconf --file kwinrc --group TouchpadGestures --key RowDistance 2.5
 compgen -G '/sys/class/backlight/*' >/dev/null &&
 	say "If System Settings > Display has an auto-brightness toggle, turn it off."
-# The on-screen keyboard. start_fresh installs it on the PX13. KWin would pop it up whenever a text
-# field is tapped, covering the app, so it never shows by itself (VirtualKeyboardMode 0, "Never"):
-# a tray button, shown in tablet mode, brings it up instead, see config/plasma/oskbutton (added to
-# the tray below). KWin reads the mode at login, so also set it live.
+# The on-screen keyboard (on the PX13). KWin would pop it up over the app whenever a text field is
+# tapped, so it never shows by itself (VirtualKeyboardMode 0): a tray button, shown in tablet mode,
+# brings it up, see config/plasma/oskbutton. KWin reads the mode at login, so also set it live.
 plasma_keyboard=/usr/share/applications/org.kde.plasma.keyboard.desktop
 if [ -f "$plasma_keyboard" ]; then
 	kconf --file kwinrc --group Wayland --key InputMethod "$plasma_keyboard"
@@ -179,37 +182,45 @@ IFS=, read -r -a entries <<<"$workspaces"
 for entry in "${entries[@]}"; do
 	vscode_workspaces[${entry%%:*}]=${entry#*:}
 done
-# The script reads the list from its config on load, so unload it for Scripting.start (below) to load
-# it again.
+# The script reads the list on load, so unload it for Scripting.start (below) to load it again.
 kwin /Scripting org.kde.kwin.Scripting.unloadScript apphotkeys
+# The script launches an app through kglobalaccel, by the "_launch" action of its desktop entry.
+# kglobalaccel only keeps an entry across logins if it has a key, or if it's in this folder, which
+# it reads at login, so the entries the script launches go here (see below). They aren't in the app
+# menu here.
+launch_dir=~/.local/share/kglobalaccel
+mkdir -p "$launch_dir"
 # A workspace's shortcuts and desktop entry are named by its letter. Drop those of letters no longer
 # in the list, which frees their keys. Only those: re-registering a shortcut right after
 # unregistering it is unreliable.
 while read -r key; do
 	[ -n "${vscode_workspaces[$key]:-}" ] && continue
-	for id in "kwin App Hotkeys: VS Code workspace $key" "vscode-workspace-${key,,}.desktop _launch"; do
+	for id in "kwin App Hotkeys: VS Code workspace $key" \
+		"vscode-workspace-${key,,}.desktop _launch"; do
 		dbus_call org.kde.kglobalaccel /kglobalaccel org.kde.KGlobalAccel.unregister \
 			"${id%% *}" "${id#* }" >/dev/null
 	done
-	rm -f ~/.local/share/applications/vscode-workspace-"${key,,}".desktop
+	rm -f "$launch_dir"/vscode-workspace-"${key,,}".desktop
 done < <({
 	dbus_call org.kde.kglobalaccel /component/kwin org.kde.kglobalaccel.Component.shortcutNames |
 		grep -oP "'App Hotkeys: VS Code workspace \K[A-Z]"
 	dbus_call org.kde.kglobalaccel /kglobalaccel org.kde.KGlobalAccel.allComponents |
 		grep -oP 'vscode_workspace_\K[a-z](?=_desktop)'
-	ls ~/.local/share/applications | grep -oP '^vscode-workspace-\K[a-z](?=\.desktop$)'
-} | tr a-z A-Z | sort -u)
-# Each opens through a hidden desktop entry, so the script can launch it through kglobalaccel.
+	printf '%s\n' "$launch_dir"/vscode-workspace-?.desktop |
+		grep -oP 'vscode-workspace-\K[a-z](?=\.desktop$)'
+} | tr '[:lower:]' '[:upper:]' | sort -u)
+# Each opens through a desktop entry, so the script can launch it through kglobalaccel. Earlier
+# runs put them in the app menu's folder, hidden, where kglobalaccel forgot them at logout.
+rm -f ~/.local/share/applications/vscode-workspace-?.desktop
 workspaces_config=
 for key in "${!vscode_workspaces[@]}"; do
 	dir=${vscode_workspaces[$key]}
-	cat >~/.local/share/applications/vscode-workspace-"${key,,}".desktop <<EOF
+	cat >"$launch_dir"/vscode-workspace-"${key,,}".desktop <<EOF
 [Desktop Entry]
 Type=Application
 Name=VS Code: ${dir##*/}
 Exec=code "$dir"
 Icon=vscode
-NoDisplay=true
 EOF
 	workspaces_config+="$key=$dir;"
 done
@@ -232,8 +243,18 @@ step "Setting the KDE global shortcuts"
 # action runs its Exec, so first rebuild the cache that kglobalaccel finds the entries in. Each key
 # is taken from KDE's default action for it, if any, e.g. Meta+Up from Quick Tile Top.
 kbuildsycoca6 >/dev/null 2>&1
+# The app's desktop entry, linked into $launch_dir (see above), so its launch action stays.
+find "$launch_dir" -xtype l -delete
+keep_launch_entry() {
+	local d
+	for d in ~/.local/share/applications /usr/share/applications \
+		/var/lib/flatpak/exports/share/applications; do
+		[ -f "$d/$1" ] && ln -sfn "$d/$1" "$launch_dir/$1" && return
+	done
+}
 while IFS='|' read -r -a shortcut; do
 	set_shortcut "${shortcut[@]}"
+	[ "${shortcut[2]}" = _launch ] && keep_launch_entry "${shortcut[0]}"
 done <<'EOF'
 kwin|KWin|Window Minimize|Minimize Window|Meta+Del
 kwin|KWin|Window Maximize|Maximize Window|Meta+Up
@@ -336,11 +357,9 @@ plasma_conf() {
 	kconf --file "$file" "${args[@]}" "$value"
 	restart_plasmashell=1
 }
-# Tela-circle icons, in the dark variant to match Breeze Dark. Set after the look and feel, since
-# applying one resets the icon theme. plasma-changeicons tells running apps to reload icons, but
-# the panel's task manager keeps the icons it already looked up, so restart plasmashell too.
-# Fedora doesn't package them, so install them from upstream, to ~/.local/share/icons. The
-# installer defaults to the standard folder color, as Tela-circle, Tela-circle-dark and -light.
+# Tela-circle icons, dark to match Breeze Dark, from upstream (Fedora doesn't package them). Set
+# after the look and feel, which resets the icon theme. The panel keeps the icons it already looked
+# up, so restart plasmashell too.
 icon_theme=Tela-circle-dark
 if [ ! -d ~/.local/share/icons/"$icon_theme" ]; then
 	tela_src=$(mktemp -d)
@@ -389,16 +408,37 @@ if [ -n "${tm_applet:-}" ]; then
 		--group Containments --group "$tm_cont" --group Applets --group "$tm_applet" \
 		--group Configuration --group General --key launchers "${list#,}"
 fi
-# The on-screen keyboard button, in the system tray, next to the clock (see above).
+# System tray: our on-screen keyboard button (see above), the battery always shown on the laptop,
+# and brightness, clipboard, Bluetooth and Discover's updates always hidden. The rest show only
+# when they have something to show.
+buttons=()
+[ -f "$plasma_keyboard" ] && buttons=(dotfiles.oskbutton)
+always_shown=()
+is_laptop && always_shown=(org.kde.plasma.battery)
+always_hidden=(org.kde.plasma.brightness org.kde.plasma.clipboard org.kde.plasma.bluetooth
+	"Discover Notifier_org.kde.DiscoverNotifier")
 read -r st_cont st_applet < <(applet_group org.kde.plasma.systemtray)
-if [ -f "$plasma_keyboard" ] && [ -n "${st_applet:-}" ]; then
+if [ -n "${st_applet:-}" ]; then
 	tray=(plasma-org.kde.plasma.desktop-appletsrc --group Containments --group "$st_cont"
 		--group Applets --group "$st_applet" --group General)
-	for key in extraItems knownItems; do
-		items=$(kreadconfig6 --file "${tray[@]}" --key "$key")
-		[[ ,$items, == *,dotfiles.oskbutton,* ]] ||
-			plasma_conf "${tray[@]}" --key "$key" "${items:+$items,}dotfiles.oskbutton"
-	done
+	# Edit the tray's list $1: append each +item that isn't in it, and drop each -item.
+	tray_list() {
+		local key=$1 item list kept=()
+		local -A drop=() have=()
+		for item in "${@:2}"; do [[ $item == -* ]] && drop[${item:1}]=1; done
+		IFS=, read -ra list <<<"$(kreadconfig6 --file "${tray[@]}" --key "$key")"
+		for item in "${list[@]}"; do
+			[ -n "${drop[$item]:-}" ] || { kept+=("$item"); have[$item]=1; }
+		done
+		for item in "${@:2}"; do
+			[[ $item == +* ]] && [ -z "${have[${item:1}]:-}" ] && kept+=("${item:1}")
+		done
+		plasma_conf "${tray[@]}" --key "$key" "$(IFS=,; echo "${kept[*]}")"
+	}
+	tray_list extraItems "${buttons[@]/#/+}"
+	tray_list knownItems "${buttons[@]/#/+}"
+	tray_list shownItems "${always_shown[@]/#/+}" "${always_hidden[@]/#/-}"
+	tray_list hiddenItems "${always_hidden[@]/#/+}" "${always_shown[@]/#/-}"
 fi
 # Start menu button icon.
 read -r ko_cont ko_applet < <(applet_group org.kde.plasma.kickoff)
@@ -409,10 +449,9 @@ if [ -n "${ko_applet:-}" ]; then
 fi
 
 [ "$restart_plasmashell" -eq 1 ] && systemctl --user restart plasma-plasmashell.service
-# Kickoff favorites: System Settings, then the hardware tools that are installed, in this order.
-# They live in the activity manager's database rather than the applet config, so go through its
-# D-Bus API; reading the database is safe while the daemon holds it open, but only in mode=ro,
-# which sees writes still sitting in the WAL.
+# Kickoff favorites: System Settings, then the installed hardware tools, in this order. They're in
+# the activity manager's database, so go through its D-Bus API (and read the database only with
+# mode=ro, which sees writes still in its WAL).
 fav_agent=org.kde.plasma.favorites.applications
 favs=(systemsettings)
 for app in cardwire-gui org.opengamingcollective.rog-control-center \
@@ -438,9 +477,14 @@ for app in "${favs[@]}"; do
 	fav_link LinkResourceToActivity "applications:$app.desktop"
 done
 
-# The shortcuts and OSD already show the current desktop, so drop the pager.
-plasma_script 'panels().forEach(p =>
-	p.widgets("org.kde.plasma.pager").forEach(w => w.remove()))' >/dev/null
+# The shortcuts and OSD already show the current desktop, so drop the pager. Drop Peek at Desktop
+# too: it's a panel widget, which the tray can't hide.
+plasma_script 'panels().forEach(p => ["org.kde.plasma.pager", "org.kde.plasma.showdesktop"]
+	.forEach(type => p.widgets(type).forEach(w => w.remove())))' >/dev/null
+
+step 2 "Adding Danylo's Linux Tweaks to System Settings"
+# The settings of scripts/patches, see config/tweaks.
+"$dotfiles"/config/tweaks/install
 
 # Each changed file, with up to 5 of the keys that changed in it.
 for f in "${kde_files[@]}"; do
@@ -449,8 +493,9 @@ for f in "${kde_files[@]}"; do
 	cmp -s "$old" "$f" 2>/dev/null && continue
 	keys=$(diff "$old" "$f" 2>/dev/null | sed -n 's/^[<>] \([^=]*\)=.*/\1/p' | sort -u)
 	n=$(wc -l <<<"$keys")
-	[ -n "$keys" ] && keys=": $(awk 'NR <= 5 { printf "%s%s", (NR > 1 ? ", " : ""), $0 }' <<<"$keys")" && [ "$n" -gt 5 ] &&
-		keys+=" and $((n - 5)) more"
+	[ -n "$keys" ] &&
+		keys=": $(awk 'NR <= 5 { printf "%s%s", (NR > 1 ? ", " : ""), $0 }' <<<"$keys")" &&
+		[ "$n" -gt 5 ] && keys+=" and $((n - 5)) more"
 	reboot_for "KDE setting changed in ${f##*/}$keys"
 done
 [ -z "${need_reboot:-}" ] || exit 2

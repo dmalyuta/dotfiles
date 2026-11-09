@@ -1,19 +1,19 @@
 #!/bin/bash
 #
-# Install Wine's combase.dll, its COM library, with combase-endpoint.patch, which keeps PDF-XChange
-# Editor from crashing within an hour of use (see the patch for why). Builds it from Fedora's source
-# package of the installed Wine, prepared as Fedora's build does (with the Wine Staging patches),
-# for the 64-bit and the 32-bit DLL, and puts it in place of Fedora's. Both are needed: the two ends
-# of a COM call between processes must agree on the endpoint.
+# Replace Wine's COM library, combase.dll, with one built with combase-endpoint.patch, which keeps
+# PDF-XChange Editor from crashing within an hour of use (see the patch). Built from Fedora's
+# source package of the installed Wine, prepared as Fedora's build does (with the Wine Staging
+# patches), for both the 64-bit and the 32-bit DLL: the two ends of a COM call must agree.
 #
-# A Wine update or reinstall puts Fedora's DLLs back, so start_fresh runs this every time. It does
-# nothing while the installed DLLs are the patched ones, and builds only for a new Wine version or a
-# changed patch, keeping each build in ~/.cache/wine-combase.
+# Wine updates put Fedora's DLLs back, so start_fresh runs this every time. It does nothing while
+# the patched DLLs are installed, and builds only for a new Wine or a changed patch, keeping the
+# builds in ~/.cache/wine-combase. When the patch no longer applies or the build fails, it writes
+# a report for fixing the patch, and lists it among start_fresh's failures.
 #
-# Wine programs already running keep the DLL they loaded: restart them after (wineserver -k).
-# `rpm -V wine-core` lists the replaced files as changed. `sudo dnf reinstall wine-core` undoes it.
+# Running Wine programs keep the DLL they loaded: restart them (wineserver -k).
+# `rpm -V wine-core` lists the replaced files as changed, `sudo dnf reinstall wine-core` undoes it.
 #
-# Usage: patch-combase
+# Usage: patch-combase [--build-only]
 #
 # Author: Danylo Malyuta, 2026.
 
@@ -21,91 +21,119 @@ here=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 dotfiles=$(cd "$here/../.." && pwd)
 . "$dotfiles"/scripts/functions.sh
 
+build_only=
+[ "${1:-}" = --build-only ] && build_only=1
 patch_file=$here/combase-endpoint.patch
 
 installed wine-core || { echo "wine-core isn't installed." >&2; exit 1; }
 ver=$(rpm -q --qf '%{VERSION}-%{RELEASE}' wine-core)
-# Fedora's DLLs, from the package's file list, so a change in its layout is followed. Their folder
-# names the architecture: i386-windows, x86_64-windows.
+# Fedora's DLLs, in folders named for their architecture: i386-windows, x86_64-windows.
 mapfile -t dlls < <(rpm -ql wine-core | grep -E '/[a-z0-9_]+-windows/combase\.dll$')
 [ ${#dlls[@]} -gt 0 ] || { echo "No combase.dll in wine-core." >&2; exit 1; }
 arch_of() { basename "$(dirname "$1")"; }
 
 # The build for this Wine and this patch.
 cache=~/.cache/wine-combase/$ver-$(sha256sum "$patch_file" | cut -c1-12)
+log=$cache/build.log
+report=$cache/failure-report.txt
 
-up_to_date() {
+# Whether each DLL in $cache is there and, with "installed", also in place of Fedora's.
+check() {
 	local d
 	for d in "${dlls[@]}"; do
-		cmp -s "$cache/$(arch_of "$d")/combase.dll" "$d" || return 1
+		if [ "$1" = installed ]; then
+			cmp -s "$cache/$(arch_of "$d")/combase.dll" "$d" || return 1
+		else
+			[ -f "$cache/$(arch_of "$d")/combase.dll" ] || return 1
+		fi
 	done
 }
 
-built() {
-	local d
-	for d in "${dlls[@]}"; do
-		[ -f "$cache/$(arch_of "$d")/combase.dll" ] || return 1
-	done
-}
-
-# Build the patched DLLs into $cache, working in $1. The output goes to $cache/build.log.
+# Build the patched DLLs into $cache, working in $1. On failure, sets $failure to what failed,
+# and $kept_source if it kept the source for fixing the patch.
+failure='' kept_source=''
 build() {
-	local tmp=$1 log=$cache/build.log srpm src d arch_list archs=() targets=() pkgs=() p
-	# For Fedora's prep step (rpmbuild, and Python for the Staging patches), and to build Wine's
-	# tools and the DLL: Wine compiles its Windows side with clang and lld.
-	for p in rpm-build python3 gcc clang lld flex bison make; do
+	local tmp=$1 srpm src d arch_list archs=() targets=() pkgs=() p
+	# For Fedora's prep (rpmbuild, and Python for the Staging patches), and for building: Wine
+	# compiles its Windows side with clang and lld.
+	for p in rpm-build python3 gcc clang lld flex bison make git; do
 		installed "$p" || pkgs+=("$p")
 	done
 	[ ${#pkgs[@]} -eq 0 ] || sudo dnf install -y "${pkgs[@]}" || return
 
 	say "Building Wine $ver's combase.dll with $(basename "$patch_file"), see $log"
+	rm -rf "$cache"
 	mkdir -p "$cache"
-	: >"$log"
-	if ! dnf download -q --source --destdir "$tmp" "wine-core-$ver" >>"$log" 2>&1; then
-		echo "Couldn't download the source package of wine-core $ver." >&2
+	# Only from Fedora's source repos: otherwise dnf, not run as root, asks to import the other
+	# repos' signing keys, a question hidden in the log. No input, so a question fails it instead.
+	if ! dnf download -q --repo=fedora-source --repo=updates-source --source --destdir "$tmp" \
+		"wine-core-$ver" </dev/null >>"$log" 2>&1; then
+		failure="Couldn't download the source package of wine-core $ver."
 		return 1
 	fi
 	srpm=$(compgen -G "$tmp/*.src.rpm" | head -n 1)
 	# Unpack the source and apply Fedora's patches, as its build does (the spec's %prep).
-	rpmbuild --define "_topdir $tmp/rpm" -rp --nodeps "$srpm" >>"$log" 2>&1 || return
-	src=$(dirname "$(compgen -G "$tmp/rpm/BUILD/*/wine-*/configure" | head -n 1)")
-	if ! patch -d "$src" -p1 --forward -s <"$patch_file" >>"$log" 2>&1; then
-		echo "$(basename "$patch_file") doesn't apply to Wine $ver. Check whether Wine has fixed" \
-			"the bug (see the patch), and update or drop it." >&2
+	if ! rpmbuild --define "_topdir $tmp/rpm" -rp --nodeps "$srpm" >>"$log" 2>&1; then
+		failure="Couldn't prepare the source of wine-core $ver."
 		return 1
 	fi
+	src=$(compgen -G "$tmp/rpm/BUILD/*/wine-*/configure" | head -n 1)
+	if [ -z "$src" ]; then
+		failure="Couldn't find the unpacked source of wine-core $ver."
+		return 1
+	fi
+	src=$(dirname "$src")
+	if ! patch -d "$src" -p1 --forward --dry-run <"$patch_file" >>"$log" 2>&1; then
+		# Keep the source for fixing the patch: in git, with the patch applied as far as it goes.
+		git -C "$src" init -q && git -C "$src" add -A &&
+			git -C "$src" -c user.name=patch-combase -c user.email=none commit -qm "wine $ver"
+		patch -d "$src" -p1 --forward <"$patch_file" >>"$log" 2>&1
+		mv "$src" "$cache/source" && kept_source=$cache/source
+		failure="$(basename "$patch_file") no longer applies to Wine $ver."
+		return 1
+	fi
+	patch -d "$src" -p1 --forward -s <"$patch_file" >>"$log" 2>&1
 
 	for d in "${dlls[@]}"; do
 		archs+=("$(arch_of "$d")")
 		targets+=("dlls/combase/$(arch_of "$d")/combase.dll")
 	done
 	arch_list=$(printf '%s\n' "${archs[@]%-windows}" | paste -sd,)
-	# Only the DLL is built, so leave out the libraries the rest of Wine would use.
+	# Only the DLL, so without the libraries the rest of Wine uses.
 	mkdir -p "$tmp/build"
-	(cd "$tmp/build" &&
+	if ! (cd "$tmp/build" &&
 		"$src"/configure --enable-archs="$arch_list" --disable-tests --without-x --without-freetype &&
-		make -j"$(nproc)" "${targets[@]}") >>"$log" 2>&1 || return
+		make -j"$(nproc)" "${targets[@]}") >>"$log" 2>&1; then
+		failure="Wine $ver's combase.dll doesn't build with $(basename "$patch_file")."
+		return 1
+	fi
 	for d in "${dlls[@]}"; do
 		install -Dm644 "$tmp/build/dlls/combase/$(arch_of "$d")/combase.dll" \
 			"$cache/$(arch_of "$d")/combase.dll" || return
 	done
+	# Drop the builds, and failed ones, for older versions of Wine or the patch.
+	find ~/.cache/wine-combase -mindepth 1 -maxdepth 1 ! -path "$cache" -exec rm -rf {} +
 }
 
-up_to_date && exit 0
+[ -z "$build_only" ] && check installed && exit 0
 
-if ! built; then
+if ! check built; then
 	tmp=$(mktemp -d -p /var/tmp wine-combase.XXXXXX) || exit
 	trap 'rm -rf "$tmp"' EXIT
 	if ! build "$tmp"; then
-		echo "Building the patched combase.dll failed, see $cache/build.log." >&2
+		patch_report "${failure:-Building failed.}" "$patch_file" "$log" "$kept_source" \
+			"${here/#$HOME/\~}/patch-combase --build-only" >"$report"
+		failed "Couldn't patch Wine's combase.dll: PDF-XChange Editor will crash after a while." \
+			"To fix the patch, see ${report/#$HOME/\~}"
 		exit 1
 	fi
 fi
+[ -n "$build_only" ] && echo "Built in $cache." && exit 0
 
 for d in "${dlls[@]}"; do
 	sudo install -Z -m644 "$cache/$(arch_of "$d")/combase.dll" "$d" || exit
 done
 say "Installed the patched combase.dll for Wine $ver"
 if pgrep -u "$(id -u)" '^wineserver' >/dev/null; then
-	say "Wine programs already running still use the old combase.dll, restart them (wineserver -k)"
+	say "Running Wine programs still use the old combase.dll, restart them (wineserver -k)"
 fi

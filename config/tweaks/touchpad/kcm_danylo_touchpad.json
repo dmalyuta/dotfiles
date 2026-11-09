@@ -1,0 +1,10 @@
+{
+    "KPlugin": {
+        "Description": "When the cursor and two-finger scrolling start",
+        "Icon": "preferences-desktop-touchpad",
+        "Name": "Touchpad"
+    },
+    "X-KDE-Keywords": "touchpad,tap,scroll,libinput,cursor,lag",
+    "X-KDE-System-Settings-Parent-Category": "danylo-tweaks",
+    "X-KDE-Weight": 1
+}

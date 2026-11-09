@@ -1,0 +1,53 @@
+Battery menu: list a device's battery only once it is there.
+
+The touchscreen (ELAN9008:00 04F3:4359) can take a pen, so it declares a pen battery, and the
+kernel adds one for it whether or not a pen was ever used: "ELAN9008:00 04F3:4359 Stylus" at 0%,
+not present. Neither the kernel nor UPower can hide it. So the battery list leaves out devices'
+batteries (not the laptop's own) while they aren't present, and adds each as soon as it is: the
+pen's once a pen reports its charge (kernel, hidinput_update_battery()).
+
+To list them all again, set HideAbsentDeviceBatteries=false in the [Battery] group of
+~/.config/danylo-tweaksrc (System Settings > Danylo's Linux Tweaks > Power & Battery), read when
+Plasma starts.
+
+Applied by scripts/patches/patch-library, see scripts/configure_hardware.
+
+diff --git a/components/batterycontrol/batterycontrol.cpp b/components/batterycontrol/batterycontrol.cpp
+index 7b24dc2..1e054ae 100644
+--- a/components/batterycontrol/batterycontrol.cpp
++++ b/components/batterycontrol/batterycontrol.cpp
+@@ -13,6 +13,8 @@
+ #include <QDBusMetaType>
+ #include <QDBusReply>
+ #include <QDBusServiceWatcher>
++#include <QSettings>
++#include <QStandardPaths>
+ 
+ #include <klocalizedstring.h>
+ 
+@@ -266,6 +268,25 @@ void BatteryControlModel::deviceAdded(const QString &udi)
+         return;
+     }
+ 
++    // A device's battery that isn't there yet, like a touchscreen's pen battery, which the
++    // touchscreen reports whether or not a pen was ever used: list it once it is present (for the
++    // pen, once a pen reports its charge). Unless turned off in System Settings > Danylo's Linux
++    // Tweaks, read when Plasma starts.
++    const QSettings tweaks(QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation)
++                               + QStringLiteral("/danylo-tweaksrc"),
++                           QSettings::IniFormat);
++    if (tweaks.value(QStringLiteral("Battery/HideAbsentDeviceBatteries"), true).toBool()
++        && battery->type() != Solid::Battery::PrimaryBattery && !battery->isPresent()) {
++        qCDebug(COMPONENTS::BATTERYCONTROL) << "Battery with udi: " << udi << " isn't present, waiting for it";
++        connect(battery, &Solid::Battery::presentStateChanged, this, [this, battery](bool present, const QString &udi) {
++            if (present && !m_batteryPositions.contains(udi)) {
++                battery->disconnect(this);
++                deviceAdded(udi);
++            }
++        });
++        return;
++    }
++
+     int position = m_batterySources.size();
+ 
+     if (battery->type() == Solid::Battery::PrimaryBattery) {

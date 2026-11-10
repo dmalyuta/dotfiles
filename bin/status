@@ -57,8 +57,36 @@ section() {
 	((sections++)) && echo
 	printf '%s━━ %s %s%s\n' "$bold$cyan" "$1" "${rule// /━}" "$reset"
 }
-row() { printf '  %-18s %s\n' "$1" "$2"; }
+# A label and value. A value past the section header's 64 columns has its trailing (comment)
+# moved to the next line.
+row() {
+	local plain=$2 head c
+	for c in "$bold" "$dim" "$red" "$green" "$yellow" "$cyan" "$reset"; do
+		[ -n "$c" ] && plain=${plain//"$c"/}
+	done
+	head=${2% "$dim("*}
+	if ((${#plain} > 43)) && [ "$head" != "$2" ]; then
+		printf '  %-18s %s\n' "$1" "$head$reset"
+		printf '  %-18s %s\n' "" "${2:${#head}+1}"
+	else
+		printf '  %-18s %s\n' "$1" "$2"
+	fi
+}
 note() { row "" "$dim$1$reset"; }
+# A row of a ", "-separated list, wrapped to stay within the section header's 64 columns.
+list_row() {
+	local label=$1 line= item
+	local -a items
+	IFS=$'\n' read -r -d '' -a items < <(sed 's/, /\n/g' <<<"$2") || true
+	for item in "${items[@]}"; do
+		if [ -n "$line" ] && ((${#line} + 2 + ${#item} > 43)); then
+			row "$label" "$line,"
+			label= line=
+		fi
+		line+="${line:+, }$item"
+	done
+	row "$label" "$line"
+}
 
 # Floating point helpers, all through awk. f FORMAT VALUE: printf. lt A B: whether A < B.
 f() { awk -v fmt="$1" -v v="$2" 'BEGIN { printf fmt, v }'; }
@@ -262,7 +290,7 @@ gpu_section() {
 	[ -n "$tgp" ] && row "Base power limit" "$tgp W"
 	[ -n "$mode" ] && row "Cardwire mode" "$mode"
 	# Open handles alone don't keep it awake; the driver powers it off once they go idle.
-	[ -n "$holders" ] && row "Open by" "$holders"
+	[ -n "$holders" ] && list_row "Open by" "$holders"
 }
 
 if [ "$show" = gpu ]; then
@@ -733,7 +761,6 @@ if [ -n "$total_w" ]; then
 	((nparts)) && row "Known components" "$(f '%5.1f' "$known_w") W $dim(sum of the parts below)$reset"
 elif ((nparts)); then
 	row "Total" "$(level "$known_w" $total_lo $total_hi)$bold$(f '%5.1f' "$known_w") W$reset $dim(at least: only the parts below)$reset"
-	((laptop)) && note "The rest of the laptop is only measured on battery."
 else
 	row "Total" "${dim}unknown$reset"
 fi
@@ -749,6 +776,7 @@ print_parts() {
 }
 print_parts "" "  "
 ((dgpu_unknown)) && row "  $gpu_label" "${yellow}awake, draw unknown$reset $dim(not included above)$reset"
+[ -z "$total_w" ] && ((nparts && laptop)) && printf '    %s\n' "${dim}The rest of the laptop is only measured on battery.$reset"
 [ -n "$rest_w" ] && row "Rest" "$(f '%5.1f' "$rest_w") W $dim($rest_how)$reset"
 if ((!laptop)) && [ -z "$pkg_w" ] && [ -e /sys/class/powercap/intel-rapl:0/energy_uj ]; then
 	note "CPU not measured: only root can read RAPL. Run scripts/configure_hardware."
@@ -791,7 +819,7 @@ if ((laptop)); then
 		((capacity < 95)) && row "Full charge lasts" "$(hm "$full_h") $dim(at the same draw)$reset"
 	elif ((nparts)) && lt 0.5 "$known_w"; then
 		hours_left=$(awk -v e="$energy_now" -v p="$known_w" 'BEGIN { print e / p }')
-		row "If unplugged now" "under $(hm "$hours_left") $dim(counting only the known components' $(f '%.1f' "$known_w") W)$reset"
+		row "If unplugged now" "under $(hm "$hours_left") $dim(assuming $(f '%.1f' "$known_w")W)$reset"
 	else
 		note "no power readings"
 	fi
@@ -819,7 +847,7 @@ esac
 cpufreq=/sys/devices/system/cpu/cpu0/cpufreq
 if [ -r "$cpufreq/scaling_driver" ]; then
 	epp=$(cat "$cpufreq/energy_performance_preference" 2>/dev/null)
-	row "CPU policy" "$(cat "$cpufreq/scaling_driver"), governor $(cat "$cpufreq/scaling_governor")${epp:+, EPP $epp}"
+	list_row "CPU policy" "$(cat "$cpufreq/scaling_driver"), governor $(cat "$cpufreq/scaling_governor")${epp:+, EPP $epp}"
 fi
 mhz=$(cat /sys/devices/system/cpu/cpu*/cpufreq/scaling_cur_freq 2>/dev/null |
 	awk '{ s += $1; if ($1 > m) m = $1 } END { if (NR) printf "%.0f MHz avg, %.0f MHz max", s / NR / 1000, m / 1000 }')

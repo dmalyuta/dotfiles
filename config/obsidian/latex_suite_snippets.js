@@ -127,6 +127,7 @@ export default [
         description: "Raise to (D)the power of",
     }, // the `th` in the phrase is spoken like a d so rd for short.
     { trigger: "_", replacement: "_{$0}$1", options: "mA" },
+    { trigger: "^", replacement: "^{$0}$1", options: "mA" },
     { trigger: "sts", replacement: "_\\text{$0}", options: "mA" },
     { trigger: "sq", replacement: "\\sqrt{ $0 }$1", options: "mA" },
     {
@@ -715,6 +716,16 @@ export default [
         replacement: "\\triangleq ",
         options: "mA",
         description: "defined as",
+    },
+    {
+        trigger: "cursive",
+        replacement: "\\mathcal\{$0\}",
+        options: "mA",
+    },
+    {
+        trigger: "frac",
+        replacement: "\\frac\{$0\}\{$1\}",
+        options: "mA",
     },
 
     // Control systems.

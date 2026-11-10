@@ -243,6 +243,17 @@ if installed asusctl; then
 	sudo systemctl enable asus-kbd-rebind
 fi
 
+# The keyboard backlight stays dark while the laptop starts, instead of pulsing until asusd is up:
+# see scripts/bin/asus-kbd-dark. Run once now as well, for what the keyboard controller keeps
+# from it (no animation at power-on), at the brightness it has.
+if is_laptop; then
+	install_script_file bin/asus-kbd-dark /usr/local/bin/asus-kbd-dark 0755 &&
+		sudo /usr/local/bin/asus-kbd-dark \
+			"$(cat /sys/class/leds/asus::kbd_backlight/brightness 2>/dev/null || echo 0)"
+	install_script_file udev/90-asus-kbd-dark.rules /etc/udev/rules.d/90-asus-kbd-dark.rules &&
+		sudo udevadm control --reload
+fi
+
 # G-Helper's fan curves, see scripts/bin/asus-fan-curves. asusd saves them.
 if installed asusctl && is_laptop; then
 	"$dotfiles"/scripts/bin/asus-fan-curves >/dev/null

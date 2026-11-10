@@ -40,6 +40,10 @@ systemctl reset-failed asusd
 asusd_was_active=
 systemctl is-active -q asusd && asusd_was_active=1 && systemctl stop asusd
 
+# The rebinds below take a while, and the controller pulses the backlight until it is told its
+# brightness: tell it now, see asus-kbd-dark.
+[ -x /usr/local/bin/asus-kbd-dark ] && /usr/local/bin/asus-kbd-dark "${brightness:-0}"
+
 for try in 1 2 3 4 5; do
 	before=$(failures)
 	for dev in "$drv"/0003:0B05:19B6.*; do

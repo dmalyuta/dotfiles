@@ -1,0 +1,5 @@
+# The keyboard backlight stays dark while the laptop boots, see /usr/local/bin/asus-kbd-dark.
+# The LED appears when asus-wmi loads, once per boot and after hid_asus is done with the keyboard
+# controller, so this doesn't talk to the controller while the kernel does (that makes hid_asus's
+# own setup fail, see asus-kbd-rebind). asusd and KDE then set the brightness as before.
+ACTION=="add", SUBSYSTEM=="leds", KERNEL=="asus::kbd_backlight", RUN+="/usr/local/bin/asus-kbd-dark"

@@ -1,0 +1,123 @@
+#!/usr/bin/python3 -I
+"""Keep the PX13's keyboard backlight from pulsing while the laptop starts.
+
+From power-on, the keyboard controller (N-KEY, 0b05:19b6) pulses the backlight by itself until it
+is told otherwise. Nothing told it before asusd started (7 s into the boot), and asusd doesn't say
+all of it:
+- asusd sends which animations may play (at boot, awake, asleep, at shutdown) as a 7-byte packet,
+  while this kind of controller is known to drop packets shorter than the report's 64 bytes (asusd
+  pads its lighting effects for that reason, but not this one). So its "boot: false" in
+  /etc/asusd/aura_19b6.ron may never have arrived. Sent here in full length: the controller keeps
+  it, so if it arrives the keyboard is dark from power-on, before any of Linux runs.
+- ProArt keyboards start in an "out of box" mode that the kernel (hid_asus) ends only for the
+  ProArt P16, by its name. The same four packets are sent here.
+- asusd doesn't set the brightness when it starts, so the keyboard kept the controller's own until
+  something wrote the LED. Set here.
+
+Usage: asus-kbd-dark [BRIGHTNESS]    (0 to 3, 0 if not given)
+
+Run as root: by udev when the keyboard backlight LED appears, early in the boot (see
+scripts/udev/90-asus-kbd-dark.rules), and by asus-kbd-rebind after a hibernation, which the
+controller comes out of as if switched on. It talks to the controller directly (hidraw), not through
+the LED, so the brightness that the LED and asusd remember stays as it is.
+"""
+
+import fcntl
+import glob
+import os
+import sys
+import syslog
+import time
+
+REPORT_SIZE = 64
+KBD = 0x5A  # the report for keyboard functions
+LED = 0x5D  # the report for lighting
+
+
+def log(message):
+    syslog.syslog(message)
+    if sys.stderr.isatty():
+        print(message, file=sys.stderr)
+
+
+def find_hidraw():
+    """The controller's hidraw node that has both reports."""
+    for node in sorted(glob.glob("/sys/class/hidraw/hidraw*")):
+        if ":0B05:19B6." not in os.path.realpath(node + "/device").upper():
+            continue
+        try:
+            with open(node + "/device/report_descriptor", "rb") as file:
+                descriptor = file.read()
+        except OSError:
+            continue
+        if bytes([0x85, KBD]) in descriptor and bytes([0x85, LED]) in descriptor:
+            return "/dev/" + os.path.basename(node)
+    return None
+
+
+def feature(fd, packet, pad=True):
+    """Send a feature report, as hid_asus does."""
+    buf = bytearray(packet)
+    if pad:
+        buf += bytes(REPORT_SIZE - len(buf))
+    # HIDIOCSFEATURE(len)
+    fcntl.ioctl(fd, 0xC0004806 | (len(buf) << 16), buf)
+
+
+def output(fd, packet):
+    """Send an output report, as asusd does, but in full length."""
+    os.write(fd, bytes(packet) + bytes(REPORT_SIZE - len(packet)))
+
+
+def main():
+    brightness = int(sys.argv[1]) if len(sys.argv) > 1 else 0
+    if not 0 <= brightness <= 3:
+        sys.exit("brightness is 0 to 3")
+    syslog.openlog("asus-kbd-dark")
+
+    # The LED can appear before hid_asus is done with the controller
+    path = find_hidraw()
+    for _ in range(20):
+        if path:
+            break
+        time.sleep(0.1)
+        path = find_hidraw()
+    if not path:
+        log("no ASUS keyboard controller found")
+        return
+
+    steps = [
+        # hid_asus's handshake, "ASUS Tech.Inc.": without it the controller ignores the rest
+        # (it's what a hibernation loses, see asus-kbd-rebind). Harmless when repeated.
+        ("handshake", lambda fd: feature(fd, [KBD] + list(b"ASUS Tech.Inc.") + [0], pad=False)),
+        ("handshake", lambda fd: feature(fd, [LED] + list(b"ASUS Tech.Inc.") + [0], pad=False)),
+        # asus_kbd_disable_oobe() of hid_asus
+        ("out-of-box mode", lambda fd: feature(fd, [KBD, 0x05, 0x20, 0x31, 0x00, 0x08], pad=False)),
+        ("out-of-box mode", lambda fd: feature(fd, [KBD, 0xBA, 0xC5, 0xC4, 0x00, 0x00], pad=False)),
+        ("out-of-box mode", lambda fd: feature(fd, [KBD, 0xD0, 0x8F, 0x01, 0x00, 0x00], pad=False)),
+        ("out-of-box mode", lambda fd: feature(fd, [KBD, 0xD0, 0x85, 0xFF, 0x00, 0x00], pad=False)),
+        # Lit only while awake: no animation at boot, asleep or at shutdown. The fourth byte is
+        # the keyboard's: boot 0x02, awake 0x08, sleep 0x20, shutdown 0x80.
+        ("animations", lambda fd: output(fd, [LED, 0xBD, 0x01, 0x08, 0x00, 0x00, 0x00, 0xFF])),
+        # asus_kbd_set_brightness() of hid_asus
+        ("brightness", lambda fd: feature(fd, [KBD, 0xBA, 0xC5, 0xC4, brightness])),
+    ]
+    failed = []
+    fd = os.open(path, os.O_RDWR)
+    try:
+        for name, send in steps:
+            try:
+                send(fd)
+            except OSError as error:
+                failed.append(f"{name} ({error.strerror})")
+            time.sleep(0.005)
+    finally:
+        os.close(fd)
+    log(
+        f"keyboard backlight set to {brightness} on {path}, {time.monotonic():.1f} s after boot"
+        + (", failed: " + ", ".join(failed) if failed else "")
+    )
+
+
+if __name__ == "__main__":
+    main()

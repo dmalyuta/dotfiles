@@ -13,11 +13,25 @@ each slow start that estimate is near zero (a pause before), then jumps up, so t
 down: the cursor moves as far for each mm at any speed up to the acceleration. Optionally, the
 speed estimate can be averaged over time, pauses included.
 
+The cursor still stuck at times, for two more reasons (found by replaying recorded and made-up
+finger motion through the library, see scripts/touchpad/touchpad-trace, 2026-11-11):
+- tp_detect_wobbling() turns on a hysteresis when one finger's x flickers right, left, right in
+  three events in a row, as happens in a quick stroke now and then. It stays on until the device
+  is added again (login, wake-up): a dead zone of 1/4mm at every start and turn of the finger.
+  Turning on also made the cursor jump, by up to that much, towards where the touch began. Now
+  wobbling doesn't turn it on, and the jump is fixed for when it does.
+- With a second touch resting on the touchpad above its bottom strip (a thumb waiting to click),
+  the cursor stood still until the finger had moved 4mm: that long,
+  tp_gesture_detect_motion_gestures() waits to see whether the two will scroll or pinch. Now 1mm,
+  if the resting touch has moved less than a quarter of that.
+
 Two-finger scrolling started late for three reasons:
 - The same filter in TAP_STATE_TOUCH_2 (a possible two-finger tap). Dropped likewise.
 - tp_gesture_detect_motion_gestures() waits for both fingers to move 1.5mm the same way (and
   doesn't look before one moved 1mm). Now 0.75mm (and 0.5mm). A pinch taken for a scroll is still
   corrected within 300ms.
+  Once the fingers have been down for 150ms they have settled, so 0.15mm is enough then: a slow
+  scroll started 0.5mm and 120-190ms late, now 0.2mm and 55-75ms.
 - The motion before the scroll was recognized was dropped. Now the scroll makes up for it, not at
   once (the content would jump) but by scrolling faster than the fingers at first, easing back to
   their speed as it catches up.
@@ -28,16 +42,20 @@ Danylo's Linux Tweaks > Touchpad), read again within a second of a change:
   ScrollDuringTap=true       (false: and for two)
   ScrollStartDistance=0.75   (mm, libinput's is 1.5)
   ScrollDecideDistance=0.5   (mm, libinput's is 1)
+  ScrollRestedDistance=0.15  (mm, the same once the fingers have been down for 150 ms)
   ScrollCatchUp=1            (the scroll's speed at first is 1 + this times the fingers', 0 drops
                              the motion as libinput does)
   SlowSpeedGain=1            (the cursor's speed at the slowest finger speeds, as a fraction of
                              its speed from 7mm/s: libinput's is 0.33)
   SpeedSmoothing=0           (ms over which the finger's speed is averaged, 0: libinput's estimate)
+  WobbleHysteresis=false     (true: libinput's hysteresis once a finger wobbles)
+  RestingTouchDistance=1     (mm the finger moves next to a resting touch before the cursor
+                             does, libinput's is 4)
 
 Applied by scripts/patches/patch-library, see scripts/configure_hardware.
 
 diff --git a/src/evdev-mt-touchpad-gestures.c b/src/evdev-mt-touchpad-gestures.c
-index ae42b51..aeb33e5 100644
+index ae42b51..8e14934 100644
 --- a/src/evdev-mt-touchpad-gestures.c
 +++ b/src/evdev-mt-touchpad-gestures.c
 @@ -28,6 +28,11 @@
@@ -52,7 +70,7 @@ index ae42b51..aeb33e5 100644
  enum gesture_cancelled {
  	END_GESTURE = 0,
  	CANCEL_GESTURE = 1,
-@@ -71,6 +76,92 @@ enum gesture_event {
+@@ -71,6 +76,103 @@ enum gesture_event {
   * Any changes in this file must be represented in the diagram.
   */
  
@@ -86,6 +104,10 @@ index ae42b51..aeb33e5 100644
 +			tweaks->scroll_during_tap = strcmp(value, "false") != 0;
 +			continue;
 +		}
++		if (strcmp(key, "WobbleHysteresis") == 0) {
++			tweaks->wobble_hysteresis = strcmp(value, "true") == 0;
++			continue;
++		}
 +		number = strtod(value, &end);
 +		if (*end || !isfinite(number) || number < 0 || number > 100)
 +			continue;
@@ -93,12 +115,16 @@ index ae42b51..aeb33e5 100644
 +			tweaks->scroll_start_mm = number;
 +		else if (strcmp(key, "ScrollDecideDistance") == 0)
 +			tweaks->scroll_decide_mm = number;
++		else if (strcmp(key, "ScrollRestedDistance") == 0)
++			tweaks->scroll_rested_mm = number;
 +		else if (strcmp(key, "ScrollCatchUp") == 0)
 +			tweaks->scroll_catch_up = number;
 +		else if (strcmp(key, "SlowSpeedGain") == 0)
 +			tweaks->slow_gain = number;
 +		else if (strcmp(key, "SpeedSmoothing") == 0)
 +			tweaks->speed_smoothing_ms = number;
++		else if (strcmp(key, "RestingTouchDistance") == 0)
++			tweaks->resting_touch_mm = number;
 +	}
 +	fclose(file);
 +}
@@ -111,9 +137,12 @@ index ae42b51..aeb33e5 100644
 +		.scroll_during_tap = true, /* libinput: false */
 +		.scroll_start_mm = 0.75, /* libinput: 1.5 */
 +		.scroll_decide_mm = 0.5, /* libinput: 1 */
++		.scroll_rested_mm = 0.15, /* libinput: 1 */
 +		.scroll_catch_up = 1, /* libinput: 0 */
 +		.slow_gain = 1, /* libinput: 1/3 */
 +		.speed_smoothing_ms = 0, /* libinput: 0 */
++		.wobble_hysteresis = false, /* libinput: true */
++		.resting_touch_mm = 1, /* libinput: 4 */
 +	};
 +	static struct tp_tweaks tweaks;
 +	static uint64_t checked_ms;
@@ -145,7 +174,7 @@ index ae42b51..aeb33e5 100644
  static inline const char *
  gesture_state_to_str(enum tp_gesture_state state)
  {
-@@ -1373,6 +1464,7 @@ tp_gesture_detect_motion_gestures(struct tp_dispatch *tp, usec_t time)
+@@ -1373,6 +1475,7 @@ tp_gesture_detect_motion_gestures(struct tp_dispatch *tp, usec_t time)
  	double first_mm, second_mm; /* movement since gesture start in mm */
  	double min_move = 1.5; /* min movement threshold in mm - count this touch */
  	double max_move = 4.0; /* max movement threshold in mm - ignore other touch */
@@ -153,7 +182,7 @@ index ae42b51..aeb33e5 100644
  	bool is_hold_and_motion;
  
  	first_moved = tp_gesture_mm_moved(tp, first);
-@@ -1416,6 +1508,14 @@ tp_gesture_detect_motion_gestures(struct tp_dispatch *tp, usec_t time)
+@@ -1416,6 +1519,14 @@ tp_gesture_detect_motion_gestures(struct tp_dispatch *tp, usec_t time)
  	max_move += 2.0 * (tp->gesture.finger_count - 2);
  	min_move += 0.5 * (tp->gesture.finger_count - 2);
  
@@ -168,16 +197,52 @@ index ae42b51..aeb33e5 100644
  	second_moved = tp_gesture_mm_moved(tp, second);
  	second_mm = hypot(second_moved.x, second_moved.y);
  
-@@ -1424,7 +1524,7 @@ tp_gesture_detect_motion_gestures(struct tp_dispatch *tp, usec_t time)
+@@ -1423,8 +1534,17 @@ tp_gesture_detect_motion_gestures(struct tp_dispatch *tp, usec_t time)
+ 	delta.y = abs(first->point.y - second->point.y);
  	distance_mm = evdev_device_unit_delta_to_mm(tp->device, &delta);
  
++	/* Two fingers that have been down for a while have settled: what
++	 * moves them now is meant, so a slow scroll needn't wait as long as
++	 * one that starts while the fingers land. */
++	if (tp->gesture.finger_count == 2 &&
++	    usec_cmp(time,
++		     usec_add(tp->gesture.initial_time,
++			      DEFAULT_GESTURE_SWIPE_TIMEOUT)) > 0)
++		undecided_move = min(undecided_move, tp_tweaks(time)->scroll_rested_mm);
++
  	/* If both touches moved less than a mm, we cannot decide yet */
 -	if (first_mm < 1 && second_mm < 1)
 +	if (first_mm < undecided_move && second_mm < undecided_move)
  		return;
  
  	/* If both touches are within 7mm vertically and 40mm horizontally
-@@ -1671,6 +1771,42 @@ tp_gesture_handle_state_pointer_motion(struct tp_dispatch *tp, usec_t time)
+@@ -1455,6 +1575,25 @@ tp_gesture_detect_motion_gestures(struct tp_dispatch *tp, usec_t time)
+ 		return;
+ 	}
+ 
++	/* A touch resting below the finger that moves, outside of the thumb
++	 * area (a thumb waiting to click, say): the pointer stood still
++	 * until the finger had moved max_move, 4mm. Let it go sooner when the
++	 * resting touch really is still: a scroll's second finger has moved
++	 * by then. */
++	if (tp->gesture.finger_count == 2 && tp->thumb.detect_thumbs) {
++		double rest_move = tp_tweaks(time)->resting_touch_mm;
++		bool first_is_lower = first->point.y > second->point.y;
++		double lower_mm = first_is_lower ? first_mm : second_mm;
++		double upper_mm = first_is_lower ? second_mm : first_mm;
++
++		if (rest_move > 0 && rest_move < max_move && upper_mm >= rest_move &&
++		    lower_mm < 0.25 * rest_move) {
++			tp_thumb_suppress(tp, first_is_lower ? first : second);
++			tp_gesture_cancel(tp, time);
++			return;
++		}
++	}
++
+ 	/* If one touch exceeds the max_move threshold while the other has not
+ 	 * yet passed the min_move threshold, there is either a resting thumb,
+ 	 * or the user is doing "one-finger-scroll," where one touch stays in
+@@ -1671,6 +1810,42 @@ tp_gesture_handle_state_pointer_motion(struct tp_dispatch *tp, usec_t time)
  		tp_gesture_post_pointer_motion(tp, time);
  }
  
@@ -220,7 +285,7 @@ index ae42b51..aeb33e5 100644
  static void
  tp_gesture_handle_state_scroll_start(struct tp_dispatch *tp, usec_t time)
  {
-@@ -1701,6 +1837,15 @@ tp_gesture_handle_state_scroll_start(struct tp_dispatch *tp, usec_t time)
+@@ -1701,6 +1876,15 @@ tp_gesture_handle_state_scroll_start(struct tp_dispatch *tp, usec_t time)
  
  	tp_gesture_init_scroll(tp);
  	tp->gesture.state = GESTURE_STATE_SCROLL;
@@ -236,7 +301,7 @@ index ae42b51..aeb33e5 100644
  }
  
  static void
-@@ -1731,6 +1876,7 @@ tp_gesture_handle_state_scroll(struct tp_dispatch *tp, usec_t time)
+@@ -1731,6 +1915,7 @@ tp_gesture_handle_state_scroll(struct tp_dispatch *tp, usec_t time)
  	if (normalized_is_zero(delta))
  		return;
  
@@ -273,7 +338,7 @@ index 565f291..e496803 100644
  		filter_motion = 1;
  		break;
 diff --git a/src/evdev-mt-touchpad.c b/src/evdev-mt-touchpad.c
-index 81b803d..bb30b9b 100644
+index 81b803d..c4fc637 100644
 --- a/src/evdev-mt-touchpad.c
 +++ b/src/evdev-mt-touchpad.c
 @@ -75,6 +75,9 @@ tp_filter_motion(struct tp_dispatch *tp,
@@ -286,11 +351,42 @@ index 81b803d..bb30b9b 100644
  	return filter_dispatch(tp->device->pointer.filter, &raw, tp, time);
  }
  
+@@ -187,6 +190,15 @@ tp_detect_wobbling(struct tp_dispatch *tp, struct tp_touch *t, usec_t time)
+ 	int dx, dy;
+ 	const struct device_coords *prev_point;
+ 
++	/* Wobble turns the hysteresis on for good: a dead zone of 1/4 mm at
++	 * every start and turn of the finger. A few jittery events during a
++	 * quick stroke are enough, on a touchpad that needs none. */
++	if (!tp_tweaks(time)->wobble_hysteresis) {
++		if (!tp->device->abs.absinfo_x->fuzz && !tp->device->abs.absinfo_y->fuzz)
++			tp->hysteresis.enabled = false;
++		return;
++	}
++
+ 	if (tp->nfingers_down != 1 || tp->nfingers_down != tp->old_nfingers_down)
+ 		return;
+ 
+@@ -228,8 +240,13 @@ tp_detect_wobbling(struct tp_dispatch *tp, struct tp_touch *t, usec_t time)
+ static inline void
+ tp_motion_hysteresis(struct tp_dispatch *tp, struct tp_touch *t)
+ {
+-	if (!tp->hysteresis.enabled)
++	/* Keep the center where the finger is while off: once turned on, the
++	 * touch was pulled towards wherever its center was left, a jump of
++	 * up to the margin. */
++	if (!tp->hysteresis.enabled) {
++		t->hysteresis.center = t->point;
+ 		return;
++	}
+ 
+ 	if (t->history.count > 0)
+ 		t->point = evdev_hysteresis(&t->point,
 diff --git a/src/evdev-mt-touchpad.h b/src/evdev-mt-touchpad.h
-index 48375b7..480d90a 100644
+index 48375b7..36ef463 100644
 --- a/src/evdev-mt-touchpad.h
 +++ b/src/evdev-mt-touchpad.h
-@@ -841,4 +841,18 @@ tp_thumb_get_touch(struct tp_dispatch *tp);
+@@ -841,4 +841,21 @@ tp_thumb_get_touch(struct tp_dispatch *tp);
  void
  tp_3fg_drag_apply_config(struct evdev_device *device);
  
@@ -300,9 +396,12 @@ index 48375b7..480d90a 100644
 +	bool scroll_during_tap;
 +	double scroll_start_mm;
 +	double scroll_decide_mm;
++	double scroll_rested_mm;
 +	double scroll_catch_up;
 +	double slow_gain;
 +	double speed_smoothing_ms;
++	bool wobble_hysteresis;
++	double resting_touch_mm;
 +};
 +
 +const struct tp_tweaks *

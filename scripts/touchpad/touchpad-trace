@@ -1,0 +1,753 @@
+#!/usr/bin/python3 -I
+"""Record what the touchpad reports next to what the cursor and scrolling really do, and find
+where the two disagree: cursor jumps, dead zones, late or jumpy scroll starts.
+
+  touchpad-trace record [NAME]
+      Opens a full-screen window. Move the cursor and scroll with two fingers inside it, the way
+      that feels wrong (small slow movements, starts after a pause, scroll starts). Whenever it
+      jumps or sticks, press Shift (or Ctrl) right after: that marks the moment. Esc ends it.
+      Asks for the sudo password, to read the touchpad's raw events.
+      Writes ~/touchpad-traces/NAME.trace (NAME: the date and time if not given).
+
+  touchpad-trace analyze FILE [--lib DIR] [--all] [--tweaks FILE]
+      Replays the raw events through libinput (the installed library, or the one in DIR), then
+      prints, for every stroke and scroll: how far the fingers moved against how far the cursor
+      or the scroll went, in the recording (KWin's libinput, with whatever state it had built up)
+      and in the replay (a fresh libinput), every jump and dead zone found, and the events
+      around each mark. --all prints every stroke, not just those with something found.
+      --tweaks: a danylo-tweaksrc to replay with, instead of the recorded one.
+
+  touchpad-trace convert FILE.yml FILE.trace
+      Makes a trace (raw events only) from a `libinput record` file.
+
+A trace is text: the device's description (N, I, P, B, A lines, see replay.c), C (JSON: KWin's
+touchpad settings, the tweaks file, versions), then by time:
+  E usec type code value     a raw event, kernel time (CLOCK_MONOTONIC)
+  Q msec x y recv_usec       the cursor's position in the window, KWin's event time
+  W msec dx dy ax ay recv_usec   a scroll: pixels and angle, as an application gets them
+  K msec recv_usec           a mark
+
+The replay needs gcc and libinput-devel (replay.c is built into ~/.cache/touchpad-trace).
+
+Author: Danylo Malyuta, 2026.
+"""
+
+import collections
+import glob
+import json
+import math
+import os
+import re
+import select
+import struct
+import subprocess
+import sys
+import tempfile
+import time
+
+HERE = os.path.dirname(os.path.realpath(__file__))
+TRACES = os.path.expanduser("~/touchpad-traces")
+CACHE = os.path.expanduser("~/.cache/touchpad-trace")
+
+EV_SYN, EV_KEY, EV_ABS = 0, 1, 3
+ABS_MT_SLOT, ABS_MT_POSITION_X, ABS_MT_POSITION_Y, ABS_MT_TRACKING_ID = 47, 53, 54, 57
+BTN_LEFT = 272
+
+
+def find_touchpad():
+    for name_file in sorted(glob.glob("/sys/class/input/event*/device/name")):
+        with open(name_file) as file:
+            if file.read().strip().endswith("Touchpad"):
+                return "/dev/input/" + name_file.split("/")[4]
+    sys.exit("No touchpad found.")
+
+
+# --------------------------------------------------------------------------------------------
+# Recording
+# --------------------------------------------------------------------------------------------
+
+
+def ioc(direction, nr, size):
+    return (direction << 30) | (size << 16) | (ord("E") << 8) | nr
+
+
+def capture(node):
+    """Print the device's description and its raw events. Runs as root, until stdin closes."""
+    import fcntl
+
+    fd = os.open(node, os.O_RDONLY | os.O_NONBLOCK)
+    out = sys.stdout
+    name = bytearray(256)
+    fcntl.ioctl(fd, ioc(2, 0x06, 256), name)
+    out.write("N " + name.split(b"\0")[0].decode(errors="replace") + "\n")
+    ident = bytearray(8)
+    fcntl.ioctl(fd, ioc(2, 0x02, 8), ident)
+    out.write("I %d %d %d %d\n" % struct.unpack("HHHH", ident))
+
+    def bits(nr, size=96):
+        buf = bytearray(size)
+        fcntl.ioctl(fd, ioc(2, nr, size), buf)
+        return [i for i in range(size * 8) if buf[i // 8] >> (i % 8) & 1]
+
+    out.write("P " + " ".join(map(str, bits(0x09, 8))) + "\n")
+    for ev_type in bits(0x20, 4):
+        codes = bits(0x20 + ev_type)
+        out.write(f"B {ev_type} " + " ".join(map(str, codes)) + "\n")
+        if ev_type == EV_ABS:
+            for code in codes:
+                info = bytearray(24)
+                fcntl.ioctl(fd, ioc(2, 0x40 + code, 24), info)
+                _value, low, high, fuzz, flat, res = struct.unpack("iiiiii", info)
+                out.write(f"A {code} {low} {high} {fuzz} {flat} {res}\n")
+    # Event times on the clock that libinput and KWin use (CLOCK_MONOTONIC = 1)
+    fcntl.ioctl(fd, ioc(1, 0xA0, 4), struct.pack("i", 1))
+    out.flush()
+
+    event = struct.Struct("qqHHi")
+    while True:
+        ready, _, _ = select.select([fd, sys.stdin], [], [])
+        if sys.stdin in ready and not os.read(sys.stdin.fileno(), 1):
+            break
+        if fd not in ready:
+            continue
+        try:
+            data = os.read(fd, event.size * 64)
+        except BlockingIOError:
+            continue
+        for offset in range(0, len(data) - event.size + 1, event.size):
+            sec, usec, ev_type, code, value = event.unpack_from(data, offset)
+            out.write(f"E {sec * 1000000 + usec} {ev_type} {code} {value}\n")
+        out.flush()
+
+
+def kwin_settings(node):
+    settings = {}
+    path = "/org/kde/KWin/InputDevice/" + os.path.basename(node)
+    for prop in (
+        "tapToClick tapAndDrag tapDragLock naturalScroll disableWhileTyping pointerAcceleration "
+        "pointerAccelerationProfileFlat scrollFactor"
+    ).split():
+        try:
+            out = subprocess.run(
+                ["busctl", "--user", "get-property", "org.kde.KWin", path,
+                 "org.kde.KWin.InputDevice", prop],
+                capture_output=True, text=True, timeout=5, check=True,
+            ).stdout.split()
+            settings[prop] = out[1] == "true" if out[0] == "b" else float(out[1])
+        except (subprocess.SubprocessError, OSError, IndexError, ValueError):
+            pass
+    return settings
+
+
+def command_output(*command):
+    try:
+        return subprocess.run(command, capture_output=True, text=True, timeout=20).stdout.strip()
+    except (subprocess.SubprocessError, OSError):
+        return ""
+
+
+def tweaks_path():
+    config = os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config")
+    return os.path.join(config, "danylo-tweaksrc")
+
+
+def record(name):
+    import threading
+
+    from PyQt6.QtCore import QCoreApplication, QPointF, Qt, QTimer
+    from PyQt6.QtGui import QColor, QFont, QPainter, QPen
+    from PyQt6.QtWidgets import QApplication, QWidget
+
+    node = find_touchpad()
+    os.makedirs(TRACES, exist_ok=True)
+    path = os.path.join(TRACES, (name or time.strftime("%Y-%m-%d_%H-%M-%S")) + ".trace")
+
+    print("Reading the touchpad's raw events needs root.")
+    if subprocess.run(["sudo", "-v"]).returncode != 0:
+        sys.exit("No sudo.")
+    child = subprocess.Popen(
+        ["sudo", "/usr/bin/python3", "-I", os.path.realpath(__file__), "_capture", node],
+        stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True,
+    )
+    lines = []  # the trace, in order of arrival
+    tweaks = ""
+    try:
+        with open(tweaks_path()) as file:
+            tweaks = file.read()
+    except OSError:
+        pass
+    context = {
+        "node": node,
+        "kwin": kwin_settings(node),
+        "tweaks": tweaks,
+        "libinput": command_output("rpm", "-q", "libinput"),
+        "libinput_changed": command_output("rpm", "-V", "libinput"),
+        "patch": command_output(
+            "sha256sum", os.path.join(HERE, "../patches/libinput-touchpad-lag.patch")
+        )[:12],
+        "kwin_version": command_output("rpm", "-q", "kwin"),
+        "kernel": os.uname().release,
+        "time": time.strftime("%Y-%m-%d %H:%M:%S"),
+        "uptime_s": round(time.monotonic()),
+    }
+    raw_events = [0]
+
+    def read_child():
+        header = True
+        for line in child.stdout:
+            if header and line.startswith("E "):
+                header = False
+                lines.append("C " + json.dumps(context))
+            lines.append(line.rstrip("\n"))
+            raw_events[0] += 1
+
+    reader = threading.Thread(target=read_child, daemon=True)
+    reader.start()
+
+    def now():
+        return time.monotonic_ns() // 1000
+
+    class Window(QWidget):
+        def __init__(self):
+            super().__init__()
+            self.setWindowTitle("touchpad-trace")
+            self.setMouseTracking(True)
+            self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+            self.scroll = QPointF(0, 0)
+            self.cursor = QPointF(0, 0)
+            self.marks = 0
+            self.flash = 0
+            timer = QTimer(self)
+            timer.timeout.connect(self.update)
+            timer.start(100)
+
+        def mouseMoveEvent(self, event):
+            pos = event.position()
+            lines.append(f"Q {event.timestamp()} {pos.x():.4f} {pos.y():.4f} {now()}")
+            self.cursor = pos
+            self.update()
+
+        def wheelEvent(self, event):
+            pixels, angle = event.pixelDelta(), event.angleDelta()
+            lines.append(
+                f"W {event.timestamp()} {pixels.x()} {pixels.y()} {angle.x()} {angle.y()} {now()}"
+            )
+            self.scroll += QPointF(pixels)
+            self.update()
+
+        def keyPressEvent(self, event):
+            if event.key() == Qt.Key.Key_Escape:
+                self.close()
+            elif not event.isAutoRepeat():
+                lines.append(f"K {event.timestamp()} {now()}")
+                self.marks += 1
+                self.flash = now()
+                self.update()
+
+        def paintEvent(self, _event):
+            painter = QPainter(self)
+            marked = now() - self.flash < 300000
+            painter.fillRect(self.rect(), QColor(70, 30, 30) if marked else QColor(24, 24, 28))
+            width, height = self.width(), self.height()
+            # A ruled sheet that scrolls, to see scroll starts against
+            painter.setFont(QFont("monospace", 9))
+            step = 40
+            offset_y, offset_x = self.scroll.y() % step, self.scroll.x() % step
+            first = -int(self.scroll.y() // step)
+            for i, y in enumerate(range(int(offset_y) - step, height + step, step)):
+                painter.setPen(QPen(QColor(60, 60, 70), 1))
+                painter.drawLine(0, y, width, y)
+                painter.setPen(QColor(110, 110, 125))
+                painter.drawText(8, y - 4, str(first + i - 1))
+            painter.setPen(QPen(QColor(40, 40, 48), 1))
+            for x in range(int(offset_x) - step, width + step, step):
+                painter.drawLine(x, 0, x, height)
+            # Fixed targets, to aim small movements at
+            painter.setPen(QPen(QColor(230, 180, 60), 1))
+            for x in range(width // 8, width, width // 8):
+                for y in range(height // 6, height, height // 6):
+                    painter.drawEllipse(QPointF(x, y), 3, 3)
+                    painter.drawEllipse(QPointF(x, y), 12, 12)
+            painter.setPen(QColor(235, 235, 235))
+            painter.setFont(QFont("sans", 12))
+            painter.drawText(
+                40, 44,
+                "Move the cursor slowly and scroll with two fingers, the way that goes wrong. "
+                "Shift or Ctrl right after a jump or a stick marks it. Esc ends the recording.",
+            )
+            painter.drawText(
+                40, 72, f"raw events: {raw_events[0]}    marks: {self.marks}"
+                + ("" if raw_events[0] else "    (no raw events yet: touch the touchpad)"),
+            )
+
+    # Every motion event as KWin sent it, not merged
+    QCoreApplication.setAttribute(Qt.ApplicationAttribute.AA_CompressHighFrequencyEvents, False)
+    app = QApplication(sys.argv[:1])
+    window = Window()
+    window.showFullScreen()
+    app.exec()
+
+    child.stdin.close()
+    reader.join(timeout=3)
+    if child.poll() is None:
+        subprocess.run(["sudo", "-n", "kill", str(child.pid)], stderr=subprocess.DEVNULL)
+
+    def order(line):
+        fields = line.split()
+        # Everything on the kernel's clock: Q, W and K by when they arrived
+        return int(fields[1]) if fields[0] == "E" else int(fields[-1])
+
+    header = [line for line in lines if line[0] not in "EQWK"]
+    body = sorted((line for line in lines if line[0] in "EQWK"), key=order)
+    with open(path, "w") as file:
+        file.write("\n".join(header + body) + "\n")
+    counts = collections.Counter(line[0] for line in body)
+    print(
+        f"Wrote {path}: {counts['E']} raw events, {counts['Q']} cursor positions, "
+        f"{counts['W']} scroll events, {counts['K']} marks."
+    )
+    if not counts["E"]:
+        print("No raw events: the recording can't be analyzed.")
+    else:
+        print(f"Analyze it with: {os.path.realpath(__file__)} analyze {path}")
+
+
+def convert(source, dest):
+    import yaml
+
+    with open(source) as file:
+        text = file.read()
+    device = yaml.safe_load(text[: text.index("  events:")])["devices"][0]["evdev"]
+    with open(dest, "w") as out:
+        out.write(f"N {device['name']}\n")
+        out.write("I " + " ".join(map(str, device["id"])) + "\n")
+        out.write("P " + " ".join(map(str, device["properties"])) + "\n")
+        for ev_type, codes in device["codes"].items():
+            out.write(f"B {ev_type} " + " ".join(map(str, codes)) + "\n")
+        for code, info in device["absinfo"].items():
+            out.write(f"A {code} " + " ".join(map(str, info)) + "\n")
+        out.write("C " + json.dumps({"converted_from": os.path.basename(source)}) + "\n")
+        pattern = re.compile(r"^\s*- \[\s*(\d+),\s*(\d+),\s*(\d+),\s*(\d+),\s*(-?\d+)\]", re.M)
+        for match in pattern.finditer(text):
+            sec, usec, ev_type, code, value = map(int, match.groups())
+            out.write(f"E {sec * 1000000 + usec} {ev_type} {code} {value}\n")
+
+
+# --------------------------------------------------------------------------------------------
+# Analysis
+# --------------------------------------------------------------------------------------------
+
+
+class Trace:
+    def __init__(self, path):
+        self.header, self.context = [], {}
+        self.res = {}  # units per mm, by axis code
+        events, self.cursor, self.wheel, self.marks = [], [], [], []
+        with open(path) as file:
+            for line in file:
+                kind, fields = line[0], line.split()
+                if kind == "E":
+                    events.append(tuple(map(int, fields[1:5])))
+                elif kind == "Q":
+                    self.cursor.append((int(fields[1]), float(fields[2]), float(fields[3])))
+                elif kind == "W":
+                    self.wheel.append(tuple(map(int, fields[1:6])))
+                elif kind == "K":
+                    self.marks.append(int(fields[1]))
+                elif kind == "C":
+                    self.context = json.loads(line[2:])
+                elif kind in "NIPBA":
+                    self.header.append(line)
+                    if kind == "A":
+                        self.res[int(fields[1])] = int(fields[6]) or 1
+        if not events:
+            sys.exit("No raw events in the trace.")
+        self.start = events[0][0]
+        self.events = [(usec - self.start, t, c, v) for usec, t, c, v in events]
+        self.res_x = self.res.get(ABS_MT_POSITION_X, 31)
+        self.res_y = self.res.get(ABS_MT_POSITION_Y, 32)
+
+        # Frames: (usec, {slot: (x, y, tracking id)}, button down)
+        self.frames = []
+        slot, pos, active, button = 0, {}, {}, False
+        for usec, ev_type, code, value in self.events:
+            if ev_type == EV_ABS and code == ABS_MT_SLOT:
+                slot = value
+            elif ev_type == EV_ABS and code == ABS_MT_TRACKING_ID:
+                if value == -1:
+                    active.pop(slot, None)
+                else:
+                    active[slot] = value
+                    pos.setdefault(slot, [0, 0])
+            elif ev_type == EV_ABS and code == ABS_MT_POSITION_X:
+                pos.setdefault(slot, [0, 0])[0] = value
+            elif ev_type == EV_ABS and code == ABS_MT_POSITION_Y:
+                pos.setdefault(slot, [0, 0])[1] = value
+            elif ev_type == EV_KEY and code == BTN_LEFT:
+                button = bool(value)
+            elif ev_type == EV_SYN and code == 0 and value == 0:
+                touches = {s: (pos[s][0], pos[s][1], active[s]) for s in active}
+                self.frames.append((usec, touches, button))
+
+    def rel_usec(self, msec):
+        """A KWin event time (ms, 32 bits of the kernel's clock) as usec since the start."""
+        delta = (msec - self.start // 1000) & 0xFFFFFFFF
+        if delta > 0x7FFFFFFF:
+            delta -= 0x100000000
+        return delta * 1000
+
+
+def build_replay():
+    source, binary = os.path.join(HERE, "replay.c"), os.path.join(CACHE, "replay")
+    if os.path.exists(binary) and os.path.getmtime(binary) >= os.path.getmtime(source):
+        return binary
+    os.makedirs(CACHE, exist_ok=True)
+    flags = subprocess.run(
+        ["pkg-config", "--cflags", "--libs", "libinput"], capture_output=True, text=True
+    )
+    if flags.returncode != 0:
+        sys.exit("The replay needs libinput-devel (sudo dnf install libinput-devel gcc).")
+    built = subprocess.run(
+        ["gcc", "-O2", "-rdynamic", "-o", binary, source] + flags.stdout.split(),
+        capture_output=True, text=True,
+    )
+    if built.returncode != 0:
+        sys.exit("Couldn't build replay.c:\n" + built.stderr)
+    return binary
+
+
+def replay(trace, lib=None, tweaks=None, verbose=False):
+    """Run the raw events through libinput: ({usec: motion}, {usec: scroll}, others, log).
+    The log: (usec, text) of libinput's state changes."""
+    binary = build_replay()
+    kwin = trace.context.get("kwin", {})
+    options = [
+        f"tap={int(kwin.get('tapToClick', True))}",
+        f"drag={int(kwin.get('tapAndDrag', True))}",
+        f"draglock={int(kwin.get('tapDragLock', False))}",
+        f"natural={int(kwin.get('naturalScroll', False))}",
+        f"dwt={int(kwin.get('disableWhileTyping', True))}",
+        f"speed={kwin.get('pointerAcceleration', 0.0)}",
+        "profile=" + ("flat" if kwin.get("pointerAccelerationProfileFlat") else "adaptive"),
+        f"verbose={int(verbose)}",
+    ]
+    env = dict(os.environ)
+    if lib:
+        env["LD_LIBRARY_PATH"] = lib
+    with tempfile.TemporaryDirectory() as config:
+        # The patched library reads its settings from here: those of the recording
+        if tweaks is None:
+            tweaks = trace.context.get("tweaks", "")
+        else:
+            with open(tweaks) as file:
+                tweaks = file.read()
+        with open(os.path.join(config, "danylo-tweaksrc"), "w") as file:
+            file.write(tweaks)
+        env["XDG_CONFIG_HOME"] = config
+        text = "".join(trace.header) + "".join(
+            f"E {usec} {t} {c} {v}\n" for usec, t, c, v in trace.events
+        )
+        seconds = trace.events[-1][0] / 1e6
+        print(f"Replaying {seconds:.0f} s of events at their recorded pace...", file=sys.stderr)
+        done = subprocess.run(
+            [binary, find_touchpad()] + options, input=text, capture_output=True, text=True, env=env
+        )
+    if done.returncode != 0:
+        sys.exit("The replay failed:\n" + done.stderr[-2000:])
+    motion, scroll, others, log = {}, {}, [], []
+    for line in done.stdout.splitlines():
+        fields = line.split()
+        if fields[0] == "L":
+            text = line.split(None, 2)[2] if len(fields) > 2 else ""
+            # "event15 - gesture: [1fg] state A -> B": without the device, and only changes
+            text = text.split(" - ", 1)[-1]
+            if any(word in text for word in ("gesture: ", "tap: ", "palm", "thumb", "hysteresis",
+                                             "dwt", "jump", "bug")) and " event " not in text:
+                log.append((int(fields[1]), text))
+        elif fields[0] == "M":
+            usec, dx, dy = int(fields[1]), float(fields[2]), float(fields[3])
+            old = motion.get(usec, (0.0, 0.0))
+            motion[usec] = (old[0] + dx, old[1] + dy)
+        elif fields[0] == "S":
+            usec, vertical, horizontal = int(fields[1]), float(fields[2]), float(fields[3])
+            old = scroll.get(usec, (0.0, 0.0))
+            scroll[usec] = (old[0] + horizontal, old[1] + vertical)
+        else:
+            others.append((int(fields[1]), fields[0], fields[2:]))
+    return motion, scroll, others, log
+
+
+def by_frame(trace, events):
+    """KWin's events ({usec: (dx, dy)}), each put on the raw frame it came from: KWin's event
+    times are the frames' times, cut to ms."""
+    frame_of_ms = {}
+    for usec, _touches, _button in trace.frames:
+        frame_of_ms.setdefault(usec // 1000, usec)
+    out, unmatched = {}, 0
+    for usec, dx, dy in events:
+        frame = frame_of_ms.get(usec // 1000)
+        if frame is None:
+            # A timer's event (a scroll stop, say): keep it at its own time
+            frame, unmatched = usec, unmatched + 1
+        old = out.get(frame, (0.0, 0.0))
+        out[frame] = (old[0] + dx, old[1] + dy)
+    return out, unmatched
+
+
+def segments(trace):
+    """Split the frames into runs with the same touches down: (finger count, frames)."""
+    runs, key, run = [], None, []
+    for frame in trace.frames:
+        ids = tuple(sorted(touch[2] for touch in frame[1].values()))
+        if ids != key:
+            if run and key:
+                runs.append((len(key), run))
+            key, run = ids, []
+        run.append(frame)
+    if run and key:
+        runs.append((len(key), run))
+    return runs
+
+
+def tracks(trace, frames):
+    """What the fingers of a run do: (what, [(x, y) per frame]).
+
+    One finger moves the cursor, and so does one finger next to a resting one (a thumb waiting
+    to click, say): its path. Two moving fingers scroll: the path of their midpoint.
+    """
+    slots = sorted(frames[0][1])
+    paths = {slot: [frame[1][slot][:2] for frame in frames] for slot in slots}
+    if len(slots) == 1:
+        return "cursor", paths[slots[0]]
+    lengths = {
+        slot: sum(
+            math.hypot((b[0] - a[0]) / trace.res_x, (b[1] - a[1]) / trace.res_y)
+            for a, b in zip(path, path[1:])
+        )
+        for slot, path in paths.items()
+    }
+    still, moving = sorted(slots, key=lengths.get)
+    if lengths[still] < 1.0 and lengths[still] < 0.25 * lengths[moving]:
+        return "cursor, next to a resting touch", paths[moving]
+    return "scroll", [
+        ((a[0] + b[0]) / 2, (a[1] + b[1]) / 2) for a, b in zip(paths[slots[0]], paths[slots[1]])
+    ]
+
+
+class Finding:
+    def __init__(self, usec, kind, text):
+        self.usec, self.kind, self.text = usec, kind, text
+
+
+def analyze_run(trace, fingers, frames, path, output, label):
+    """Compare the fingers' motion with an output ({usec: (dx, dy)}) over one run of frames.
+
+    Returns (summary, findings). The path is the fingers' (see tracks()), the output the cursor's
+    motion or the scroll. Its gain (output per mm) is taken from the run itself, so only changes
+    of it count.
+    """
+    px, py = path[0]
+    steps = []  # (usec, mm since the last frame, output in this frame or None, button)
+    for (usec, _touches, button), (x, y) in zip(frames, path):
+        mm = math.hypot((x - px) / trace.res_x, (y - py) / trace.res_y)
+        px, py = x, y
+        out = output.get(usec)
+        steps.append((usec, mm, math.hypot(*out) if out else None, button))
+    raw_total = sum(step[1] for step in steps)
+    out_total = sum(step[2] or 0 for step in steps)
+    if raw_total < 0.05:
+        return None, []
+
+    # The gain: the median over output events of output per mm moved since the last one
+    gains, pending = [], 0.0
+    for _usec, mm, out, _button in steps:
+        pending += mm
+        if out is not None:
+            if pending > 0 and out > 0:
+                gains.append(out / pending)
+            pending = 0.0
+    gain = sorted(gains)[len(gains) // 2] if gains else 0.0
+
+    findings = []
+    # Dead zones: the fingers move but nothing comes out, at the start and after each pause
+    pending, since, quiet_from, first = 0.0, steps[0][0], None, True
+    last_motion = steps[0][0]
+    for usec, mm, out, button in steps:
+        if mm > 0:
+            if pending == 0.0:
+                since = usec
+                paused = usec - last_motion > 150000
+            pending += mm
+            last_motion = usec
+        if out is not None and out > 0:
+            # 1 unit of the touchpad is ~0.03 mm: more than 3 of them without output
+            if pending > 0.1 and not button and (first or paused):
+                where = "at the start" if first else "after a pause"
+                findings.append(Finding(
+                    usec, "dead",
+                    f"{label}: no output for the first {pending:.2f} mm ({(usec - since) / 1000:.0f} "
+                    f"ms) {where}, then {out:.1f} px at once (even: {gain * mm:.1f})",
+                ))
+            pending, first = 0.0, False
+    if first and raw_total > 0.3 and not any(step[3] for step in steps):
+        findings.append(Finding(
+            steps[0][0], "dead",
+            f"{label}: no output at all for {raw_total:.2f} mm of motion",
+        ))
+    # Jumps: one event's output far above what the motion since the last one is worth
+    pending = 0.0
+    for usec, mm, out, _button in steps:
+        pending += mm
+        if out is not None:
+            even = gain * pending
+            if gain and out - even > 2.0 and out > 2.0 * even:
+                findings.append(Finding(
+                    usec, "jump",
+                    f"{label}: {out:.1f} px in one event for {pending:.3f} mm of motion "
+                    f"(even: {even:.1f} px)",
+                ))
+            pending = 0.0
+    summary = {
+        "start": steps[0][0], "end": steps[-1][0], "fingers": fingers,
+        "raw_mm": raw_total, "out": out_total, "gain": gain,
+    }
+    return summary, findings
+
+
+def table(trace, replay_out, kwin_out, log, start, end):
+    print(f"      {'ms':>9}  fingers (units)        replay        recorded")
+    previous = {}
+    notes = [note for note in log if start <= note[0] <= end]
+    for usec, touches, button in trace.frames:
+        while notes and notes[0][0] <= usec:
+            print(f"      {notes[0][0] / 1000:9.1f}  libinput: {notes.pop(0)[1]}")
+        if not start <= usec <= end:
+            previous = touches
+            continue
+        moves = []
+        for slot, (x, y, tid) in sorted(touches.items()):
+            old = previous.get(slot)
+            if old and old[2] == tid:
+                moves.append(f"{x - old[0]:+d},{y - old[1]:+d}")
+            else:
+                moves.append("down")
+        previous = touches
+        replayed, recorded = replay_out.get(usec), kwin_out.get(usec)
+        if not replayed and not recorded and all(move == "+0,+0" for move in moves):
+            continue
+        print(
+            f"      {usec / 1000:9.1f}  {' '.join(moves):<20}"
+            + (f"  {replayed[0]:+6.2f},{replayed[1]:+6.2f}" if replayed else "  " + " " * 13)
+            + (f"  {recorded[0]:+6.2f},{recorded[1]:+6.2f}" if recorded else "")
+            + ("  [button]" if button else "")
+        )
+
+
+def analyze(path, lib=None, show_all=False, tweaks=None):
+    trace = Trace(path)
+    print(f"{path}: {trace.events[-1][0] / 1e6:.1f} s, {len(trace.frames)} frames, "
+          f"{len(trace.cursor)} cursor positions, {len(trace.wheel)} scroll events, "
+          f"{len(trace.marks)} marks")
+    for key in ("time", "uptime_s", "libinput", "libinput_changed", "patch", "kwin"):
+        if key in trace.context:
+            print(f"  {key}: {trace.context[key]}")
+    if trace.context.get("tweaks"):
+        print("  tweaks: " + " ".join(trace.context["tweaks"].split()))
+
+    motion, scroll, others, log = replay(trace, lib, tweaks, verbose=True)
+    # Natural scrolling flips the sign in KWin, after libinput: compare sizes only (hypot)
+
+    # What KWin did: the cursor's steps from its positions, the scroll's from the wheel events
+    cursor_steps, last = [], None
+    for msec, x, y in trace.cursor:
+        if last and (msec - last[0]) & 0xFFFFFFFF < 100:
+            cursor_steps.append((trace.rel_usec(msec), x - last[1], y - last[2]))
+        last = (msec, x, y)
+    kwin_motion, _ = by_frame(trace, cursor_steps)
+    kwin_scroll, _ = by_frame(
+        trace, [(trace.rel_usec(msec), dx, dy) for msec, dx, dy, _ax, _ay in trace.wheel]
+    )
+    recorded = bool(trace.cursor or trace.wheel)
+
+    hysteresis = [text for _usec, text in log if "hysteresis enabled" in text]
+    if hysteresis:
+        print("\n  The replay turned on libinput's hysteresis (a dead zone of 1/4 mm) partway.")
+
+    all_findings, rows = [], []
+    for fingers, frames in segments(trace):
+        if fingers > 2:
+            continue
+        what, path = tracks(trace, frames)
+        cursor = what != "scroll"
+        results = []
+        for name, output in (("replay", motion if cursor else scroll),
+                             ("recorded", kwin_motion if cursor else kwin_scroll)):
+            if name == "recorded" and not recorded:
+                continue
+            summary, findings = analyze_run(trace, fingers, frames, path, output, name)
+            if summary:
+                results.append((name, summary, findings))
+        if results:
+            rows.append((what, frames, results))
+            for _name, _summary, findings in results:
+                all_findings += findings
+
+    print("\nStrokes and scrolls. mm: the fingers' path; px: the output's; px/mm: the usual output"
+          "\nper mm within the stroke.")
+    for what, frames, results in rows:
+        findings = [finding for _n, _s, found in results for finding in found]
+        if not findings and not show_all:
+            continue
+        summary = results[0][1]
+        line = (f"  {summary['start'] / 1000:9.1f} ms  {what}  "
+                f"{(summary['end'] - summary['start']) / 1000:.0f} ms  {summary['raw_mm']:.2f} mm:")
+        for name, result, _findings in results:
+            line += f"  {name} {result['out']:.1f} px, {result['gain']:.1f} px/mm;"
+        print(line.rstrip(";"))
+        for finding in findings:
+            print(f"      {finding.usec / 1000:9.1f} ms  {finding.kind}: {finding.text}")
+        for finding in findings[:2]:
+            table(trace, motion if what != "scroll" else scroll,
+                  kwin_motion if what != "scroll" else kwin_scroll, log,
+                  finding.usec - 120000, finding.usec + 40000)
+
+    kinds = collections.Counter(
+        (finding.kind, finding.text.split(":")[0]) for finding in all_findings
+    )
+    print(f"\n{len(rows)} strokes and scrolls with motion. Found: "
+          + (", ".join(f"{count} {kind} ({where})" for (kind, where), count in sorted(kinds.items()))
+             or "nothing"))
+
+    for msec in trace.marks:
+        usec = trace.rel_usec(msec)
+        print(f"\nMark at {usec / 1000:.1f} ms: the 1.5 s before it")
+        near = [f for f in all_findings if usec - 1500000 <= f.usec <= usec]
+        for finding in near:
+            print(f"      {finding.usec / 1000:9.1f} ms  {finding.kind}: {finding.text}")
+        table(trace, {**motion, **scroll}, {**kwin_motion, **kwin_scroll}, log,
+              usec - 1500000, usec)
+
+
+def main():
+    args = sys.argv[1:]
+    if len(args) == 2 and args[0] == "_capture":
+        try:
+            capture(args[1])
+        except (BrokenPipeError, KeyboardInterrupt):
+            pass
+    elif args and args[0] == "record" and len(args) <= 2:
+        record(args[1] if len(args) == 2 else None)
+    elif len(args) >= 2 and args[0] == "analyze":
+        options = args[2:]
+        lib = options[options.index("--lib") + 1] if "--lib" in options else None
+        tweaks = options[options.index("--tweaks") + 1] if "--tweaks" in options else None
+        analyze(args[1], lib, "--all" in options, tweaks)
+    elif len(args) == 3 and args[0] == "convert":
+        convert(args[1], args[2])
+    else:
+        print(__doc__.strip())
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()

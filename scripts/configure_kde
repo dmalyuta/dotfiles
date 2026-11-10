@@ -236,6 +236,20 @@ else
 	rm -f ~/.local/share/applications/cardwire-gui.desktop
 fi
 
+# Touchscreen panning in Brave: a touch doesn't scroll until it has moved Chromium's "touch slop"
+# (15 px), and then the page trails the finger by that much, a jump at every pan's start. It's
+# there so a tap that wobbles stays a tap: 4 px keeps that. Brave's launcher reads no flags file,
+# so the entry shadows the system one with the flag on every Exec (Meta+B uses it too, see
+# keep_launch_entry). Restart Brave for it to take effect.
+brave_entry=/usr/share/applications/brave-browser.desktop
+brave_touch_slop=4
+if [ -f "$brave_entry" ]; then
+	sed "s|^Exec=/usr/bin/brave-browser-stable|& --touch-slop-distance=$brave_touch_slop|" \
+		"$brave_entry" >~/.local/share/applications/brave-browser.desktop
+else
+	rm -f ~/.local/share/applications/brave-browser.desktop
+fi
+
 step "Setting the KDE global shortcuts"
 
 # Global shortcuts. Set through kglobalaccel's D-Bus API because it keeps them in memory and
@@ -366,6 +380,29 @@ if [ ! -d ~/.local/share/icons/"$icon_theme" ]; then
 	git clone -q --depth 1 https://github.com/vinceliuice/Tela-circle-icon-theme.git "$tela_src" &&
 		"$tela_src"/install.sh >/dev/null
 	rm -rf "$tela_src"
+fi
+# The tray asks for battery-090-charging-symbolic and the like, which Tela lacks, so it falls back
+# to battery-symbolic: an empty outline at every charge level. Give Tela's level icons those names.
+# Fully charged on AC with a power profile other than the default, the tray shows
+# battery-profile-<profile>-symbolic instead: Tela has performance and powersave, but no balanced,
+# so show the full, plugged-in battery for that.
+tela_link() { # <target in the same folder> <link>
+	[ -e "$2" ] && return
+	ln -s "$1" "$2"
+	tela_links=1
+	restart_plasmashell=1
+}
+for icon in ~/.local/share/icons/Tela-circle*/*/panel/battery-[0-9]*.svg \
+	~/.local/share/icons/Tela-circle*/*/*/battery-profile-*.svg; do
+	case $icon in *-symbolic.svg) continue ;; esac
+	tela_link "$(basename "$icon")" "${icon%.svg}-symbolic.svg"
+done
+for icon in ~/.local/share/icons/Tela-circle*/*/panel/battery-100-charging.svg; do
+	tela_link "$(basename "$icon")" "${icon%/*}/battery-profile-balanced-symbolic.svg"
+done
+if [ -n "${tela_links-}" ]; then
+	for theme in ~/.local/share/icons/Tela-circle*/; do gtk-update-icon-cache -qf "$theme"; done
+	rm -f ~/.cache/icon-cache.kcache
 fi
 if [ "$(kreadconfig6 --file kdeglobals --group Icons --key Theme)" != "$icon_theme" ]; then
 	/usr/libexec/plasma-changeicons "$icon_theme"

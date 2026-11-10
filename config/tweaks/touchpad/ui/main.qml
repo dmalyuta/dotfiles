@@ -91,6 +91,28 @@ KCM.SimpleKCM {
             text: "With a slowdown above, makes it change gradually. 0 uses libinput's estimate, from the last movement only."
         }
 
+        QQC2.CheckBox {
+            Kirigami.FormData.label: "Jitter filter:"
+            text: "Turn on when the finger wobbles"
+            checked: kcm.settings.wobbleHysteresis
+            onToggled: kcm.settings.wobbleHysteresis = checked
+            KCM.SettingStateBinding {
+                configObject: kcm.settings
+                settingName: "wobbleHysteresis"
+            }
+        }
+        Help {
+            text: "On (libinput's default): once the finger's position flickers right-left-right, the cursor ignores the first 0.25 mm of every start and turn, until the next login or wake-up. A few jittery events in a quick stroke are enough."
+        }
+        Amount {
+            Kirigami.FormData.label: "Next to a resting touch, move after:"
+            setting: "restingTouchDistance"
+            unit: " mm"
+        }
+        Help {
+            text: "With a second touch resting lower on the touchpad (a thumb waiting to click), how far the finger moves before the cursor does. libinput's: 4 mm. A thumb at the very bottom never holds the cursor back."
+        }
+
         Kirigami.Separator {
             Kirigami.FormData.isSection: true
             Kirigami.FormData.label: "Two-finger scrolling"
@@ -110,6 +132,14 @@ KCM.SimpleKCM {
         }
         Help {
             text: "How far one finger moves before it's decided whether it's a scroll. libinput's: 1 mm."
+        }
+        Amount {
+            Kirigami.FormData.label: "Once the fingers have settled:"
+            setting: "scrollRestedDistance"
+            unit: " mm"
+        }
+        Help {
+            text: "The same, for fingers that have been down for 150 ms: a slow scroll starts sooner than one that starts as the fingers land. libinput's: 1 mm."
         }
         Amount {
             Kirigami.FormData.label: "Catch-up speed:"

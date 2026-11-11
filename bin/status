@@ -264,7 +264,7 @@ gpu_section() {
 				row "Auto power-off" "$green$nv_rtd3$reset"
 			else
 				row "Auto power-off" "$red${nv_rtd3:-unknown}$reset"
-				note "The dGPU stays on even when idle. It works on the LTS kernel."
+				note "The dGPU stays on even when idle."
 			fi
 			[ -n "$vram" ] && row "Video memory" "$vram"
 		fi
@@ -892,7 +892,7 @@ temps_section() {
 	section "Temperatures and fans"
 	h=$(hwmon k10temp) && temp "CPU" "$h/temp1_input"
 	[ -n "$amdgpu" ] && temp "iGPU" "$amdgpu/temp1_input"
-	[ -n "${nv_temp:-}" ] && temp "NVIDIA GPU" $((nv_temp * 1000))
+	[ -n "${nv_temp:-}" ] && temp "NVIDIA GPU" "$(awk -v t="$nv_temp" 'BEGIN { printf "%d", t * 1000 }')"
 	h=$(hwmon nvme) && temp "SSD" "$h/temp1_input"
 	t=$(max_temp spd5118) && temp "RAM" "$t"
 	t=$(max_temp prom21_xhci) && temp "Chipset" "$t"

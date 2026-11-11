@@ -1,27 +1,31 @@
 #!/bin/sh
-# Enforce USB wake sources immediately before sleep.
-#   Razer Basilisk V3 Pro 35K (1532:00cc) - must never wake the machine.
-#   Keychron K3 Pro           (3434:0230) - must be able to wake the machine.
+# Before each sleep: USB keyboards may wake the machine, USB mice may not. The kernel lets any
+# device with a keyboard interface wake it, which includes a mouse that has one for its extra
+# buttons, so a nudge of the mouse would end the sleep. A device counts as what its first HID
+# interface is. systemd sleep hook, installed by scripts/configure_hardware.
 
-[ "$1" = "pre" ] || exit 0
+[ "$1" = pre ] || exit 0
 
-set_wakeup() {
-	vendor=$1 product=$2 state=$3 found=0
-	for d in /sys/bus/usb/devices/*/; do
-		[ -e "$d/idVendor" ] || continue
-		[ "$(cat "$d/idVendor")" = "$vendor" ] || continue
-		[ "$(cat "$d/idProduct")" = "$product" ] || continue
-		[ -w "$d/power/wakeup" ] || continue
-		echo "$state" >"$d/power/wakeup"
-		found=1
-		# Logged before the freeze, so the journal records the state the
-		# machine actually went to sleep in.
-		logger -t usb-wakeup "$vendor:$product at $(basename "$d") -> $state"
+# What a USB device's first HID interface is: its boot protocol, 01 for a keyboard and 02 for a
+# mouse. Prints nothing for a device without one.
+hid_kind() {
+	for interface in "$1":*; do
+		[ "$(cat "$interface/bInterfaceClass" 2>/dev/null)" = 03 ] || continue
+		cat "$interface/bInterfaceProtocol"
+		return
 	done
-	[ "$found" -eq 1 ] || logger -t usb-wakeup "$vendor:$product not present"
 }
 
-set_wakeup 1532 00cc disabled
-set_wakeup 3434 0230 enabled
-
+for device in /sys/bus/usb/devices/*; do
+	[ -w "$device/power/wakeup" ] || continue
+	case $(hid_kind "$device") in
+	01) state=enabled ;;
+	02) state=disabled ;;
+	*) continue ;;
+	esac
+	[ "$(cat "$device/power/wakeup")" = "$state" ] && continue
+	echo "$state" >"$device/power/wakeup"
+	# Logged before the freeze, so the journal has the state it went to sleep in.
+	logger -t usb-wakeup "$(cat "$device/product" 2>/dev/null) at ${device##*/} -> $state"
+done
 exit 0

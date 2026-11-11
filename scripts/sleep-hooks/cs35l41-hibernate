@@ -1,20 +1,17 @@
 #!/bin/bash
-# Work around a hibernation deadlock in the CS35L41 speaker amplifier driver (snd_hda_scodec_cs35l41)
-# on the ProArt PX13: now and then a hibernation hung at power-off, with the image already written
-# (screen black, power LED on, ~13 W). Found 2026-10-31 (kernel 7.2.13) from the hung kernel's crash
-# log, see scripts/sleep-debug:
-# - The driver's wake-up callback (cs35l41_system_resume) also runs at the thaw right after the
-#   image is created, and reloads the amps' DSP firmware (fw_load_work), holding the driver's
-#   fw_mutex while it reads the firmware files.
-# - By then the filesystem's own workers (btrfs's, which are freezable) are frozen, so a read that
-#   misses the cache never completes, and the power-off's first step (cs35l41_system_suspend_prep)
-#   waits for that mutex forever. The files are usually cached, hence rare: more likely with memory
-#   full, as setting aside memory for the image evicts them (it hung right after a dnf upgrade).
-# So turn the firmware off (each amp's "DSP1 Firmware Load" ALSA control) before a hibernation, while
-# everything still runs, and back on after it: the thaw then has nothing to load, and unloading reads
-# no file. The speakers play without their DSP until then, while there is no sound anyway.
-# systemd-sleep hook (suspend-then-hibernate runs it around each of its steps, SYSTEMD_SLEEP_ACTION
-# says which). Installed by scripts/configure_hardware.
+# Work around a hibernation deadlock in the CS35L41 speaker amplifier driver
+# (snd_hda_scodec_cs35l41): now and then a hibernation hung at power-off, with the image already
+# written. scripts/sleep-debug/CS35L41_hang_summary.md has the analysis. In short:
+# - At the thaw right after the image is created, the driver reloads the amps' DSP firmware,
+#   holding its fw_mutex while it reads the firmware files.
+# - The filesystem's workers are frozen by then, so a read that misses the cache never completes,
+#   and the power-off waits for that mutex forever.
+# So turn the firmware off (each amp's "DSP1 Firmware Load" ALSA control) before a hibernation, and
+# back on after it: the thaw then has nothing to load. The speakers play without their DSP until
+# then, while there is no sound anyway.
+#
+# A systemd sleep hook, installed by scripts/configure_hardware.
+#
 # Author: Danylo Malyuta, 2026.
 
 state=/run/cs35l41-hibernate

@@ -1,21 +1,18 @@
 #!/bin/bash
 #
 # Low-level hardware setup: GPUs, kernel command line, initramfs, wake sources, CPU power readings,
-# sleep and hibernation, and the ASUS ProArt PX13 laptop's quirks. Run by start_fresh after it
-# installs the software, and safe to re-run on its own.
+# sleep and hibernation, the ASUS laptop's quirks, and the patched libraries. Run by start_fresh
+# after it installs the software, and safe to re-run on its own.
 #
 # Usage: configure_hardware
 #
 # Exits with status 2 if a setting changed that takes a reboot to apply.
 #
+# The steps are at the bottom, in the order they run. The functions above them do the work.
+#
 # Author: Danylo Malyuta, 2026.
 
 dotfiles=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
-
-# --------------------------------------------------------------------------------------------------
-# Helpers.
-# --------------------------------------------------------------------------------------------------
-
 . "$dotfiles"/scripts/functions.sh
 
 nvidia_version=$(nvidia_version)
@@ -24,124 +21,102 @@ nvidia_version=$(nvidia_version)
 # GPUs.
 # --------------------------------------------------------------------------------------------------
 
-step "Configuring the GPUs"
-
-# On the laptop, Electron apps (Obsidian, VS Code) list every GPU through Vulkan at startup, which
-# wakes the NVIDIA dGPU for ~20 s. Show Vulkan apps only the AMD iGPU (bin/nvidia-run runs one on
-# the dGPU). Not on the desktop, whose screens are on the NVIDIA card: an app drawing on the iGPU
-# can't show its window there ("importing the supplied dmabufs failed").
-vulkan_conf=~/.config/environment.d/60-vulkan-igpu.conf
-radeon_icd=/usr/share/vulkan/icd.d/radeon_icd.x86_64.json
-if is_laptop && [ -n "$nvidia_version" ] && lspci -d 1002: | grep -qE 'VGA|3D|Display'; then
-	mkdir -p ~/.config/environment.d
-	cat >"$vulkan_conf" <<EOF
+# On a laptop with an AMD iGPU, show Vulkan apps only that one: Electron apps (Obsidian, VS Code)
+# list every GPU through Vulkan at startup, which wakes the NVIDIA dGPU for ~20 s. bin/nvidia-run
+# runs one on the dGPU. Not on the desktop, whose screens are on the NVIDIA card: an app drawing on
+# the iGPU can't show its window there ("importing the supplied dmabufs failed").
+hide_dgpu_from_vulkan() {
+	local conf=~/.config/environment.d/60-vulkan-igpu.conf
+	local radeon_icd=/usr/share/vulkan/icd.d/radeon_icd.x86_64.json
+	if is_laptop && [ -n "$nvidia_version" ] && lspci -d 1002: | grep -qE 'VGA|3D|Display'; then
+		mkdir -p ~/.config/environment.d
+		cat >"$conf" <<EOF
 # Vulkan apps only see the AMD iGPU, so they don't wake the NVIDIA dGPU. nvidia-run uses the dGPU.
 VK_DRIVER_FILES=$radeon_icd
 VK_ICD_FILENAMES=$radeon_icd
 EOF
-else
-	rm -f "$vulkan_conf"
-fi
-
-# Also hide /dev/nvidiactl etc. when the dGPU is blocked, so tools like nvtop don't wake it. Only
-# reliable with exactly one iGPU and one Nvidia dGPU.
-installed cardwire && has_nvidia && cardwire config experimental-nvidia-block true
+	else
+		rm -f "$conf"
+	fi
+}
 
 # --------------------------------------------------------------------------------------------------
 # Kernel.
 # --------------------------------------------------------------------------------------------------
 
-step "Configuring the kernel"
-
-# Zen 5's 32-bit RDSEED is broken until a microcode fix, which the CPU only accepts after a BIOS
-# update, so the kernel prints "RDSEED32 is broken" on screen at every boot (and harmlessly turns it
-# off). It's logged at emergency level, which only loglevel=0 keeps off the console. Panics still
-# show. New kernels copy the option from the running one.
-if journalctl -k -b 0 -q -g 'RDSEED32 is broken' >/dev/null 2>&1 &&
-	! sudo grubby --info=DEFAULT | grep -q '^args=.*\bloglevel=0\b'; then
-	sudo grubby --update-kernel=ALL --args=loglevel=0
-	reboot_for "kernel option loglevel=0, which hides the RDSEED32 boot message"
-fi
+# Zen 5's 32-bit RDSEED is broken until a microcode fix that needs a BIOS update, so the kernel
+# prints "RDSEED32 is broken" on screen at every boot (and harmlessly turns it off). It's logged
+# at emergency level, which only loglevel=0 keeps off the console. Panics still show. New kernels
+# copy the option from the running one.
+hide_rdseed_boot_message() {
+	if journalctl -k -b 0 -q -g 'RDSEED32 is broken' >/dev/null 2>&1 &&
+		! sudo grubby --info=DEFAULT | grep -q '^args=.*\bloglevel=0\b'; then
+		sudo grubby --update-kernel=ALL --args=loglevel=0
+		reboot_for "kernel option loglevel=0, which hides the RDSEED32 boot message"
+	fi
+}
 
 # The hardware clock in UTC, Linux's default, unless Windows is installed, which keeps it in local
 # time: systemd never updates a local-time clock, so it's an hour off after each daylight saving
 # change. Look for Windows itself, as its boot entry can outlive it.
-if sudo test -e /boot/efi/EFI/Microsoft/Boot/bootmgfw.efi &&
-	lsblk -nro FSTYPE | grep -qixE 'ntfs|bitlocker'; then
-	[ "$(timedatectl show -p LocalRTC --value)" = yes ] ||
-		say "Windows is installed: run 'sudo timedatectl set-local-rtc 1' if its clock is off."
-elif [ "$(timedatectl show -p LocalRTC --value)" = yes ]; then
-	sudo timedatectl set-local-rtc 0
-fi
+keep_hardware_clock_in_utc() {
+	if sudo test -e /boot/efi/EFI/Microsoft/Boot/bootmgfw.efi &&
+		lsblk -nro FSTYPE | grep -qixE 'ntfs|bitlocker'; then
+		[ "$(timedatectl show -p LocalRTC --value)" = yes ] ||
+			say "Windows is installed: run 'sudo timedatectl set-local-rtc 1' if its clock is off."
+	elif [ "$(timedatectl show -p LocalRTC --value)" = yes ]; then
+		sudo timedatectl set-local-rtc 0
+	fi
+}
 
 # --------------------------------------------------------------------------------------------------
 # USB devices and wake sources.
 # --------------------------------------------------------------------------------------------------
 
-step "Configuring USB devices and wake sources"
-
-# Which USB devices wake it. systemd only runs sleep hooks from /usr/lib/systemd/system-sleep.
-if install_script_file udev/90-usb-wakeup.rules /etc/udev/rules.d/90-usb-wakeup.rules; then
-	sudo udevadm control --reload
-	sudo udevadm trigger --action=add --subsystem-match=usb
-fi
-install_script_file sleep-hooks/usb-wakeup /usr/lib/systemd/system-sleep/usb-wakeup 0755
-# Chargers and batteries don't wake it, see scripts/udev/90-power-supply-wakeup.rules.
-if install_script_file udev/90-power-supply-wakeup.rules \
-	/etc/udev/rules.d/90-power-supply-wakeup.rules; then
-	sudo udevadm control --reload
-	sudo udevadm trigger --action=change --subsystem-match=power_supply
-fi
-
-# CPU power for bin/status, see scripts/udev/90-rapl-read.rules.
-if install_script_file udev/90-rapl-read.rules /etc/udev/rules.d/90-rapl-read.rules; then
-	sudo udevadm control --reload
-	sudo udevadm trigger --action=add --subsystem-match=powercap
-fi
-
-# Replug the C920 webcam when its USB link fails, see scripts/bin/c920-guard.
-install_script_file systemd/c920-guard.service /etc/systemd/system/c920-guard.service &&
-	sudo systemctl daemon-reload
-install_script_file bin/c920-guard /usr/lib/systemd/system-sleep/c920-guard 0755
-install_script_file bin/c920-guard /usr/local/bin/c920-guard 0755 &&
-	sudo systemctl try-restart c920-guard
-sudo systemctl enable --now c920-guard
+# Remove what earlier versions installed and newer ones replaced: udev rules for the USB wake
+# sources, and the webcam guard under its first name (start_fresh installs it where it's needed).
+remove_replaced_files() {
+	if [ -e /etc/udev/rules.d/90-usb-wakeup.rules ]; then
+		sudo rm -f /etc/udev/rules.d/90-usb-wakeup.rules
+		sudo udevadm control --reload
+	fi
+	if [ -e /etc/systemd/system/c920-guard.service ]; then
+		sudo systemctl disable --now c920-guard
+		sudo rm -f /etc/systemd/system/c920-guard.service /usr/local/bin/c920-guard \
+			/usr/lib/systemd/system-sleep/c920-guard
+		sudo systemctl daemon-reload
+	fi
+}
 
 # --------------------------------------------------------------------------------------------------
 # Laptop sleep and hibernation.
 # --------------------------------------------------------------------------------------------------
 
-step 2 "Configuring sleep and hibernation"
-
-# The laptop only has s2idle sleep, which reaches the SoC's deepest state only with every device
-# off, and the Nvidia driver keeps the dGPU on unless told (~1.5%/h). Also power it off whenever
-# it's idle (runtime D3), see /proc/driver/nvidia/gpus/*/power.
+# Let the NVIDIA dGPU power off in sleep and whenever it's idle (runtime D3, see
+# /proc/driver/nvidia/gpus/*/power). The laptop only has s2idle sleep, which reaches the SoC's
+# deepest state only with every device off, and the driver keeps the dGPU on unless told
+# (~1.5%/h).
 #
 # The driver's own sleep hook (UseKernelSuspendNotifiers) is off, as hibernation hung with it; RPM
 # Fusion's nvidia-suspend, -hibernate and -resume services do its part instead. Keep systemd's
 # default HibernateMode, platform: shutdown and reboot hang in the driver's nv_pci_shutdown.
-#
-# Nvidia stays out of the initramfs (RPM Fusion's 99-nvidia-dracut.conf): a driver loaded there
-# refuses the freeze before resuming from hibernation (nv_pmops_freeze), so the image is dropped.
-if is_laptop && [ -n "$nvidia_version" ]; then
+set_nvidia_power_management() {
 	write_root_file /etc/modprobe.d/nvidia-power.conf <<'EOF' &&
 options nvidia NVreg_EnableS0ixPowerManagement=1
 options nvidia NVreg_DynamicPowerManagement=0x02
 options nvidia NVreg_UseKernelSuspendNotifiers=0
 EOF
 		reboot_for "NVIDIA power management options (/etc/modprobe.d/nvidia-power.conf)"
-fi
+}
 
-# Hibernation needs Secure Boot off, see can_hibernate in scripts/functions.sh.
-if is_laptop && ! can_hibernate; then
-	say "Hibernation is off while Secure Boot is on: the laptop will only sleep." >&2
-fi
-
-# Keep amdgpu out of the initramfs too: the resumed kernel can't restore an iGPU that the initramfs
-# set up ("MES failed to respond"), and the screen stays black. And add dracut's resume module,
-# which it leaves out without resume= on the kernel command line.
-if is_laptop && can_hibernate; then
-	write_root_file /etc/dracut.conf.d/90-hibernate.conf <<'EOF' && rebuild_initramfs=1
+# An initramfs that can resume from hibernation: with dracut's resume module, which it leaves out
+# without resume= on the kernel command line, and without the GPU drivers. The resumed kernel can't
+# restore an iGPU that the initramfs set up ("MES failed to respond", the screen stays black), and
+# an NVIDIA driver loaded there refuses the freeze before the resume (nv_pmops_freeze), so the
+# image is dropped. RPM Fusion's 99-nvidia-dracut.conf already keeps NVIDIA's out.
+set_up_initramfs_for_hibernation() {
+	local rebuild=
+	write_root_file /etc/dracut.conf.d/90-hibernate.conf <<'EOF' && rebuild=1
 # Hibernation, see scripts/configure_hardware: resume, and without amdgpu, which can't resume
 # from the initramfs.
 add_dracutmodules+=" resume "
@@ -149,207 +124,256 @@ omit_drivers+=" amdgpu "
 EOF
 	# Also rebuild if a past rebuild was skipped or failed, so no initramfs still has a GPU driver.
 	sudo find /boot -maxdepth 1 -name 'initramfs-*.img' ! -name '*rescue*' -exec lsinitrd {} \; \
-		2>/dev/null | grep -q -E '/(nvidia|amdgpu)\.ko' && rebuild_initramfs=1
-fi
-if [ -n "${rebuild_initramfs:-}" ]; then
-	sudo dracut -f --regenerate-all
-	reboot_for "initramfs rebuilt for hibernation"
-fi
+		2>/dev/null | grep -q -E '/(nvidia|amdgpu)\.ko' && rebuild=1
+	if [ -n "$rebuild" ]; then
+		sudo dracut -f --regenerate-all
+		reboot_for "initramfs rebuilt for hibernation"
+	fi
+}
 
 # Hibernation goes to a swapfile as big as RAM (zram can't hold the image), in its own subvolume:
 # btrfs can't snapshot one with an active swapfile. SELinux needs it labeled swapfile_t. systemd
 # finds it on resume through an EFI variable, so no resume= is needed.
 swapfile=/var/swap/swapfile
-if is_laptop && can_hibernate && [ "$(findmnt -no FSTYPE /)" = btrfs ] && [ ! -f "$swapfile" ]; then
+create_hibernation_swapfile() {
+	local ram_gb
+	ram_gb=$(awk '/MemTotal/ { print int($2 / 1048576) + 1 }' /proc/meminfo)
 	sudo btrfs subvolume show /var/swap >/dev/null 2>&1 || sudo btrfs subvolume create /var/swap
 	sudo semanage fcontext -l -C | grep -q '^/var/swap(/\.\*)?\s' ||
 		sudo semanage fcontext -a -t swapfile_t '/var/swap(/.*)?'
-	sudo btrfs filesystem mkswapfile --size "$(awk '/MemTotal/ { print int($2 / 1048576) + 1 }' \
-		/proc/meminfo)g" "$swapfile"
+	sudo btrfs filesystem mkswapfile --size "${ram_gb}g" "$swapfile"
 	sudo restorecon -R /var/swap
 	grep -q "^${swapfile}[[:space:]]" /etc/fstab ||
 		{ cat /etc/fstab && echo "$swapfile none swap defaults 0 0"; } | write_root_file /etc/fstab
 	sudo systemctl daemon-reload
 	sudo swapon "$swapfile"
-fi
+}
 
-# Sleep, then hibernate after 50 min on battery (on AC it stays asleep). Sleep draws ~0.64 W and a
-# hibernation costs ~0.53 Wh to enter and leave (bin/sleep_stats, 2026-11): after 50 min, 0.53 Wh /
-# 0.63 W, sleeping has cost more than hibernating would have. SleepMode 3 is "Standby, then
-# hibernate". The Plasma menu's Sleep asks logind for a plain suspend instead, so make that one
-# sleep then hibernate too. Without hibernation, back to plain sleep.
-suspend_dropin=/etc/systemd/system/systemd-suspend.service.d/50-suspend-then-hibernate.conf
-if is_laptop && can_hibernate && [ -f "$swapfile" ]; then
-	write_root_file /etc/systemd/sleep.conf.d/50-suspend-then-hibernate.conf <<'EOF'
+# Sleep, then hibernate after 50 min on battery (on AC it stays asleep), or with "off", back to
+# plain sleep. Sleep draws ~0.64 W and a hibernation costs ~0.53 Wh to enter and leave
+# (bin/sleep_stats, 2026-11), so after 50 min sleeping has cost more than hibernating would have.
+sleep_then_hibernate() {
+	local profile sleep_mode=(--delete)
+	local sleep_conf=/etc/systemd/sleep.conf.d/50-suspend-then-hibernate.conf
+	local suspend_dropin=/etc/systemd/system/systemd-suspend.service.d/50-suspend-then-hibernate.conf
+	if [ "$1" = on ]; then
+		write_root_file "$sleep_conf" <<'EOF'
 [Sleep]
 HibernateDelaySec=50min
 HibernateOnACPower=no
 EOF
-	write_root_file "$suspend_dropin" <<'EOF' && sudo systemctl daemon-reload
+		# The Plasma menu's Sleep asks logind for a plain suspend, so make that one sleep then
+		# hibernate too.
+		write_root_file "$suspend_dropin" <<'EOF' && sudo systemctl daemon-reload
 [Service]
 ExecStart=
 ExecStart=/usr/lib/systemd/systemd-sleep suspend-then-hibernate
 EOF
-	for profile in AC Battery LowBattery; do
-		kconf --file powerdevilrc --group "$profile" --group SuspendAndShutdown --key SleepMode 3
-	done
-elif is_laptop; then
-	sudo rm -f /etc/systemd/sleep.conf.d/50-suspend-then-hibernate.conf
-	if [ -e "$suspend_dropin" ]; then
-		sudo rm -f "$suspend_dropin"
-		sudo systemctl daemon-reload
+		# KDE's "Standby, then hibernate".
+		sleep_mode=(3)
+	else
+		sudo rm -f "$sleep_conf"
+		if [ -e "$suspend_dropin" ]; then
+			sudo rm -f "$suspend_dropin"
+			sudo systemctl daemon-reload
+		fi
 	fi
 	for profile in AC Battery LowBattery; do
-		kconf --file powerdevilrc --group "$profile" --group SuspendAndShutdown --key SleepMode --delete
+		kconf --file powerdevilrc --group "$profile" --group SuspendAndShutdown --key SleepMode \
+			"${sleep_mode[@]}"
 	done
-fi
+}
 
-# The battery drain of each sleep and hibernation, one row per step in /var/log/sleep-stats.csv,
-# for plotting later, see scripts/sleep-hooks/sleep-stats.
-is_laptop && install_script_file sleep-hooks/sleep-stats \
-	/usr/lib/systemd/system-sleep/sleep-stats 0755
-
-# Keep the speaker amps from deadlocking a hibernation at power-off, see
-# scripts/sleep-hooks/cs35l41-hibernate.
-is_laptop && install_script_file sleep-hooks/cs35l41-hibernate \
-	/usr/lib/systemd/system-sleep/cs35l41-hibernate 0755
-
-# Only the laptop hibernates. Turn it off elsewhere, so KDE never offers it (it would if a big
-# enough swap showed up).
-if ! is_laptop; then
+# Turn hibernation off, so KDE never offers it (it would if a big enough swap showed up).
+disable_hibernation() {
 	write_root_file /etc/systemd/sleep.conf.d/50-no-hibernate.conf <<'EOF'
 [Sleep]
 AllowHibernation=no
 AllowSuspendThenHibernate=no
 AllowHybridSleep=no
 EOF
-fi
+}
 
 # --------------------------------------------------------------------------------------------------
 # ASUS laptop.
 # --------------------------------------------------------------------------------------------------
 
-is_laptop && step "Configuring the ASUS laptop"
+# Keep the keyboard backlight dark while the laptop starts, instead of pulsing until asusd is up
+# (scripts/bin/asus-kbd-dark), and reset the keyboard controller after a hibernation
+# (scripts/bin/asus-kbd-rebind).
+set_up_asus_keyboard_backlight() {
+	local led=/sys/class/leds/asus::kbd_backlight
+	# Run once now as well, at the brightness it has: the controller keeps "no animation at
+	# power-on" from it.
+	install_command asus-kbd-dark &&
+		sudo /usr/local/bin/asus-kbd-dark "$(cat "$led/brightness" 2>/dev/null || echo 0)"
+	install_udev_rule 90-asus-kbd-dark.rules
+	if installed asusctl; then
+		# asusd sets the backlight, while systemd-backlight restores whatever it saved at
+		# shutdown, which can be 0.
+		sudo systemctl mask "systemd-backlight@leds:${led##*/}.service"
+		install_command asus-kbd-rebind
+		install_unit asus-kbd-rebind.service
+		sudo systemctl enable asus-kbd-rebind
+	fi
+}
 
-# asusd sets the keyboard backlight, while systemd-backlight restores whatever it saved at
-# shutdown, which can be 0. Also reset the keyboard controller after hibernation, see
-# scripts/bin/asus-kbd-rebind.
-if installed asusctl; then
-	sudo systemctl mask systemd-backlight@leds:asus::kbd_backlight.service
-	install_script_file bin/asus-kbd-rebind /usr/local/bin/asus-kbd-rebind 0755
-	install_script_file systemd/asus-kbd-rebind.service \
-		/etc/systemd/system/asus-kbd-rebind.service &&
-		sudo systemctl daemon-reload
-	sudo systemctl enable asus-kbd-rebind
-fi
-
-# The keyboard backlight stays dark while the laptop starts, instead of pulsing until asusd is up:
-# see scripts/bin/asus-kbd-dark. Run once now as well, for what the keyboard controller keeps
-# from it (no animation at power-on), at the brightness it has.
-if is_laptop; then
-	install_script_file bin/asus-kbd-dark /usr/local/bin/asus-kbd-dark 0755 &&
-		sudo /usr/local/bin/asus-kbd-dark \
-			"$(cat /sys/class/leds/asus::kbd_backlight/brightness 2>/dev/null || echo 0)"
-	install_script_file udev/90-asus-kbd-dark.rules /etc/udev/rules.d/90-asus-kbd-dark.rules &&
-		sudo udevadm control --reload
-fi
-
-# G-Helper's fan curves, see scripts/bin/asus-fan-curves. asusd saves them.
-if installed asusctl && is_laptop; then
-	"$dotfiles"/scripts/bin/asus-fan-curves >/dev/null
-fi
-
-# The power profile on AC and on battery, switched by KDE, not asusd: KDE's battery menu shows
+# Have KDE, not asusd, switch the power profile on AC and on battery. KDE's battery menu shows
 # tuned-ppd's profile, which doesn't follow asusd's switches (it showed Performance while running
 # Quiet). tuned-ppd then sets platform_profile, which asusd follows.
-if installed asusctl && is_laptop; then
+let_kde_switch_power_profiles() {
+	local p source
 	for p in AC:performance Battery:power-saver LowBattery:power-saver; do
 		kconf --file powerdevilrc --group "${p%%:*}" --group Performance --key PowerProfile "${p#*:}"
 	done
-	if systemctl -q is-active asusd; then
-		for src in Ac Battery; do
-			busctl --system set-property xyz.ljones.Asusd /xyz/ljones xyz.ljones.Platform \
-				"ChangePlatformProfileOn$src" b false
-		done
-	fi
-fi
+	systemctl -q is-active asusd || return 0
+	for source in Ac Battery; do
+		busctl --system set-property xyz.ljones.Asusd /xyz/ljones xyz.ljones.Platform \
+			"ChangePlatformProfileOn$source" b false
+	done
+}
 
 # Per-profile CPU power limits, lower in Quiet for battery life, see scripts/bin/asus-power-limits.
 # With Secure Boot on, acpi_call only loads once its signing key is enrolled, see start_fresh.
-if installed acpi_call-dkms && is_laptop; then
-	install_script_file bin/asus-power-limits /usr/lib/systemd/system-sleep/asus-power-limits 0755
-	install_script_file systemd/asus-power-limits.service \
-		/etc/systemd/system/asus-power-limits.service &&
-		sudo systemctl daemon-reload
-	install_script_file bin/asus-power-limits /usr/local/bin/asus-power-limits 0755 &&
-		sudo systemctl try-restart asus-power-limits
+install_power_limits() {
+	install_sleep_hook bin/asus-power-limits
+	install_unit asus-power-limits.service
+	install_command asus-power-limits && sudo systemctl try-restart asus-power-limits
 	sudo systemctl enable --now asus-power-limits
-fi
+}
 
-# The PX13 is a 2-in-1, but asus-nb-wmi has no quirk for it, so it never reports tablet mode. Use
+# The laptop is a 2-in-1, but asus-nb-wmi has no quirk for it, so it never reports tablet mode. Use
 # its lid-flip sensor (WMI device 0x00060062), on "Asus WMI hotkeys", which keyd leaves alone.
-if is_laptop; then
+enable_tablet_mode_switch() {
 	write_root_file /etc/modprobe.d/asus-tablet-mode.conf <<'EOF' &&
 options asus_nb_wmi tablet_mode_sw=2
 EOF
 		reboot_for "tablet mode switch (/etc/modprobe.d/asus-tablet-mode.conf)"
-fi
+}
 
-# Screen rotation: since kernel 7.1 the accelerometer's readings are dropped, so a HID-BPF program
-# fixes its report descriptor, see scripts/hid-bpf/amd-sfh-accel.bpf.c. Built against the running
-# kernel's types (CO-RE, so later kernels load it too), and loaded by udev at boot. Its source is
-# kept next to it, to rebuild only when it changes.
-hid_bpf_src=$dotfiles/scripts/hid-bpf/amd-sfh-accel.bpf.c
-hid_bpf_obj=/etc/udev-hid-bpf/amd-sfh-accel.bpf.o
-if is_laptop && installed udev-hid-bpf; then
-	if [ ! -f "$hid_bpf_obj" ] || ! sudo cmp -s "$hid_bpf_src" "${hid_bpf_obj%.o}.c"; then
-		hid_bpf_build=$(mktemp -d)
-		if bpftool btf dump file /sys/kernel/btf/vmlinux format c >"$hid_bpf_build/vmlinux.h" &&
-			clang -O2 -g -target bpf -Wno-missing-declarations -I"$hid_bpf_build" \
-				-c "$hid_bpf_src" -o "$hid_bpf_build/fix.bpf.o"; then
-			sudo install -Z -Dm644 "$hid_bpf_build/fix.bpf.o" "$hid_bpf_obj"
-			sudo install -Z -Dm644 "$hid_bpf_src" "${hid_bpf_obj%.o}.c"
+# --------------------------------------------------------------------------------------------------
+# Screen rotation.
+# --------------------------------------------------------------------------------------------------
+
+# Whether a HID device's report descriptor still ends with the field that the accelerometer fix
+# removes (see the program's motion_state_tail).
+has_motion_state_field() {
+	[[ $(od -An -tx1 -v "$1/report_descriptor" | tr -d ' \n') == *0a510415002501750895018102c0 ]]
+}
+
+# Since kernel 7.1 the accelerometer's readings are dropped, so the screen doesn't rotate: a
+# HID-BPF program fixes its report descriptor, see scripts/hid-bpf/amd-sfh-accel.bpf.c. Built
+# against the running kernel's types (CO-RE, so later kernels load it too), and loaded by udev at
+# boot.
+install_accelerometer_fix() {
+	local src=$dotfiles/scripts/hid-bpf/amd-sfh-accel.bpf.c
+	local obj=/etc/udev-hid-bpf/amd-sfh-accel.bpf.o
+	local build dev attached=
+	# Its source is kept next to it, to rebuild only when it changes.
+	if [ ! -f "$obj" ] || ! sudo cmp -s "$src" "${obj%.o}.c"; then
+		build=$(mktemp -d)
+		if bpftool btf dump file /sys/kernel/btf/vmlinux format c >"$build/vmlinux.h" &&
+			clang -O2 -g -target bpf -Wno-missing-declarations -I"$build" \
+				-c "$src" -o "$build/fix.bpf.o"; then
+			sudo install -Z -Dm644 "$build/fix.bpf.o" "$obj"
+			sudo install -Z -Dm644 "$src" "${obj%.o}.c"
 		else
 			failed "Could not build the accelerometer fix, so the screen won't rotate."
 		fi
-		rm -rf "$hid_bpf_build"
+		rm -rf "$build"
 	fi
-	install_script_file udev/99-hid-bpf-amd-sfh-accel.rules \
-		/etc/udev/rules.d/99-hid-bpf-amd-sfh-accel.rules && sudo udevadm control --reload
-	# Fix the accelerometer now too, if it still has the field (see the program's probe()). It
-	# comes back as a new IIO device, so restart iio-sensor-proxy.
-	hid_bpf_attached=
+	install_udev_rule 99-hid-bpf-amd-sfh-accel.rules
+	[ -f "$obj" ] || return 0
+	# Fix the accelerometer now too. It comes back as a new IIO device, so restart
+	# iio-sensor-proxy.
 	for dev in /sys/bus/hid/devices/0020:1022:0001.*; do
-		[ -f "$hid_bpf_obj" ] && [ -e "$dev/report_descriptor" ] || continue
-		[[ $(od -An -tx1 -v "$dev/report_descriptor" | tr -d ' \n') == *0a510415002501750895018102c0 ]] &&
-			sudo udev-hid-bpf add "$dev" "$hid_bpf_obj" && hid_bpf_attached=1
+		[ -e "$dev/report_descriptor" ] && has_motion_state_field "$dev" &&
+			sudo udev-hid-bpf add "$dev" "$obj" && attached=1
 	done
-	[ -n "$hid_bpf_attached" ] && sudo systemctl restart iio-sensor-proxy
-fi
+	[ -z "$attached" ] || sudo systemctl restart iio-sensor-proxy
+}
 
 # --------------------------------------------------------------------------------------------------
 # Patched libraries.
 # --------------------------------------------------------------------------------------------------
 
-# Built with the patches in scripts/patches, again whenever an update puts Fedora's back, see
-# patch-library. They take effect at the next login. Their settings are in System Settings >
-# Danylo's Linux Tweaks, see config/tweaks.
+# Replace a library with one built with a patch from scripts/patches, again whenever an update
+# puts Fedora's back, see patch-library. It takes effect at the next login. The patches' settings
+# are in System Settings > Danylo's Linux Tweaks, see config/tweaks. Args: what goes wrong without
+# the patch, the patch, its package, the library.
+patch_library() { "$dotfiles"/scripts/patches/patch-library --impact "$@"; }
+
+# --------------------------------------------------------------------------------------------------
+# The steps.
+# --------------------------------------------------------------------------------------------------
+
+step "Configuring the GPUs"
+hide_dgpu_from_vulkan
+# Also hide /dev/nvidiactl etc. when the dGPU is blocked, so tools like nvtop don't wake it. Only
+# reliable with exactly one iGPU and one NVIDIA dGPU.
+installed cardwire && has_nvidia && cardwire config experimental-nvidia-block true
+
+step "Configuring the kernel"
+hide_rdseed_boot_message
+keep_hardware_clock_in_utc
+
+step "Configuring USB devices and wake sources"
+# USB keyboards wake it, mice don't, see the hook.
+install_sleep_hook sleep-hooks/usb-wakeup
+remove_replaced_files
+# Chargers and batteries don't wake it, see the rules file.
+install_udev_rule 90-power-supply-wakeup.rules --action=change --subsystem-match=power_supply
+# CPU power for bin/status, see the rules file.
+install_udev_rule 90-rapl-read.rules --action=add --subsystem-match=powercap
+
+step 2 "Configuring sleep and hibernation"
+if is_laptop; then
+	[ -n "$nvidia_version" ] && set_nvidia_power_management
+	# Hibernation needs Secure Boot off, see can_hibernate.
+	if can_hibernate; then
+		set_up_initramfs_for_hibernation
+		[ "$(findmnt -no FSTYPE /)" = btrfs ] && [ ! -f "$swapfile" ] && create_hibernation_swapfile
+	else
+		say "Hibernation is off while Secure Boot is on: the laptop will only sleep." >&2
+	fi
+	if can_hibernate && [ -f "$swapfile" ]; then
+		sleep_then_hibernate on
+	else
+		sleep_then_hibernate off
+	fi
+	# The battery drain of each sleep and hibernation, logged for bin/sleep_stats.
+	install_sleep_hook sleep-hooks/sleep-stats
+	# Keep the speaker amps from deadlocking a hibernation at power-off.
+	install_sleep_hook sleep-hooks/cs35l41-hibernate
+else
+	disable_hibernation
+fi
+
+if is_asus_laptop; then
+	step "Configuring the ASUS laptop"
+	set_up_asus_keyboard_backlight
+	if installed asusctl; then
+		# G-Helper's fan curves. asusd saves them.
+		"$dotfiles"/scripts/bin/asus-fan-curves >/dev/null
+		let_kde_switch_power_profiles
+	fi
+	installed acpi_call-dkms && install_power_limits
+	enable_tablet_mode_switch
+fi
+has_amd_sfh && installed udev-hid-bpf && install_accelerometer_fix
+
 step "Patching KDE's idle timers"
-"$dotfiles"/scripts/patches/patch-library \
-	--impact "after waking up by itself, the system won't go back to sleep" \
+patch_library "after waking up by itself, the system won't go back to sleep" \
 	kidletime-wayland-simulate-activity.patch kf6-kidletime KF6IdleTimeWaylandPlugin.so
 if is_laptop; then
 	step 2 "Patching libinput for the touchpad"
-	"$dotfiles"/scripts/patches/patch-library \
-		--impact "the touchpad cursor and scrolling will start late" \
+	patch_library "the touchpad cursor and scrolling will start late" \
 		libinput-touchpad-lag.patch libinput libinput.so
 	step 6 "Patching KWin for touchpad gestures"
-	"$dotfiles"/scripts/patches/patch-library \
-		--impact "three-finger swipes will switch desktops, not windows" \
+	patch_library "three-finger swipes will switch desktops, not windows" \
 		kwin-touchpad-gestures.patch kwin-libs libkwin.so
 	step 4 "Patching Plasma's battery menu"
-	"$dotfiles"/scripts/patches/patch-library \
-		--impact "the battery menu will list the touchscreen pen's battery" \
+	patch_library "the battery menu will list the touchscreen pen's battery" \
 		plasma-battery-absent-devices.patch plasma-workspace-libs libbatterycontrol.so
 fi
 

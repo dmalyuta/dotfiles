@@ -219,15 +219,15 @@
 
 	## Maildir
 	# Path to the maildir to check.
-	export TMUX_POWERLINE_SEG_MAILCOUNT_MAILDIR_INBOX="/home/dmalyuta/.mail/inbox/new"
+	export TMUX_POWERLINE_SEG_MAILCOUNT_MAILDIR_INBOX="$HOME/.mail/inbox/new"
 
 	## mbox
 	# Path to the mbox to check.
-	export TMUX_POWERLINE_SEG_MAILCOUNT_MBOX_INBOX="/var/spool/mail/dmalyuta"
+	export TMUX_POWERLINE_SEG_MAILCOUNT_MBOX_INBOX="/var/spool/mail/$USER"
 
 	## mailcheck
 	# Optional path to mailcheckrc
-	export TMUX_POWERLINE_SEG_MAILCOUNT_MAILCHECKRC="/home/dmalyuta/.mailcheckrc"
+	export TMUX_POWERLINE_SEG_MAILCOUNT_MAILCHECKRC="$HOME/.mailcheckrc"
 # }
 
 # mode_indicator.sh {
@@ -274,7 +274,7 @@
 	# If set to 'true', 'yes', 'on' or '1', played tracks will be logged to a file.
 	# export TMUX_POWERLINE_SEG_NOW_PLAYING_TRACK_LOG_ENABLE="false"
 	# If enabled, log played tracks to the following file:
-	# export TMUX_POWERLINE_SEG_NOW_PLAYING_TRACK_LOG_FILEPATH="/home/dmalyuta/.now_playing.log"
+	# export TMUX_POWERLINE_SEG_NOW_PLAYING_TRACK_LOG_FILEPATH="$HOME/.now_playing.log"
 	# Maximum number of logged song entries. Set to "unlimited" for unlimited entries.
 	# export TMUX_POWERLINE_SEG_NOW_PLAYING_TRACK_LOG_MAX_ENTRIES="100"
 

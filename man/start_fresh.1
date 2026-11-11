@@ -1,4 +1,4 @@
-.TH START_FRESH 1 2026-11-01 dotfiles "User Commands"
+.TH START_FRESH 1 2026-11-12 dotfiles "User Commands"
 .SH NAME
 start_fresh \- set up a fresh Fedora KDE Plasma install
 .SH SYNOPSIS
@@ -15,8 +15,8 @@ start_fresh \- set up a fresh Fedora KDE Plasma install
 sets up a Fedora KDE Plasma machine the way its author uses it: software repositories, packages
 and apps, the NVIDIA driver, these dotfiles, low-level hardware settings and the KDE desktop.
 .PP
-It is safe to re-run: every step skips what is already done. Re-running it also updates what it installed from outside the package
-manager, like OpenRGB and PdfCraft, and the Flatpak apps.
+It is safe to re-run: every step skips what is already done. Re-running it also updates what it
+installed from outside the package manager, like OpenRGB and PdfCraft, and the Flatpak apps.
 .PP
 It asks all its questions up front, along with the sudo password, so the rest runs unattended.
 The answers are remembered as the defaults for the next run.
@@ -43,11 +43,12 @@ In order:
 Asks the setup questions: whether to upgrade to a newer Fedora release, if there is one (yes by
 default, and asked every run while one is available, even with
 .BR \-c ),
-which optional apps to install (Superluminal, the Brother printer driver,
-PDF-XChange Editor), whether to restore a CoolerControl backup, the custom OBS configuration on the
-desktop, the sleep debug log on the laptop (and with it, whether to trace hibernations with
-pm_trace, which leaves the clock off after each one until it syncs online), and the VS Code
-workspaces for the Meta+letter hotkeys.
+which optional apps to install (Superluminal, PDF-XChange Editor, and the drivers of a Brother
+printer if one is found on the network),
+whether to restore a CoolerControl backup, the custom OBS configuration on the desktop, the sleep
+debug log on the laptop (and with it, whether to trace hibernations with pm_trace, which leaves the
+clock off after each one until it syncs online), and the VS Code workspaces for the Meta+letter
+hotkeys.
 With Secure Boot on, it also asks for a one-time password for enrolling the kernel module signing
 key.
 .IP 2. 4
@@ -126,7 +127,8 @@ below: then it doesn't ask if the password was entered in any terminal in the la
 The dotfiles repository, cloned there on a new machine.
 .TP
 .I ~/Projects/dotfiles/.start_fresh_answers
-The answers from the last run (git-ignored).
+The answers from the last run. Git ignores it, so what is private, like project paths, stays out
+of the repository.
 .TP
 .I ~/.cache/start_fresh.log
 The full output of the last run under the progress display.

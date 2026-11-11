@@ -1,27 +1,21 @@
 #!/bin/bash
 # Sleep then hibernate, and wake up again, in a loop in the background, to reproduce a hibernation
 # that hangs at power-off without doing it by hand. Each round is a suspend-then-hibernate, as when
-# closing the lid: it sleeps for HibernateDelaySec (see scripts/configure_hardware), hibernates,
-# wakes from the RTC's alarm, lets the resume settle, and starts over.
+# closing the lid: it sleeps for HibernateDelaySec, hibernates, wakes from the RTC's alarm, lets
+# the resume settle, and starts over.
 #   hibernate-loop start [seconds]  Start, waking each hibernation <seconds> after it starts
-#                                   (default 180: the image takes about a minute to write and power
-#                                   off).
-#   hibernate-loop stop             Stop now (from the resumed session, during the pause after a
-#                                   round).
+#                                   (default 180: the image takes about a minute to write).
+#   hibernate-loop stop             Stop now (from the resumed session, between rounds).
 #   hibernate-loop status           Whether it runs, and its log.
-# It stops by itself when a round hangs, as the sleep-debug hook reports it (an alert): its watchdog
-# crashes the kernel, which saves its log and reboots, and the initramfs powers off; or the
-# chipset's watchdog resets it and the initramfs powers off. The next power-on resumes the session and this loop, which sees the
-# alert. It also stops after a round that took far too long (a hang not reported, or no wake from
-# the alarm), and when unplugged: only on AC does the alarm wake it from hibernation (on battery it
-# stayed off until the power button). While it runs, KDE doesn't put the laptop to sleep when idle
-# (an idle inhibitor), and a refused sleep (another sleep in progress) is tried again a minute
-# later, up to 3 times in a row.
-# The sleep-debug hook sets the alarm that ends each hibernation, as it starts, from the file
-# below, so that it doesn't clash with the alarm that ends the sleep. And no pm_trace in the
-# meantime: it sets the RTC's time, so the alarm would never match. The crash log tells more anyway.
+# It stops by itself:
+# - when a round hangs, which the sleep-debug hook reports as an alert once its watchdogs have got
+#   the laptop out of it,
+# - after a round that took far too long (a hang not reported, or no wake from the alarm),
+# - when unplugged: on battery the alarm doesn't wake it from hibernation.
+# While it runs, an idle inhibitor keeps KDE from putting the laptop to sleep itself, and
+# hibernations aren't traced with pm_trace: it sets the RTC's time, so the alarm would never match.
 # Needs the sleep-debug log on, with its reboot (see setup). Runs as root in the transient unit
-# sleep-debug-loop; asks for sudo.
+# sleep-debug-loop, and asks for sudo.
 # Author: Danylo Malyuta, 2026.
 
 unit=sleep-debug-loop

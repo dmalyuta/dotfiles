@@ -383,7 +383,7 @@ hardware_section() {
 	real() { [ -n "$1" ] && ! [[ $1 =~ ^(System|To [Bb]e [Ff]illed|Default|Not [Aa]pplicable|O\.E\.M) ]]; }
 
 	vendor=$(short_vendor "$(dmi sys_vendor)")
-	# ASUS laptops repeat the model code, as in "ProArt PX13 HN7306WU_HN7306WU".
+	# ASUS laptops repeat the model code, as in "Zenbook 14 UX3405MA_UX3405MA".
 	product=$(dmi product_name | sed -E 's/ ([^ ]+)_\1$/ \1/')
 	real "$product" && row "Model" "$vendor $product"
 	board=$(dmi board_name)
@@ -409,7 +409,7 @@ hardware_section() {
 		[ -n "$d" ] || continue
 		IFS=$'\t' read -r vendor name < <(pci_name "$(cat "$d/vendor")" "$(cat "$d/device")")
 		vendor=$(short_vendor "${vendor:-unknown vendor}")
-		# "GB202 [GeForce RTX 5090]" as "GeForce RTX 5090", with the chip after it.
+		# "TU117 [GeForce GTX 1650]" as "GeForce GTX 1650", with the chip after it.
 		model=$name code=
 		if [[ $name =~ ^(.*[^ ])\ +\[(.*)\]$ ]]; then
 			model=${BASH_REMATCH[2]} code=${BASH_REMATCH[1]}

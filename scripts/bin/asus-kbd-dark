@@ -1,5 +1,5 @@
 #!/usr/bin/python3 -I
-"""Keep the PX13's keyboard backlight from pulsing while the laptop starts.
+"""Keep the ASUS laptop's keyboard backlight from pulsing while it starts.
 
 From power-on, the keyboard controller (N-KEY, 0b05:19b6) pulses the backlight by itself until it
 is told otherwise. Nothing told it before asusd started (7 s into the boot), and asusd doesn't say

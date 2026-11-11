@@ -3,10 +3,10 @@
 
 Usage: tui.py --script FILE [--dotfiles DIR] [--raw-base URL] [--log FILE] -- COMMAND...
 
-Drawn in place below what the terminal already shows: a spinner and a bar of how far through the steps the script is, the
-current step, and a box with the tail of the command's output. The command runs in a pseudo-
-terminal the size of that box, so prompts, progress bars and colors work as usual, and keys go
-straight to it. pyte keeps the box's screen.
+Drawn in place below what the terminal already shows: a spinner and a bar of how far through the
+steps the script is, the current step, and a box with the tail of the command's output. The command
+runs in a pseudo-terminal the size of that box, so prompts, progress bars and colors work as usual,
+and keys go straight to it. pyte keeps the box's screen.
 
 The steps come from `step [WEIGHT] "Description"` lines (see scripts/functions.sh), read in order
 from FILE and from the scripts it runs as `bash "$dotfiles"/scripts/NAME`, which are read from DIR,

@@ -11,10 +11,10 @@ alias lsd='ll -d */'
 alias peek='tree -L 1'
 alias copy='DISPLAY=$DISPLAY xclip -sel clip'
 alias gitroot='cd $(git rev-parse --show-toplevel)'
-alias sleep='systemctl suspend'
-alias dotfiles='cd ~/Documents/dotfiles && ll'
-alias rgb_on='~/AppImages/openrgb.appimage --profile ~/.config/OpenRGB/danymal-blue.orp'
-alias rgb_off='~/AppImages/openrgb.appimage --profile ~/.config/OpenRGB/danymal-off.orp'
+alias nap='systemctl suspend'
+alias dotfiles='cd ~/Projects/dotfiles && ll'
+alias rgb_on='openrgb --profile blue'
+alias rgb_off='openrgb --profile off'
 alias fix_audio='systemctl --user restart pipewire pipewire-pulse wireplumber'
 alias pdfx_wayland='run-detached env -u DISPLAY WINEPREFIX=~/.wine wine "$HOME/.wine/drive_c/Program Files/PDF-XChange/PDF Editor/PXCEditor.exe"'
 
@@ -23,13 +23,11 @@ alias pdfx_wayland='run-detached env -u DISPLAY WINEPREFIX=~/.wine wine "$HOME/.
 ################################################################################
 
 killgrep() {
-  local input_regexp="$@"
-  ps -ef | grep -E "$@" | grep -v grep | awk '{print $2}' | xargs kill
+  ps -ef | grep -E "$*" | grep -v grep | awk '{print $2}' | xargs -r kill
 }
 
 psgrep() {
-  local input_regexp="$@"
-  ps aux | grep -E "$input_regexp"
+  ps aux | grep -E "$*"
 }
 
 # Run a command detached: no terminal blocking, survives terminal close.
@@ -52,40 +50,41 @@ run-detached() {
 ################################################################################
 
 cs() {
-  cd $1
-  ll
+  cd "$1" && ll
 }
 
 ################################################################################
 # Search.
 ################################################################################
 
+# Each takes a name pattern, then extra `find` options, and searches below the current folder.
 find_file() {
-  local FILENAME=$1
+  local name=$1
   shift
-  find ~+ $@ -type f -name "$FILENAME" 2>&1 | grep -v 'Permission denied'
+  find ~+ "$@" -type f -name "$name" 2>&1 | grep -v 'Permission denied'
 }
 
 find_symlink() {
-  local FILENAME=$1
+  local name=$1
   shift
-  find ~+ $@ -type l -name "$FILENAME"
+  find ~+ "$@" -type l -name "$name"
 }
 
 find_file_or_symlink() {
   echo "=== Files ==="
-  find_file $@
+  find_file "$@"
   echo ""
   echo "=== Symlinks ==="
-  find_symlink $@
+  find_symlink "$@"
 }
 
 find_folder() {
-  local FILENAME=$1
+  local name=$1
   shift
-  find ~+ $@ -type d -name "$FILENAME"
+  find ~+ "$@" -type d -name "$name"
 }
 
+# find_string PATTERN, or find_string FILE_REGEX PATTERN to search only files whose name matches.
 find_string() {
   if [ $# -eq 2 ]; then
     ag --follow --hidden -G "$1" "$2"

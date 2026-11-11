@@ -1,31 +1,17 @@
 #!/bin/bash
-# Turn the laptop's sleep and hibernation debug log on or off: the sleep-debug hook, its boot and
-# wake services, and the hibernate-trace initramfs module, all in this folder (see sleep-debug for
-# what it logs and how to read it). Also:
-# - Hibernate on AC too, so that a hibernation that hangs at power-off doesn't drain the battery
-#   flat, which also resets the RTC and loses the pm_trace in it.
-# - Let a crashing kernel save its log to EFI variables (efi-pstore, off by default on Fedora), for
-#   the hibernation watchdog: a kernel command line option, which takes a reboot.
-# - Set the chipset's watchdog (sp5100_tco), the hibernation's backstop, to reset after 10 min,
-#   after which the initramfs powers off (dracut/hibernate-trace/): only after a reset can it tell
-#   that the watchdog fired, which a power-off clears (2026-10-30 tests). Only the hook arms it,
-#   during a hibernation.
-# - Keep the watchdogs running through a power-off (watchdog.stop_on_reboot=0, a kernel command
-#   line option): the kernel stops them by default as it starts one, before shutting down the
-#   drivers, so a hibernation that falls back to a plain power-off and hangs in a driver's shutdown
-#   (the 2026-10-30 hang) would be left to drain the battery. And so that systemd's reboot
-#   watchdog (RebootWatchdogSec, the chipset's, 10 min) isn't left running into Windows after a
-#   reboot, turn it off: until now the kernel stopped it at the reboot anyway.
-# - Show what the hook finds wrong in a window in the desktop session (sleep-debug-alert, a user
-#   service for every user).
-# Run by start_fresh, which asks; safe to re-run.
+# Turn the laptop's sleep and hibernation debug log on or off, see README.md: the sleep-debug hook,
+# its boot and wake services, the alert window, and the hibernate-trace initramfs module. With it
+# go the settings its watchdogs need: hibernating on AC too, the crash log in EFI variables
+# (efi-pstore), the chipset's watchdog, and watchdogs that keep running through a power-off.
+#
 # Usage: setup on [trace]|off
 #        setup trace on|off
-# "off" removes all of it but keeps the logs in /var/log/sleep-debug. pm_trace during hibernations
-# is on with "on trace", off with a plain "on", and "trace on|off" switches only it (start_fresh
-# asks): it records in the RTC how far a hung hibernation got, but leaves the clock behind after
-# each one until it syncs online, see sleep-hooks/sleep-debug.
-# Exits with status 2 if the initramfs or the kernel command line changed, which take a reboot.
+#
+# "off" removes all of it but keeps the logs in /var/log/sleep-debug. "on trace" also traces
+# hibernations with pm_trace, a plain "on" doesn't, and "trace on|off" switches only that.
+# Run by start_fresh, which asks; safe to re-run. Exits with status 2 if the initramfs or the
+# kernel command line changed, which take a reboot.
+#
 # Author: Danylo Malyuta, 2026.
 
 dotfiles=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
@@ -57,6 +43,17 @@ system_conf=/etc/systemd/system.conf.d/60-sleep-debug.conf
 tco_conf=/etc/modprobe.d/sleep-debug-tco.conf
 # The hook's switch for pm_trace.
 trace_flag=/etc/sleep-debug/pm-trace
+
+# Everything "on" installs or the hook leaves behind, and whether any of it is there.
+installed_files=("$module" "$conf" "$hook" "$unit" "$wake_unit" "$alert_bin" "$sleep_conf"
+	"$system_conf" "$tco_conf" "$var" "$crash_off" "$tco_fired" "$trace_flag")
+any_installed() {
+	local f
+	for f in "${installed_files[@]}"; do
+		[ -e "$f" ] && return 0
+	done
+	return 1
+}
 
 step "Setting up the sleep debug log"
 
@@ -156,19 +153,16 @@ trace)
 	esac
 	;;
 off)
-	for f in "$module" "$conf" "$hook" "$unit" "$wake_unit" "$alert_bin" "$sleep_conf" \
-		"$system_conf" "$tco_conf" "$var" "$crash_off" "$tco_fired" "$trace_flag"; do
-		[ -e "$f" ] || continue
+	if any_installed; then
 		say "Removing the sleep debug log, keeping its logs in /var/log/sleep-debug."
 		sudo systemctl disable sleep-debug sleep-debug-wake 2>/dev/null
 		# shellcheck disable=SC2086
 		sudo systemctl --global disable $alert_units 2>/dev/null
 		# shellcheck disable=SC2086
 		systemctl --user stop $alert_units 2>/dev/null
+		# efivarfs marks its variables immutable.
 		sudo chattr -i "$var" "$crash_off" "$tco_fired" 2>/dev/null
-		sudo rm -rf "$module" "$conf" "$hook" "$unit" "$wake_unit" "$alert_bin" "$sleep_conf" \
-			"$system_conf" "$tco_conf" "$var" "$crash_off" "$tco_fired" "${trace_flag%/*}" \
-			/run/sleep-debug*
+		sudo rm -rf "${installed_files[@]}" "${trace_flag%/*}" /run/sleep-debug*
 		for u in $alert_units; do sudo rm -f "/etc/systemd/user/$u"; done
 		sudo systemctl daemon-reload
 		systemctl --user daemon-reload 2>/dev/null
@@ -183,8 +177,7 @@ off)
 		echo 0 | sudo tee /sys/power/pm_trace /sys/power/pm_debug_messages >/dev/null
 		sudo modprobe -r softdog 2>/dev/null
 		rebuild=1
-		break
-	done
+	fi
 	;;
 *)
 	echo "Usage: $0 on [trace]|off, or $0 trace on|off" >&2

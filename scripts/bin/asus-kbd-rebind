@@ -1,20 +1,19 @@
 #!/bin/sh
 # After resuming from hibernation, the ASUS keyboard backlight blinks instead of showing asusd's
-# lighting, because the keyboard controller (N-KEY, 0b05:19b6) lost power and never got the startup
-# handshake that hid_asus sends when it probes. Rebinding hid_asus resends it, without replugging the
-# USB device. asusd then needs a restart to pick up the new hidraw nodes and resend the lighting.
-# Run by asus-kbd-rebind.service after the resume, so the wake doesn't wait for it; --force runs it
-# at any time, as to fix the backlight by hand.
+# lighting: the keyboard controller (N-KEY, 0b05:19b6) lost power and never got the startup
+# handshake that hid_asus sends when it probes. Rebinding hid_asus resends it.
 #
-# asusd's restart also sets the brightness it has saved, which isn't the one set from KDE: that goes
-# through UPower straight to the LED, bypassing asusd. So put back the brightness from before.
+# Around the rebind:
+# - asusd is stopped, so it doesn't talk to the controller meanwhile, then started again to pick
+#   up the new hidraw nodes and resend its lighting.
+# - The brightness from before is put back. asusd would set the one it saved, which isn't the one
+#   set from KDE (that goes through UPower straight to the LED).
+# - A rebind is tried again when hid_asus fails to set up the backlight ("Failed to initialize
+#   backlight" in the kernel log, seen on 8 of 10 rebinds): the LED, and KDE's backlight key with
+#   it, then no longer reaches the keyboard.
 #
-# That LED (asus-wmi's) reaches the keyboard only through hid_asus, which signs up for its changes
-# when it probes, after asking the controller what it supports. That query sometimes fails ("Failed
-# to initialize backlight" in the kernel log), seen on 8 of 10 rebinds in a row on 2026-10-30, and
-# then the LED, KDE's backlight key included, no longer reaches the keyboard, which stays at asusd's
-# lighting. So asusd stays stopped during the rebind, so as not to talk to the controller meanwhile,
-# and a failed one is tried again.
+# Run by asus-kbd-rebind.service after the resume, so the wake doesn't wait for it. With --force
+# it runs at any time, to fix the backlight by hand.
 
 # Only after a hibernation: the service also follows a plain suspend (which may go on to
 # hibernate), and the keyboard keeps its power while suspended. The kernel's last sleep message says

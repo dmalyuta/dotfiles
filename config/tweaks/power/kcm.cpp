@@ -2,44 +2,39 @@
 // kidletime-wayland-simulate-activity.patch, see ui/main.qml.
 
 #include <KPluginFactory>
-#include <KQuickManagedConfigModule>
 #include <QProcess>
-#include <QQmlEngine>
 
+#include "../tweaksmodule.h"
 #include "powersettings.h"
 
-class PowerModule : public KQuickManagedConfigModule
+class PowerModule : public TweaksModule
 {
     Q_OBJECT
-    Q_PROPERTY(PowerSettings *settings MEMBER m_settings CONSTANT)
 
 public:
     PowerModule(QObject *parent, const KPluginMetaData &data)
-        : KQuickManagedConfigModule(parent, data)
-        , m_settings(new PowerSettings(this))
+        : TweaksModule(new PowerSettings, parent, data)
     {
-        qmlRegisterAnonymousType<PowerSettings>("danylotweaks", 1);
     }
 
     void load() override
     {
-        KQuickManagedConfigModule::load();
-        m_hideAbsentDeviceBatteries = m_settings->hideAbsentDeviceBatteries();
+        TweaksModule::load();
+        m_hideAbsentDeviceBatteries = settings<PowerSettings>()->hideAbsentDeviceBatteries();
     }
 
     void save() override
     {
-        KQuickManagedConfigModule::save();
+        TweaksModule::save();
         // The panel reads it when it starts.
-        if (m_settings->hideAbsentDeviceBatteries() != m_hideAbsentDeviceBatteries) {
-            m_hideAbsentDeviceBatteries = m_settings->hideAbsentDeviceBatteries();
+        if (settings<PowerSettings>()->hideAbsentDeviceBatteries() != m_hideAbsentDeviceBatteries) {
+            m_hideAbsentDeviceBatteries = settings<PowerSettings>()->hideAbsentDeviceBatteries();
             QProcess::startDetached(QStringLiteral("systemctl"),
                                     {QStringLiteral("--user"), QStringLiteral("restart"), QStringLiteral("plasma-plasmashell.service")});
         }
     }
 
 private:
-    PowerSettings *m_settings;
     bool m_hideAbsentDeviceBatteries = true;
 };
 

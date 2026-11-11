@@ -27,11 +27,15 @@ installs and skips it if it is already there. So you can always re-run using:
 ~/Projects/dotfiles/start_fresh
 ```
 
-Do re-run using the more recent run's answers to user questions:
+To re-run with the last run's answers to its questions:
 
 ```bash
 ~/Projects/dotfiles/start_fresh -c
 ```
+
+The answers are kept in `.start_fresh_answers`, which git ignores, so that what is private stays
+out of this repo, like the paths of your projects. What is specific to a machine isn't asked but
+found on it: the printer on the network, the webcam's microphone, which USB devices are mice.
 
 ## Layout
 
@@ -46,13 +50,14 @@ Do re-run using the more recent run's answers to user questions:
     `/usr/local/bin`), `sleep-hooks/` (to `/usr/lib/systemd/system-sleep`), `systemd/` (units),
     `udev/` (rules), `hid-bpf/` (HID-BPF device fixes, built on the machine), `keyd/`,
     `patches/` (patched builds of Fedora's libinput, KWin, Plasma and KIdleTime, built on the
-    machine), `wine/` (and of Wine's COM library).
-  - `sleep-debug/`: the hibernation debug log, with its own `setup`, the same folders and a dracut
-    module in `dracut/`.
+    machine), `wine/` (and of Wine's COM library), `touchpad/` (tools to record and replay what
+    the touchpad does).
+  - `sleep-debug/`: the hibernation debug log, with its own `README.md` and `setup`, the same
+    folders and a dracut module in `dracut/`.
 
 Scripts you run have no extension; only files that are sourced end in `.sh` (and dracut's
 `module-setup.sh`, whose name dracut sets).
 
 ## License
 
-The code is available under the [MIT license](https://github.com/dmalyuta/dotfiles/blob/master/LICENSE).
+The code is available under the [MIT license](LICENSE).

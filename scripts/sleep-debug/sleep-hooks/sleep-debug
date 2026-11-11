@@ -1,92 +1,16 @@
 #!/bin/bash
 # Debug log for sleep and hibernation, to find the cause the first time one goes wrong: a
-# hibernation that hangs at power-off (screen black, power LED on) and drains the battery overnight,
-# a sleep that doesn't reach the SoC's deepest state or keeps waking up, or a sleep that never comes
-# back.
-# Runs as a systemd-sleep hook around each sleep step (suspend-then-hibernate runs it around its
-# suspend and its hibernate separately, with SYSTEMD_SLEEP_ACTION saying which), and at boot from
-# sleep-debug.service. Installed, and removed again, by scripts/sleep-debug/setup, which
-# start_fresh runs as answered.
+# hibernation that hangs at power-off and drains the battery overnight, a sleep that doesn't reach
+# the SoC's deepest state or keeps waking up, or a sleep that never comes back. README.md in
+# scripts/sleep-debug says what it logs, how its watchdogs get out of a hang, and how to read a
+# trace.
 #
-# Read it with journalctl -t sleep-debug, and the files in /var/log/sleep-debug:
-# - Before each step, a snapshot of the devices' power state (<time>-<step>.txt). Only sysfs and
-#   procfs reads, which don't wake a powered-off device (lspci and lsusb can), and none of a
-#   driver's own files: /proc/driver/nvidia blocks from nvidia-suspend/-hibernate.service until the
-#   resume. The hook sets everything else up first and waits for the snapshot 10 s at most, since
-#   systemd sleeps without a hook that is still running after a timeout.
-# - After each step: the battery used, and for a suspend, the share of it in hardware sleep (the
-#   SoC's deepest state) and the wakeup sources that fired. A suspend under 90% in hardware sleep is
-#   flagged, with the AMD PMC's debug state in <time>-pmc.txt. A hibernation is flagged as probably
-#   hung if it drew over 1 W on average for 20 min or more, or lost 5% or more (a working one is
-#   off).
-# - For every sleep, the kernel's debug messages (pm_debug_messages: the wakeup source, the AMD
-#   PMC's view of what kept the SoC awake), in the journal. Not pm_print_times: two lines per
-#   device and step overflow the 256 KB kernel log while journald is frozen, and push out the other
-#   messages.
-# - A marker while asleep: at boot, a leftover one means the last boot ended in a sleep it never
-#   came back from (a hang, or the battery died).
-# - Only if turned on (setup trace on), during each hibernation, pm_trace: before each device's
-#   callback, the kernel writes a hash of the device and of the callback's file:line into the RTC,
-#   which survives a forced power-off, and
-#   handles the devices one at a time so that the last one traced is the one that hung. The next
-#   boot's kernel decodes it ("Magic number", "hash matches"), but resuming the image discards that
-#   kernel's log, so the initramfs saves it to an EFI variable first (../dracut/hibernate-trace/),
-#   and this script moves it to <time>-trace.txt.
-# - Decode it with scripts/sleep-debug/bin/pm-trace-decode, from the "RTC time" line in the trace
-#   file, the time from the hang to that boot (from the journal), and the device names in the
-#   hibernation's snapshot. Not with the kernel's own decode: the RTC keeps ticking, so it is only
-#   right if the laptop was powered on within about 3 minutes, and it is wrong whenever the year
-#   written is 00 (read_magic_time takes 2000 for 100 years).
+# A systemd sleep hook, run around each sleep step (SYSTEMD_SLEEP_ACTION says which), and at boot
+# by sleep-debug.service. Installed and removed by scripts/sleep-debug/setup.
 #
-# - During each hibernation, a watchdog (softdog, 5 min, armed just before and disarmed first thing
-#   after the resume): if the power-off hangs, it crashes the kernel, which saves its log to EFI
-#   variables (pstore, with efi_pstore.pstore_disable=0 on the kernel command line, see setup)
-#   and reboots (kernel.panic). The initramfs then sees that crash log next to a waiting image and
-#   powers off instead of resuming (../dracut/hibernate-trace/), so the battery isn't drained by a
-#   session resumed with nobody there; the next power-on resumes it, and this script moves the log
-#   to <time>-crash.txt: the last 64 KB of the kernel's log, then the stacks of the tasks stuck
-#   waiting. A CPU stuck in the kernel crashes it at once instead (a soft or hard lockup), with that
-#   CPU's stack. sleep-debug-wake.service also disarms it after each wake, in case this hook didn't
-#   run.
-# - And the chipset's watchdog (sp5100_tco, 10 min) as the backstop: it resets the laptop even when
-#   the CPU is stuck in the firmware or with interrupts off, where nothing in the kernel runs. No
-#   crash log then, but the image and the pm_trace are kept. Its driver tells, when it loads at the
-#   next boot, that it fired (bootstatus), which the initramfs saves to an EFI variable (as the
-#   resume discards that kernel) before powering off, and this script reports. Not set to power
-#   off itself: that clears what the driver reads (tested 2026-10-30), so it would go unnoticed.
-# - Both keep running if the hibernation falls back to a plain power-off (kernel_power_off), which
-#   by default stops every watchdog before shutting down the drivers (its reboot notifiers), where
-#   the 2026-10-30 hang was: the kernel command line option watchdog.stop_on_reboot=0 (setup)
-#   keeps them.
-# - Every problem found (a hang, a crash, a sleep that never came back) is also an alert: a file in
-#   /var/log/sleep-debug/alerts, which sleep-debug-alert shows in a window in the desktop session,
-#   once, so that a hang at night isn't missed when the session resumes in the morning.
+# Read it with journalctl -t sleep-debug, and the files in /var/log/sleep-debug.
 #
-# Reading a trace after a hung hibernation, against those of working ones: the image is written,
-# then the kernel powers off through ACPI S4 (hibernation_platform_enter, kernel/power/hibernate.c).
-# - A working one (kernel 7.2.12, 2026-10-28) leaves the end of device_suspend_noirq
-#   (drivers/base/power/main.c:1560, TRACE_SUSPEND(error)) on device "faux", the last one powered
-#   off.
-# - The start of a suspend callback (device_suspend*, its TRACE_SUSPEND(0)) of some device: that
-#   device's driver hung powering off.
-# - The same as a working one: all devices were off, and the firmware's S4 entry (ACPI _PTS or the
-#   S4 write) hung or returned, after which the kernel spins forever.
-# - The end of a resume pass (main.c:1186 TRACE_RESUME(error), on the newest device): the thaw
-#   after the image was created, so it hung after it, writing the image or in the power-off's
-#   prepare step (device_prepare, untraced). The 2026-10-30 and 2026-10-31 hangs: the speaker amps'
-#   driver deadlocked there (scripts/sleep-hooks/cs35l41-hibernate), not, as first read, a failed S4
-#   entry.
-# - Another resume callback: the S4 entry failed and the kernel restored the devices, then fell
-#   back to a plain power-off (kernel_power_off), which can hang in a driver's shutdown (untraced).
-#
-# pm_trace sets the RTC to a made-up date (2000-01-02 in a test), so after it the kernel ignores the
-# RTC and the clock resumes behind by the time spent hibernated. This script writes that time back
-# to the RTC and restarts chronyd, which steps the clock once online. Offline, the clock stays
-# behind (by 27 h after a 2026-11-06 hibernation), which is why pm_trace is off unless turned on:
-# the crash log found the 2026-10-31 hang's cause without it, and it only adds something for a
-# hang no crash log covers (the chipset's watchdog fired). Only the hibernation is traced: during
-# a suspend, the RTC also holds the alarm that wakes the laptop to hibernate, which must stay
-# right.
+# Author: Danylo Malyuta, 2026.
 
 set -u
 dir=/var/log/sleep-debug
@@ -126,8 +50,8 @@ new_file() {
 	echo "$f"
 }
 
-# Log a problem, and show it in a window in the desktop session (see the top). Moved into the
-# folder whole, as sleep-debug-alert.path starts the window when a file appears there.
+# Log a problem, and show it in a window in the desktop session (sleep-debug-alert). Moved into
+# the folder whole, as sleep-debug-alert.path starts the window when a file appears there.
 alert() {
 	log "$*"
 	mkdir -p "$alerts"
@@ -231,18 +155,15 @@ check_marker() {
 	rm -f "$marker"
 }
 
-# The kernel settings changed during a hibernation, and their values then: reboot 5 s after a
-# crash; crash at once on a CPU stuck in the kernel, with its stack (a soft lockup, 20 s with
-# interrupts on, or a hard lockup, 10 s with them off); and before saving the crash log, print the
-# stacks of the tasks stuck waiting (blocked_tasks), such as one stuck in a driver's shutdown.
-# panic_sys_info is what replaced the deprecated panic_print.
+# The kernel settings during a hibernation: reboot 5 s after a crash; crash at once on a CPU stuck
+# in the kernel (a soft or hard lockup), with its stack; and before saving the crash log, print
+# the stacks of the tasks stuck waiting, such as one stuck in a driver's shutdown.
 crash_sysctls="panic=5 softlockup_panic=1 hardlockup_panic=1 panic_sys_info=blocked_tasks"
 
-# Arm the watchdogs for a hibernation (see the top). The software one crashes the kernel after
-# 5 min, for its log; only with efi-pstore, else the log is lost and the initramfs can't tell, and
-# would resume. The chipset's own (sp5100_tco), set by setup to reset after 10 min (and the
-# initramfs then powers off), is the backstop for a hang that nothing in the kernel can see, in the firmware or with interrupts off:
-# no log, but the image and the RTC's pm_trace are left for the next power-on.
+# Arm the watchdogs for a hibernation (see the README). The software one crashes the kernel after
+# 5 min, for its log: only with efi-pstore, else the log is lost and the initramfs can't tell, and
+# would resume. The chipset's (sp5100_tco), which setup sets to reset after 10 min, is the
+# backstop for a hang that nothing in the kernel can see.
 arm_watchdog() {
 	local w soft= tco= kv saved=
 	if [ "$(cat /sys/module/pstore/parameters/backend 2>/dev/null)" != efi_pstore ]; then
@@ -317,9 +238,9 @@ join_crash_parts() {
 }
 
 # The log of a kernel crash from its EFI variables themselves, oldest part first, for when pstorefs
-# doesn't list them (after a resume, 2026-10-31). Each is named dump-type0-<part>-<count>-<time>-
-# <C if compressed>-<guid> and holds its attributes (4 bytes), then the part, zlib-compressed. Read
-# with cat: cp fails on efivarfs.
+# doesn't list them (as after a resume). Each is named dump-type0-<part>-<count>-<time>-<C if
+# compressed>-<guid> and holds 4 bytes of attributes, then the part, zlib-compressed. Read with
+# cat: cp fails on efivarfs.
 decode_crash_vars() {
 	local tmp v
 	tmp=$(mktemp -d) || return
@@ -348,9 +269,8 @@ PY
 }
 
 # Move the log of a kernel crash saved in EFI variables (the watchdog's) into the log. The kernel
-# lists them in pstorefs (as dmesg-efi_pstore-<id>) when it is mounted, so mount it again for ones
-# saved since the boot; failing that, decode the variables directly. The EFI variables go only once
-# the log is saved.
+# lists them in pstorefs when it is mounted, so mount it again for ones saved since the boot.
+# Failing that, decode the variables directly. They are deleted only once the log is saved.
 collect_crash() {
 	local f parts
 	ls $crash_vars >/dev/null 2>&1 || return 0
@@ -379,7 +299,7 @@ collect_crash() {
 		"powered off). The hung kernel's log is in $f."
 }
 
-# The initramfs's note that the chipset's watchdog fired before this boot (see the top).
+# The initramfs's note that the chipset's watchdog fired before this boot.
 collect_tco() {
 	[ -e "$tco_fired" ] || return 0
 	chattr -i "$tco_fired" 2>/dev/null
@@ -424,10 +344,9 @@ pre() {
 	echo "$action since $(date -Is), snapshot $f" >"$marker"
 	echo 1 >/sys/power/pm_debug_messages
 	if [ "$action" = hibernate ]; then
-		# While hibernate-loop runs, its file holds how long after this to wake up again: set the
-		# RTC's alarm for it, here rather than in the loop, as a suspend-then-hibernate's own alarm
-		# (the one that brings this hibernation) has fired by now. And no pm_trace, which sets the
-		# RTC's time, so that the alarm would never match.
+		# While hibernate-loop runs, its file holds how long after this to wake up again. Set the
+		# RTC's alarm for it here, as suspend-then-hibernate's own alarm has fired by now. And no
+		# pm_trace then: it sets the RTC's time, so the alarm would never match.
 		rm -f "$state.trace"
 		if [ -e "$state.loop" ]; then
 			log "hibernate: pm_trace off (hibernate-loop), snapshot $f"

@@ -1,3 +1,5 @@
-# OBS stamps its version into every source as "prev_ver" on each save, see the obs-prev-ver filter
-# that start_fresh sets up.
+# Clean filters that keep out of the repo what programs write into these files about this machine.
+# start_fresh sets them up, see its set_up_git_filters.
 config/obs/scenes/*.json filter=obs-prev-ver
+config/obs/profiles/*/basic.ini filter=obs-profile
+config/OpenRGB/**/*.json filter=openrgb-serial

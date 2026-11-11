@@ -1,0 +1,12 @@
+[Unit]
+Description=Replug the webcam when its USB link fails
+After=systemd-journald.service
+ConditionPathExists=/etc/webcam-guard.conf
+
+[Service]
+ExecStart=/usr/local/bin/webcam-guard watch
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

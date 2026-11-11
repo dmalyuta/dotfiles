@@ -1,9 +1,6 @@
 [terminal]
 shell = "bash"
 
-[general]
-working_directory = "/home/danymal"
-
 [window]
 title = "Alacritty"
 dynamic_title = false

@@ -451,7 +451,8 @@ export default [
         replacement: "\\frac{ \\partial [[0]] }{ \\partial [[1]] } ",
         options: "rm",
     },
-    { trigger: "ddt", replacement: "\\frac{d}{dt} ", options: "mA" },
+    { trigger: "ddt", replacement: "\\frac{\\d }{\\d t} ", options: "mA" },
+    { trigger: "dxdt", replacement: "\\frac{\\d $0}{\\d t} ", options: "mA" },
 
     {
         trigger: /([^\\])int/,
@@ -459,10 +460,10 @@ export default [
         options: "mA",
         priority: -1,
     },
-    { trigger: "\\int", replacement: "\\int $0 \\, d${1:x} $2", options: "m" },
+    { trigger: "\\int", replacement: "\\int $0 \\, \\d${1:x} $2", options: "m" },
     {
         trigger: "dint",
-        replacement: "\\int_{${0:0}}^{${1:1}} $2 \\, d${3:x} $4",
+        replacement: "\\int_{${0:0}}^{${1:1}} $2 \\, \\d${3:x} $4",
         options: "mA",
         description: "Definite integral",
     },
@@ -471,12 +472,12 @@ export default [
     { trigger: "iiint", replacement: "\\iiint", options: "mA" },
     {
         trigger: "oinf",
-        replacement: "\\int_{0}^{\\infty} $0 \\, d${1:x} $2",
+        replacement: "\\int_{0}^{\\infty} $0 \\, \\d${1:x} $2",
         options: "mA",
     },
     {
         trigger: "infi",
-        replacement: "\\int_{-\\infty}^{\\infty} $0 \\, d${1:x} $2",
+        replacement: "\\int_{-\\infty}^{\\infty} $0 \\, \\d${1:x} $2",
         options: "mA",
     },
 
@@ -718,8 +719,19 @@ export default [
         description: "defined as",
     },
     {
+        trigger: "equiv",
+        replacement: "\\equiv ",
+        options: "mA",
+        description: "equivalent",
+    },
+    {
         trigger: "cursive",
         replacement: "\\mathcal\{$0\}",
+        options: "mA",
+    },
+    {
+        trigger: "blackboard",
+        replacement: "\\mathbb\{$0\}",
         options: "mA",
     },
     {
@@ -730,8 +742,8 @@ export default [
 
     // Control systems.
     {
-        trigger: "Laplace",
-        replacement: "\\mathcal{L}\\{$0\\}",
+        trigger: "LT",
+        replacement: "\\Laplace{$0}",
         options: "mA",
         description: "Laplace transform",
     },

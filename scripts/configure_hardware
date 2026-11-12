@@ -198,6 +198,47 @@ EOF
 # ASUS laptop.
 # --------------------------------------------------------------------------------------------------
 
+# Keep the keyboard backlight dark from the initramfs on (scripts/dracut/asus-kbd-dark), as
+# asus-kbd-dark below does later in the boot: the controller forgets it at each power-off, so
+# without this the backlight pulses 4 s into a cold boot, and after a hibernation until its image
+# is loaded. Its program is built here, and kept with its source to rebuild only
+# when that changes.
+set_up_asus_keyboard_backlight_initramfs() {
+	local src=scripts/dracut/asus-kbd-dark
+	local module=/usr/lib/dracut/modules.d/90asus-kbd-dark
+	local program=/usr/local/lib/asus-kbd-dark/asus-kbd-dark-initrd
+	local build f img rebuild=
+	if [ ! -f "$program" ] || ! sudo cmp -s "$dotfiles/$src/${program##*/}.c" "$program.c"; then
+		build=$(mktemp -d)
+		if gcc -O2 -Wall -Wextra -o "$build/program" "$dotfiles/$src/${program##*/}.c"; then
+			sudo install -Z -Dm755 "$build/program" "$program"
+			sudo install -Z -Dm644 "$dotfiles/$src/${program##*/}.c" "$program.c"
+		else
+			failed "Could not build the keyboard backlight's initramfs step, so it will pulse" \
+				"at power-on."
+		fi
+		rm -rf "$build"
+	fi
+	[ -f "$program" ] || return 0
+	install_script_file "${src#scripts/}/module-setup.sh" "$module/module-setup.sh" 755 && rebuild=1
+	f=asus-kbd-dark-initrd.service
+	install_script_file "${src#scripts/}/$f" "$module/$f" && rebuild=1
+	write_root_file /etc/dracut.conf.d/92-asus-kbd-dark.conf <<'EOF' && rebuild=1
+# The ASUS keyboard backlight stays dark from the initramfs on, see scripts/configure_hardware.
+add_dracutmodules+=" asus-kbd-dark "
+EOF
+	# Also rebuild if an initramfs lacks the current program, as when a rebuild was interrupted.
+	for img in /boot/initramfs-*.img; do
+		[[ $img == *rescue* ]] && continue
+		sudo lsinitrd -f usr/bin/asus-kbd-dark-initrd "$img" 2>/dev/null |
+			sudo cmp -s - "$program" || rebuild=1
+	done
+	if [ -n "$rebuild" ]; then
+		sudo dracut -f --regenerate-all
+		reboot_for "initramfs rebuilt for the keyboard backlight"
+	fi
+}
+
 # Keep the keyboard backlight dark while the laptop starts, instead of pulsing until asusd is up
 # (scripts/bin/asus-kbd-dark), and reset the keyboard controller after a hibernation
 # (scripts/bin/asus-kbd-rebind).
@@ -208,6 +249,7 @@ set_up_asus_keyboard_backlight() {
 	install_command asus-kbd-dark &&
 		sudo /usr/local/bin/asus-kbd-dark "$(cat "$led/brightness" 2>/dev/null || echo 0)"
 	install_udev_rule 90-asus-kbd-dark.rules
+	set_up_asus_keyboard_backlight_initramfs
 	if installed asusctl; then
 		# asusd sets the backlight, while systemd-backlight restores whatever it saved at
 		# shutdown, which can be 0.

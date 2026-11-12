@@ -747,6 +747,24 @@ export default [
         options: "mA",
         description: "Laplace transform",
     },
+    {
+        trigger: "ILT",
+        replacement: "\\Laplaceinv{$0}",
+        options: "mA",
+        description: "Inverse Laplace transform",
+    },
+    {
+        trigger: "ZT",
+        replacement: "\\ZTransform{$0}",
+        options: "mA",
+        description: "Z transform",
+    },
+    {
+        trigger: "IZT",
+        replacement: "\\ZTransforminv{$0}",
+        options: "mA",
+        description: "Inverse Z transform",
+    },
 ];
 
 function addRawConcealMaps() {

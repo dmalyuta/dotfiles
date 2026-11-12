@@ -12,11 +12,17 @@
 #   setup's watchdog is meant to stop a hang, not to start a session with nobody there. Its
 #   driver tells (bootstatus, from a flag in the chip that it then clears, so it powers off once)
 #   only to this kernel.
+# - When it goes on to resume: note the time and this kernel in an EFI variable. A resume that
+#   hangs leaves nothing else (this kernel's log is lost, and systemd clears where the image is
+#   before loading it), so sleep-debug tells from it that the laptop did power off and hung coming
+#   back, and whether a kernel other than the image's loaded it (after a kernel update, the boot
+#   loader's default one).
 
 efi=/sys/firmware/efi/efivars
 var=$efi/HibernateTrace-8bc5b097-6e23-408e-9a7d-2bad8e8739d1
 crash_off=$efi/HibernateCrashOff-8bc5b097-6e23-408e-9a7d-2bad8e8739d1
 tco_fired=$efi/HibernateTcoFired-8bc5b097-6e23-408e-9a7d-2bad8e8739d1
+resuming=$efi/HibernateResume-8bc5b097-6e23-408e-9a7d-2bad8e8739d1
 tmp=/run/hibernate-trace
 
 # An EFI variable is its attributes (non-volatile, boot and runtime access) then its data, and
@@ -66,4 +72,11 @@ if ls "$efi"/dump-type0-*-cfc8fc79-be2e-4ddc-97f0-9f98bfe298a0 >/dev/null 2>&1; 
 	fi
 fi
 tco_off
+
+# The resume is next. One line: the RTC's time (UTC), then this kernel. A new variable each time,
+# as efivarfs takes a variable in one write and marks it immutable.
+chattr -i "$resuming" 2>/dev/null
+rm -f "$resuming"
+echo "$(cat /sys/class/rtc/rtc0/date /sys/class/rtc/rtc0/time 2>/dev/null | tr '\n' ' ')UTC," \
+	"boot kernel $(cat /proc/sys/kernel/osrelease)" | write_var "$resuming"
 exit 0

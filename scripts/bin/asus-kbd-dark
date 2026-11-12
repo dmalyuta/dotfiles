@@ -20,6 +20,10 @@ Run as root: by udev when the keyboard backlight LED appears, early in the boot 
 scripts/udev/90-asus-kbd-dark.rules), and by asus-kbd-rebind after a hibernation, which the
 controller comes out of as if switched on. It talks to the controller directly (hidraw), not through
 the LED, so the brightness that the LED and asusd remember stays as it is.
+
+The controller forgets all of it when it loses power (a power-off or a hibernation, not a restart),
+so the initramfs sends the same packets earlier still: scripts/dracut/asus-kbd-dark, a copy of the
+steps below in C, to keep the same as these.
 """
 
 import fcntl

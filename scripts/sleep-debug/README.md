@@ -14,7 +14,7 @@ Finds the cause the first time a sleep or a hibernation goes wrong on the laptop
 | --- | --- |
 | `sleep-hooks/sleep-debug` | The log itself: a systemd sleep hook, also run at boot by `sleep-debug.service`. |
 | `systemd/sleep-debug-wake.service` | Disarms the hibernation watchdog after each wake, in case the hook didn't run. |
-| `dracut/hibernate-trace/` | Initramfs module: saves a pm_trace before the resume discards it, and powers off after a watchdog fired. |
+| `dracut/hibernate-trace/` | Initramfs module: saves a pm_trace before the resume discards it, powers off after a watchdog fired, and notes each resume it starts. |
 | `bin/sleep-debug-alert` | Shows each problem found in a window in the desktop session, once. |
 | `bin/hibernate-loop` | Hibernates and wakes in a loop, to reproduce a hang. |
 | `bin/pm-trace-decode` | Decodes a pm_trace long after the hang. |
@@ -35,6 +35,13 @@ Finds the cause the first time a sleep or a hibernation goes wrong on the laptop
   and step overflow the 256 KB kernel log while journald is frozen, and push out the other messages.
 - **A marker while asleep.** At boot, a leftover one means the last boot ended in a sleep it never
   came back from (a hang, or the battery died).
+- **Each resume from hibernation**, noted by the initramfs in an EFI variable just before it: the
+  time, and the kernel that loads the image (the boot loader's default, which after a kernel update
+  isn't the hibernated one). After a good resume it goes to the journal. After a boot that ended in
+  a hibernation, it tells a resume that hung (the laptop had powered off, and hung loading the image
+  or waking the devices, as on 2026-11-12) from one that never powered off. A hung resume leaves no
+  log by itself, but the image's softdog is still armed: left alone for 6 min, it crashes the
+  resumed kernel if its timers run, and the next boot saves that log.
 - **Every problem found** is also an alert: a file in `/var/log/sleep-debug/alerts`, which
   `sleep-debug-alert` shows in a window, so that a hang at night isn't missed when the session
   resumes in the morning.

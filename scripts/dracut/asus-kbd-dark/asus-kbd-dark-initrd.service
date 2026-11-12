@@ -1,0 +1,12 @@
+# In the initramfs, stop the ASUS keyboard backlight's pulsing as soon as its driver is there, see
+# asus-kbd-dark-initrd.c. Before a hibernation's image is loaded: the resume freezes this.
+[Unit]
+Description=Keep the ASUS keyboard backlight dark while the laptop starts
+DefaultDependencies=no
+After=systemd-udev-trigger.service
+Before=systemd-hibernate-resume.service
+ConditionPathExists=/etc/initrd-release
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/asus-kbd-dark-initrd

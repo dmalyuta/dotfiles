@@ -28,6 +28,7 @@ efi=/sys/firmware/efi/efivars
 var=$efi/HibernateTrace-8bc5b097-6e23-408e-9a7d-2bad8e8739d1
 crash_off=$efi/HibernateCrashOff-8bc5b097-6e23-408e-9a7d-2bad8e8739d1
 tco_fired=$efi/HibernateTcoFired-8bc5b097-6e23-408e-9a7d-2bad8e8739d1
+resuming=$efi/HibernateResume-8bc5b097-6e23-408e-9a7d-2bad8e8739d1
 # After 50-suspend-then-hibernate.conf from scripts/configure_hardware, so it wins.
 sleep_conf=/etc/systemd/sleep.conf.d/60-sleep-debug.conf
 # How much of the kernel's log a crash saves, counted compressed: 64 KB took 114 EFI variables of
@@ -46,7 +47,7 @@ trace_flag=/etc/sleep-debug/pm-trace
 
 # Everything "on" installs or the hook leaves behind, and whether any of it is there.
 installed_files=("$module" "$conf" "$hook" "$unit" "$wake_unit" "$alert_bin" "$sleep_conf"
-	"$system_conf" "$tco_conf" "$var" "$crash_off" "$tco_fired" "$trace_flag")
+	"$system_conf" "$tco_conf" "$var" "$crash_off" "$tco_fired" "$resuming" "$trace_flag")
 any_installed() {
 	local f
 	for f in "${installed_files[@]}"; do
@@ -161,7 +162,7 @@ off)
 		# shellcheck disable=SC2086
 		systemctl --user stop $alert_units 2>/dev/null
 		# efivarfs marks its variables immutable.
-		sudo chattr -i "$var" "$crash_off" "$tco_fired" 2>/dev/null
+		sudo chattr -i "$var" "$crash_off" "$tco_fired" "$resuming" 2>/dev/null
 		sudo rm -rf "${installed_files[@]}" "${trace_flag%/*}" /run/sleep-debug*
 		for u in $alert_units; do sudo rm -f "/etc/systemd/user/$u"; done
 		sudo systemctl daemon-reload

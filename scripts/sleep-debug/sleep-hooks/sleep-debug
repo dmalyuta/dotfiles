@@ -24,6 +24,8 @@ crash_vars=$efi/dump-type0-*-cfc8fc79-be2e-4ddc-97f0-9f98bfe298a0
 crash_off=$efi/HibernateCrashOff-8bc5b097-6e23-408e-9a7d-2bad8e8739d1
 # The initramfs's note that the chipset's watchdog had fired.
 tco_fired=$efi/HibernateTcoFired-8bc5b097-6e23-408e-9a7d-2bad8e8739d1
+# The initramfs's note that it went on to resume an image: when, and with which kernel.
+resuming=$efi/HibernateResume-8bc5b097-6e23-408e-9a7d-2bad8e8739d1
 alerts=$dir/alerts
 pstore=/sys/fs/pstore
 watchdogs=/sys/class/watchdog
@@ -147,11 +149,31 @@ collect_trace() {
 	rm -f "$var"
 }
 
-# A marker left by a sleep that never came back.
+# The initramfs's note of the resume it went on to (empty if none), which this removes.
+take_resuming() {
+	[ -e "$resuming" ] || return 0
+	tail -c +5 "$resuming" | tr -d '\0' | head -n 1
+	chattr -i "$resuming" 2>/dev/null
+	rm -f "$resuming"
+}
+
+# A marker left by a sleep that never came back. For a hibernation, the initramfs's note tells a
+# resume that hung (the laptop had powered off, and the image was being loaded or the devices
+# woken) from one that never powered off or was never powered on again.
 check_marker() {
+	local resume
+	resume=$(take_resuming)
 	[ -f "$marker" ] || return 0
-	alert "The last boot ended during a sleep it never came back from (it hung, or the battery" \
-		"died): $(cat "$marker"). See journalctl -b -1."
+	if [ -n "$resume" ] && grep -q '^hibernate ' "$marker"; then
+		alert "The last boot ended in a hibernation whose resume hung: $(cat "$marker"). It had" \
+			"powered off, and was being resumed ($resume) when it stopped: nothing of that is" \
+			"logged, so compare the two kernels, and see journalctl -b -1 for the hibernation. If a" \
+			"resume hangs again, leave it 6 min before forcing it off: the watchdog armed in the" \
+			"image crashes the hung kernel if its timers still run, and the next boot saves its log."
+	else
+		alert "The last boot ended during a sleep it never came back from (it hung, or the battery" \
+			"died): $(cat "$marker"). See journalctl -b -1."
+	fi
 	rm -f "$marker"
 }
 
@@ -341,7 +363,7 @@ pre() {
 	f=$(new_file "$action")
 	# The settings first, then the readings that go through drivers (the battery's through the EC),
 	# then the snapshot, so that nothing is left undone, or done after the resume, if one blocks.
-	echo "$action since $(date -Is), snapshot $f" >"$marker"
+	echo "$action since $(date -Is), kernel $(uname -r), snapshot $f" >"$marker"
 	echo 1 >/sys/power/pm_debug_messages
 	if [ "$action" = hibernate ]; then
 		# While hibernate-loop runs, its file holds how long after this to wake up again. Set the
@@ -403,6 +425,15 @@ post() {
 	rm -f "$state" "$state.wakeups"
 
 	if [ "$action" = hibernate ]; then
+		# Which kernel loaded the image: another one than this is allowed, but worth knowing when a
+		# resume goes wrong.
+		local resume
+		resume=$(take_resuming)
+		case $resume in
+		"") ;;
+		*"boot kernel $(uname -r)") log "hibernate: resume started $resume" ;;
+		*) log "hibernate: resume started $resume, NOT this one ($(uname -r))" ;;
+		esac
 		# Percentages, which also work when it was plugged in to boot after the battery died. After a
 		# traced one, the clock is behind until chronyd steps it, so the duration comes from the
 		# clock job.

@@ -285,14 +285,18 @@ set_up_asus_keyboard_backlight() {
 	fi
 }
 
-# Have KDE, not asusd, switch the power profile on AC and on battery. KDE's battery menu shows
-# tuned-ppd's profile, which doesn't follow asusd's switches (it showed Performance while running
-# Quiet). tuned-ppd then sets platform_profile, which asusd follows.
-let_kde_switch_power_profiles() {
+# Keep the power profile that was last chosen (in KDE's battery menu, or with powerprofilesctl):
+# neither KDE nor asusd switches it on AC or on battery. tuned-ppd holds it, sets platform_profile
+# from it (which asusd follows), and saves it in /etc/tuned/ppd_base_profile, from which it starts
+# at the next boot.
+keep_chosen_power_profile() {
 	local p source
-	for p in AC:performance Battery:power-saver LowBattery:power-saver; do
-		kconf --file powerdevilrc --group "${p%%:*}" --group Performance --key PowerProfile "${p#*:}"
+	# Without the key, KDE leaves the profile unchanged for that power source.
+	for p in AC Battery LowBattery; do
+		kconf --file powerdevilrc --group "$p" --group Performance --key PowerProfile --delete
 	done
+	busctl --user call org.kde.Solid.PowerManagement /org/kde/Solid/PowerManagement \
+		org.kde.Solid.PowerManagement reparseConfiguration >/dev/null 2>&1
 	systemctl -q is-active asusd || return 0
 	for source in Ac Battery; do
 		busctl --system set-property xyz.ljones.Asusd /xyz/ljones xyz.ljones.Platform \
@@ -429,7 +433,7 @@ if is_asus_laptop; then
 	if installed asusctl; then
 		# G-Helper's fan curves. asusd saves them.
 		"$dotfiles"/scripts/bin/asus-fan-curves >/dev/null
-		let_kde_switch_power_profiles
+		keep_chosen_power_profile
 	fi
 	installed acpi_call-dkms && install_power_limits
 	enable_tablet_mode_switch

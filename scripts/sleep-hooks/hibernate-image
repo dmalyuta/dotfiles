@@ -5,10 +5,13 @@
 # - Drop the file cache: copies of files that are on disk anyway, some 3-4 GB that would otherwise
 #   be compressed, written, and read back at resume. Only pages no program has mapped go, so
 #   running programs keep their code in memory; files are simply read again when next needed.
-# - Lift the kernel's image size target (2/5 of RAM by default) to all of RAM. To get under the
-#   target the kernel swaps programs' memory out on a single thread, into zram first, which is
-#   slower than packing those pages into the image. It still does so when it must, with over half
-#   of RAM in use.
+# - Raise the kernel's image size target (2/5 of RAM by default) to half of RAM less 2 GB. To get
+#   under the target the kernel swaps programs' memory out on a single thread, into zram first,
+#   which is slower than packing those pages into the image. Not higher: the snapshot is a copy
+#   that must fit in the other half of RAM, and the image grows after the kernel has made room
+#   for it, as the graphics drivers move their memory into RAM when they freeze (0.6 and 1.1 GB
+#   seen). With all of RAM as the target, a hibernation with half of RAM in use failed for lack
+#   of memory (2026-11-14, short by 0.7 GB), and the one before fit with 0.2 GB to spare.
 # - Tell GRUB to skip its menu at the next boot, the one that resumes this hibernation, which
 #   otherwise waits out the menu's timeout (5 s) with the CPU at full power. GRUB clears the flag
 #   itself (see scripts/grub/15_hibernate_resume); it is cleared here too after a hibernation that
@@ -44,6 +47,6 @@ before=$(cached)
 # Dirty pages can't be dropped, so write them out first.
 sync
 echo 1 >/proc/sys/vm/drop_caches
-awk '/^MemTotal:/ {print $2 * 1024}' /proc/meminfo >/sys/power/image_size
+awk '/^MemTotal:/ {print int($2 * 512 - 2 * 2 ^ 30)}' /proc/meminfo >/sys/power/image_size
 log "dropped $((before - $(cached))) MB of file cache, $(cached) MB left"
 exit 0

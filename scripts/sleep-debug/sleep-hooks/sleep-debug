@@ -357,6 +357,53 @@ collect_archived_crash() {
 	rm -f "$crash_off"
 }
 
+# Time every device's power callbacks through the sleep, with the kernel's tracepoints for them in a
+# trace buffer of its own (small: it is part of a hibernation's image). The buffer is saved with the
+# image, so after a hibernation it holds the freeze before the image was made and the restore at
+# the resume, but not the power-off after the image was written.
+tracing=/sys/kernel/tracing/instances/sleep-debug
+trace_callbacks() {
+	mkdir "$tracing" 2>/dev/null
+	if ! { echo 512 >"$tracing/buffer_size_kb" && : >"$tracing/trace" &&
+		echo 1 >"$tracing/events/power/device_pm_callback_start/enable" &&
+		echo 1 >"$tracing/events/power/device_pm_callback_end/enable" &&
+		echo 1 >"$tracing/tracing_on"; } 2>/dev/null; then
+		log "$action: can't trace the devices' power callbacks ($tracing), so no slow device list"
+		rmdir "$tracing" 2>/dev/null
+	fi
+}
+
+# The callbacks in a trace (a file, or stdin) that took 0.3 s or more, slowest first, as
+# "<seconds> s <driver> <device> (<callback>)", 8 at most. The events read
+# "<time>: device_pm_callback_start: <driver> <device>, parent: <parent>, <callback>" and
+# "<time>: device_pm_callback_end: <driver> <device>, err=<n>".
+slow_callbacks() {
+	awk 'match($0, / ([0-9]+\.[0-9]+): device_pm_callback_(start|end): (.*)$/, m) {
+		if (m[2] == "start") {
+			i = index(m[3], ", parent: ")
+			dev = substr(m[3], 1, i - 1); op = substr(m[3], i + 10)
+			sub(/^[^,]*, /, "", op)
+			start[dev] = m[1]; what[dev] = op
+		} else {
+			dev = m[3]
+			sub(/, err=-?[0-9]+$/, "", dev)
+			if (dev in start && m[1] - start[dev] >= 0.3)
+				printf "%.1f s %s (%s)\n", m[1] - start[dev], dev, what[dev]
+			delete start[dev]
+		}
+	}' "$@" | sort -rn | head -n 8
+}
+
+# After the sleep: log the slow callbacks, and free the buffer.
+log_slow_callbacks() {
+	[ -d "$tracing" ] || return 0
+	local slow
+	echo 0 >"$tracing/tracing_on"
+	slow=$(slow_callbacks "$tracing/trace" | paste -sd, | sed 's/,/, /g')
+	rmdir "$tracing" 2>/dev/null
+	[ -n "$slow" ] && log "$action: slow devices: $slow"
+}
+
 pre() {
 	mkdir -p "$dir"
 	local f pid i
@@ -365,6 +412,7 @@ pre() {
 	# then the snapshot, so that nothing is left undone, or done after the resume, if one blocks.
 	echo "$action since $(date -Is), kernel $(uname -r), snapshot $f" >"$marker"
 	echo 1 >/sys/power/pm_debug_messages
+	trace_callbacks
 	if [ "$action" = hibernate ]; then
 		# While hibernate-loop runs, its file holds how long after this to wake up again. Set the
 		# RTC's alarm for it here, as suspend-then-hibernate's own alarm has fired by now. And no
@@ -393,9 +441,9 @@ pre() {
 	sync
 	snapshot "$@" >"$f" 2>&1 &
 	pid=$!
-	for i in $(seq 20); do
+	for i in $(seq 100); do
 		kill -0 "$pid" 2>/dev/null || return 0
-		sleep 0.5
+		sleep 0.1
 	done
 	log "$action: snapshot not done after 10 s, sleeping without waiting for it"
 }
@@ -403,6 +451,7 @@ pre() {
 post() {
 	# The watchdog first, which would crash the kernel minutes from now.
 	disarm_watchdog
+	log_slow_callbacks
 	# Undo the hibernation's tracing, whatever else fails, and give the RTC a sane time again (the one
 	# the clock resumed at, which chronyd then corrects).
 	local was_traced=

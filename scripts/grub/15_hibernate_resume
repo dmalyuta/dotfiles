@@ -1,0 +1,17 @@
+#!/bin/sh
+# Part of GRUB's menu (/etc/grub.d, installed by scripts/configure_hardware): boot at once, without
+# showing the menu or waiting out its timeout, when the laptop is powered on to resume a
+# hibernation. The hibernate-image sleep hook sets "hibernated" in GRUB's environment before each
+# hibernation, and this clears it, so it only ever skips the menu of that one boot. After the menu
+# scripts that set the timeout (00_header, 12_menu_auto_hide).
+#
+# Author: Danylo Malyuta, 2026.
+
+cat <<'EOF'
+if [ "${hibernated}" = "1" ]; then
+  unset hibernated
+  save_env hibernated
+  set timeout_style=hidden
+  set timeout=0
+fi
+EOF

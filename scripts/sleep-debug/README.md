@@ -33,6 +33,10 @@ Finds the cause the first time a sleep or a hibernation goes wrong on the laptop
 - **For every sleep**, the kernel's debug messages (`pm_debug_messages`: the wakeup source, the AMD
   PMC's view of what kept the SoC awake), in the journal. Not `pm_print_times`: two lines per device
   and step overflow the 256 KB kernel log while journald is frozen, and push out the other messages.
+- **The slow devices of every sleep**: each driver callback that took 0.3 s or more to put its
+  device to sleep or wake it, from the kernel's power tracepoints (`slow devices:` in the journal).
+  For a hibernation, that covers the freeze before the image and the restore at the resume, not
+  the power-off in between, which no log survives.
 - **A marker while asleep.** At boot, a leftover one means the last boot ended in a sleep it never
   came back from (a hang, or the battery died).
 - **Each resume from hibernation**, noted by the initramfs in an EFI variable just before it: the

@@ -1,0 +1,49 @@
+#!/bin/sh
+# Before each hibernation, make its image smaller and cheaper to build. The time and battery a
+# hibernation costs scale with the memory the kernel has to pack and write (measured 2026-11 with
+# 14.6 GB in use: 9 s making room, then ~15 s of compression, which is when the fans ramp up).
+# - Drop the file cache: copies of files that are on disk anyway, some 3-4 GB that would otherwise
+#   be compressed, written, and read back at resume. Only pages no program has mapped go, so
+#   running programs keep their code in memory; files are simply read again when next needed.
+# - Lift the kernel's image size target (2/5 of RAM by default) to all of RAM. To get under the
+#   target the kernel swaps programs' memory out on a single thread, into zram first, which is
+#   slower than packing those pages into the image. It still does so when it must, with over half
+#   of RAM in use.
+# - Tell GRUB to skip its menu at the next boot, the one that resumes this hibernation, which
+#   otherwise waits out the menu's timeout (5 s) with the CPU at full power. GRUB clears the flag
+#   itself (see scripts/grub/15_hibernate_resume); it is cleared here too after a hibernation that
+#   came back without a boot, such as a failed one.
+#
+# A systemd sleep hook, installed by scripts/configure_hardware, which also raises the number of
+# compression threads (hibernate_compression_threads).
+#
+# Author: Danylo Malyuta, 2026.
+
+log() { logger -t hibernate-image -- "$*"; }
+
+# Set or clear the flag, if GRUB's menu has the part that reads it.
+grub_flag() {
+	[ -x /etc/grub.d/15_hibernate_resume ] || return 0
+	grub2-editenv - "$@" 2>/dev/null || log "couldn't $1 GRUB's hibernated flag (grub2-editenv)"
+}
+
+case $1/${SYSTEMD_SLEEP_ACTION:-${2:-}} in
+pre/hibernate | pre/hybrid-sleep) ;;
+post/hibernate | post/hybrid-sleep)
+	grub_flag unset hibernated
+	exit 0
+	;;
+*) exit 0 ;;
+esac
+
+grub_flag set hibernated=1
+
+cached() { awk '/^Cached:/ {print int($2 / 1024)}' /proc/meminfo; }
+
+before=$(cached)
+# Dirty pages can't be dropped, so write them out first.
+sync
+echo 1 >/proc/sys/vm/drop_caches
+awk '/^MemTotal:/ {print $2 * 1024}' /proc/meminfo >/sys/power/image_size
+log "dropped $((before - $(cached))) MB of file cache, $(cached) MB left"
+exit 0

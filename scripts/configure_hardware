@@ -184,6 +184,31 @@ EOF
 	done
 }
 
+# Pack and unpack the hibernation image on half of the CPU's threads instead of the kernel's 3: the
+# compression is what a hibernation spends most of its time and battery on, and the same work done
+# sooner means less time with everything else powered. On the command line rather than in
+# /sys/power, so that the kernel that loads the image at resume uses them too.
+set_hibernation_compression_threads() {
+	local threads=$(($(nproc --all) / 2))
+	# Older kernels don't have the option.
+	[ -e /sys/power/hibernate_compression_threads ] && [ "$threads" -gt 3 ] || return 0
+	if ! sudo grubby --info=DEFAULT |
+		grep -q "^args=.*\\bhibernate_compression_threads=$threads\\b"; then
+		sudo grubby --update-kernel=ALL --args="hibernate_compression_threads=$threads"
+		reboot_for "kernel option hibernate_compression_threads=$threads, for faster hibernation"
+	fi
+}
+
+# Skip GRUB's menu and its timeout at the boot that resumes a hibernation, see the menu part.
+skip_boot_menu_on_resume() {
+	installed grub2-tools || return 0
+	if install_script_file grub/15_hibernate_resume /etc/grub.d/15_hibernate_resume 755 ||
+		! sudo grep -qs 'hibernated' /boot/grub2/grub.cfg; then
+		sudo grub2-mkconfig -o /boot/grub2/grub.cfg >/dev/null 2>&1 ||
+			failed "Could not rebuild GRUB's menu (grub2-mkconfig), see the full output."
+	fi
+}
+
 # Turn hibernation off, so KDE never offers it (it would if a big enough swap showed up).
 disable_hibernation() {
 	write_root_file /etc/systemd/sleep.conf.d/50-no-hibernate.conf <<'EOF'
@@ -353,7 +378,10 @@ step "Configuring the GPUs"
 hide_dgpu_from_vulkan
 # Also hide /dev/nvidiactl etc. when the dGPU is blocked, so tools like nvtop don't wake it. Only
 # reliable with exactly one iGPU and one NVIDIA dGPU.
-installed cardwire && has_nvidia && cardwire config experimental-nvidia-block true
+# Only when it isn't on yet: setting it wakes the GPU, reading it doesn't.
+installed cardwire && has_nvidia &&
+	! cardwire config experimental-nvidia-block 2>/dev/null | grep -qi ': *true$' &&
+	cardwire config experimental-nvidia-block true
 
 step "Configuring the kernel"
 hide_rdseed_boot_message
@@ -387,6 +415,10 @@ if is_laptop; then
 	install_sleep_hook sleep-hooks/sleep-stats
 	# Keep the speaker amps from deadlocking a hibernation at power-off.
 	install_sleep_hook sleep-hooks/cs35l41-hibernate
+	# A smaller hibernation image, compressed on more threads.
+	install_sleep_hook sleep-hooks/hibernate-image
+	can_hibernate && set_hibernation_compression_threads
+	can_hibernate && skip_boot_menu_on_resume
 else
 	disable_hibernation
 fi

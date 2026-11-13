@@ -739,6 +739,12 @@ export default [
         replacement: "\\frac\{$0\}\{$1\}",
         options: "mA",
     },
+    {
+        trigger: "abs",
+        replacement: "\\left|$0\\right|",
+        options: "mA",
+        description: "Absolute value",
+    },
 
     // Control systems.
     {

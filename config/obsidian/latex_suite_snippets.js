@@ -460,10 +460,10 @@ export default [
         options: "mA",
         priority: -1,
     },
-    { trigger: "\\int", replacement: "\\int $0 \\, \\d${1:x} $2", options: "m" },
+    { trigger: "\\int", replacement: "\\int $0 \\, \\d ${1:x} $2", options: "m" },
     {
         trigger: "dint",
-        replacement: "\\int_{${0:0}}^{${1:1}} $2 \\, \\d${3:x} $4",
+        replacement: "\\int_{${0:0}}^{${1:1}} $2 \\, \\d ${3:x} $4",
         options: "mA",
         description: "Definite integral",
     },
@@ -472,12 +472,12 @@ export default [
     { trigger: "iiint", replacement: "\\iiint", options: "mA" },
     {
         trigger: "oinf",
-        replacement: "\\int_{0}^{\\infty} $0 \\, \\d${1:x} $2",
+        replacement: "\\int_{0}^{\\infty} $0 \\, \\d ${1:x} $2",
         options: "mA",
     },
     {
         trigger: "infi",
-        replacement: "\\int_{-\\infty}^{\\infty} $0 \\, \\d${1:x} $2",
+        replacement: "\\int_{-\\infty}^{\\infty} $0 \\, \\d ${1:x} $2",
         options: "mA",
     },
 

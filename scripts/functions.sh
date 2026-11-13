@@ -13,10 +13,12 @@
 # Status message, in bold bright blue so it stands out.
 say() { printf '\e[1;94m== %s ==\e[0m\n' "$*"; }
 
-# Report a failure, in bold red. start_fresh also lists it at the end, from the file $FAILURES.
+# Report a failure, in bold red. start_fresh also lists it at the end, from the file $FAILURES, and
+# so does its progress display (scripts/tui.py) once it has cleared the output.
 failed() {
 	printf '\e[1;91m== %s ==\e[0m\n' "$*" >&2
 	[ -z "${FAILURES:-}" ] || echo "$*" >>"$FAILURES"
+	[ -z "${START_FRESH_STATUS:-}" ] || echo "failed $*" >>"$START_FRESH_STATUS"
 }
 
 # Note that a reboot is needed to apply $*. start_fresh lists these at the end, from the file

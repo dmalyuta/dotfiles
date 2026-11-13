@@ -12,7 +12,8 @@ The steps come from `step [WEIGHT] "Description"` lines (see scripts/functions.s
 from FILE and from the scripts it runs as `bash "$dotfiles"/scripts/NAME`, which are read from DIR,
 or from URL before the repo is cloned. WEIGHT is the step's rough share of the time, 1 by default.
 At run time, `step` appends "step Description" to the file named by $START_FRESH_STATUS, and
-`steps_done` appends "done". A step that doesn't run is skipped over.
+`steps_done` appends "done", and `failed` appends "failed Message", for the list of errors left on
+screen at the end. A step that doesn't run is skipped over.
 
 Without a terminal or pyte, it just runs the command.
 
@@ -207,7 +208,7 @@ class Layout:
     def __init__(self, rows, cols):
         self.rows, self.cols = rows, cols
         self.box_top = 2  # 0-based: bar, description, then the box.
-        self.box_height = max(5, min(rows // 2, rows - self.box_top))
+        self.box_height = max(5, min(rows * 3 // 4, rows - self.box_top))
         self.inner_lines = self.box_height - 2
         self.inner_cols = max(10, cols - 4)
 
@@ -379,6 +380,7 @@ def main():
 
     status = open(status_path)
     partial = ""
+    failures = []
 
     def read_status():
         nonlocal partial
@@ -387,6 +389,8 @@ def main():
         for line in lines:
             if line.startswith("step "):
                 progress.step(line[5:])
+            elif line.startswith("failed "):
+                failures.append(line[7:])
             elif line == "done":
                 progress.finish("Done")
 
@@ -503,12 +507,22 @@ def main():
         status.close()
         os.unlink(status_path)
 
-    # Leave the last view in the terminal, with the box down to its last line of output.
-    used = screen.used_lines()
-    line1, line2 = header(progress, layout, 0, state)
-    lines = [line1, line2] + box_lines(rows, layout, args.title, used)
+    # Once done, clear the display and leave only how it went and where the output is. After a
+    # failure that stopped it, leave the last view too, with the box down to its last line of
+    # output, as that is where the error is.
+    lines = []
+    if state == "failed":
+        used = screen.used_lines()
+        line1, line2 = header(progress, layout, 0, state)
+        lines = [line1, line2] + box_lines(rows, layout, args.title, used)
+    if failures:
+        lines.append(f" {RED}✗ Encountered errors:{RESET}")
+        lines += [f"   - {failure}" for failure in failures]
+    elif state == "done":
+        lines.append(f" {GREEN}✓{RESET} {BOLD}Finished successfully{RESET}")
     log_path = args.log.replace(os.path.expanduser("~"), "~", 1)
-    write(to_top() + "\x1b[J" + "\r\n".join(lines) + f"\r\nFull output: {log_path}\r\n")
+    lines.append(f"Full output: {log_path}")
+    write(to_top() + "\x1b[J" + "\r\n".join(lines) + "\r\n")
     sys.exit(exit_code)
 
 

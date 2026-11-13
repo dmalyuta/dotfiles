@@ -146,8 +146,8 @@ export default [
         options: "rmA",
     },
     { trigger: "conj", replacement: "^{*}", options: "mA" },
-    { trigger: "Re", replacement: "\\mathrm{Re}", options: "mA" },
-    { trigger: "Im", replacement: "\\mathrm{Im}", options: "mA" },
+    { trigger: "Re", replacement: "\\repart{$0}", options: "mA" },
+    { trigger: "Im", replacement: "\\impart{$0}", options: "mA" },
     { trigger: "bf", replacement: "\\mathbf{$0}", options: "mA" },
     { trigger: "rm", replacement: "\\mathrm{$0}$1", options: "mA" },
 
@@ -291,14 +291,14 @@ export default [
     { trigger: "sum", replacement: "\\sum", options: "mA" },
     { trigger: "prod", replacement: "\\prod", options: "mA" },
     {
-        trigger: "\\sum",
+        trigger: "dsum",
         replacement: "\\sum_{${0:i}=${1:1}}^{${2:N}} $3",
-        options: "m",
+        options: "mA",
     },
     {
-        trigger: "\\prod",
+        trigger: "dprod",
         replacement: "\\prod_{${0:i}=${1:1}}^{${2:N}} $3",
-        options: "m",
+        options: "mA",
     },
     {
         trigger: "lim",

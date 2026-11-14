@@ -1,925 +1,893 @@
-#!/bin/bash
-#
-# System status for the laptop and the desktop: software, battery, power source and draw per
-# component, battery life and power settings, with a second column beside them of the hardware,
-# temperatures and fans, and the NVIDIA GPU. If the terminal is too narrow or the output isn't a
-# terminal, the hardware goes below the versions and the rest at the end. Reads sysfs and procfs
-# (plus KDE's battery estimate over D-Bus). Runs nvidia-smi only on a GPU that is already on and
-# that the driver never powers off, so the laptop's sleeping dGPU stays asleep.
-#
-# Usage: status [--gpu | --power | --about]
-#
-#   --gpu    Only the NVIDIA GPU section.
-#   --power  Only the battery, power draw and battery life sections. --battery does the same.
-#   --about  Only the software and hardware.
-#
-# The power draw section starts with the power source, then the total: on the laptop on battery,
-# what the battery measures; on the desktop, what the PSU puts out. Then the sum of the components
-# that measure their own draw, and those components from highest to lowest.
-#
-# The laptop's battery measures nothing useful on AC, so there the total is only the known
-# components, and the rest of the laptop is left out.
-#
-# The desktop's CPU power comes from the RAPL energy counters, which only root can read unless
-# scripts/configure_hardware has opened them up.
-#
-# Author: Danylo Malyuta, 2026.
+#!/usr/bin/python3
+"""System status for the laptop and the desktop.
 
-set -u
-usage="Usage: status [--gpu | --power | --about]"
-show=all
-case $# in
-0) ;;
-1)
-	case $1 in
-	--gpu) show=gpu ;;
-	--power | --battery) show=power ;;
-	--about) show=about ;;
-	-h | --help) echo "$usage" && exit 0 ;;
-	*) echo "$usage" >&2 && exit 2 ;;
-	esac
-	;;
-*) echo "$usage" >&2 && exit 2 ;;
-esac
+Usage: status [--gpu | --power | --about]
 
-if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
-	bold=$'\e[1m' dim=$'\e[2m' red=$'\e[31m' green=$'\e[32m' yellow=$'\e[33m' cyan=$'\e[36m'
-	reset=$'\e[0m'
-else
-	bold='' dim='' red='' green='' yellow='' cyan='' reset=''
-fi
+  --gpu    Only the NVIDIA GPU section.
+  --power  Only the battery, power draw and battery life sections. --battery does the same.
+  --about  Only the software and hardware.
 
-# A section header, after a blank line unless it is the first.
-sections=0
-section() {
-	local rule
-	printf -v rule '%*s' $((60 - ${#1})) ''
-	((sections++)) && echo
-	printf '%s━━ %s %s%s\n' "$bold$cyan" "$1" "${rule// /━}" "$reset"
-}
-# A label and value. A value past the section header's 64 columns has its trailing (comment)
-# moved to the next line.
-row() {
-	local plain=$2 head c
-	for c in "$bold" "$dim" "$red" "$green" "$yellow" "$cyan" "$reset"; do
-		[ -n "$c" ] && plain=${plain//"$c"/}
-	done
-	head=${2% "$dim("*}
-	if ((${#plain} > 43)) && [ "$head" != "$2" ]; then
-		printf '  %-18s %s\n' "$1" "$head$reset"
-		printf '  %-18s %s\n' "" "${2:${#head}+1}"
-	else
-		printf '  %-18s %s\n' "$1" "$2"
-	fi
-}
-note() { row "" "$dim$1$reset"; }
-# A row of a ", "-separated list, wrapped to stay within the section header's 64 columns.
-list_row() {
-	local label=$1 line= item
-	local -a items
-	IFS=$'\n' read -r -d '' -a items < <(sed 's/, /\n/g' <<<"$2") || true
-	for item in "${items[@]}"; do
-		if [ -n "$line" ] && ((${#line} + 2 + ${#item} > 43)); then
-			row "$label" "$line,"
-			label= line=
-		fi
-		line+="${line:+, }$item"
-	done
-	row "$label" "$line"
-}
+The software, battery, power draw, battery life and power settings, with a second column beside
+them of the hardware, temperatures and fans, and the NVIDIA GPU. In a terminal too narrow for two
+columns, or without one, the sections are stacked instead.
 
-# Floating point helpers, all through awk. f FORMAT VALUE: printf. lt A B: whether A < B.
-f() { awk -v fmt="$1" -v v="$2" 'BEGIN { printf fmt, v }'; }
-lt() { awk -v a="$1" -v b="$2" 'BEGIN { exit !(a < b) }'; }
-# Hours as "3h 05m".
-hm() { awk -v h="$1" 'BEGIN { m = int(h * 60 + 0.5); printf "%dh %02dm", m / 60, m % 60 }'; }
-# Color a value green below $2, yellow below $3, red otherwise.
-level() {
-	if lt "$1" "$2"; then
-		printf '%s' "$green"
-	elif lt "$1" "$3"; then
-		printf '%s' "$yellow"
-	else
-		printf '%s' "$red"
-	fi
-}
+It only reads sysfs and procfs (plus KDE's battery estimate and screen modes), and runs nvidia-smi
+only on a GPU that is already on and that the driver never powers off: nvidia-smi, like anything
+else that opens /dev/nvidia* or reads the GPU's PCI config space, powers a sleeping GPU back on.
 
-# First hwmon with the given name.
-hwmon() {
-	local h
-	for h in /sys/class/hwmon/hwmon*; do
-		[ "$(cat "$h/name" 2>/dev/null)" = "$1" ] && echo "$h" && return
-	done
-	return 1
-}
-# The input file of the sensor of the given type (power, temp, ...) and label in a hwmon.
-hwmon_input() {
-	local l
-	for l in "$1/$2"*_label; do
-		[ "$(cat "$l" 2>/dev/null)" = "$3" ] && echo "${l%_label}_input" && return
-	done
-	return 1
-}
-# The highest temp1_input among all hwmons with the given name, in °C × 1000.
-max_temp() {
-	local h t max=
-	for h in /sys/class/hwmon/hwmon*; do
-		[ "$(cat "$h/name" 2>/dev/null)" = "$1" ] || continue
-		t=$(cat "$h/temp1_input" 2>/dev/null) || continue
-		[ -z "$max" ] || ((t > max)) && max=$t
-	done
-	[ -n "$max" ] && echo "$max"
-}
-# A sysfs value divided by $2, or nothing if it is missing.
-scaled() {
-	local v
-	v=$(cat "$1" 2>/dev/null) && [ -n "$v" ] && f '%.2f' "$(awk -v v="$v" -v s="$2" \
-		'BEGIN { print v / s }')"
-}
-# Milliseconds as "1h 02m", "3m 05s" or "12s".
-duration() {
-	local s=$(($1 / 1000))
-	if ((s >= 3600)); then
-		printf '%dh %02dm' $((s / 3600)) $((s % 3600 / 60))
-	elif ((s >= 60)); then
-		printf '%dm %02ds' $((s / 60)) $((s % 60))
-	else
-		printf '%ds' "$s"
-	fi
-}
+The power draw section has the power source, then the total: on the laptop on battery, what the
+battery measures (it measures nothing useful on AC); on the desktop, what the PSU puts out. Then
+the components that measure their own draw. The desktop's CPU power comes from the RAPL energy
+counters, which only root can read unless scripts/configure_hardware has opened them up.
 
-# The laptop has a battery, the desktop doesn't.
-bat=$(ls -d /sys/class/power_supply/BAT* 2>/dev/null | head -1)
-laptop=0
-[ -n "$bat" ] && laptop=1
+Author: Danylo Malyuta, 2026.
+"""
+
+import functools
+import glob
+import os
+import re
+import shutil
+import subprocess
+import sys
+import time
+
+USAGE = "Usage: status [--gpu | --power | --about]"
+SYS = "/sys/class"
+VALUE_WIDTH = 43  # A row's value, to stay within the section header's 64 columns.
+
+if sys.stdout.isatty() and not os.environ.get("NO_COLOR"):
+    BOLD, DIM, RED, GREEN, YELLOW, CYAN, RESET = (
+        f"\x1b[{n}m" for n in (1, 2, 31, 32, 33, 36, 0))
+else:
+    BOLD = DIM = RED = GREEN = YELLOW = CYAN = RESET = ""
+
 
 # --------------------------------------------------------------------------------------------------
-# NVIDIA GPU: find it, and query it with nvidia-smi if that can't wake it.
-#
-# nvidia-smi, NVML and anything else that opens /dev/nvidia*, and reading the GPU's PCI config space,
-# each power a sleeping GPU back on. So the laptop's dGPU is only queried while it is on and runtime
-# D3 is off (then the driver never powers it off anyway). The desktop's GPU is always on.
+# Reading the system.
 # --------------------------------------------------------------------------------------------------
 
-nv_bdf= nv_dev= nv_state= nv_rtd3= nv_w=
-# The driver lists its GPUs by PCI address. Without the driver, look for an Nvidia display device.
-for d in /proc/driver/nvidia/gpus/*; do
-	[ -d "$d" ] && nv_bdf=${d##*/} && break
-done
-if [ -z "$nv_bdf" ]; then
-	for d in /sys/bus/pci/devices/*; do
-		if [ "$(cat "$d/vendor" 2>/dev/null)" = 0x10de ] &&
-			[[ $(cat "$d/class" 2>/dev/null) == 0x03* ]]; then
-			nv_bdf=${d##*/}
-			break
-		fi
-	done
-fi
-# Cardwire hides the device from /sys/bus/pci while it blocks it, but its DRM card still links to it.
-nv_dev=/sys/bus/pci/devices/$nv_bdf
-if [ -z "$nv_bdf" ] || [ ! -e "$nv_dev" ]; then
-	for c in /sys/class/drm/card[0-9]*; do
-		[[ $(readlink -f "$c/device/driver" 2>/dev/null) == */nvidia ]] || continue
-		nv_dev=$(readlink -f "$c/device")
-		nv_bdf=${nv_dev##*/}
-		break
-	done
-fi
-if [ -n "$nv_bdf" ] && [ -e "$nv_dev" ]; then
-	nv_state=$(cat "$nv_dev/power_state" 2>/dev/null)
-	[ -r "/proc/driver/nvidia/gpus/$nv_bdf/power" ] &&
-		nv_rtd3=$(sed -n 's/^Runtime D3 status: *//p' "/proc/driver/nvidia/gpus/$nv_bdf/power")
-	if [ "$nv_state" = D0 ] && [ -n "$nv_rtd3" ] && [[ $nv_rtd3 != Enabled* ]] &&
-		command -v nvidia-smi >/dev/null; then
-		IFS=, read -r nv_w nv_limit nv_util nv_temp nv_mem_used nv_mem_total nv_fan nv_clock \
-			< <(timeout 3 nvidia-smi -i "$nv_bdf" --format=csv,noheader,nounits \
-				--query-gpu=power.draw,power.limit,utilization.gpu,temperature.gpu,memory.used,memory.total,fan.speed,clocks.gr \
-				2>/dev/null)
-		# Drop spaces, and readings the GPU doesn't have ("[N/A]").
-		for v in nv_w nv_limit nv_util nv_temp nv_mem_used nv_mem_total nv_fan nv_clock; do
-			printf -v "$v" '%s' "${!v// /}"
-			[[ ${!v} =~ ^[0-9.]+$ ]] || printf -v "$v" ''
-		done
-	fi
-fi
+
+def read(*path):
+    """A file's content without surrounding whitespace, or None if it can't be read (or if its
+    folder, the first argument, is None)."""
+    if not path[0]:
+        return None
+    try:
+        with open(os.path.join(*path), errors="replace") as f:
+            return f.read().strip()
+    except OSError:
+        return None
+
+
+def number(*path, scale=1):
+    """A file's number divided by `scale`, or None."""
+    try:
+        return float(read(*path)) / scale
+    except (TypeError, ValueError):
+        return None
+
+
+def paths(pattern):
+    return sorted(glob.glob(pattern))
+
+
+def run(*command, timeout=3):
+    """A command's output, or an empty string if it fails, is missing or takes too long."""
+    try:
+        return subprocess.run(command, capture_output=True, text=True, timeout=timeout).stdout
+    except (OSError, subprocess.SubprocessError):
+        return ""
+
+
+def hwmons(name):
+    return [h for h in paths(f"{SYS}/hwmon/hwmon*") if read(h, "name") == name]
+
+
+def hwmon(name):
+    """The first hwmon with this name, or None."""
+    return next(iter(hwmons(name)), None)
+
+
+def hwmon_input(hwmon_dir, kind, label):
+    """The input file of a hwmon's sensor of this kind (power, temp, ...) and label, or None."""
+    for label_file in paths(f"{hwmon_dir}/{kind}*_label") if hwmon_dir else []:
+        if read(label_file) == label:
+            return label_file.removesuffix("_label") + "_input"
+    return None
+
+
+@functools.cache
+def pci_ids():
+    """The PCI ID database, as {vendor id: (vendor name, {device id: device name})}."""
+    vendors, devices = {}, None
+    try:
+        with open("/usr/share/hwdata/pci.ids", errors="replace") as f:
+            for line in f:
+                if re.match(r"[0-9a-f]{4} ", line):
+                    devices = {}
+                    vendors[line[:4]] = (line[4:].strip(), devices)
+                elif devices is not None and re.match(r"\t[0-9a-f]{4} ", line):
+                    devices[line[1:5]] = line[5:].strip()
+    except OSError:
+        pass
+    return vendors
+
+
+def pci_name(device_dir):
+    """A PCI device's vendor and device names, each None if unknown. The sysfs vendor and device
+    files are cached by the kernel, so reading them leaves a sleeping device asleep."""
+    vendor = (read(device_dir, "vendor") or "").removeprefix("0x")
+    device = (read(device_dir, "device") or "").removeprefix("0x")
+    vendor_name, devices = pci_ids().get(vendor, (None, {}))
+    return vendor_name, devices.get(device)
+
 
 # --------------------------------------------------------------------------------------------------
-# NVIDIA GPU section: whether it is powered off, whether the driver can power it off when idle, how
-# much of the time it has been off, and what has it open. On a GPU that is always on, its draw, load
-# and memory instead.
+# Formatting.
 # --------------------------------------------------------------------------------------------------
 
-gpu_section() {
-	local name= mode= holders= line id device vram off_ms on_ms pct color tgp
-	if ((laptop)); then section "NVIDIA dGPU"; else section "NVIDIA GPU"; fi
-	if [ -z "$nv_bdf" ] || [ ! -e "$nv_dev" ]; then
-		row "Status" "${dim}no NVIDIA GPU found$reset"
-		return
-	fi
 
-	# Name and blocking state from cardwire, if it is installed. It answers from its own records.
-	if command -v cardwire >/dev/null; then
-		line=$(cardwire list 2>/dev/null | grep -F " $nv_bdf ")
-		if [ -n "$line" ]; then
-			id=$(awk '{ print $1 }' <<<"$line")
-			name=$(sed -E "s/^[0-9]+ +(.*[^ ]) +$nv_bdf .*/\1/" <<<"$line")
-			holders=$(cardwire gpu --lsof "$id" 2>/dev/null | grep -o '"[^"]*"' | tr -d '"' |
-				grep -vx cardwired | sort -u | paste -sd, | sed 's/,/, /g')
-		fi
-		mode=$(cardwire get 2>/dev/null | sed -n 's/^Current Mode: //p')
-	fi
-	# Otherwise name it from the PCI ID database. The sysfs vendor/device files are cached by the
-	# kernel.
-	if [ -z "$name" ] && [ -r /usr/share/hwdata/pci.ids ]; then
-		device=$(cat "$nv_dev/device")
-		name=$(awk -v dev="${device#0x}" '
-			/^10de/ { in_nv = 1; next }
-			/^[0-9a-f]/ { in_nv = 0 }
-			in_nv && $1 == dev { $1 = ""; sub(/^ /, ""); print; exit }
-		' /usr/share/hwdata/pci.ids)
-	fi
-	printf '  %s%s%s %s(%s)%s\n' "$bold" "${name:-NVIDIA GPU}" "$reset" "$dim" "$nv_bdf" "$reset"
+def level(value, low, high):
+    """The color for a value: green below `low`, yellow below `high`, red otherwise."""
+    return GREEN if value < low else YELLOW if value < high else RED
 
-	case $nv_state in
-	D3cold) row "Power" "${green}off$reset (D3cold, power cut, ~0 W)" ;;
-	D3hot) row "Power" "${yellow}sleeping$reset (D3hot, power on, draw unknown)" ;;
-	D0)
-		if [ -n "$nv_w" ]; then
-			row "Power" "on (D0), $(level "$nv_w" 100 350)$(f '%.1f' "$nv_w") W$reset${nv_limit:+ $dim(limit $(f '%.0f' "$nv_limit") W)$reset}"
-		else
-			row "Power" "${yellow}awake$reset (D0, draw unknown without waking it)"
-		fi
-		;;
-	*) row "Power" "${nv_state:-unknown}" ;;
-	esac
-	[ -n "${nv_util:-}" ] && row "Load" "$(level "$nv_util" 25 70)$nv_util%$reset${nv_clock:+ $dim(${nv_clock} MHz)$reset}"
-	[ -n "${nv_mem_used:-}" ] && [ -n "${nv_mem_total:-}" ] &&
-		row "Memory used" "$(f '%.1f' "$(awk -v m="$nv_mem_used" 'BEGIN { print m / 1024 }')") GiB of $(f '%.0f' "$(awk -v m="$nv_mem_total" 'BEGIN { print m / 1024 }')") GiB"
 
-	if [ -r "/proc/driver/nvidia/gpus/$nv_bdf/power" ]; then
-		vram=$(sed -n 's/^Video Memory: *//p' "/proc/driver/nvidia/gpus/$nv_bdf/power")
-		# Only the laptop's dGPU needs to power off when idle.
-		if ((laptop)); then
-			if [[ $nv_rtd3 == Enabled* ]]; then
-				row "Auto power-off" "$green$nv_rtd3$reset"
-			else
-				row "Auto power-off" "$red${nv_rtd3:-unknown}$reset"
-				note "The dGPU stays on even when idle."
-			fi
-			[ -n "$vram" ] && row "Video memory" "$vram"
-		fi
-	else
-		row "Driver" "${dim}not loaded$reset"
-	fi
+def hours(h):
+    """Hours as "3h 05m"."""
+    minutes = int(h * 60 + 0.5)
+    return f"{minutes // 60}h {minutes % 60:02d}m"
 
-	# Time spent powered off vs on since runtime power management started (about boot).
-	if ((laptop)) || [[ $nv_rtd3 == Enabled* ]]; then
-		off_ms=$(cat "$nv_dev/power/runtime_suspended_time" 2>/dev/null || echo 0)
-		on_ms=$(cat "$nv_dev/power/runtime_active_time" 2>/dev/null || echo 0)
-		if ((off_ms + on_ms > 0)); then
-			pct=$((100 * off_ms / (off_ms + on_ms)))
-			color=$green
-			((pct < 90)) && color=$yellow
-			((pct < 50)) && color=$red
-			row "Off since boot" "$color$pct%$reset $dim($(duration "$off_ms") off, $(duration "$on_ms") on)$reset"
-		fi
-	fi
 
-	tgp=$(cat /sys/class/firmware-attributes/asus-armoury/attributes/nv_base_tgp/current_value \
-		2>/dev/null)
-	[ -n "$tgp" ] && row "Base power limit" "$tgp W"
-	[ -n "$mode" ] && row "Cardwire mode" "$mode"
-	# Open handles alone don't keep it awake; the driver powers it off once they go idle.
-	[ -n "$holders" ] && list_row "Open by" "$holders"
-}
+def duration(ms):
+    """Milliseconds as "1h 02m", "3m 05s" or "12s"."""
+    s = ms // 1000
+    if s >= 3600:
+        return f"{s // 3600}h {s % 3600 // 60:02d}m"
+    if s >= 60:
+        return f"{s // 60}m {s % 60:02d}s"
+    return f"{s}s"
 
-if [ "$show" = gpu ]; then
-	gpu_section
-	exit 0
-fi
+
+def plain(text):
+    """Text without its color codes."""
+    return re.sub(r"\x1b\[\d{1,2}m", "", text)
+
+
+def dim(text):
+    return f"{DIM}({text}){RESET}"
+
+
+class Section(list):
+    """A section's lines: its header, then its rows."""
+
+    def __init__(self, title):
+        super().__init__([f"{BOLD}{CYAN}━━ {title} {'━' * (60 - len(title))}{RESET}"])
+
+    def row(self, label, value):
+        """A label and value. A value too wide has its trailing (comment) moved to the next line."""
+        comment = value.rfind(f" {DIM}(")
+        if len(plain(value)) > VALUE_WIDTH and comment >= 0:
+            self.append(f"  {label:<18} {value[:comment]}{RESET}")
+            label, value = "", value[comment + 1:]
+        self.append(f"  {label:<18} {value}")
+
+    def note(self, text):
+        self.row("", f"{DIM}{text}{RESET}")
+
+    def list_row(self, label, items):
+        """A row of a list, wrapped to stay within the value's width."""
+        line = ""
+        for item in items:
+            if line and len(line) + 2 + len(item) > VALUE_WIDTH:
+                self.row(label, line + ",")
+                label = line = ""
+            line += (", " if line else "") + item
+        self.row(label, line)
+
 
 # --------------------------------------------------------------------------------------------------
-# Software: the OS, kernel, desktop and drivers.
+# The NVIDIA GPU.
 # --------------------------------------------------------------------------------------------------
 
-software_section() {
-	local -A ver=()
-	local name v nv
-	section "Software"
-	# Package versions, in one rpm call. Missing packages print a line with more fields.
-	while read -r name v; do
-		[ -n "$v" ] && [[ $v != *" "* ]] && ver[$name]=$v
-	done < <(rpm -q --qf '%{NAME} %{VERSION}\n' plasma-workspace kf6-kcoreaddons qt6-qtbase \
-		mesa-dri-drivers linux-firmware systemd xorg-x11-drv-nvidia asusctl cardwire 2>/dev/null |
-		awk 'NF == 2')
-	row "OS" "$(. /etc/os-release && echo "${PRETTY_NAME:-$NAME}")"
-	row "Kernel" "$(uname -r)"
-	[ -n "${ver[plasma-workspace]:-}" ] &&
-		row "KDE Plasma" "${ver[plasma-workspace]}${XDG_SESSION_TYPE:+ $dim(${XDG_SESSION_TYPE^})$reset}"
-	[ -n "${ver[kf6-kcoreaddons]:-}" ] && row "KDE Frameworks" "${ver[kf6-kcoreaddons]}"
-	[ -n "${ver[qt6-qtbase]:-}" ] && row "Qt" "${ver[qt6-qtbase]}"
-	[ -n "${ver[mesa-dri-drivers]:-}" ] && row "Mesa" "${ver[mesa-dri-drivers]} $dim(AMD graphics)$reset"
-	nv=$(cat /sys/module/nvidia/version 2>/dev/null)
-	if [ -n "$nv" ]; then
-		row "NVIDIA driver" "$nv"
-	elif [ -n "${ver[xorg-x11-drv-nvidia]:-}" ]; then
-		row "NVIDIA driver" "${ver[xorg-x11-drv-nvidia]} $dim(installed, not loaded)$reset"
-	fi
-	[ -n "${ver[linux-firmware]:-}" ] && row "Linux firmware" "${ver[linux-firmware]}"
-	[ -n "${ver[systemd]:-}" ] && row "systemd" "${ver[systemd]}"
-	[ -n "${ver[asusctl]:-}" ] && row "asusctl" "${ver[asusctl]}"
-	[ -n "${ver[cardwire]:-}" ] && row "cardwire" "${ver[cardwire]}"
-}
+
+class Nvidia:
+    """The NVIDIA GPU, and its readings from nvidia-smi if asking can't wake it: the laptop's dGPU
+    is only queried while it is on with runtime D3 off (then the driver never powers it off
+    anyway). The desktop's GPU is always on."""
+
+    QUERY = ("power.draw", "power.limit", "utilization.gpu", "temperature.gpu", "memory.used",
+             "memory.total", "fan.speed", "clocks.gr")
+
+    def __init__(self):
+        self.bdf = self.dev = self.state = None
+        self.rtd3 = ""
+        self.readings = {}
+        self.find()
+        if not self.dev:
+            return
+        self.state = read(self.dev, "power_state")
+        self.power_file = f"/proc/driver/nvidia/gpus/{self.bdf}/power"
+        match = re.search(r"^Runtime D3 status: *(.*)$", read(self.power_file) or "", re.M)
+        self.rtd3 = match[1] if match else ""
+        if self.state == "D0" and self.rtd3 and not self.rtd3.startswith("Enabled"):
+            out = run("nvidia-smi", "-i", self.bdf, "--format=csv,noheader,nounits",
+                      "--query-gpu=" + ",".join(self.QUERY))
+            for name, value in zip(self.QUERY, out.strip().split(",")):
+                # Not the readings the GPU doesn't have ("[N/A]").
+                if re.fullmatch(r"[0-9.]+", value.strip()):
+                    self.readings[name] = float(value)
+
+    def find(self):
+        """Its PCI address and sysfs device. The driver lists its GPUs by address; without the
+        driver, look for an NVIDIA display device. Cardwire hides the device from /sys/bus/pci
+        while it blocks it, but its DRM card still links to it."""
+        candidates = [d for d in paths("/proc/driver/nvidia/gpus/*") if os.path.isdir(d)]
+        candidates += [d for d in paths("/sys/bus/pci/devices/*")
+                       if read(d, "vendor") == "0x10de" and (read(d, "class") or "")[:4] == "0x03"]
+        for candidate in candidates[:1]:
+            dev = "/sys/bus/pci/devices/" + os.path.basename(candidate)
+            if os.path.exists(dev):
+                self.bdf, self.dev = os.path.basename(dev), dev
+                return
+        for card in paths(f"{SYS}/drm/card[0-9]*"):
+            if os.path.realpath(f"{card}/device/driver").endswith("/nvidia"):
+                self.dev = os.path.realpath(f"{card}/device")
+                self.bdf = os.path.basename(self.dev)
+                return
+
+    def get(self, name):
+        return self.readings.get(name)
+
+
+def gpu_section(nv, laptop):
+    """Whether the GPU is powered off, whether the driver can power it off when idle, how much of
+    the time it has been off, and what has it open. On a GPU that is always on, its draw, load
+    and memory instead."""
+    s = Section("NVIDIA dGPU" if laptop else "NVIDIA GPU")
+    if not nv.dev:
+        s.row("Status", f"{DIM}no NVIDIA GPU found{RESET}")
+        return s
+
+    # Its name, cardwire's mode, and what has it open, from cardwire's own records.
+    name = mode = None
+    holders = []
+    entry = re.search(rf"^(\d+) +(.*[^ ]) +{re.escape(nv.bdf)} ", run("cardwire", "list"), re.M)
+    if entry:
+        name = entry[2]
+        holders = set(re.findall(r'"([^"]*)"', run("cardwire", "gpu", "--lsof", entry[1])))
+        holders = sorted(holders - {"cardwired"}, key=str.lower)
+    mode = re.search(r"^Current Mode: (.*)$", run("cardwire", "get"), re.M)
+    name = name or pci_name(nv.dev)[1] or "NVIDIA GPU"
+    s.append(f"  {BOLD}{name}{RESET} {dim(nv.bdf)}")
+
+    watts, limit = nv.get("power.draw"), nv.get("power.limit")
+    if nv.state == "D3cold":
+        s.row("Power", f"{GREEN}off{RESET} (D3cold, power cut, ~0 W)")
+    elif nv.state == "D3hot":
+        s.row("Power", f"{YELLOW}sleeping{RESET} (D3hot, power on, draw unknown)")
+    elif nv.state == "D0" and watts is not None:
+        s.row("Power", f"on (D0), {level(watts, 100, 350)}{watts:.1f} W{RESET}"
+              + (f" {dim(f'limit {limit:.0f} W')}" if limit else ""))
+    elif nv.state == "D0":
+        s.row("Power", f"{YELLOW}awake{RESET} (D0, draw unknown without waking it)")
+    else:
+        s.row("Power", nv.state or "unknown")
+    load, clock = nv.get("utilization.gpu"), nv.get("clocks.gr")
+    if load is not None:
+        s.row("Load", f"{level(load, 25, 70)}{load:.0f}%{RESET}"
+              + (f" {dim(f'{clock:.0f} MHz')}" if clock else ""))
+    used, total = nv.get("memory.used"), nv.get("memory.total")
+    if used is not None and total:
+        s.row("Memory used", f"{used / 1024:.1f} GiB of {total / 1024:.0f} GiB")
+
+    rtd3_on = nv.rtd3.startswith("Enabled")
+    driver_power = read(nv.power_file)
+    if driver_power is None:
+        s.row("Driver", f"{DIM}not loaded{RESET}")
+    elif laptop:
+        # Only the laptop's dGPU needs to power off when idle.
+        if rtd3_on:
+            s.row("Auto power-off", f"{GREEN}{nv.rtd3}{RESET}")
+        else:
+            s.row("Auto power-off", f"{RED}{nv.rtd3 or 'unknown'}{RESET}")
+            s.note("The dGPU stays on even when idle.")
+        vram = re.search(r"^Video Memory: *(.+)$", driver_power, re.M)
+        if vram:
+            s.row("Video memory", vram[1])
+
+    # Time spent powered off since runtime power management started (about boot).
+    if laptop or rtd3_on:
+        off = int(number(nv.dev, "power/runtime_suspended_time") or 0)
+        on = int(number(nv.dev, "power/runtime_active_time") or 0)
+        if off + on > 0:
+            percent = 100 * off // (off + on)
+            color = GREEN if percent >= 90 else YELLOW if percent >= 50 else RED
+            s.row("Off since boot", f"{color}{percent}%{RESET} "
+                  + dim(f"{duration(off)} off, {duration(on)} on"))
+
+    base_limit = read("/sys/class/firmware-attributes/asus-armoury/attributes/nv_base_tgp",
+                      "current_value")
+    if base_limit:
+        s.row("Base power limit", f"{base_limit} W")
+    if mode:
+        s.row("Cardwire mode", mode[1])
+    # Open handles alone don't keep it awake: the driver powers it off once they go idle.
+    if holders:
+        s.list_row("Open by", holders)
+    return s
+
 
 # --------------------------------------------------------------------------------------------------
-# Hardware: model, board, CPU, GPUs, RAM, storage, displays, network, PSU or battery. Only from
-# sysfs, procfs and kscreen-doctor, all of which leave a sleeping dGPU asleep: the PCI vendor and
-# device files are cached by the kernel, and nvidia-smi was only run above if it was safe.
+# Software and hardware.
 # --------------------------------------------------------------------------------------------------
 
-# Vendor names without the legal suffixes, e.g. "ASUSTeK COMPUTER INC." as "ASUS".
-short_vendor() {
-	case $1 in
-	ASUS*) echo ASUS ;;
-	"Advanced Micro Devices"*) echo AMD ;;
-	NVIDIA*) echo NVIDIA ;;
-	MEDIATEK* | MediaTek*) echo MediaTek ;;
-	Intel*) echo Intel ;;
-	*) sed -E 's/,? (Inc\.?|Corporation|Corp\.?|Co\., Ltd\.|Ltd\.|Semiconductor.*)$//' <<<"$1" ;;
-	esac
-}
-# A PCI device's vendor and device name from the PCI ID database, tab-separated.
-pci_name() {
-	[ -r /usr/share/hwdata/pci.ids ] || return 1
-	awk -v v="${1#0x}" -v d="${2#0x}" '
-		/^[0-9a-f]{4} / { in_v = ($1 == v); if (in_v) { vn = $0; sub(/^[^ ]+ +/, "", vn) }; next }
-		in_v && $1 == d { $1 = ""; sub(/^ +/, ""); print vn "\t" $0; exit }
-	' /usr/share/hwdata/pci.ids
-}
-# A monitor's name from its EDID: the name descriptor, else the free text one (laptop panels).
-edid_name() {
-	local -a hex
-	local tag i
-	read -ra hex < <(od -An -tx1 -v -N128 "$1" 2>/dev/null | tr '\n' ' ')
-	((${#hex[@]} == 128)) || return 1
-	for tag in fc fe; do
-		for i in 54 72 90 108; do
-			[ "${hex[i]}${hex[i + 1]}${hex[i + 3]}" = "0000$tag" ] || continue
-			printf '%b' "$(printf '\\x%s' "${hex[@]:i+5:13}")" | tr '\n' ' ' | sed 's/ *$//'
-			return
-		done
-	done
-	return 1
-}
-# Bytes as "4.0 TB" or "512 GB", in decimal units like drives are sold in.
-drive_size() { awk -v b="$1" 'BEGIN { if (b >= 1e12) printf "%.1f TB", b / 1e12; else printf "%.0f GB", b / 1e9 }'; }
 
-hardware_section() {
-	local sections=0 vendor product board v name names d n gpus= count model size label speed std
-	local out mode scale card e code
-	section "Hardware"
-	dmi() { cat "/sys/class/dmi/id/$1" 2>/dev/null; }
-	# Placeholders that board makers leave in unused DMI fields.
-	real() { [ -n "$1" ] && ! [[ $1 =~ ^(System|To [Bb]e [Ff]illed|Default|Not [Aa]pplicable|O\.E\.M) ]]; }
+def software_section():
+    s = Section("Software")
+    packages = ("plasma-workspace kf6-kcoreaddons qt6-qtbase mesa-dri-drivers linux-firmware "
+                "systemd xorg-x11-drv-nvidia asusctl cardwire").split()
+    # A missing package prints a sentence instead of its name and version.
+    version = dict(line.split() for line in
+                   run("rpm", "-q", "--qf", "%{NAME} %{VERSION}\n", *packages).splitlines()
+                   if len(line.split()) == 2)
+    os_release = dict(line.split("=", 1) for line in (read("/etc/os-release") or "").splitlines()
+                      if "=" in line)
+    s.row("OS", (os_release.get("PRETTY_NAME") or os_release.get("NAME", "")).strip('"'))
+    s.row("Kernel", os.uname().release)
+    session = os.environ.get("XDG_SESSION_TYPE", "")
+    rows = [
+        ("KDE Plasma", "plasma-workspace", f" {dim(session.capitalize())}" if session else ""),
+        ("KDE Frameworks", "kf6-kcoreaddons", ""),
+        ("Qt", "qt6-qtbase", ""),
+        ("Mesa", "mesa-dri-drivers", f" {dim('AMD graphics')}"),
+        ("NVIDIA driver", "xorg-x11-drv-nvidia", f" {dim('installed, not loaded')}"),
+        ("Linux firmware", "linux-firmware", ""),
+        ("systemd", "systemd", ""),
+        ("asusctl", "asusctl", ""),
+        ("cardwire", "cardwire", ""),
+    ]
+    for label, package, comment in rows:
+        loaded = read("/sys/module/nvidia/version") if label == "NVIDIA driver" else None
+        if loaded:
+            s.row(label, loaded)
+        elif package in version:
+            s.row(label, version[package] + comment)
+    return s
 
-	vendor=$(short_vendor "$(dmi sys_vendor)")
-	# ASUS laptops repeat the model code, as in "Zenbook 14 UX3405MA_UX3405MA".
-	product=$(dmi product_name | sed -E 's/ ([^ ]+)_\1$/ \1/')
-	real "$product" && row "Model" "$vendor $product"
-	board=$(dmi board_name)
-	if real "$board" && [[ $product != *"$board"* ]]; then
-		row "Motherboard" "$(short_vendor "$(dmi board_vendor)") $board"
-	fi
-	v=$(dmi bios_version)
-	[ -n "$v" ] && row "BIOS" "$v $dim($(dmi bios_date | awk -F/ '{ print $3 "-" $1 "-" $2 }'))$reset"
 
-	name=$(sed -n 's/^model name[[:space:]]*: //p' /proc/cpuinfo | head -n 1)
-	name=$(sed -E 's/ [0-9]+-Core Processor$//; s/ +$//' <<<"$name")
-	v=$(awk '/^cpu cores/ { print $4; exit }' /proc/cpuinfo)
-	n=$(awk -v k="$(cat /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq 2>/dev/null)" \
-		'BEGIN { if (k) printf "up to %.2f GHz", k / 1e6 }')
-	[ -n "$name" ] && row "CPU" "$name $dim(${v:+$v cores, }$(nproc) threads${n:+, $n})$reset"
+def short_vendor(name):
+    """A vendor's name without the legal suffixes, e.g. "ASUSTeK COMPUTER INC." as "ASUS"."""
+    for prefix, short in (("ASUS", "ASUS"), ("Advanced Micro Devices", "AMD"), ("NVIDIA", "NVIDIA"),
+                          ("MEDIATEK", "MediaTek"), ("MediaTek", "MediaTek"), ("Intel", "Intel")):
+        if name.startswith(prefix):
+            return short
+    return re.sub(r",? (Inc\.?|Corporation|Corp\.?|Co\., Ltd\.|Ltd\.|Semiconductor.*)$", "", name)
 
-	# Display controllers, plus the NVIDIA GPU found above, which cardwire may hide from this list.
-	for d in /sys/bus/pci/devices/*; do
-		[[ $(cat "$d/class" 2>/dev/null) == 0x03* ]] && gpus+="$(readlink -f "$d")"$'\n'
-	done
-	[ -n "$nv_bdf" ] && [ -e "$nv_dev" ] && [[ $gpus != *"$nv_bdf"* ]] && gpus+="$nv_dev"$'\n'
-	while read -r d; do
-		[ -n "$d" ] || continue
-		IFS=$'\t' read -r vendor name < <(pci_name "$(cat "$d/vendor")" "$(cat "$d/device")")
-		vendor=$(short_vendor "${vendor:-unknown vendor}")
-		# "TU117 [GeForce GTX 1650]" as "GeForce GTX 1650", with the chip after it.
-		model=$name code=
-		if [[ $name =~ ^(.*[^ ])\ +\[(.*)\]$ ]]; then
-			model=${BASH_REMATCH[2]} code=${BASH_REMATCH[1]}
-		fi
-		size=
-		if [ "${d##*/}" = "$nv_bdf" ] && [ -n "${nv_mem_total:-}" ]; then
-			size=$(f '%.0f' "$(awk -v m="$nv_mem_total" 'BEGIN { print m / 1024 }')")
-		elif v=$(cat "$d/mem_info_vram_total" 2>/dev/null) && [ -n "$v" ]; then
-			size=$(awk -v b="$v" 'BEGIN { printf "%.0f", b / 2^30 }')
-		fi
-		row "GPU" "$vendor ${model:-GPU} $dim(${code:+$code, }${size:+$size GiB, }${d##*/})$reset"
-	done <<<"$gpus"
 
-	v=$(awk '/^MemTotal/ { printf "%.1f", $2 / 2^20 }' /proc/meminfo)
-	count=$(for h in /sys/class/hwmon/hwmon*; do cat "$h/name"; done 2>/dev/null | grep -cx spd5118)
-	row "RAM" "$v GiB usable$( ((count)) && echo " $dim($count DDR5 modules)$reset")"
+def edid_name(edid_file):
+    """A monitor's name from its EDID: the name descriptor, else the free text one (laptop
+    panels)."""
+    try:
+        with open(edid_file, "rb") as f:
+            edid = f.read(128)
+    except OSError:
+        return None
+    if len(edid) < 128:
+        return None
+    for tag in (0xFC, 0xFE):
+        for i in (54, 72, 90, 108):
+            if edid[i] == edid[i + 1] == 0 and edid[i + 3] == tag:
+                return edid[i + 5:i + 18].decode(errors="replace").replace("\n", " ").rstrip()
+    return None
 
-	for d in /sys/block/nvme* /sys/block/sd[a-z]; do
-		[[ ${d##*/} =~ ^(nvme[0-9]+n[0-9]+|sd[a-z])$ ]] && [ -e "$d" ] && [ "$(cat "$d/removable" 2>/dev/null)" != 1 ] || continue
-		model=$(sed 's/ *$//' "$d/device/model" 2>/dev/null)
-		row "Storage" "${model:-${d##*/}} $dim($(drive_size $(($(cat "$d/size") * 512))), ${d##*/})$reset"
-	done
 
-	# Displays, with the current mode from KDE, else the preferred one from the kernel.
-	out=$(timeout 1 kscreen-doctor -o 2>/dev/null | sed 's/\x1b\[[0-9;]*m//g' | awk '
-		function flush() { if (name != "" && on) print name, mode, scale }
-		/^Output:/ { flush(); name = $3; on = 0; mode = ""; scale = 1 }
-		$1 == "enabled" { on = 1 }
-		$1 == "Modes:" {
-			for (i = 2; i <= NF; i++) if ($i ~ /\*/) { mode = $i; sub(/^[0-9]+:/, "", mode); gsub(/[*!]/, "", mode) }
-		}
-		$1 == "Scale:" { scale = $2 }
-		END { flush() }')
-	if [ -z "$out" ]; then
-		for card in /sys/class/drm/card*-*; do
-			[ "$(cat "$card/status" 2>/dev/null)" = connected ] || continue
-			out+="${card#*-} $(head -n 1 "$card/modes") 1"$'\n'
-		done
-	fi
-	while read -r n mode scale; do
-		[ -n "$n" ] || continue
-		e=$(compgen -G "/sys/class/drm/card*-$n" | head -n 1)
-		name=$(edid_name "$e/edid")
-		[ -z "$name" ] && [[ $n == eDP* ]] && name="Built-in panel"
-		if [[ $mode == *@* ]]; then
-			mode="${mode%@*} @ $(f '%.0f' "${mode#*@}") Hz"
-		fi
-		[ "$scale" != 1 ] && mode+=", scale $scale"
-		row "Display" "${name:-$n}${mode:+, $mode} $dim($n)$reset"
-	done <<<"$out"
+def displays():
+    """(connector, mode, scale) of each display that is on: the current mode from KDE, else the
+    preferred one from the kernel."""
+    found, output = [], None
+    text = re.sub(r"\x1b\[[0-9;]*m", "", run("kscreen-doctor", "-o", timeout=1))
+    for line in text.splitlines():
+        words = line.split()
+        if line.startswith("Output:") and len(words) > 2:
+            output = {"name": words[2], "on": False, "mode": "", "scale": "1"}
+            found.append(output)
+        elif output and words[:1] == ["enabled"]:
+            output["on"] = True
+        elif output and words[:1] == ["Modes:"]:
+            for mode in (w for w in words[1:] if "*" in w):
+                output["mode"] = re.sub(r"^\d+:|[*!]", "", mode)
+        elif output and words[:1] == ["Scale:"] and len(words) > 1:
+            output["scale"] = words[1]
+    if found:
+        return [(o["name"], o["mode"], o["scale"]) for o in found if o["on"]]
+    return [(card.split("-", 1)[1], (read(card, "modes") or "").split("\n")[0], "1")
+            for card in paths(f"{SYS}/drm/card*-*") if read(card, "status") == "connected"]
 
-	# Network adapters on PCI, by chip: the first word with a digit in the name, as in "RTL8126".
-	for d in /sys/class/net/*; do
-		[ -r "$d/device/vendor" ] && [ -r "$d/device/device" ] || continue
-		IFS=$'\t' read -r vendor name < <(pci_name "$(cat "$d/device/vendor")" "$(cat "$d/device/device")")
-		model=$(grep -oE '[^ ]*[0-9][^ ]*' <<<"$name" | head -n 1)
-		label=Ethernet std=
-		if [ -d "$d/wireless" ] || [ -e "$d/phy80211" ]; then
-			label=Wi-Fi std=$(grep -oE '802\.11[a-z]+' <<<"$name" | head -n 1)
-		fi
-		speed=
-		[ "$(cat "$d/operstate" 2>/dev/null)" = up ] && speed=$(cat "$d/speed" 2>/dev/null)
-		[[ $speed =~ ^[0-9]+$ ]] && ((speed > 0)) && speed="up at $(awk -v s="$speed" \
-			'BEGIN { if (s >= 1000) printf "%g Gb/s", s / 1000; else printf "%d Mb/s", s }')" || speed=
-		[ "$(cat "$d/operstate" 2>/dev/null)" = up ] && [ -z "$speed" ] && speed=up
-		row "$label" "$(short_vendor "${vendor:-unknown}") ${model:-${name:-adapter}} $dim(${std:+$std, }${d##*/}${speed:+, $speed})$reset"
-	done
 
-	# The desktop's PSU, named by its USB device.
-	if [ -n "${psu:-}" ]; then
-		d=$(readlink -f "$psu/device")
-		while [ -n "$d" ] && [ "$d" != /sys ] && [ ! -f "$d/product" ]; do d=${d%/*}; done
-		if [ -f "$d/product" ]; then
-			v=$(cat "$d/manufacturer" 2>/dev/null)
-			# "CORSAIR" as "Corsair".
-			[[ $v =~ ^[A-Z]+$ ]] && v=${v,,} && v=${v^}
-			row "PSU" "${v:+$v }$(sed 's/ Power Supply$//' "$d/product")"
-		fi
-	fi
-	if [ -n "$bat" ]; then
-		v=$(scaled "$bat/energy_full_design" 1000000)
-		name="$(cat "$bat/manufacturer" 2>/dev/null) $(cat "$bat/model_name" 2>/dev/null)"
-		name=$(sed -E 's/^ +| +$//g' <<<"$name")
-		row "Battery" "${name:-battery}${v:+ $dim($(f '%.1f' "$v") Wh design)$reset}"
-	fi
-}
+def hardware_section(nv, psu, bat):
+    """Model, board, CPU, GPUs, RAM, storage, displays, network, PSU or battery."""
+    s = Section("Hardware")
 
-# Two blocks of text side by side, the second starting at the top of the first. The first is
-# padded to the widest of its lines that have something beside them.
-# $1 without its color codes, which are all \e[<one or two digits>m.
-plain() {
-	local s=${1//$'\e['[0-9]m/}
-	printf '%s' "${s//$'\e['[0-9][0-9]m/}"
-}
-side_by_side() {
-	local -a l r
-	local i w=64 vis gap=4
-	mapfile -t l <"$1"
-	mapfile -t r <<<"$2"
-	for ((i = 0; i < ${#r[@]} && i < ${#l[@]}; i++)); do
-		vis=$(plain "${l[i]}")
-		((${#vis} > w)) && w=${#vis}
-	done
-	# Too narrow for both: report that, so the caller stacks them instead.
-	local rw=0
-	for i in "${r[@]}"; do
-		vis=$(plain "$i")
-		((${#vis} > rw)) && rw=${#vis}
-	done
-	((w + gap + rw <= cols)) || return 1
-	for ((i = 0; i < ${#l[@]} || i < ${#r[@]}; i++)); do
-		vis=$(plain "${l[i]:-}")
-		if ((i < ${#r[@]})); then
-			printf '%s%*s%s\n' "${l[i]:-}" $((w - ${#vis} + gap)) '' "${r[i]}"
-		else
-			printf '%s\n' "${l[i]}"
-		fi
-	done
-}
+    def dmi(name):
+        return read(f"{SYS}/dmi/id", name) or ""
 
-# The full report and --about collect the left column in a file, and lay it out with the second
-# column at the end (see layout). The second column is the hardware, and in the full report also
-# the temperatures and fans and the NVIDIA GPU. It goes beside the left column in a terminal wide
-# enough. Else the hardware goes after the software section, and the rest at the very end.
-psu=$(hwmon corsairpsu)
-cols=0 left=
-if [ "$show" = all ] || [ "$show" = about ]; then
-	[ -t 1 ] && cols=$(tput cols 2>/dev/null || echo 0)
-	left=$(mktemp)
-	trap 'rm -f "$left"' EXIT
-	exec 3>&1 >"$left"
-	software_section
-	sw_lines=$(wc -l <"$left")
-fi
-layout() {
-	local hw more= right
-	exec >&3 3>&-
-	hw=$(hardware_section)
-	# Starts with a blank line, from section.
-	[ "$show" = all ] && more=$(temps_section; gpu_section)
-	right=$hw${more:+$'\n'$more}
-	if ! side_by_side "$left" "$right"; then
-		head -n "$sw_lines" "$left"
-		echo
-		echo "$hw"
-		tail -n +$((sw_lines + 1)) "$left"
-		[ -n "$more" ] && echo "$more"
-	fi
-}
-if [ "$show" = about ]; then
-	layout
-	exit 0
-fi
+    def real(value):
+        """Not a placeholder that board makers leave in unused DMI fields."""
+        return value and not re.match(
+            r"System|To [Bb]e [Ff]illed|Default|Not [Aa]pplicable|O\.E\.M", value)
+
+    # ASUS laptops repeat the model code, as in "Zenbook 14 UX3405MA_UX3405MA".
+    product = re.sub(r" ([^ ]+)_\1$", r" \1", dmi("product_name"))
+    if real(product):
+        s.row("Model", f"{short_vendor(dmi('sys_vendor'))} {product}")
+    board = dmi("board_name")
+    if real(board) and board not in product:
+        s.row("Motherboard", f"{short_vendor(dmi('board_vendor'))} {board}")
+    if dmi("bios_version"):
+        month, day, year = (dmi("bios_date").split("/") + ["", ""])[:3]
+        s.row("BIOS", f"{dmi('bios_version')} {dim(f'{year}-{month}-{day}')}")
+
+    cpuinfo = read("/proc/cpuinfo") or ""
+    cpu = re.search(r"^model name\s*: (.*)$", cpuinfo, re.M)
+    if cpu:
+        details = []
+        cores = re.search(r"^cpu cores\s*: (\d+)", cpuinfo, re.M)
+        if cores:
+            details.append(f"{cores[1]} cores")
+        details.append(f"{len(os.sched_getaffinity(0))} threads")
+        max_khz = number("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq")
+        if max_khz:
+            details.append(f"up to {max_khz / 1e6:.2f} GHz")
+        name = re.sub(r" \d+-Core Processor$", "", cpu[1]).rstrip()
+        s.row("CPU", f"{name} {dim(', '.join(details))}")
+
+    # Display controllers, plus the NVIDIA GPU, which cardwire may hide from the PCI bus.
+    gpus = [os.path.realpath(d) for d in paths("/sys/bus/pci/devices/*")
+            if (read(d, "class") or "").startswith("0x03")]
+    if nv.dev and nv.bdf not in map(os.path.basename, gpus):
+        gpus.append(nv.dev)
+    for gpu in gpus:
+        vendor, name = pci_name(gpu)
+        # "TU117 [GeForce GTX 1650]" as "GeForce GTX 1650", with the chip after it.
+        chip = re.fullmatch(r"(.*[^ ]) +\[(.*)\]", name or "")
+        details = [chip[1]] if chip else []
+        vram = number(gpu, "mem_info_vram_total", scale=2**30)
+        if os.path.basename(gpu) == nv.bdf and nv.get("memory.total"):
+            vram = nv.get("memory.total") / 1024
+        if vram and vram >= 0.5:  # Not an iGPU's token amount.
+            details.append(f"{vram:.0f} GiB")
+        details.append(os.path.basename(gpu))
+        s.row("GPU", f"{short_vendor(vendor or 'unknown vendor')} "
+              f"{chip[2] if chip else name or 'GPU'} {dim(', '.join(details))}")
+
+    mem_kb = re.search(r"^MemTotal:\s*(\d+)", read("/proc/meminfo") or "", re.M)
+    modules = len(hwmons("spd5118"))
+    s.row("RAM", f"{int(mem_kb[1]) / 2**20:.1f} GiB usable"
+          + (f" {dim(f'{modules} DDR5 modules')}" if modules else ""))
+
+    for disk in paths("/sys/block/nvme*") + paths("/sys/block/sd[a-z]"):
+        name = os.path.basename(disk)
+        if not re.fullmatch(r"nvme\d+n\d+|sd[a-z]", name) or read(disk, "removable") == "1":
+            continue
+        size = (number(disk, "size") or 0) * 512
+        # In decimal units, like drives are sold in.
+        size = f"{size / 1e12:.1f} TB" if size >= 1e12 else f"{size / 1e9:.0f} GB"
+        s.row("Storage", f"{read(disk, 'device/model') or name} {dim(f'{size}, {name}')}")
+
+    for connector, mode, scale in displays():
+        name = edid_name(next(iter(paths(f"{SYS}/drm/card*-{connector}")), "") + "/edid")
+        if not name and connector.startswith("eDP"):
+            name = "Built-in panel"
+        if "@" in mode:
+            size, rate = mode.split("@", 1)
+            mode = f"{size} @ {float(rate):.0f} Hz"
+        if scale != "1":
+            mode += f", scale {scale}"
+        s.row("Display", f"{name or connector}{', ' + mode if mode else ''} {dim(connector)}")
+
+    # Network adapters on PCI, by chip: the first word with a digit in the name, as in "RTL8126".
+    for net in paths(f"{SYS}/net/*"):
+        if read(net, "device/vendor") is None or read(net, "device/device") is None:
+            continue
+        vendor, name = pci_name(f"{net}/device")
+        name = name or ""
+        chip = re.search(r"[^ ]*[0-9][^ ]*", name)
+        details = []
+        wifi = os.path.isdir(f"{net}/wireless") or os.path.exists(f"{net}/phy80211")
+        standard = re.search(r"802\.11[a-z]+", name)
+        if wifi and standard:
+            details.append(standard[0])
+        details.append(os.path.basename(net))
+        if read(net, "operstate") == "up":
+            speed = number(net, "speed") or 0
+            details.append("up" if speed <= 0 else
+                           f"up at {speed / 1000:g} Gb/s" if speed >= 1000 else
+                           f"up at {speed:.0f} Mb/s")
+        s.row("Wi-Fi" if wifi else "Ethernet", f"{short_vendor(vendor or 'unknown')} "
+              f"{chip[0] if chip else name or 'adapter'} {dim(', '.join(details))}")
+
+    # The desktop's PSU, named by its USB device.
+    usb = os.path.realpath(f"{psu}/device") if psu else "/"
+    while usb != "/" and not os.path.isfile(f"{usb}/product"):
+        usb = os.path.dirname(usb)
+    if usb != "/":
+        maker = read(usb, "manufacturer") or ""
+        # "CORSAIR" as "Corsair".
+        maker = maker.capitalize() if maker.isalpha() and maker.isupper() else maker
+        s.row("PSU", f"{maker} {read(usb, 'product').removesuffix(' Power Supply')}".strip())
+    if bat:
+        name = f"{read(bat, 'manufacturer') or ''} {read(bat, 'model_name') or ''}".strip()
+        design = number(bat, "energy_full_design", scale=1e6)
+        s.row("Battery", (name or "battery")
+              + (f" {dim(f'{design:.1f} Wh design')}" if design else ""))
+    return s
+
 
 # --------------------------------------------------------------------------------------------------
-# CPU load and RAPL energy over half a second.
+# Power: the battery, the draw per component, and the battery life.
 # --------------------------------------------------------------------------------------------------
 
-# The RAPL zone with the given name, if it can be read.
-rapl_zone() {
-	local z
-	for z in /sys/class/powercap/intel-rapl:*; do
-		[ "$(cat "$z/name" 2>/dev/null)" = "$1" ] && [ -r "$z/energy_uj" ] && echo "$z" && return
-	done
-	return 1
-}
-# Only the package: on AMD, the "core" zone measures just the first core.
-pkg_zone=$(rapl_zone package-0)
-# Microjoules over nanoseconds, as watts. The counter wraps at max_energy_range_uj.
-rapl_w() {
-	awk -v a="$1" -v b="$2" -v m="$(cat "$3/max_energy_range_uj")" -v dt="$4" \
-		'BEGIN { d = b - a; if (d < 0) d += m; printf "%.2f", d * 1000 / dt }'
-}
 
-stat1=$(grep '^cpu' /proc/stat)
-[ -n "$pkg_zone" ] && pkg1=$(cat "$pkg_zone/energy_uj")
-t1=$(date +%s%N)
-sleep 0.5
-stat2=$(grep '^cpu' /proc/stat)
-[ -n "$pkg_zone" ] && pkg2=$(cat "$pkg_zone/energy_uj")
-t2=$(date +%s%N)
-# The whole CPU's load, and the busiest thread's, which shows a single-threaded spike that barely
-# moves the average over many threads. Fields after the name: user nice system idle iowait irq
-# softirq steal. The counters tick 100 times a second, so a thread's load is in steps of 2%.
-read -r cpu_load thread_load < <(awk '
-	{ busy = $2 + $3 + $4 + $7 + $8 + $9; all = busy + $5 + $6 }
-	NR == FNR { b[$1] = busy; a[$1] = all; next }
-	{ d = all - a[$1]; l = d > 0 ? 100 * (busy - b[$1]) / d : 0 }
-	$1 == "cpu" { total = l; next }
-	l > max { max = l }
-	END { printf "%.1f %.0f\n", total, max }
-' <(echo "$stat1") <(echo "$stat2"))
-pkg_w=
-[ -n "$pkg_zone" ] && pkg_w=$(rapl_w "$pkg1" "$pkg2" "$pkg_zone" $((t2 - t1)))
+def sample_cpu(seconds=0.5):
+    """Over `seconds`: the whole CPU's load in %, the busiest thread's (which shows a
+    single-threaded spike that barely moves the average), and the CPU package's power in W from
+    RAPL, or None if it can't be read."""
 
-# --------------------------------------------------------------------------------------------------
-# Battery.
-# --------------------------------------------------------------------------------------------------
+    def loads():
+        # Fields after the name: user nice system idle iowait irq softirq steal.
+        stat = {}
+        for line in (read("/proc/stat") or "").splitlines():
+            if line.startswith("cpu"):
+                name, *fields = line.split()
+                t = [int(x) for x in fields[:8]]
+                busy = t[0] + t[1] + t[2] + t[5] + t[6] + t[7]
+                stat[name] = (busy, busy + t[3] + t[4])
+        return stat
 
-bat_status= energy_now= energy_full= bat_w=
-if ((laptop)); then
-	section "Battery"
-	bat_status=$(cat "$bat/status")
-	capacity=$(cat "$bat/capacity")
-	energy_now=$(scaled "$bat/energy_now" 1000000)
-	energy_full=$(scaled "$bat/energy_full" 1000000)
-	energy_design=$(scaled "$bat/energy_full_design" 1000000)
-	limit=$(cat "$bat/charge_control_end_threshold" 2>/dev/null)
-	# Some batteries report current instead of power.
-	bat_w=$(scaled "$bat/power_now" 1000000)
-	if [ -z "$bat_w" ] && [ -r "$bat/current_now" ]; then
-		bat_w=$(awk -v i="$(cat "$bat/current_now")" -v v="$(cat "$bat/voltage_now")" \
-			'BEGIN { printf "%.2f", i * v / 1e12 }')
-	fi
+    # Only the package: on AMD, the "core" zone measures just the first core.
+    zone = next((z for z in paths(f"{SYS}/powercap/intel-rapl:*")
+                 if read(z, "name") == "package-0" and number(z, "energy_uj") is not None), None)
 
-	# A 20-cell bar, colored by charge.
-	cells=$((capacity / 5))
-	printf -v full '%*s' "$cells" ''
-	printf -v empty '%*s' $((20 - cells)) ''
-	color=$red
-	((capacity >= 20)) && color=$yellow
-	((capacity >= 50)) && color=$green
-	row "Charge" "$color${full// /█}$dim${empty// /░}$reset $bold$capacity%$reset $dim($bat_status)$reset"
-	if [ -n "$energy_now" ]; then
-		row "Energy" "$(f '%.1f' "$energy_now") Wh of $(f '%.1f' "$energy_full") Wh"
-	fi
-	if [ -n "$energy_design" ] && [ -n "$energy_full" ]; then
-		health=$(f '%.0f' "$(awk -v a="$energy_full" -v b="$energy_design" 'BEGIN { print 100 * a / b }')")
-		color=$green
-		((health < 80)) && color=$yellow
-		((health < 60)) && color=$red
-		row "Health" "$color$health%$reset $dim(design capacity $(f '%.1f' "$energy_design") Wh)$reset"
-	fi
-	[ -n "$limit" ] && row "Charge limit" "$limit%"
-	row "Voltage" "$(scaled "$bat/voltage_now" 1000000) V"
-	cycles=$(cat "$bat/cycle_count" 2>/dev/null)
-	[ -n "$cycles" ] && ((cycles > 0)) && row "Cycles" "$cycles"
-fi
+    def energy():
+        return (number(zone, "energy_uj"), time.monotonic()) if zone else (None, 0)
 
-# --------------------------------------------------------------------------------------------------
-# Power draw.
-# --------------------------------------------------------------------------------------------------
+    before, (uj0, t0) = loads(), energy()
+    time.sleep(seconds)
+    after, (uj1, t1) = loads(), energy()
 
-section "Power draw"
+    def load(name):
+        busy, total = (after[name][i] - before[name][i] for i in (0, 1))
+        return 100 * busy / total if total > 0 else 0
 
-# The power source, shown above the total.
-if ((laptop)); then
-	on_ac=0
-	for p in /sys/class/power_supply/*; do
-		[ "$(cat "$p/type" 2>/dev/null)" = Mains ] && [ "$(cat "$p/online")" = 1 ] && on_ac=1
-	done
-	usb_pd=
-	for p in /sys/class/power_supply/ucsi-source-psy-*; do
-		[ "$(cat "$p/online" 2>/dev/null)" = 1 ] || continue
-		usb_pd=$(sed -E 's/.*\[([^]]*)\].*/\1/' "$p/usb_type" 2>/dev/null)
-	done
-	if ((on_ac)); then
-		power_source="${green}AC adapter$reset${usb_pd:+ $dim(USB-C $usb_pd)$reset}"
-	else
-		power_source="${yellow}battery$reset"
-	fi
-else
-	v_in=
-	[ -n "$psu" ] && v_in=$(scaled "$(hwmon_input "$psu" in v_in)" 1000)
-	power_source="mains${psu:+ $dim(Corsair PSU${v_in:+, $(f '%.0f' "$v_in") V in})$reset}"
-fi
+    package_w = None
+    if uj0 is not None and uj1 is not None:
+        # The counter wraps at max_energy_range_uj.
+        used = uj1 - uj0 if uj1 >= uj0 else uj1 - uj0 + (number(zone, "max_energy_range_uj") or 0)
+        package_w = used / 1e6 / (t1 - t0)
+    threads = [load(name) for name in after if name != "cpu" and name in before]
+    return load("cpu"), max(threads, default=0), package_w
 
-# Components that measure their own draw, one per line: watts, key, parent key, label, note, and
-# the watts above which it shows yellow and red. Only top-level ones (no parent) add up; the others
-# are a part of their parent.
-# Fields are split on a unit separator, since bash merges adjacent tabs and drops empty fields.
-sep=$'\x1f'
-parts=
-part() { parts+=$(printf "%s$sep" "$@")$'\n'; }
 
-amdgpu=$(hwmon amdgpu)
-ppt_w=
-if [ -n "$amdgpu" ]; then
-	ppt_w=$(scaled "$amdgpu/power1_input" 1000000)
-	[ -z "$ppt_w" ] && ppt_w=$(scaled "$amdgpu/power1_average" 1000000)
-fi
-if ((laptop)); then
-	# The laptop's amdgpu measures the whole APU.
-	[ -n "$ppt_w" ] && part "$ppt_w" apu "" "APU (CPU + iGPU)" "" 8 20
-else
-	# The desktop's amdgpu measures only the iGPU, and RAPL the CPU.
-	[ -n "$ppt_w" ] && part "$ppt_w" igpu "" "AMD iGPU" "" 10 30
-	[ -n "$pkg_w" ] && part "$pkg_w" cpu "" "CPU package" "" 60 150
-fi
-gpu_label="NVIDIA GPU"
-((laptop)) && gpu_label="NVIDIA dGPU"
-dgpu_unknown=0
-if [ -n "$nv_w" ]; then
-	part "$nv_w" nvidia "" "$gpu_label" "" 100 350
-elif [ "$nv_state" = D3cold ]; then
-	part 0 nvidia "" "$gpu_label" "off (D3cold), power cut" 1 2
-elif [ "$nv_state" = D0 ] || [ "$nv_state" = D3hot ]; then
-	dgpu_unknown=1
-fi
-known_w=$(awk -F"$sep" '$1 != "" && $3 == "" { s += $1 } END { printf "%.2f", s }' <<<"$parts")
-nparts=$(awk -F"$sep" '$1 != "" && $3 == ""' <<<"$parts" | wc -l)
+class Battery:
+    def __init__(self, path):
+        self.path = path
+        self.status = read(path, "status")
+        self.capacity = int(number(path, "capacity") or 0)
+        self.energy = number(path, "energy_now", scale=1e6)
+        self.energy_full = number(path, "energy_full", scale=1e6)
+        self.energy_design = number(path, "energy_full_design", scale=1e6)
+        self.limit = number(path, "charge_control_end_threshold")
+        # Some batteries report current instead of power.
+        self.watts = number(path, "power_now", scale=1e6)
+        if self.watts is None and number(path, "current_now") is not None:
+            self.watts = number(path, "current_now") * (number(path, "voltage_now") or 0) / 1e12
 
-# The total: measured by the battery or the PSU.
-total_w= total_how= rest_w= rest_how=
-psu_w=
-[ -n "$psu" ] && psu_w=$(scaled "$(hwmon_input "$psu" power "power total")" 1000000)
-if [ "$bat_status" = Discharging ] && [ -n "$bat_w" ]; then
-	total_w=$bat_w
-	total_how="measured by the battery"
-elif [ -n "$psu_w" ]; then
-	total_w=$psu_w
-	total_how="PSU output, before PSU losses"
-fi
-if [ -n "$total_w" ] && ((nparts)) && lt "$known_w" "$total_w"; then
-	rest_w=$(awk -v a="$total_w" -v b="$known_w" 'BEGIN { printf "%.2f", a - b }')
-	if ((laptop)); then
-		rest_how="screen, RAM, SSD, Wi-Fi, losses"
-		((dgpu_unknown)) && rest_how+=", dGPU"
-	else
-		rest_how="motherboard, RAM, SSD, fans, USB"
-		[ -z "$pkg_w" ] && rest_how="CPU, $rest_how"
-	fi
-fi
+    def section(self):
+        s = Section("Battery")
+        cells = self.capacity // 5
+        color = GREEN if self.capacity >= 50 else YELLOW if self.capacity >= 20 else RED
+        s.row("Charge", f"{color}{'█' * cells}{DIM}{'░' * (20 - cells)}{RESET} "
+              f"{BOLD}{self.capacity}%{RESET} {dim(self.status)}")
+        if self.energy is not None and self.energy_full:
+            s.row("Energy", f"{self.energy:.1f} Wh of {self.energy_full:.1f} Wh")
+        if self.energy_design and self.energy_full:
+            health = round(100 * self.energy_full / self.energy_design)
+            color = GREEN if health >= 80 else YELLOW if health >= 60 else RED
+            s.row("Health", f"{color}{health}%{RESET} "
+                  + dim(f"design capacity {self.energy_design:.1f} Wh"))
+        if self.limit:
+            s.row("Charge limit", f"{self.limit:.0f}%")
+        volts = number(self.path, "voltage_now", scale=1e6)
+        if volts:
+            s.row("Voltage", f"{volts:.2f} V")
+        cycles = number(self.path, "cycle_count")
+        if cycles:
+            s.row("Cycles", f"{cycles:.0f}")
+        return s
 
-if ((laptop)); then
-	total_lo=10 total_hi=25
-else
-	total_lo=150 total_hi=400
-fi
-# The source starts where the total's number does, which is padded to line up the watts.
-pad=
-if [ -n "$total_w" ]; then
-	pad=$(f '%5.1f' "$total_w")
-elif ((nparts)); then
-	pad=$(f '%5.1f' "$known_w")
-fi
-pad=${pad%%[! ]*}
-row "Source" "$pad$power_source"
-if [ -n "$total_w" ]; then
-	row "Total" "$(level "$total_w" $total_lo $total_hi)$bold$(f '%5.1f' "$total_w") W$reset $dim($total_how)$reset"
-	if [ "$total_w" = "$psu_w" ]; then
-		rails=
-		for r in +12v +5v +3.3v; do
-			w=$(scaled "$(hwmon_input "$psu" power "power $r")" 1000000) || continue
-			rails+="${rails:+, }${r^^} $(f '%.1f' "$w") W"
-		done
-		[ -n "$rails" ] && note "$rails"
-	fi
-	((nparts)) && row "Known components" "$(f '%5.1f' "$known_w") W $dim(sum of the parts below)$reset"
-elif ((nparts)); then
-	row "Total" "$(level "$known_w" $total_lo $total_hi)$bold$(f '%5.1f' "$known_w") W$reset $dim(at least: only the parts below)$reset"
-else
-	row "Total" "${dim}unknown$reset"
-fi
 
-# The parts, highest first, each followed by its own parts.
-print_parts() {
-	local w key parent label text lo hi
-	sort -t"$sep" -k1,1gr <<<"$parts" | while IFS=$sep read -r w key parent label text lo hi; do
-		[ -n "$w" ] && [ "$parent" = "$1" ] || continue
-		row "$2$label" "$(level "$w" "$lo" "$hi")$(f '%5.1f' "$w") W$reset${text:+ $dim($text)$reset}"
-		print_parts "$key" "$2  "
-	done
-}
-print_parts "" "  "
-((dgpu_unknown)) && row "  $gpu_label" "${yellow}awake, draw unknown$reset $dim(not included above)$reset"
-[ -z "$total_w" ] && ((nparts && laptop)) && printf '    %s\n' "${dim}The rest of the laptop is only measured on battery.$reset"
-[ -n "$rest_w" ] && row "Rest" "$(f '%5.1f' "$rest_w") W $dim($rest_how)$reset"
-if ((!laptop)) && [ -z "$pkg_w" ] && [ -e /sys/class/powercap/intel-rapl:0/energy_uj ]; then
-	note "CPU not measured: only root can read RAPL. Run scripts/configure_hardware."
-fi
-[ "$bat_status" = Charging ] && [ -n "$bat_w" ] &&
-	row "Charging at" "$(f '%5.1f' "$bat_w") W"
+class Power:
+    """The power draw: the total, measured by the battery or the PSU, and the components that
+    measure their own draw."""
+
+    def __init__(self, nv, psu, bat, package_w):
+        self.nv, self.psu, self.bat, self.package_w = nv, psu, bat, package_w
+        self.gpu_label = "NVIDIA dGPU" if bat else "NVIDIA GPU"
+        # (watts, label, comment, the watts above which it shows yellow and red)
+        self.parts = []
+        amdgpu = hwmon("amdgpu")
+        apu = number(amdgpu, "power1_input", scale=1e6)
+        if apu is None:
+            apu = number(amdgpu, "power1_average", scale=1e6)
+        if apu is not None and bat:
+            # The laptop's amdgpu measures the whole APU.
+            self.parts.append((apu, "APU (CPU + iGPU)", "", 8, 20))
+        elif apu is not None:
+            # The desktop's measures only the iGPU, and RAPL the CPU.
+            self.parts.append((apu, "AMD iGPU", "", 10, 30))
+        if package_w is not None and not bat:
+            self.parts.append((package_w, "CPU package", "", 60, 150))
+        self.dgpu_unknown = False
+        if nv.get("power.draw") is not None:
+            self.parts.append((nv.get("power.draw"), self.gpu_label, "", 100, 350))
+        elif nv.state == "D3cold":
+            self.parts.append((0, self.gpu_label, "off (D3cold), power cut", 1, 2))
+        elif nv.state in ("D0", "D3hot"):
+            self.dgpu_unknown = True
+        self.known = sum(part[0] for part in self.parts)
+
+        self.total = self.total_how = None
+        psu_w = number(hwmon_input(psu, "power", "power total"), scale=1e6)
+        if bat and bat.status == "Discharging" and bat.watts is not None:
+            self.total, self.total_how = bat.watts, "measured by the battery"
+        elif psu_w is not None:
+            self.total, self.total_how = psu_w, "PSU output, before PSU losses"
+
+    def source(self):
+        if not self.bat:
+            volts = number(hwmon_input(self.psu, "in", "v_in"), scale=1000)
+            psu = f"Corsair PSU, {volts:.0f} V in" if volts else "Corsair PSU"
+            return "mains" + (f" {dim(psu)}" if self.psu else "")
+        supplies = paths(f"{SYS}/power_supply/*")
+        if not any(read(p, "type") == "Mains" and read(p, "online") == "1" for p in supplies):
+            return f"{YELLOW}battery{RESET}"
+        # The USB-C charger's kind, the one in brackets among those the port can take.
+        usb_c = [re.sub(r".*\[([^]]*)\].*", r"\1", read(p, "usb_type") or "") for p in supplies
+                 if os.path.basename(p).startswith("ucsi-source-psy-") and read(p, "online") == "1"]
+        return f"{GREEN}AC adapter{RESET}" + (f" {dim(f'USB-C {usb_c[-1]}')}" if usb_c else "")
+
+    def section(self):
+        s = Section("Power draw")
+        low, high = (10, 25) if self.bat else (150, 400)
+        shown = self.total if self.total is not None else self.known if self.parts else None
+        # The source starts where the total's number does, which is padded to line up the watts.
+        pad = "" if shown is None else " " * (len(f"{shown:5.1f}") - len(f"{shown:.1f}"))
+        s.row("Source", pad + self.source())
+        if shown is None:
+            s.row("Total", f"{DIM}unknown{RESET}")
+        else:
+            how = self.total_how or "at least: only the parts below"
+            s.row("Total", f"{level(shown, low, high)}{BOLD}{shown:5.1f} W{RESET} {dim(how)}")
+        if self.total is not None and not self.bat:
+            rails = [(rail, number(hwmon_input(self.psu, "power", f"power {rail}"), scale=1e6))
+                     for rail in ("+12v", "+5v", "+3.3v")]
+            rails = [f"{rail.upper()} {watts:.1f} W" for rail, watts in rails if watts is not None]
+            if rails:
+                s.note(", ".join(rails))
+        if self.total is not None and self.parts:
+            s.row("Known components", f"{self.known:5.1f} W {dim('sum of the parts below')}")
+
+        for watts, label, comment, part_low, part_high in sorted(self.parts, reverse=True):
+            s.row(f"  {label}", f"{level(watts, part_low, part_high)}{watts:5.1f} W{RESET}"
+                  + (f" {dim(comment)}" if comment else ""))
+        if self.dgpu_unknown:
+            s.row(f"  {self.gpu_label}",
+                  f"{YELLOW}awake, draw unknown{RESET} {dim('not included above')}")
+        if self.total is None and self.parts and self.bat:
+            s.append(f"    {DIM}The rest of the laptop is only measured on battery.{RESET}")
+        if self.total is not None and self.parts and self.known < self.total:
+            if self.bat:
+                rest = "screen, RAM, SSD, Wi-Fi, losses" + (", dGPU" if self.dgpu_unknown else "")
+            else:
+                rest = ("" if self.package_w is not None else "CPU, ") + \
+                    "motherboard, RAM, SSD, fans, USB"
+            s.row("Rest", f"{self.total - self.known:5.1f} W {dim(rest)}")
+        if not self.bat and self.package_w is None and \
+                os.path.exists(f"{SYS}/powercap/intel-rapl:0/energy_uj"):
+            s.note("CPU not measured: only root can read RAPL. Run scripts/configure_hardware.")
+        if self.bat and self.bat.status == "Charging" and self.bat.watts:
+            s.row("Charging at", f"{self.bat.watts:5.1f} W")
+        return s
+
+    def battery_life_section(self):
+        s, bat = Section("Battery life"), self.bat
+        discharging = bat.status == "Discharging"
+        if bat.energy is None:
+            s.note("no battery energy readings")
+        elif self.total is not None and self.total > 0.5:
+            left = bat.energy / self.total
+            color = GREEN if left >= 3 else YELLOW if left >= 1 else RED
+            s.row("Remaining" if discharging else "If unplugged now",
+                  f"{color}{BOLD}{hours(left)}{RESET} "
+                  + dim(f"from {bat.energy:.1f} Wh at {self.total:.1f} W"))
+            # KDE's battery applet shows a time based on a running average of the draw, so it lags
+            # behind changes in load. It is in milliseconds, and 0 when not discharging.
+            qdbus = shutil.which("qdbus6") or shutil.which("qdbus")
+            if discharging and qdbus:
+                kde_ms = run(qdbus, "org.kde.Solid.PowerManagement",
+                             "/org/kde/Solid/PowerManagement",
+                             "org.kde.Solid.PowerManagement.smoothedBatteryRemainingTime",
+                             timeout=1).strip()
+                if kde_ms.isdigit() and int(kde_ms) > 0:
+                    kde_h = int(kde_ms) / 3600000
+                    s.row("Running average", f"{hours(kde_h)} "
+                          + dim(f"at {bat.energy / kde_h:.1f} W, averaged by KDE"))
+            if bat.capacity < 95 and bat.energy_full:
+                s.row("Full charge lasts",
+                      f"{hours(bat.energy_full / self.total)} {dim('at the same draw')}")
+        elif self.parts and self.known > 0.5:
+            s.row("If unplugged now", f"under {hours(bat.energy / self.known)} "
+                  + dim(f"assuming {self.known:.1f} W"))
+        else:
+            s.note("no power readings")
+        if bat.status == "Charging" and bat.energy is not None and bat.energy_full and \
+                bat.watts and bat.watts > 0.5:
+            limit = bat.limit or 100
+            target = bat.energy_full * limit / 100
+            if bat.energy < target:
+                s.row("Full in", f"{hours((target - bat.energy) / bat.watts)} "
+                      + dim(f"to {limit:.0f}%, at the current rate"))
+        return s
+
 
 # --------------------------------------------------------------------------------------------------
-# Battery life.
+# Power settings, temperatures and fans.
 # --------------------------------------------------------------------------------------------------
 
-if ((laptop)); then
-	section "Battery life"
-	if [ -z "$energy_now" ]; then
-		note "no battery energy readings"
-	elif [ -n "$total_w" ] && lt 0.5 "$total_w"; then
-		hours_left=$(awk -v e="$energy_now" -v p="$total_w" 'BEGIN { print e / p }')
-		full_h=$(awk -v e="$energy_full" -v p="$total_w" 'BEGIN { print e / p }')
-		if [ "$bat_status" = Discharging ]; then
-			label="Remaining"
-		else
-			label="If unplugged now"
-		fi
-		color=$green
-		lt "$hours_left" 3 && color=$yellow
-		lt "$hours_left" 1 && color=$red
-		row "$label" "$color$bold$(hm "$hours_left")$reset $dim(from $(f '%.1f' "$energy_now") Wh at $(f '%.1f' "$total_w") W)$reset"
-		# KDE's battery applet shows a time based on a running average of the draw, so it lags
-		# behind changes in load. It is in milliseconds, and 0 when not discharging.
-		qdbus=$(command -v qdbus6 || command -v qdbus)
-		if [ "$bat_status" = Discharging ] && [ -n "$qdbus" ]; then
-			kde_ms=$(timeout 1 "$qdbus" org.kde.Solid.PowerManagement /org/kde/Solid/PowerManagement \
-				org.kde.Solid.PowerManagement.smoothedBatteryRemainingTime 2>/dev/null)
-			if [[ $kde_ms =~ ^[0-9]+$ ]] && ((kde_ms > 0)); then
-				kde_h=$(awk -v ms="$kde_ms" 'BEGIN { print ms / 3600000 }')
-				row "Running average" "$(hm "$kde_h") $dim(at $(f '%.1f' "$(awk -v e="$energy_now" \
-					-v h="$kde_h" 'BEGIN { print e / h }')") W, averaged by KDE)$reset"
-			fi
-		fi
-		((capacity < 95)) && row "Full charge lasts" "$(hm "$full_h") $dim(at the same draw)$reset"
-	elif ((nparts)) && lt 0.5 "$known_w"; then
-		hours_left=$(awk -v e="$energy_now" -v p="$known_w" 'BEGIN { print e / p }')
-		row "If unplugged now" "under $(hm "$hours_left") $dim(assuming $(f '%.1f' "$known_w")W)$reset"
-	else
-		note "no power readings"
-	fi
-	if [ "$bat_status" = Charging ] && [ -n "$bat_w" ] && lt 0.5 "$bat_w"; then
-		target=$(awk -v f="$energy_full" -v l="${limit:-100}" 'BEGIN { print f * l / 100 }')
-		if lt "$energy_now" "$target"; then
-			row "Full in" "$(hm "$(awk -v t="$target" -v e="$energy_now" -v p="$bat_w" \
-				'BEGIN { print (t - e) / p }')") $dim(to ${limit:-100}%, at the current rate)$reset"
-		fi
-	fi
-fi
-[ "$show" = power ] && exit 0
+
+def settings_section(cpu_load, thread_load):
+    s = Section("Power settings")
+    profile = read("/sys/firmware/acpi/platform_profile")
+    if profile:
+        color = GREEN if profile in ("low-power", "quiet") else "" if profile == "balanced" else YELLOW
+        s.row("Platform profile", f"{color}{profile}{RESET if color else ''}")
+    cpufreq = "/sys/devices/system/cpu/cpu0/cpufreq"
+    if read(cpufreq, "scaling_driver"):
+        epp = read(cpufreq, "energy_performance_preference")
+        s.list_row("CPU policy", [read(cpufreq, "scaling_driver"),
+                                  f"governor {read(cpufreq, 'scaling_governor')}"]
+                   + ([f"EPP {epp}"] if epp else []))
+    khz = [k for k in (number(f) for f in
+                       paths("/sys/devices/system/cpu/cpu*/cpufreq/scaling_cur_freq")) if k]
+    if khz:
+        s.row("CPU clock", f"{sum(khz) / len(khz) / 1000:.0f} MHz avg, {max(khz) / 1000:.0f} MHz max")
+    s.row("CPU load", f"{level(cpu_load, 25, 70)}{cpu_load:.1f}%{RESET}, busiest thread "
+          f"{level(thread_load, 50, 90)}{thread_load:.0f}%{RESET} {dim('over 0.5 s')}")
+    igpu = number(hwmon("amdgpu"), "device/gpu_busy_percent")
+    if igpu is not None:
+        s.row("iGPU load", f"{level(igpu, 25, 70)}{igpu:.0f}%{RESET} {dim('right now')}")
+    for light in paths(f"{SYS}/backlight/*"):
+        brightness, most = number(light, "brightness"), number(light, "max_brightness")
+        if brightness is not None and most:
+            s.row("Screen brightness", f"{100 * brightness // most:.0f}%")
+            break
+    for light in paths(f"{SYS}/leds/*kbd_backlight"):
+        if read(light, "brightness") is not None:
+            s.row("Keyboard light", f"{read(light, 'brightness')} of {read(light, 'max_brightness')}")
+            break
+    return s
+
+
+def temps_section(nv, psu):
+    s = Section("Temperatures and fans")
+
+    def temp(label, milli_c):
+        if milli_c is not None:
+            t = int(milli_c // 1000)
+            s.row(label, f"{level(t, 60, 85)}{t} °C{RESET}")
+
+    def first(name):
+        return number(hwmon(name), "temp1_input")
+
+    def highest(name):
+        return max((t for t in (number(h, "temp1_input") for h in hwmons(name)) if t is not None),
+                   default=None)
+
+    def fan(label, rpm):
+        s.row(label, f"{rpm:.0f} rpm" if rpm and rpm > 0 else f"{GREEN}off{RESET}")
+
+    board = hwmon("nct6799")
+    temp("CPU", first("k10temp"))
+    temp("iGPU", first("amdgpu"))
+    gpu_temp = nv.get("temperature.gpu")
+    temp("NVIDIA GPU", gpu_temp * 1000 if gpu_temp is not None else None)
+    temp("SSD", first("nvme"))
+    temp("RAM", highest("spd5118"))
+    temp("Chipset", highest("prom21_xhci"))
+    temp("Motherboard", number(hwmon_input(board, "temp", "SYSTIN")))
+    temp("PSU", number(hwmon_input(psu, "temp", "vrm temp")))
+    temp("Wi-Fi", first("mt7925_phy0"))
+    # The laptop's fans.
+    for fan_input in paths(f"{hwmon('asus')}/fan*_input"):
+        label = read(fan_input.removesuffix("_input") + "_label") or ""
+        fan(f"{label.removesuffix('_fan').upper()} fan", number(fan_input))
+    # The desktop's fan headers, unlabeled. Stopped ones are mostly empty headers.
+    for fan_input in paths(f"{board}/fan*_input"):
+        if number(fan_input):
+            n = re.search(r"fan(\d+)_input$", fan_input)[1]
+            s.row(f"Fan {n}", f"{number(fan_input):.0f} rpm")
+    if nv.get("fan.speed") is not None:
+        s.row("NVIDIA GPU fans", f"{nv.get('fan.speed'):.0f}%")
+    if psu:
+        fan("PSU fan", number(hwmon_input(psu, "fan", "psu fan")))
+    return s
+
 
 # --------------------------------------------------------------------------------------------------
-# Power settings.
+# Layout.
 # --------------------------------------------------------------------------------------------------
 
-section "Power settings"
-profile=$(cat /sys/firmware/acpi/platform_profile 2>/dev/null)
-case $profile in
-low-power | quiet) row "Platform profile" "$green$profile$reset" ;;
-balanced) row "Platform profile" "$profile" ;;
-?*) row "Platform profile" "$yellow$profile$reset" ;;
-esac
-cpufreq=/sys/devices/system/cpu/cpu0/cpufreq
-if [ -r "$cpufreq/scaling_driver" ]; then
-	epp=$(cat "$cpufreq/energy_performance_preference" 2>/dev/null)
-	list_row "CPU policy" "$(cat "$cpufreq/scaling_driver"), governor $(cat "$cpufreq/scaling_governor")${epp:+, EPP $epp}"
-fi
-mhz=$(cat /sys/devices/system/cpu/cpu*/cpufreq/scaling_cur_freq 2>/dev/null |
-	awk '{ s += $1; if ($1 > m) m = $1 } END { if (NR) printf "%.0f MHz avg, %.0f MHz max", s / NR / 1000, m / 1000 }')
-[ -n "$mhz" ] && row "CPU clock" "$mhz"
-row "CPU load" "$(level "$cpu_load" 25 70)$cpu_load%$reset, busiest thread $(level "$thread_load" 50 90)$thread_load%$reset $dim(over 0.5 s)$reset"
-if [ -n "$amdgpu" ] && [ -r "$amdgpu/device/gpu_busy_percent" ]; then
-	igpu=$(cat "$amdgpu/device/gpu_busy_percent")
-	row "iGPU load" "$(level "$igpu" 25 70)$igpu%$reset $dim(right now)$reset"
-fi
-for b in /sys/class/backlight/*; do
-	[ -r "$b/brightness" ] || continue
-	row "Screen brightness" "$((100 * $(cat "$b/brightness") / $(cat "$b/max_brightness")))%"
-	break
-done
-for k in /sys/class/leds/*kbd_backlight; do
-	[ -r "$k/brightness" ] || continue
-	row "Keyboard light" "$(cat "$k/brightness") of $(cat "$k/max_brightness")"
-	break
-done
 
-# --------------------------------------------------------------------------------------------------
-# Temperatures and fans.
-# --------------------------------------------------------------------------------------------------
+def join(sections):
+    """The sections' lines, with a blank line between sections."""
+    lines = []
+    for section in sections:
+        lines += ([""] if lines else []) + section
+    return lines
 
-# A temperature in °C × 1000, from a file or as a number.
-temp() {
-	local t=$2
-	[[ $t =~ ^[0-9]+$ ]] || t=$(cat "$2" 2>/dev/null) || return
-	[ -n "$t" ] || return
-	t=$((t / 1000))
-	row "$1" "$(level "$t" 60 85)$t °C$reset"
-}
-fan() {
-	if (($2 > 0)); then
-		row "$1" "$2 rpm"
-	else
-		row "$1" "${green}off$reset"
-	fi
-}
-temps_section() {
-	local h t f label rpm n
-	section "Temperatures and fans"
-	h=$(hwmon k10temp) && temp "CPU" "$h/temp1_input"
-	[ -n "$amdgpu" ] && temp "iGPU" "$amdgpu/temp1_input"
-	[ -n "${nv_temp:-}" ] && temp "NVIDIA GPU" "$(awk -v t="$nv_temp" 'BEGIN { printf "%d", t * 1000 }')"
-	h=$(hwmon nvme) && temp "SSD" "$h/temp1_input"
-	t=$(max_temp spd5118) && temp "RAM" "$t"
-	t=$(max_temp prom21_xhci) && temp "Chipset" "$t"
-	h=$(hwmon nct6799) && temp "Motherboard" "$(hwmon_input "$h" temp SYSTIN)"
-	[ -n "$psu" ] && temp "PSU" "$(hwmon_input "$psu" temp "vrm temp")"
-	h=$(hwmon mt7925_phy0) && temp "Wi-Fi" "$h/temp1_input"
-	# The laptop's fans.
-	if h=$(hwmon asus); then
-		for f in "$h"/fan*_input; do
-			[ -r "$f" ] || continue
-			label=$(cat "${f%_input}_label" 2>/dev/null)
-			label=${label%_fan}
-			fan "${label^^} fan" "$(cat "$f")"
-		done
-	fi
-	# The desktop's fan headers, unlabeled. Stopped ones are mostly empty headers.
-	if h=$(hwmon nct6799); then
-		for f in "$h"/fan*_input; do
-			rpm=$(cat "$f" 2>/dev/null) && ((rpm > 0)) || continue
-			n=${f##*/fan}
-			row "Fan ${n%_input}" "$rpm rpm"
-		done
-	fi
-	[ -n "${nv_fan:-}" ] && row "NVIDIA GPU fans" "$nv_fan%"
-	[ -n "$psu" ] && fan "PSU fan" "$(cat "$(hwmon_input "$psu" fan "psu fan")" 2>/dev/null || echo 0)"
-}
 
-# Temperatures and fans, and the NVIDIA GPU, go in the second column below the hardware.
-layout
-exit 0
+def show(left, right):
+    """Print the `left` sections with the `right` ones in a second column beside them, starting at
+    the top. In a terminal too narrow for that, or without one, the first left section, then the
+    first right one, then the rest of each."""
+    columns = shutil.get_terminal_size().columns if sys.stdout.isatty() else 0
+    gap, l, r = 4, join(left), join(right)
+    # The left column is as wide as the widest of its lines that have something beside them.
+    width = max([64] + [len(plain(line)) for line in l[:len(r)]])
+    if width + gap + max((len(plain(line)) for line in r), default=0) > columns:
+        print("\n".join(join(left[:1] + right[:1] + left[1:] + right[1:])))
+        return
+    for i in range(max(len(l), len(r))):
+        line = l[i] if i < len(l) else ""
+        if i < len(r):
+            line += " " * (width - len(plain(line)) + gap) + r[i]
+        print(line)
+
+
+def main():
+    modes = {"--gpu": "gpu", "--power": "power", "--battery": "power", "--about": "about"}
+    args = sys.argv[1:]
+    if args in (["-h"], ["--help"]):
+        print(USAGE)
+        return
+    if len(args) > 1 or (args and args[0] not in modes):
+        print(USAGE, file=sys.stderr)
+        sys.exit(2)
+    mode = modes[args[0]] if args else "all"
+
+    # The laptop has a battery, the desktop doesn't.
+    bat_path = next(iter(paths(f"{SYS}/power_supply/BAT*")), None)
+    psu = hwmon("corsairpsu")
+    nv = Nvidia()
+    if mode == "gpu":
+        show([gpu_section(nv, bool(bat_path))], [])
+        return
+    if mode == "about":
+        show([software_section()], [hardware_section(nv, psu, bat_path)])
+        return
+
+    cpu_load, thread_load, package_w = sample_cpu()
+    bat = Battery(bat_path) if bat_path else None
+    power = Power(nv, psu, bat, package_w)
+    power_sections = ([bat.section()] if bat else []) + [power.section()] + \
+        ([power.battery_life_section()] if bat else [])
+    if mode == "power":
+        show(power_sections, [])
+        return
+    show([software_section(), *power_sections, settings_section(cpu_load, thread_load)],
+         [hardware_section(nv, psu, bat_path), temps_section(nv, psu), gpu_section(nv, bool(bat_path))])
+
+
+if __name__ == "__main__":
+    main()

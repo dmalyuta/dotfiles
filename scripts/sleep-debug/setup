@@ -31,11 +31,10 @@ tco_fired=$efi/HibernateTcoFired-8bc5b097-6e23-408e-9a7d-2bad8e8739d1
 resuming=$efi/HibernateResume-8bc5b097-6e23-408e-9a7d-2bad8e8739d1
 # After 50-suspend-then-hibernate.conf from scripts/configure_hardware, so it wins.
 sleep_conf=/etc/systemd/sleep.conf.d/60-sleep-debug.conf
-# How much of the kernel's log a crash saves, counted compressed: 64 KB took 114 EFI variables of
-# ~1 KB for ~190 KB of log (a test crash, 2026-10-30), nearly all of the 128 KB of variables that
-# had 89 KB free, which some firmware takes badly. 32 KB is ~95 KB of log, ~15 min of kernel
-# messages: enough to reach back from the watchdog's crash to why the power-off failed, 5 min
-# before.
+# How much of the kernel's log a crash saves, counted compressed. 32 KB is ~95 KB of log, ~15 min
+# of kernel messages: enough to reach back from the watchdog's crash to why the power-off failed,
+# 5 min before. Twice that nearly filled the firmware's space for EFI variables, which some
+# firmware takes badly.
 kmsg_bytes=32768
 pstore_args="efi_pstore.pstore_disable=0 pstore.kmsg_bytes=$kmsg_bytes"
 kernel_args="$pstore_args watchdog.stop_on_reboot=0"
@@ -105,7 +104,7 @@ EOF
 	# Read by systemd when it starts, so at the reboot below.
 	write_root_file "$system_conf" <<'EOF'
 # Debug log of hibernation, see scripts/sleep-debug in the dotfiles: with the kernel keeping the
-# watchdogs running through a reboot, don't arm one for it, which could reset Windows.
+# watchdogs running through a reboot, don't arm one for it, which could reset another OS.
 [Manager]
 RebootWatchdogSec=off
 EOF
@@ -120,15 +119,11 @@ options sp5100_tco action=0 heartbeat=600
 EOF
 		sudo modprobe -r sp5100_tco && sudo modprobe sp5100_tco
 	fi
-	# Also rebuild if an initramfs lacks the current module or those settings, as when a rebuild was
-	# interrupted or the settings came after it.
-	for img in /boot/initramfs-*.img; do
-		[[ $img == *rescue* ]] && continue
-		sudo lsinitrd -f usr/bin/hibernate-trace-save "$img" 2>/dev/null |
-			cmp -s - "$dotfiles"/scripts/sleep-debug/dracut/hibernate-trace/hibernate-trace-save ||
-			rebuild=1
-		sudo lsinitrd -f "${tco_conf#/}" "$img" 2>/dev/null | cmp -s - "$tco_conf" || rebuild=1
-	done
+	# Also rebuild if an initramfs lacks the current module or those settings, which may have come
+	# after it.
+	initramfs_has usr/bin/hibernate-trace-save \
+		"$dotfiles"/scripts/sleep-debug/dracut/hibernate-trace/hibernate-trace-save &&
+		initramfs_has "${tco_conf#/}" "$tco_conf" || rebuild=1
 	if ! grep -q 'efi_pstore.pstore_disable=0' /proc/cmdline ||
 		! grep -q 'watchdog.stop_on_reboot=0' /proc/cmdline; then
 		say "Reboot for the hibernation watchdog: until then a hibernation runs without it, or" \

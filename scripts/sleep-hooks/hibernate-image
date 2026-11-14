@@ -1,19 +1,17 @@
 #!/bin/sh
-# Before each hibernation, make its image smaller and cheaper to build. The time and battery a
-# hibernation costs scale with the memory the kernel has to pack and write (measured 2026-11 with
-# 14.6 GB in use: 9 s making room, then ~15 s of compression; for the fans, see hibernate-quiet).
-# - Drop the file cache: copies of files that are on disk anyway, some 3-4 GB that would otherwise
-#   be compressed, written, and read back at resume. Only pages no program has mapped go, so
-#   running programs keep their code in memory; files are simply read again when next needed.
+# Before each hibernation, make its image smaller and cheaper to build: the time and battery a
+# hibernation costs scale with the memory the kernel has to pack and write.
+# - Drop the file cache: copies of files that are on disk anyway, which would otherwise be
+#   compressed, written, and read back at resume. Only pages no program has mapped go, so running
+#   programs keep their code in memory.
 # - Raise the kernel's image size target (2/5 of RAM by default) to half of RAM less 2 GB. To get
-#   under the target the kernel swaps programs' memory out on a single thread, into zram first,
-#   which is slower than packing those pages into the image. Not higher: the snapshot is a copy
-#   that must fit in the other half of RAM, and the image grows after the kernel has made room
-#   for it, as the graphics drivers move their memory into RAM when they freeze (0.6 and 1.1 GB
-#   seen). With all of RAM as the target, a hibernation with half of RAM in use failed for lack
-#   of memory (2026-11-14, short by 0.7 GB), and the one before fit with 0.2 GB to spare.
+#   under the target the kernel swaps programs' memory out on a single thread, which is slower
+#   than packing those pages into the image. Not higher: the snapshot is a copy that must fit in
+#   the other half of RAM, and the image still grows after the kernel has made room for it, as
+#   the graphics drivers move their memory into RAM when they freeze. With all of RAM as the
+#   target, a hibernation with half of RAM in use failed for lack of memory.
 # - Tell GRUB to skip its menu at the next boot, the one that resumes this hibernation, which
-#   otherwise waits out the menu's timeout (5 s) with the CPU at full power. GRUB clears the flag
+#   otherwise waits out the menu's timeout with the CPU at full power. GRUB clears the flag
 #   itself (see scripts/grub/15_hibernate_resume); it is cleared here too after a hibernation that
 #   came back without a boot, such as a failed one.
 #

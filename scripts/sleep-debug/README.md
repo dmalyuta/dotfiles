@@ -43,9 +43,9 @@ Finds the cause the first time a sleep or a hibernation goes wrong on the laptop
   time, and the kernel that loads the image (the boot loader's default, which after a kernel update
   isn't the hibernated one). After a good resume it goes to the journal. After a boot that ended in
   a hibernation, it tells a resume that hung (the laptop had powered off, and hung loading the image
-  or waking the devices, as on 2026-11-12) from one that never powered off. A hung resume leaves no
-  log by itself, but the image's softdog is still armed: left alone for 6 min, it crashes the
-  resumed kernel if its timers run, and the next boot saves that log.
+  or waking the devices) from one that never powered off. A hung resume leaves no log by itself,
+  but the image's softdog is still armed: left alone for 6 min, it crashes the resumed kernel if
+  its timers run, and the next boot saves that log.
 - **Every problem found** is also an alert: a file in `/var/log/sleep-debug/alerts`, which
   `sleep-debug-alert` shows in a window, so that a hang at night isn't missed when the session
   resumes in the morning.
@@ -65,14 +65,14 @@ During each hibernation, armed just before and disarmed first thing after the re
   the CPU is stuck in the firmware or with interrupts off, where nothing in the kernel runs. No
   crash log then, but the image and the pm_trace are kept. Its driver tells at the next boot that
   it fired, which the initramfs saves to an EFI variable (as the resume discards that kernel)
-  before powering off. It isn't set to power off by itself: that clears what the driver reads
-  (tested 2026-10-30), so it would go unnoticed.
+  before powering off. It isn't set to power off by itself: that clears what the driver reads, so
+  it would go unnoticed.
 
 Both keep running if the hibernation falls back to a plain power-off (`kernel_power_off`), which by
-default stops every watchdog before shutting down the drivers, where the 2026-10-30 hang was: the
-kernel command line option `watchdog.stop_on_reboot=0` keeps them. With the kernel keeping them
-through a reboot, systemd's own reboot watchdog is turned off (`RebootWatchdogSec=off`), so that it
-isn't left running into another operating system.
+default stops every watchdog before shutting down the drivers, where it can hang: the kernel
+command line option `watchdog.stop_on_reboot=0` keeps them. With the kernel keeping them through a
+reboot, systemd's own reboot watchdog is turned off (`RebootWatchdogSec=off`), so that it isn't
+left running into another operating system.
 
 While the log is on, the laptop also hibernates on AC: a hibernation that hangs at power-off
 then doesn't drain the battery flat, which would reset the RTC and lose the pm_trace in it.
@@ -94,26 +94,45 @@ within about 3 minutes, and it is wrong whenever the year written is 00.
 It is off unless turned on because it sets the RTC to a made-up date, so after it the kernel
 ignores the RTC and the clock resumes behind by the time spent hibernated. The hook writes that
 time back to the RTC and restarts chronyd, which steps the clock once online. Offline, the clock
-stays behind (by 27 h after a 2026-11-06 hibernation). The crash log found the 2026-10-31 hang's
-cause without it, so it only adds something for a hang no crash log covers (the chipset's watchdog
-fired). Only the hibernation is traced: during a suspend, the RTC also holds the alarm that wakes
-the laptop to hibernate, which must stay right.
+stays behind. A crash log usually finds a hang's cause without it, so it only adds something for a
+hang no crash log covers (the chipset's watchdog fired). Only the hibernation is traced: during a
+suspend, the RTC also holds the alarm that wakes the laptop to hibernate, which must stay right.
 
 ### Reading a trace
 
 After a hung hibernation, against those of working ones. The image is written, then the kernel
 powers off through ACPI S4 (`hibernation_platform_enter`, kernel/power/hibernate.c).
 
-- A working one (kernel 7.2.12, 2026-10-28) leaves the end of `device_suspend_noirq`
-  (drivers/base/power/main.c:1560, `TRACE_SUSPEND(error)`) on device "faux", the last one powered
-  off.
+- A working one leaves the end of `device_suspend_noirq` (drivers/base/power/main.c,
+  `TRACE_SUSPEND(error)`) on device "faux", the last one powered off.
 - The start of a suspend callback (`device_suspend*`, its `TRACE_SUSPEND(0)`) of some device: that
   device's driver hung powering off.
 - The same as a working one: all devices were off, and the firmware's S4 entry (ACPI `_PTS` or the
   S4 write) hung or returned, after which the kernel spins forever.
-- The end of a resume pass (main.c:1186 `TRACE_RESUME(error)`, on the newest device): the thaw
-  after the image was created, so it hung after it, writing the image or in the power-off's prepare
-  step (`device_prepare`, untraced). The 2026-10-30 and 2026-10-31 hangs: the speaker amps' driver
-  deadlocked there (scripts/sleep-hooks/cs35l41-hibernate), not, as first read, a failed S4 entry.
+- The end of a resume pass (`TRACE_RESUME(error)`, on the newest device): the thaw after the image
+  was created, so it hung after it, writing the image or in the power-off's prepare step
+  (`device_prepare`, untraced). The speaker amps' driver deadlocked there
+  (scripts/sleep-hooks/cs35l41-hibernate), which first read as a failed S4 entry.
 - Another resume callback: the S4 entry failed and the kernel restored the devices, then fell back
   to a plain power-off (`kernel_power_off`), which can hang in a driver's shutdown (untraced).
+
+## Traps
+
+- The journal lacks a hung kernel's last messages, as journald is frozen during a hibernation: only
+  the crash log has them.
+- The kernel's own pm_trace decode ("Magic number", "hash matches") is only right within ~3 min of
+  the hang, and wrong when the year written is 00: use `bin/pm-trace-decode`, with
+  `drivers/base/power/main.c` from the stable tree at the running kernel's version.
+- After a resume, pstorefs may not list a crash's EFI variables, so the hook decodes them itself.
+  `sleep-debug collect` (the installed hook, as root) saves one left behind.
+- A sleep hook must not read `/proc/driver/nvidia`: it blocks while nvidia-suspend/-hibernate runs.
+- cardwire's Smart and Integrated modes hide the NVIDIA card from the hook too, so its snapshot
+  then lacks the card.
+
+## Turning it off
+
+`setup off`, then reboot: the kernel options and systemd's setting only change at boot. It keeps
+the logs in `/var/log/sleep-debug`, and leaves `scripts/sleep-hooks/cs35l41-hibernate` alone, which
+`scripts/configure_hardware` installs. Answer no to start_fresh's question from then on, or it
+turns the log back on. `bin/hibernate-loop` and `bin/pm-trace-decode` aren't installed anywhere:
+they run from this folder.

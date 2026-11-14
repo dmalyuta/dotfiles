@@ -1,5 +1,5 @@
 #!/bin/sh
+# Local branches, the most recently committed to last. Arguments go to git for-each-ref.
 # https://stackoverflow.com/a/5188364
-#git branch --sort=-committerdate
-git for-each-ref --sort=committerdate refs/heads/ \
-    --format='%(HEAD) %(align:35)%(color:yellow)%(refname:short)%(color:reset)%(end) - %(color:red)%(objectname:short)%(color:reset) - %(authorname) (%(color:green)%(committerdate)%(color:reset))'
+git for-each-ref --sort=committerdate refs/heads/ "$@" \
+	--format='%(HEAD) %(align:35)%(color:yellow)%(refname:short)%(color:reset)%(end) - %(color:red)%(objectname:short)%(color:reset) - %(authorname) (%(color:green)%(committerdate)%(color:reset))'

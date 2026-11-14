@@ -1,24 +1,19 @@
 #!/bin/sh
 # Keep the fans off while the laptop hibernates. Without this they spin up a few seconds after the
-# click and run until the power goes off, some 30-50 s later. Measured 2026-11-14 with a load like
-# a hibernation's, in the Balanced profile:
-# - What heats the CPU is not the image's compression but the steps before it, which run on one
-#   thread (making room for the image, freezing the graphics driver: 5-20 s). One busy thread
-#   boosts a fast core to 5.1 GHz, and that core goes from 43 to 86 C in 10 s, which takes the
-#   fans to 3700 rpm. The compression on 12 threads at 4.1 GHz then runs cooler, at 80 C.
-# - At 3.3 GHz, one thread settles at 56 C, and 8 threads pass 74 C within 6 s.
-# - The fans start at 47 C, with the CPU idling at 42-44 C, and once on they don't stop until it
-#   is back under 42 C: they were still at 2500 rpm 30 s after the load ended.
+# click and run until the power goes off. What heats the CPU is not the image's compression but
+# the single-threaded steps before it (making room for the image, freezing the graphics driver):
+# one busy thread boosts a core to its top clock, which takes it past the fans' threshold within
+# seconds, and once on, the fans keep running well after the load ends.
 # So, from just before a hibernation until after it:
-# - Cap the CPU's clock at its nominal frequency (2.0 GHz here, what it runs at with boost off).
-#   This makes the hibernation slower: the compression takes about twice as long (5.5 s before),
-#   and the single-threaded steps up to 2.5 times, as far as they wait on the CPU.
+# - Cap the CPU's clock at its nominal frequency (what it runs at with boost off). This makes the
+#   hibernation slower: about twice as long for the compression, and more for the single-threaded
+#   steps.
 # - Hold the fans off below FAN_START, through the ASUS fan curve (other laptops only get the
 #   cap). Above it they run as fast as in the Balanced profile's curve or faster, so a
 #   hibernation that hangs is still cooled.
 #
 # A systemd sleep hook, installed by scripts/configure_hardware. It runs next to the other hooks,
-# not before them, and after the NVIDIA driver's own preparation (nvidia-hibernate.service, ~3 s).
+# not before them, and after the NVIDIA driver's own preparation (nvidia-hibernate.service).
 #
 # Author: Danylo Malyuta, 2026.
 

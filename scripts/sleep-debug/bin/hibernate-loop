@@ -40,8 +40,8 @@ start)
 		echo "The sleep-debug log isn't on, or its reboot is missing: see setup." >&2
 		exit 1
 	fi
-	# On battery, the firmware didn't wake from hibernation on the RTC's alarm (2026-10-30: it stayed
-	# off until the power button, while 10 rounds on AC woke on time).
+	# On battery, the firmware doesn't wake from hibernation on the RTC's alarm: it stays off until
+	# the power button.
 	if [ "$(cat "$ac/online" 2>/dev/null)" != 1 ]; then
 		echo "Plug in the charger: on battery the alarm doesn't wake it from hibernation." >&2
 		exit 1

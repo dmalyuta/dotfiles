@@ -570,7 +570,7 @@ def analyze_run(trace, fingers, frames, path, output, label):
 
     findings = []
     # Dead zones: the fingers move but nothing comes out, at the start and after each pause
-    pending, since, quiet_from, first = 0.0, steps[0][0], None, True
+    pending, since, first = 0.0, steps[0][0], True
     last_motion = steps[0][0]
     for usec, mm, out, button in steps:
         if mm > 0:
@@ -654,7 +654,7 @@ def analyze(path, lib=None, show_all=False, tweaks=None):
     if trace.context.get("tweaks"):
         print("  tweaks: " + " ".join(trace.context["tweaks"].split()))
 
-    motion, scroll, others, log = replay(trace, lib, tweaks, verbose=True)
+    motion, scroll, _others, log = replay(trace, lib, tweaks, verbose=True)
     # Natural scrolling flips the sign in KWin, after libinput: compare sizes only (hypot)
 
     # What KWin did: the cursor's steps from its positions, the scroll's from the wheel events
@@ -694,7 +694,7 @@ def analyze(path, lib=None, show_all=False, tweaks=None):
 
     print("\nStrokes and scrolls. mm: the fingers' path; px: the output's; px/mm: the usual output"
           "\nper mm within the stroke.")
-    for what, frames, results in rows:
+    for what, _frames, results in rows:
         findings = [finding for _n, _s, found in results for finding in found]
         if not findings and not show_all:
             continue

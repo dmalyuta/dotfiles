@@ -1,5 +1,5 @@
 # Clean filters that keep out of the repo what programs write into these files about this machine.
-# start_fresh sets them up, see its set_up_git_filters.
-config/obs/scenes/*.json filter=obs-prev-ver
+# start_fresh sets them up, see set_up_git_filters in scripts/lib/start_fresh/dotfiles.sh.
+config/obs/scenes/*.json filter=obs-scene
 config/obs/profiles/*/basic.ini filter=obs-profile
 config/OpenRGB/**/*.json filter=openrgb-serial

@@ -1,0 +1,9 @@
+[Unit]
+Description=Syncthing web UI at http://syncthing.localhost, see start_fresh
+
+[Socket]
+ListenStream=127.0.0.1:80
+ListenStream=[::1]:80
+
+[Install]
+WantedBy=sockets.target

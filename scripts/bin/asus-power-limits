@@ -5,12 +5,11 @@ The kernel's asus-armoury driver has PPT attributes, but only accepts writes for
 power-limit table, and this board isn't there (only the Intel HN7306EA is). So this makes the same
 ASUS WMI calls G-Helper makes on Windows, through acpi_call: DEVS on \\_SB.ATKD.WMNB.
 
-Measured on this laptop:
-- The firmware's Quiet profile on battery holds ~17 W at full load, set by the 2.0 GHz clock
-  (power-profiles-daemon turns boost off in power-saver, which asusd links to Quiet) rather than by
-  its power limit. With SPL/sPPT/fPPT at 8 W it holds 8.0 W.
+How the limits behave:
+- The firmware's Quiet profile on battery still draws about twice the sustained limit below at
+  full load: what holds it back is the clock with boost off, not its own power limit.
 - A profile switch restores the firmware's limits, so they are reapplied after every switch.
-- Limits only cap power under load. At idle (~4 W) they change nothing.
+- Limits only cap power under load. At idle they change nothing.
 
 The APU's budget is shared with the iGPU, so low limits also slow graphics.
 
@@ -21,7 +20,6 @@ Usage:
   asus-power-limits pre|post  systemd sleep hook: after resume, tell the service to reapply.
 Installed to /usr/local/bin and /usr/lib/systemd/system-sleep by scripts/configure_hardware.
 """
-import os
 import select
 import signal
 import socket

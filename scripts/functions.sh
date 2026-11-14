@@ -135,16 +135,33 @@ install_udev_rule() {
 	[ $# -eq 1 ] || sudo udevadm trigger "${@:2}"
 }
 
-# Set a key in a .desktop file's [Desktop Entry] group.
+# Whether every initramfs but the rescue one has the file $1 (its path inside, without the
+# leading /) with the content of the file $2. One may lack it after an interrupted rebuild.
+initramfs_has() {
+	local img
+	for img in /boot/initramfs-*.img; do
+		[[ $img == *rescue* ]] && continue
+		sudo lsinitrd -f "$1" "$img" 2>/dev/null | sudo cmp -s - "$2" || return 1
+	done
+}
+
+# Set a key in a .desktop file's [Desktop Entry] group, leaving its other groups alone.
 set_desktop_key() {
-	local file=$1 key=$2 value=$3 sudo_cmd=()
+	local file=$1 tmp sudo_cmd=()
 	[ -f "$file" ] || return 0
 	[ -w "$file" ] || sudo_cmd=(sudo)
-	if grep -q "^${key}=" "$file"; then
-		"${sudo_cmd[@]}" sed -i "s|^${key}=.*|${key}=${value}|" "$file"
-	else
-		"${sudo_cmd[@]}" sed -i "/^\[Desktop Entry\]/a ${key}=${value}" "$file"
-	fi
+	tmp=$(mktemp)
+	# The first pass over the file finds whether the group has the key, the second sets it.
+	key=$2 value=$3 awk '
+		BEGIN { entry = ENVIRON["key"] "=" ENVIRON["value"] }
+		/^\[/ { in_group = ($0 == "[Desktop Entry]") }
+		{ is_key = in_group && index($0, ENVIRON["key"] "=") == 1 }
+		NR == FNR { has_key = has_key || is_key; next }
+		is_key { print entry; next }
+		{ print }
+		$0 == "[Desktop Entry]" && !has_key { print entry }
+	' "$file" "$file" >"$tmp" && "${sudo_cmd[@]}" cp "$tmp" "$file"
+	rm -f "$tmp"
 }
 
 # Write a KDE setting. --notify makes running programs reload it.

@@ -11,9 +11,9 @@ curl -fsSL https://raw.githubusercontent.com/dmalyuta/dotfiles/fedora/start_fres
 ```
 
 This clones this repo to `~/Projects/dotfiles`, symlinks the dotfiles into the
-home directory, and installs the software, including the NVIDIA driver. It is
-interactive and will ask if you want to install OpenRGB, the printer driver and
-so on.
+home directory, and installs the software, including the NVIDIA driver. It asks
+its questions up front, like whether to install the printer driver, and then
+runs unattended.
 
 With Secure Boot on, it asks for a one-time password. On the next boot, a blue
 *MOK Manager* screen waits 10 seconds for a key press: press any key, pick
@@ -40,18 +40,23 @@ found on it: the printer on the network, the webcam's microphone, which USB devi
 ## Layout
 
 - `start_fresh`: sets up a machine, see above, `start_fresh -h` and `man start_fresh`.
+- `packages.toml`: what it installs with dnf and Flatpak, and for which machines. To install
+  something else, add its name there and run `start_fresh` again.
 - `man/`: its manual page, linked into `~/.local/share/man`.
 - `home/`, `config/`: dotfiles, symlinked into `~` and `~/.config`.
 - `bin/`: commands, on `PATH` as `~/.bin`.
 - `scripts/`: system setup, run by `start_fresh`.
-  - `configure_hardware`, `configure_kde`: the setup steps; `functions.sh`, their shared helpers;
-    `tui.py`, the progress display that `start_fresh` runs them under.
+  - `configure_hardware`, `configure_kde`: the hardware and desktop setup. Like `start_fresh`,
+    each is just its steps in the order they run; the functions that do the work are in
+    `lib/<script>/`, one file per topic.
+  - `functions.sh`: the helpers they all share. `tui.py`: the progress display that `start_fresh`
+    runs under.
   - What they install or run, one folder per kind: `bin/` (commands, most installed to
     `/usr/local/bin`), `sleep-hooks/` (to `/usr/lib/systemd/system-sleep`), `systemd/` (units),
-    `udev/` (rules), `hid-bpf/` (HID-BPF device fixes, built on the machine), `keyd/`,
-    `patches/` (patched builds of Fedora's libinput, KWin, Plasma and KIdleTime, built on the
-    machine), `wine/` (and of Wine's COM library), `touchpad/` (tools to record and replay what
-    the touchpad does).
+    `udev/` (rules), `yum/` (package repositories), `hid-bpf/` (HID-BPF device fixes, built on the
+    machine), `dracut/` (initramfs modules), `grub/`, `keyd/`, `patches/` (patched builds of
+    Fedora's libinput, KWin, Plasma and KIdleTime, built on the machine), `wine/` (and of Wine's
+    COM library), `touchpad/` (tools to record and replay what the touchpad does).
   - `sleep-debug/`: the hibernation debug log, with its own `README.md` and `setup`, the same
     folders and a dracut module in `dracut/`.
 

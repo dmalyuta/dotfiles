@@ -4,9 +4,9 @@
  *
  * Why here too: the keyboard controller (N-KEY, 0b05:19b6) forgets "no animation at power-on"
  * whenever it loses power, so only a restart stays dark by itself. After a power-off or a
- * hibernation it pulses until told again, which asus-kbd-dark does 4 s into a boot, and after a
- * hibernation only once the image is loaded, some 20 s in. From the initramfs it is told as soon as
- * hid_asus has the controller, and before a hibernation's image is loaded.
+ * hibernation it pulses until told again, which asus-kbd-dark does seconds into a boot, and after
+ * a hibernation only once the image is loaded. From the initramfs it is told as soon as hid_asus
+ * has the controller, and before a hibernation's image is loaded.
  *
  * Run by asus-kbd-dark-initrd.service. Built and installed by scripts/configure_hardware.
  *
@@ -126,8 +126,8 @@ int main(void)
 	struct timespec now;
 
 	/*
-	 * Wait for hid_asus to have the controller (it takes it over from hid-generic 0.3 s later), then
-	 * for it to be done with it: talking to the controller meanwhile makes its own setup fail, see
+	 * Wait for hid_asus to have the controller (it takes it over from hid-generic), then for it to
+	 * be done with it: talking to the controller meanwhile makes its own setup fail, see
 	 * asus-kbd-rebind. Without hid_asus after 2 s, go ahead with the driver that is there.
 	 */
 	for (int i = 0; i < 20; i++) {

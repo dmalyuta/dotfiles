@@ -1,4 +1,4 @@
-.TH START_FRESH 1 2026-11-12 dotfiles "User Commands"
+.TH START_FRESH 1 "" dotfiles "User Commands"
 .SH NAME
 start_fresh \- set up a fresh Fedora KDE Plasma install
 .SH SYNOPSIS
@@ -25,8 +25,10 @@ The answers are remembered as the defaults for the next run.
 On a new machine, run it through
 .B curl
 as shown above. It then clones the dotfiles repository to
-.IR ~/Projects/dotfiles .
-Run from a checkout of the repository, it uses that checkout instead, and updates it first: it
+.I ~/Projects/dotfiles
+(over HTTPS, switching its remote to SSH once the machine's key is on GitHub) and runs the
+.B start_fresh
+there. Run from a checkout of the repository, it updates that checkout first: it
 pulls the checkout's branch from its remote (by fast-forward only) and, if that brought anything
 new, runs the new
 .B start_fresh
@@ -69,15 +71,19 @@ NordVPN and Grafana.
 .IP 3. 4
 Sets up kernel module signing, with Secure Boot on.
 .IP 4. 4
-Upgrades the installed packages, installs the missing ones, OpenRGB from upstream on the desktop,
+Upgrades the installed packages, installs the missing ones of
+.I packages.toml
+for this machine, OpenRGB from upstream on the desktop,
 and builds the kernel modules (NVIDIA, OpenRazer) for the newest kernel.
 .IP 5. 4
-Installs and updates the Flatpak apps, and installs apps from upstream to
+Installs and updates the Flatpak apps of
+.IR packages.toml ,
+and installs apps from upstream to
 .IR ~/.local :
 Oh My Posh, Bazelisk, the SN Pro font, PdfCraft, RAD Debugger, and Superluminal and PureRef if
 chosen.
 .IP 6. 4
-Sets up the SSH key, clones the dotfiles if needed, and links them into
+Sets up the SSH key, and links the dotfiles into
 .I ~
 and
 .IR ~/.config .
@@ -137,6 +143,11 @@ below: then it doesn't ask if the password was entered in any terminal in the la
 .TP
 .I ~/Projects/dotfiles
 The dotfiles repository, cloned there on a new machine.
+.TP
+.I ~/Projects/dotfiles/packages.toml
+The dnf packages and Flatpak apps to install, with the services to start and the groups to join
+for them. Add a name to a list to install it at the next run. The lists of the [all] table go on
+every machine, those of the other tables only on the machines they are for.
 .TP
 .I ~/Projects/dotfiles/.start_fresh_answers
 The answers from the last run. Git ignores it, so what is private, like project paths, stays out

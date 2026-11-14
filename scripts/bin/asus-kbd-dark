@@ -2,8 +2,8 @@
 """Keep the ASUS laptop's keyboard backlight from pulsing while it starts.
 
 From power-on, the keyboard controller (N-KEY, 0b05:19b6) pulses the backlight by itself until it
-is told otherwise. Nothing told it before asusd started (7 s into the boot), and asusd doesn't say
-all of it:
+is told otherwise. Nothing tells it before asusd starts, seconds into the boot, and asusd doesn't
+say all of it:
 - asusd sends which animations may play (at boot, awake, asleep, at shutdown) as a 7-byte packet,
   while this kind of controller is known to drop packets shorter than the report's 64 bytes (asusd
   pads its lighting effects for that reason, but not this one). So its "boot: false" in

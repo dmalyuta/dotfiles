@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
 """Run a setup script in a terminal-in-the-terminal, under a progress bar.
 
-Usage: tui.py --script FILE [--dotfiles DIR] [--raw-base URL] [--log FILE] -- COMMAND...
+Usage: tui.py --script FILE [--dotfiles DIR] [--log FILE] -- COMMAND...
 
-Drawn in place below what the terminal already shows: a spinner and the current step, a bar of how far through
-the steps the script is, and a box with the tail of the command's output. The command
+Drawn in place below what the terminal already shows: a spinner and the current step, a bar of how
+far through the steps the script is, and a box with the tail of the command's output. The command
 runs in a pseudo-terminal the size of that box, so prompts, progress bars and colors work as usual,
 and keys go straight to it. pyte keeps the box's screen.
 
 The steps come from `step [WEIGHT] "Description"` lines (see scripts/functions.sh), read in order
-from FILE and from the scripts it runs as `bash "$dotfiles"/scripts/NAME`, which are read from DIR,
-or from URL before the repo is cloned. WEIGHT is the step's rough share of the time, 1 by default.
-At run time, `step` appends "step Description" to the file named by $START_FRESH_STATUS, and
-`steps_done` appends "done", and `failed` appends "failed Message", for the list of errors left on
-screen at the end. A step that doesn't run is skipped over.
+from FILE and from the scripts it runs as `bash "$dotfiles"/scripts/NAME`, which are read from DIR.
+WEIGHT is the step's rough share of the time, 1 by default. At run time, `step` appends "step
+Description" to the file named by $START_FRESH_STATUS, `steps_done` appends "done", and `failed`
+appends "failed Message", for the list of errors left on screen at the end. A step that doesn't
+run is skipped over.
 
 Without a terminal or pyte, it just runs the command.
 
@@ -33,7 +33,6 @@ import tempfile
 import termios
 import time
 import tty
-import urllib.request
 
 try:
     import pyte
@@ -62,32 +61,21 @@ RESET = "\x1b[0m"
 # --------------------------------------------------------------------------------------------------
 
 
-def read_script(path, raw_base, rel):
+def plan_steps(path, dotfiles, depth=0):
+    """(description, weight) of each step of the script at `path`, in the order they run."""
     try:
         with open(path) as f:
-            return f.read()
+            lines = f.read().splitlines()
     except OSError:
-        if not raw_base:
-            return ""
-        try:
-            with urllib.request.urlopen(f"{raw_base}/{rel}", timeout=10) as r:
-                return r.read().decode()
-        except Exception:
-            return ""
-
-
-def plan_steps(text, dotfiles, raw_base, depth=0):
-    """(description, weight) of each step, in the order they run."""
+        return []
     steps = []
-    for line in text.splitlines():
+    for line in lines:
         if line.lstrip().startswith("#"):
             continue
         if m := STEP.search(line):
             steps.append((m[2], int(m[1] or 1)))
         elif (m := CALL.search(line)) and depth < 3:
-            rel = f"scripts/{m[1]}"
-            sub = read_script(os.path.join(dotfiles, rel), raw_base, rel)
-            steps += plan_steps(sub, dotfiles, raw_base, depth + 1)
+            steps += plan_steps(os.path.join(dotfiles, "scripts", m[1]), dotfiles, depth + 1)
     return steps
 
 
@@ -285,7 +273,6 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--script", required=True)
     parser.add_argument("--dotfiles", default="")
-    parser.add_argument("--raw-base", default="")
     parser.add_argument("--log", default=os.path.expanduser("~/.cache/start_fresh.log"))
     parser.add_argument("--title", default="Console output")
     parser.add_argument("command", nargs="+")
@@ -294,8 +281,7 @@ def main():
     if pyte is None or not (sys.stdin.isatty() and sys.stdout.isatty()):
         os.execvp(args.command[0], args.command)
 
-    with open(args.script) as f:
-        progress = Progress(plan_steps(f.read(), args.dotfiles, args.raw_base))
+    progress = Progress(plan_steps(args.script, args.dotfiles))
 
     status_fd, status_path = tempfile.mkstemp(prefix="start_fresh-status-")
     os.close(status_fd)

@@ -2,19 +2,19 @@ touchpad: start the cursor and two-finger scrolling at once, and move the cursor
 
 With tap-to-click on, a finger that comes down is in TAP_STATE_TOUCH until it moves 1.3mm or 180ms
 pass, and tp_tap_handle_state() filters all pointer motion meanwhile, never replaying it: the
-cursor sits still for the first 1.3mm of every stroke. On the PX13's touchpad (PixArt 093A:3013)
-that was ~100ms and ~15 logical px per quick stroke. Let it move the cursor at once instead: a tap
-then moves the cursor by however far the finger wobbled, a pixel or two.
+cursor sits still for the first 1.3mm of every stroke, ~100ms of a quick one. Let it move the
+cursor at once instead: a tap then moves the cursor by however far the finger wobbled, a pixel or
+two.
 
 Slow cursor motion lurched: below 7mm/s the touchpad's acceleration slows the cursor down, to a
 third at the slowest, by the speed it estimates, which is that of the last motion event alone. At
 each slow start that estimate is near zero (a pause before), then jumps up, so the cursor sped up
-~1.8x within 20-40ms while the finger moved steadily (a recording, 2026-11-10). Now it doesn't slow
-down: the cursor moves as far for each mm at any speed up to the acceleration. Optionally, the
-speed estimate can be averaged over time, pauses included.
+almost twofold within tens of ms while the finger moved steadily. Now it doesn't slow down: the
+cursor moves as far for each mm at any speed up to the acceleration. Optionally, the speed estimate
+can be averaged over time, pauses included.
 
 The cursor still stuck at times, for two more reasons (found by replaying recorded and made-up
-finger motion through the library, see scripts/touchpad/touchpad-trace, 2026-11-11):
+finger motion through the library, see scripts/touchpad/touchpad-trace):
 - tp_detect_wobbling() turns on a hysteresis when one finger's x flickers right, left, right in
   three events in a row, as happens in a quick stroke now and then. It stays on until the device
   is added again (login, wake-up): a dead zone of 1/4mm at every start and turn of the finger.
@@ -30,8 +30,8 @@ Two-finger scrolling started late for three reasons:
 - tp_gesture_detect_motion_gestures() waits for both fingers to move 1.5mm the same way (and
   doesn't look before one moved 1mm). Now 0.75mm (and 0.5mm). A pinch taken for a scroll is still
   corrected within 300ms.
-  Once the fingers have been down for 150ms they have settled, so 0.15mm is enough then: a slow
-  scroll started 0.5mm and 120-190ms late, now 0.2mm and 55-75ms.
+  Once the fingers have been down for 150ms they have settled, so 0.15mm is enough then, which
+  more than halves how late a slow scroll starts.
 - The motion before the scroll was recognized was dropped. Now the scroll makes up for it, not at
   once (the content would jump) but by scrolling faster than the fingers at first, easing back to
   their speed as it catches up.

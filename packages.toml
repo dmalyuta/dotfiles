@@ -1,0 +1,102 @@
+# What start_fresh installs. To install something else, add its name to a list here and run
+# start_fresh again.
+#
+# Each table is for some machines: [all] for every one, the others only where they apply, which
+# choose_packages decides (scripts/lib/start_fresh/packages.sh). A table can have:
+#   dnf       Packages to install with dnf. A name can be a package, a group ("@name"), a
+#             capability ("nodejs") or a package for another architecture ("glibc.i686"). Those
+#             from outside Fedora need their repository, see add_repositories in the same file.
+#   flatpak   Apps to install from Flathub, system-wide, by application ID.
+#   services  systemd services to enable and start.
+#   groups    Groups that the user joins.
+
+[all]
+dnf = [
+    # Development.
+    "@c-development", "@development-tools", "git", "curl", "wget", "unzip", "openssh-clients",
+    "shfmt", "ShellCheck", "sqlite", "rustup", "nodejs", "npm",
+    # To build RAD Debugger.
+    "clang", "lld", "llvm", "libX11-devel", "libXext-devel", "libXfixes-devel",
+    "mesa-libGL-devel", "mesa-libEGL-devel", "freetype-devel",
+
+    # Command line.
+    "bat", "btop", "htop", "tree", "fzf", "fd-find", "ripgrep", "the_silver_searcher", "gping",
+    "xclip", "tmux",
+
+    # Terminal and fonts.
+    "kitty", "cascadiacode-nerd-fonts",
+
+    # Desktop apps.
+    "brave-browser", "code", "okular", "inkscape", "obs-studio", "gimp",
+    "vlc", "vlc-plugins-all", "vlc-plugins-freeworld", "flameshot", "nextcloud-client",
+    "qalculate-gtk", "speedcrunch", "fsearch", "syncthing", "flatpak",
+    "nordvpn", "nordvpn-gui",
+
+    # LaTeX.
+    "texlive-scheme-full", "texlive-latexindent", "perl-YAML-Tiny", "perl-File-HomeDir",
+
+    # Hardware tools: Razer devices, key remapping (scripts/keyd), fans.
+    "openrazer-meta", "akmod-openrazer", "polychromatic", "keyd", "coolercontrol",
+
+    # Monitoring.
+    "grafana",
+
+    # Wine. ntsync-autoload loads the ntsync kernel module at boot, so that Wine does its thread
+    # syncing in the kernel instead of a slow round trip to wineserver each time.
+    "wine", "winetricks", "ntsync-autoload",
+]
+flatpak = [
+    "com.github.tchx84.Flatseal",
+    "io.github.tanaybhomia.Whisp",
+    "io.github.tanaybhomia.DeepDive",
+    "io.github.amit9838.mousam",
+    "md.obsidian.Obsidian",
+    "me.proton.Pass",
+    "com.xnview.XnViewMP",
+]
+services = ["grafana-server", "nordvpnd", "keyd", "coolercontrold"]
+groups = ["plugdev", "nordvpn"]
+
+# A machine with an NVIDIA GPU. The driver, as an akmod: akmods builds it for each new kernel. The
+# CUDA package also has nvidia-smi.
+[nvidia]
+dnf = ["akmod-nvidia", "xorg-x11-drv-nvidia-cuda"]
+
+# libinput record and debug-events, to look at what the touchpad sends, see scripts/touchpad.
+[laptop]
+dnf = ["libinput-utils"]
+
+# A laptop that folds into a tablet needs an on-screen keyboard.
+[convertible]
+dnf = ["plasma-keyboard"]
+
+# A laptop with AMD's Sensor Fusion Hub: to build and load the accelerometer fix, see
+# scripts/hid-bpf/amd-sfh-accel.bpf.c (with clang, above).
+[amd-sfh]
+dnf = ["udev-hid-bpf", "bpftool", "libbpf-devel"]
+
+# A laptop with an NVIDIA dGPU next to its iGPU.
+[hybrid-gpu]
+dnf = ["cardwire", "cardwire-gui"]
+services = ["cardwired"]
+
+# The ASUS laptop that scripts/lib/hardware/asus.sh is for. acpi_call is for
+# scripts/bin/asus-power-limits.
+[asus-laptop]
+dnf = ["asusctl", "asusctl-rog-gui", "acpi_call-dkms"]
+services = ["asusd"]
+
+# The desktop. OpenRGB itself comes from upstream, see install_openrgb.
+[openrgb]
+dnf = ["i2c-tools"]
+groups = ["i2c"]
+
+# With the Brother printer: the scanner driver is a SANE backend.
+[brother]
+dnf = ["cups", "sane-backends"]
+services = ["cups"]
+
+# Until the Brother's drivers are installed. The printer driver is 32-bit: installed here, else
+# Brother's installer tool would ask dnf for them, and dnf would wait on its own question.
+[brother-install]
+dnf = ["glibc.i686", "libstdc++.i686", "libgcc.i686"]

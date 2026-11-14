@@ -54,7 +54,7 @@ log=$cache/build.log
 # Build the patched library into $cache, working in $1. On failure, sets $failure to what failed.
 failure=''
 build() {
-	local tmp=$1 srpm src spec out
+	local tmp=$1 srpm src spec out d
 	local rpmbuild=(rpmbuild --define "_topdir $tmp/rpm")
 	installed rpm-build || sudo dnf install -y rpm-build || return
 

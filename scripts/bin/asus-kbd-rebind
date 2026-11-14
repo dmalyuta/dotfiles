@@ -9,8 +9,8 @@
 # - The brightness from before is put back. asusd would set the one it saved, which isn't the one
 #   set from KDE (that goes through UPower straight to the LED).
 # - A rebind is tried again when hid_asus fails to set up the backlight ("Failed to initialize
-#   backlight" in the kernel log, seen on 8 of 10 rebinds): the LED, and KDE's backlight key with
-#   it, then no longer reaches the keyboard.
+#   backlight" in the kernel log, which is common): the LED, and KDE's backlight key with it, then
+#   no longer reaches the keyboard.
 #
 # Run by asus-kbd-rebind.service after the resume, so the wake doesn't wait for it. With --force
 # it runs at any time, to fix the backlight by hand.

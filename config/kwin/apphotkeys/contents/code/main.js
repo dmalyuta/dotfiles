@@ -115,11 +115,10 @@ hotkey("SpeedCrunch", "Meta+N", () => focusOrLaunch(apps.speedcrunch));
 hotkey("PDF-XChange Editor", "Meta+P", () => focusOrLaunch(apps.pdfxchange));
 
 // Bring PDF-XChange Editor to the front, with no key: bin/pdf-xchange-editor invokes it through
-// kglobalaccel when it opens a file. The editor can't do it itself. With it running, a second copy
-// hands the file over and quits, and KWin keeps the running one in the background, since it was
-// not just clicked. That also left the launch feedback (the bouncing icon) running until it timed
-// out, since KWin ends it when a window of the launched app is activated. If the editor is still
-// starting, its window gets raised when it shows up, within raiseWaitMs.
+// kglobalaccel when it opens a file, since the editor can't raise itself. Opening a file in a
+// running editor otherwise leaves its window in the background, with the launch feedback bouncing
+// until it times out. If the editor is still starting, its window is raised when it shows up,
+// within raiseWaitMs.
 const raiseWaitMs = 30000;
 let pdfxchangeRaiseUntil = 0;
 

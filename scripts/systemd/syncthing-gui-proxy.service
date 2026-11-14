@@ -1,0 +1,14 @@
+[Unit]
+Description=Forward http://syncthing.localhost to the Syncthing web UI
+Requires=syncthing-gui-proxy.socket
+After=syncthing-gui-proxy.socket
+
+[Service]
+ExecStart=/usr/lib/systemd/systemd-socket-proxyd --exit-idle-time=5min 127.0.0.1:8384
+# No root powers, as systemd hands it the socket. Nothing may imply NoNewPrivileges (DynamicUser=
+# and most sandboxing do): SELinux would then keep it out of systemd_socket_proxyd_t, which may
+# connect to 8384.
+CapabilityBoundingSet=
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes

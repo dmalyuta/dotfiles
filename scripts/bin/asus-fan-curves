@@ -1,33 +1,25 @@
 #!/bin/bash
-# Custom fan curves for the ProArt PX13 (HN7306), applied through asusd, which saves them and
-# reapplies them on every profile switch.
+# Custom fan curves for the ProArt PX13, applied through asusd, which saves them and reapplies
+# them on every profile switch. They are what G-Helper applies on Windows with "Apply custom fan
+# curve" ticked: the firmware's curves spread out to 100 C, so the fans ramp later and more gently,
+# up to the same top speeds.
 #
-# What the EC does, measured on this laptop:
-# - A curve is a staircase: each point's speed holds from its temperature up to the next point,
-#   with no interpolation, and the first point's speed also applies below it.
-# - The fan steps up ~4 s after the EC's integer CPU temperature (acpitz temp2, which tracks Tctl)
-#   reaches a point, and steps back down only once it is 5 C below that point.
-# - Speed is rpm ~= 2450 + 19.7 * pwm (pwm 0-255): 2500 rpm at pwm 3, 7500 at 255. There is no
-#   speed between off and 2500 rpm.
-# - With the dGPU off, the GPU fan follows a slow board sensor, not Tctl. It isn't exposed, but it
-#   tracks acpitz temp1 within ~3 C: ~5 C below Tctl at idle and ~15 C below under load. G-Helper
-#   uses the same temperatures for both fans, so the GPU fan lags the CPU fan. Behaviour with the
-#   dGPU on is untested.
-#
-# These are what G-Helper applies on Windows when "Apply custom fan curve" is ticked without
-# editing the curve. Their top speeds are the stock caps: Quiet ~3750 rpm, Balanced ~4850,
-# Performance ~6150. G-Helper reads the firmware curves, which sit at 48-70 C, then reworks them
-# (AsusACPI.FixFanCurve): it puts an off point at 30 C, drops the 4th firmware point, and clamps
-# point i into 30+10i..40+10i C. So the curve spreads out to 100 C and the fans ramp later and
-# more gently than with the firmware's own curve.
+# What the EC does with a curve:
+# - It is a staircase: each point's speed holds from its temperature up to the next point, with
+#   no interpolation, and the first point's speed also applies below it.
+# - The fan steps up a few seconds after the CPU temperature reaches a point, and back down only
+#   once it is 5 C below that point.
+# - Speed is rpm ~= 2450 + 19.7 * pwm (pwm 0-255). There is no speed between off and 2500 rpm.
+# - With the dGPU off, the GPU fan follows a slower board sensor that runs below the CPU's
+#   temperature, so on the same curve it lags the CPU fan.
 #
 # Usage: asus-fan-curves [--reset]   (--reset goes back to the firmware's own curves)
+# shellcheck disable=SC2034 # the curves are read through ${!curve}
 set -eu
 
-# temp:pwm points per profile, for the CPU fan on Tctl and the GPU fan on its own sensor (see
-# above). Comments give the rpm. The kernel sends the EC percent = pwm * 100 / 255, rounded down,
-# so these pwm values are G-Helper's percents rounded up. Don't pass asusctl percents instead: it
-# maps 1% to pwm 2, which reaches the EC as 0%.
+# temp:pwm points per profile, for the CPU and the GPU fan. Comments give the rpm. The kernel
+# sends the EC percent = pwm * 100 / 255, rounded down, so these pwm values are G-Helper's percents
+# rounded up. Don't pass asusctl percents instead: it maps 1% to pwm 2, which reaches the EC as 0%.
 #               off       2500      2750      3050      3750      3750      3750      3750
 quiet_cpu="30c:0,48c:3,52c:16,60c:31,70c:67,80c:67,90c:67,100c:67"
 quiet_gpu="30c:0,48c:3,52c:16,60c:31,70c:64,80c:64,90c:64,100c:64"

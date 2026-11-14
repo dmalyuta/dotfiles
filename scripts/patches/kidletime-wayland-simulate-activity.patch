@@ -4,7 +4,7 @@ PowerDevil suspends after the profile's idle time, through a KIdleTime timeout. 
 wakes up by itself and nobody touches it, it should sleep again after that time: PowerDevil calls
 KIdleTime::simulateUserActivity() on resume for that (and when inhibitions change), but on Wayland
 it did nothing. Each timeout's idle notification fires once, and only input re-arms it, so the
-system stayed awake until someone came back (2.5 hours on the lock screen, on 2026-11-09).
+system stayed awake, on the lock screen, until someone came back.
 
 Neither idle protocol can reset the idle time, so recreate the notifications: the compositor counts
 each new one from its creation, as simulated activity does on X11. The dim and screen-off actions

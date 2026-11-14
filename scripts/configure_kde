@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # Configure the KDE Plasma desktop: input devices, app hotkeys, global shortcuts, virtual desktops,
-# effects, theme, icons and panels. Run by start_fresh, and safe to re-run on its own.
+# effects, theme, icons and panels. Run by provision, and safe to re-run on its own.
 #
 # Usage: configure_kde
 #

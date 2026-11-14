@@ -1,18 +1,18 @@
-.TH START_FRESH 1 "" dotfiles "User Commands"
+.TH PROVISION 1 "" dotfiles "User Commands"
 .SH NAME
-start_fresh \- set up a fresh Fedora KDE Plasma install
+provision \- set up a fresh Fedora KDE Plasma install
 .SH SYNOPSIS
-.B start_fresh
+.B provision
 .RB [ \-c ]
 .RB [ \-n ]
 .RB [ \-p ]
 .RB [ \-h ]
 .PP
-.B curl \-fsSL https://raw.githubusercontent.com/dmalyuta/dotfiles/fedora/start_fresh | bash
+.B curl \-fsSL https://raw.githubusercontent.com/dmalyuta/dotfiles/fedora/provision | bash
 .RB [ "\-s \-\-"
 .IR options ]
 .SH DESCRIPTION
-.B start_fresh
+.B provision
 sets up a Fedora KDE Plasma machine the way its author uses it: software repositories, packages
 and apps, the NVIDIA driver, these dotfiles, low-level hardware settings and the KDE desktop.
 .PP
@@ -27,11 +27,11 @@ On a new machine, run it through
 as shown above. It then clones the dotfiles repository to
 .I ~/Projects/dotfiles
 (over HTTPS, switching its remote to SSH once the machine's key is on GitHub) and runs the
-.B start_fresh
+.B provision
 there. Run from a checkout of the repository, it updates that checkout first: it
 pulls the checkout's branch from its remote (by fast-forward only) and, if that brought anything
 new, runs the new
-.B start_fresh
+.B provision
 in place of itself. If the pull fails, for instance because it would overwrite uncommitted changes,
 or the branch has diverged from the remote, it stops and shows what git said; resolve that by hand
 and run it again, or pass
@@ -131,11 +131,11 @@ which needs the
 .B python3\-pyte
 package; the first run installs it. When the script ends, the last view stays in the terminal, and
 the full output is saved to
-.IR ~/.cache/start_fresh.log .
+.IR ~/.cache/provision.log .
 .PP
 The display runs the script in a terminal of its own, where sudo would ask for the password
 again. So
-.B start_fresh
+.B provision
 has sudo remember the password across all of the user's terminals, see
 .I /etc/sudoers.d/timestamp\-global
 below: then it doesn't ask if the password was entered in any terminal in the last 5 minutes.
@@ -149,11 +149,11 @@ The dnf packages and Flatpak apps to install, with the services to start and the
 for them. Add a name to a list to install it at the next run. The lists of the [all] table go on
 every machine, those of the other tables only on the machines they are for.
 .TP
-.I ~/Projects/dotfiles/.start_fresh_answers
+.I ~/Projects/dotfiles/.provision_answers
 The answers from the last run. Git ignores it, so what is private, like project paths, stays out
 of the repository.
 .TP
-.I ~/.cache/start_fresh.log
+.I ~/.cache/provision.log
 The full output of the last run under the progress display.
 .TP
 .I ~/Downloads
@@ -177,13 +177,13 @@ Stopped with Ctrl+C.
 Set up a new machine:
 .PP
 .RS
-.B curl \-fsSL https://raw.githubusercontent.com/dmalyuta/dotfiles/fedora/start_fresh | bash
+.B curl \-fsSL https://raw.githubusercontent.com/dmalyuta/dotfiles/fedora/provision | bash
 .RE
 .PP
 Re-run from the checkout with the last answers, to apply updates and changes to the dotfiles:
 .PP
 .RS
-.B ~/Projects/dotfiles/start_fresh \-c
+.B provision \-c
 .RE
 .SH SEE ALSO
 .BR sudoers (5),

@@ -1,7 +1,7 @@
 # shellcheck shell=bash
-# shellcheck disable=SC2034,SC2154 # shares variables with start_fresh and its other libraries
+# shellcheck disable=SC2034,SC2154 # shares variables with provision and its other libraries
 #
-# start_fresh's Wine setup, and PDF-XChange Editor in it.
+# provision's Wine setup, and PDF-XChange Editor in it.
 
 # Fedora's wine-mono is broken (its libmono needs MinGW DLLs from a folder Wine never searches), so
 # .NET programs fail with "Could not load Mono". Install WineHQ's build into the prefix instead: the

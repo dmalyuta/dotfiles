@@ -1,8 +1,8 @@
-# What start_fresh installs. To install something else, add its name to a list here and run
-# start_fresh again.
+# What provision installs. To install something else, add its name to a list here and run
+# provision again.
 #
 # Each table is for some machines: [all] for every one, the others only where they apply, which
-# choose_packages decides (scripts/lib/start_fresh/packages.sh). A table can have:
+# choose_packages decides (scripts/lib/provision/packages.sh). A table can have:
 #   dnf       Packages to install with dnf. A name can be a package, a group ("@name"), a
 #             capability ("nodejs") or a package for another architecture ("glibc.i686"). Those
 #             from outside Fedora need their repository, see add_repositories in the same file.

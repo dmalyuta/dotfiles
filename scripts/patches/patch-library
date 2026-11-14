@@ -4,7 +4,7 @@
 # patch says why it's needed). Built from Fedora's source package of the installed version, with
 # Fedora's own build settings (rpmbuild).
 #
-# Package updates put Fedora's library back, so start_fresh runs this every time. It only builds
+# Package updates put Fedora's library back, so provision runs this every time. It only builds
 # for a new version or a changed patch, and keeps the latest build of each patch in
 # ~/.cache/patched-libraries. A patch that no longer applies or builds gets a report for fixing it.
 #

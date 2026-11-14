@@ -1,8 +1,8 @@
 # shellcheck shell=bash
-# shellcheck disable=SC2034,SC2154 # the want_* answers are read by the steps in start_fresh
+# shellcheck disable=SC2034,SC2154 # the want_* answers are read by the steps in provision
 #
-# start_fresh's questions, all asked up front so that the rest runs unattended. The answers are
-# remembered in $answers (see start_fresh) as the defaults for the next run.
+# provision's questions, all asked up front so that the rest runs unattended. The answers are
+# remembered in $answers (see provision) as the defaults for the next run.
 
 # Ask for the sudo password once, and keep it fresh in the background so a long step doesn't ask
 # again partway through.

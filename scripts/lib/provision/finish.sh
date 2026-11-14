@@ -1,7 +1,7 @@
 # shellcheck shell=bash
-# shellcheck disable=SC2034,SC2154 # shares variables with start_fresh and its other libraries
+# shellcheck disable=SC2034,SC2154 # shares variables with provision and its other libraries
 #
-# The end of a start_fresh run: the Fedora upgrade, what failed, and the reboot.
+# The end of a provision run: the Fedora upgrade, what failed, and the reboot.
 
 # Download the Fedora upgrade chosen in ask_fedora_upgrade. The reboot at the end installs it.
 download_fedora_upgrade() {

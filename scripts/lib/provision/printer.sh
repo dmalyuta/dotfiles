@@ -1,7 +1,7 @@
 # shellcheck shell=bash
 # shellcheck disable=SC2154 # $brother_model and $brother_ip are set by ask_questions
 #
-# start_fresh's Brother network printer and scanner: finding it, its drivers, and its name in the
+# provision's Brother network printer and scanner: finding it, its drivers, and its name in the
 # print and scan dialogs.
 
 # Find a Brother printer on the network by what it announces over mDNS, and print its model (like

@@ -1,7 +1,7 @@
 # shellcheck shell=bash
-# shellcheck disable=SC2154 # shares variables with start_fresh and its other libraries
+# shellcheck disable=SC2154 # shares variables with provision and its other libraries
 #
-# start_fresh's apps from upstream rather than from a package repository, most installed to
+# provision's apps from upstream rather than from a package repository, most installed to
 # ~/.local.
 
 # Download $1 to $2 with mode $3 (default 644), replacing $2 only once the download is complete.

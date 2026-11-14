@@ -1,7 +1,7 @@
 # shellcheck shell=bash
-# shellcheck disable=SC2034,SC2154 # shares variables with start_fresh and its other libraries
+# shellcheck disable=SC2034,SC2154 # shares variables with provision and its other libraries
 #
-# start_fresh's configuration of apps and services: OpenRGB, OBS and its webcam microphone,
+# provision's configuration of apps and services: OpenRGB, OBS and its webcam microphone,
 # Grafana, Syncthing, Flameshot and the system journal.
 
 configure_openrgb() {

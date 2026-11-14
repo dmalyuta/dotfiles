@@ -11,7 +11,7 @@ and keys go straight to it. pyte keeps the box's screen.
 The steps come from `step [WEIGHT] "Description"` lines (see scripts/functions.sh), read in order
 from FILE and from the scripts it runs as `bash "$dotfiles"/scripts/NAME`, which are read from DIR.
 WEIGHT is the step's rough share of the time, 1 by default. At run time, `step` appends "step
-Description" to the file named by $START_FRESH_STATUS, `steps_done` appends "done", and `failed`
+Description" to the file named by $PROVISION_STATUS, `steps_done` appends "done", and `failed`
 appends "failed Message", for the list of errors left on screen at the end. A step that doesn't
 run is skipped over.
 
@@ -273,7 +273,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--script", required=True)
     parser.add_argument("--dotfiles", default="")
-    parser.add_argument("--log", default=os.path.expanduser("~/.cache/start_fresh.log"))
+    parser.add_argument("--log", default=os.path.expanduser("~/.cache/provision.log"))
     parser.add_argument("--title", default="Console output")
     parser.add_argument("command", nargs="+")
     args = parser.parse_args()
@@ -283,7 +283,7 @@ def main():
 
     progress = Progress(plan_steps(args.script, args.dotfiles))
 
-    status_fd, status_path = tempfile.mkstemp(prefix="start_fresh-status-")
+    status_fd, status_path = tempfile.mkstemp(prefix="provision-status-")
     os.close(status_fd)
     os.makedirs(os.path.dirname(args.log), exist_ok=True)
     # The output as it showed, in plain text: each line once it leaves the box's screen, and at the
@@ -298,7 +298,7 @@ def main():
     pid, master = pty.fork()
     if pid == 0:
         set_size(0, layout.inner_lines, layout.inner_cols)
-        os.environ["START_FRESH_STATUS"] = status_path
+        os.environ["PROVISION_STATUS"] = status_path
         # What pyte emulates, rather than the outer terminal, whose own sequences it may not know.
         os.environ["TERM"] = "xterm-256color"
         # No Ctrl+Z: it would stop the command with no shell around to resume it.

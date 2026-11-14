@@ -81,7 +81,7 @@ keep_chosen_power_profile() {
 }
 
 # Per-profile CPU power limits, lower in Quiet for battery life, see scripts/bin/asus-power-limits.
-# With Secure Boot on, acpi_call only loads once its signing key is enrolled, see start_fresh.
+# With Secure Boot on, acpi_call only loads once its signing key is enrolled, see provision.
 install_power_limits() {
 	install_sleep_hook bin/asus-power-limits
 	install_unit asus-power-limits.service

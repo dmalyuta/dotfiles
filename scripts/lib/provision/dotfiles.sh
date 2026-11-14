@@ -1,7 +1,7 @@
 # shellcheck shell=bash
-# shellcheck disable=SC2154 # $dotfiles and the repo's URLs are set by start_fresh
+# shellcheck disable=SC2154 # $dotfiles and the repo's URLs are set by provision
 #
-# start_fresh's dotfiles steps: the SSH key for GitHub, the repo's git filters, the links into the
+# provision's dotfiles steps: the SSH key for GitHub, the repo's git filters, the links into the
 # home folder, and ~/.bashrc.
 
 # An SSH key, and the checkout's remote switched to SSH once GitHub knows the key: a new machine
@@ -54,8 +54,10 @@ link_dotfiles() {
 	ln -sf "$dotfiles"/config/tmux-powerline/config.sh ~/.config/tmux-powerline/
 	ln -sf "$dotfiles"/config/tmux-powerline/themes/danylo-theme.sh ~/.config/tmux-powerline/themes/
 	ln -sf "$dotfiles"/config/.blue-owl-custom.omp.json ~
-	# `man start_fresh`: man looks in ~/.local/share/man, next to ~/.local/bin on PATH.
-	ln -sf "$dotfiles"/man/start_fresh.1 ~/.local/share/man/man1/
+	# `man provision`: man looks in ~/.local/share/man, next to ~/.local/bin on PATH. Without the
+	# page under its earlier name.
+	ln -sf "$dotfiles"/man/provision.1 ~/.local/share/man/man1/
+	rm -f ~/.local/share/man/man1/start_fresh.1
 	echo 'kitty.desktop' >~/.config/xdg-terminals.list
 
 	[ -d ~/.tmux/plugins/tpm ] || git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm

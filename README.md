@@ -7,7 +7,7 @@ Fedora KDE Plasma setup after a fresh install.
 On a brand new install, run:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/dmalyuta/dotfiles/fedora/start_fresh | bash
+curl -fsSL https://raw.githubusercontent.com/dmalyuta/dotfiles/fedora/provision | bash
 ```
 
 This clones this repo to `~/Projects/dotfiles`, symlinks the dotfiles into the
@@ -21,35 +21,36 @@ With Secure Boot on, it asks for a one-time password. On the next boot, a blue
 Hibernation needs Secure Boot off, since Fedora's kernel turns it off otherwise.
 
 It is also safe to re-run (aka *idempotent*): every step checks for what it
-installs and skips it if it is already there. So you can always re-run using:
+installs and skips it if it is already there. So you can always re-run it, from
+anywhere (it is on `PATH`, like the other commands in `bin/`):
 
 ```bash
-~/Projects/dotfiles/start_fresh
+provision
 ```
 
 To re-run with the last run's answers to its questions:
 
 ```bash
-~/Projects/dotfiles/start_fresh -c
+provision -c
 ```
 
-The answers are kept in `.start_fresh_answers`, which git ignores, so that what is private stays
+The answers are kept in `.provision_answers`, which git ignores, so that what is private stays
 out of this repo, like the paths of your projects. What is specific to a machine isn't asked but
 found on it: the printer on the network, the webcam's microphone, which USB devices are mice.
 
 ## Layout
 
-- `start_fresh`: sets up a machine, see above, `start_fresh -h` and `man start_fresh`.
+- `provision`: sets up a machine, see above, `provision -h` and `man provision`.
 - `packages.toml`: what it installs with dnf and Flatpak, and for which machines. To install
-  something else, add its name there and run `start_fresh` again.
+  something else, add its name there and run `provision` again.
 - `man/`: its manual page, linked into `~/.local/share/man`.
 - `home/`, `config/`: dotfiles, symlinked into `~` and `~/.config`.
 - `bin/`: commands, on `PATH` as `~/.bin`.
-- `scripts/`: system setup, run by `start_fresh`.
-  - `configure_hardware`, `configure_kde`: the hardware and desktop setup. Like `start_fresh`,
+- `scripts/`: system setup, run by `provision`.
+  - `configure_hardware`, `configure_kde`: the hardware and desktop setup. Like `provision`,
     each is just its steps in the order they run; the functions that do the work are in
     `lib/<script>/`, one file per topic.
-  - `functions.sh`: the helpers they all share. `tui.py`: the progress display that `start_fresh`
+  - `functions.sh`: the helpers they all share. `tui.py`: the progress display that `provision`
     runs under.
   - What they install or run, one folder per kind: `bin/` (commands, most installed to
     `/usr/local/bin`), `sleep-hooks/` (to `/usr/lib/systemd/system-sleep`), `systemd/` (units),

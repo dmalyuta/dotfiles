@@ -5,7 +5,7 @@
 # source package of the installed Wine, prepared as Fedora's build does (with the Wine Staging
 # patches), for both the 64-bit and the 32-bit DLL: the two ends of a COM call must agree.
 #
-# Wine updates put Fedora's DLLs back, so start_fresh runs this every time. It only builds for a
+# Wine updates put Fedora's DLLs back, so provision runs this every time. It only builds for a
 # new Wine or a changed patch, and keeps the builds in ~/.cache/wine-combase. A patch that no
 # longer applies or builds gets a report for fixing it.
 #

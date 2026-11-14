@@ -1,5 +1,5 @@
 __pycache__/
-.start_fresh_answers
+.provision_answers
 
 # OBS writes these next to its config on every save.
 config/obs/**/*.bak

@@ -6,7 +6,7 @@ Finds the cause the first time a sleep or a hibernation goes wrong on the laptop
 - a sleep that doesn't reach the SoC's deepest state, or keeps waking up,
 - a sleep that never comes back.
 
-`setup on [trace]` installs it, `setup off` removes it (start_fresh asks). Read it with
+`setup on [trace]` installs it, `setup off` removes it (provision asks). Read it with
 `journalctl -t sleep-debug` and the files in `/var/log/sleep-debug`.
 [CS35L41_hang_summary.md](CS35L41_hang_summary.md) is the write-up of the hang it was built to find.
 
@@ -133,6 +133,6 @@ powers off through ACPI S4 (`hibernation_platform_enter`, kernel/power/hibernate
 
 `setup off`, then reboot: the kernel options and systemd's setting only change at boot. It keeps
 the logs in `/var/log/sleep-debug`, and leaves `scripts/sleep-hooks/cs35l41-hibernate` alone, which
-`scripts/configure_hardware` installs. Answer no to start_fresh's question from then on, or it
+`scripts/configure_hardware` installs. Answer no to provision's question from then on, or it
 turns the log back on. `bin/hibernate-loop` and `bin/pm-trace-decode` aren't installed anywhere:
 they run from this folder.

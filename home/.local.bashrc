@@ -5,7 +5,7 @@
 # Binaries.
 ################################################################################
 
-# The dotfiles repo's bin/ (status, ...), linked by start_fresh.
+# The dotfiles repo's bin/ (status, ...), linked by provision.
 export PATH=$PATH:~/.bin
 
 ################################################################################

@@ -10,7 +10,7 @@
 launch_dir=~/.local/share/kglobalaccel
 
 # The VS Code workspaces that Meta+C, Meta+<letter> focuses, or opens if no window has them: this
-# repo, and those answered in start_fresh as "<letter>:<absolute path>,...".
+# repo, and those answered in provision as "<letter>:<absolute path>,...".
 declare -A vscode_workspaces=([D]=$dotfiles)
 read_workspaces() {
 	local entry entries

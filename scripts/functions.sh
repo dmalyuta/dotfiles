@@ -1,7 +1,7 @@
 # shellcheck shell=bash
 # shellcheck disable=SC2154 # $dotfiles is set by the sourcing script
 #
-# Helpers shared by start_fresh and the scripts it runs. Source it, don't run it. Some read
+# Helpers shared by provision and the scripts it runs. Source it, don't run it. Some read
 # $dotfiles, which the sourcing script sets to the repo root.
 #
 # Author: Danylo Malyuta, 2026.
@@ -13,15 +13,15 @@
 # Status message, in bold bright blue so it stands out.
 say() { printf '\e[1;94m== %s ==\e[0m\n' "$*"; }
 
-# Report a failure, in bold red. start_fresh also lists it at the end, from the file $FAILURES, and
+# Report a failure, in bold red. provision also lists it at the end, from the file $FAILURES, and
 # so does its progress display (scripts/tui.py) once it has cleared the output.
 failed() {
 	printf '\e[1;91m== %s ==\e[0m\n' "$*" >&2
 	[ -z "${FAILURES:-}" ] || echo "$*" >>"$FAILURES"
-	[ -z "${START_FRESH_STATUS:-}" ] || echo "failed $*" >>"$START_FRESH_STATUS"
+	[ -z "${PROVISION_STATUS:-}" ] || echo "failed $*" >>"$PROVISION_STATUS"
 }
 
-# Note that a reboot is needed to apply $*. start_fresh lists these at the end, from the file
+# Note that a reboot is needed to apply $*. provision lists these at the end, from the file
 # $REBOOT_REASONS. Scripts that call this exit with status 2.
 reboot_for() {
 	# shellcheck disable=SC2034 # read by the scripts that source this
@@ -33,20 +33,20 @@ reboot_for() {
 	fi
 }
 
-# Start a step: `step [WEIGHT] "What it does"`, which moves start_fresh's progress bar along.
+# Start a step: `step [WEIGHT] "What it does"`, which moves provision's progress bar along.
 # scripts/tui.py reads these lines from the scripts beforehand, in file order, so the description
 # must be a literal string. WEIGHT is its rough share of the time, 1 by default.
 step() {
 	[[ $1 =~ ^[0-9]+$ ]] && shift
-	if [ -n "${START_FRESH_STATUS:-}" ]; then
-		echo "step $*" >>"$START_FRESH_STATUS"
+	if [ -n "${PROVISION_STATUS:-}" ]; then
+		echo "step $*" >>"$PROVISION_STATUS"
 	else
 		say "$*"
 	fi
 }
 
 # All steps are done: the progress bar fills.
-steps_done() { [ -z "${START_FRESH_STATUS:-}" ] || echo "done" >>"$START_FRESH_STATUS"; }
+steps_done() { [ -z "${PROVISION_STATUS:-}" ] || echo "done" >>"$PROVISION_STATUS"; }
 
 # --------------------------------------------------------------------------------------------------
 # What this machine is and has.
@@ -81,12 +81,12 @@ secure_boot() { mokutil --sb-state 2>/dev/null | grep -q 'SecureBoot enabled'; }
 # and /sys/power/disk then reads "[disabled]".
 can_hibernate() { [ -e /sys/power/disk ] && ! grep -q '\[disabled\]' /sys/power/disk; }
 
-# An answer that start_fresh remembered under key $1, empty if none. They are kept out of git, as
+# An answer that provision remembered under key $1, empty if none. They are kept out of git, as
 # some are private (project paths).
 answer() {
 	local -A answers=()
 	# shellcheck source=/dev/null
-	[ -f "$dotfiles/.start_fresh_answers" ] && . "$dotfiles/.start_fresh_answers"
+	[ -f "$dotfiles/.provision_answers" ] && . "$dotfiles/.provision_answers"
 	echo "${answers[$1]:-}"
 }
 

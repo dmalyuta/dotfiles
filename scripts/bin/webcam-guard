@@ -9,7 +9,7 @@
 #   webcam-guard pre|post   systemd sleep hook: keep the port off while asleep, on again after
 #                           resume, so the webcam enumerates fresh instead of resuming in a bad
 #                           state.
-# Installed by start_fresh with the echo-cancelled mic, along with /etc/webcam-guard.conf, which
+# Installed by provision with the echo-cancelled mic, along with /etc/webcam-guard.conf, which
 # has the webcam's USB ids as vendor=... and product=...
 
 vendor='' product=''

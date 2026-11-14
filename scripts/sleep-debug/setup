@@ -9,7 +9,7 @@
 #
 # "off" removes all of it but keeps the logs in /var/log/sleep-debug. "on trace" also traces
 # hibernations with pm_trace, a plain "on" doesn't, and "trace on|off" switches only that.
-# Run by start_fresh, which asks; safe to re-run. Exits with status 2 if the initramfs or the
+# Run by provision, which asks; safe to re-run. Exits with status 2 if the initramfs or the
 # kernel command line changed, which take a reboot.
 #
 # Author: Danylo Malyuta, 2026.

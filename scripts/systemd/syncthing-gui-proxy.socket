@@ -1,5 +1,5 @@
 [Unit]
-Description=Syncthing web UI at http://syncthing.localhost, see start_fresh
+Description=Syncthing web UI at http://syncthing.localhost, see provision
 
 [Socket]
 ListenStream=127.0.0.1:80

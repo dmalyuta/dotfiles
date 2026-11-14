@@ -1,8 +1,8 @@
 # shellcheck shell=bash
-# shellcheck disable=SC2154 # $dotfiles is set by start_fresh
+# shellcheck disable=SC2154 # $dotfiles is set by provision
 #
-# start_fresh updating itself: pull the checkout's branch, and if that brought anything new, run
-# the new start_fresh in place of the running one.
+# provision updating itself: pull the checkout's branch, and if that brought anything new, run
+# the new provision in place of the running one.
 
 # The host of the remote that the checkout's branch pulls from, or nothing for a local path.
 dotfiles_remote_host() {
@@ -54,15 +54,15 @@ pull_with_spinner() {
 	wait "$pid"
 }
 
-# Update the checkout, and run its start_fresh with the arguments given if it changed. Only by
+# Update the checkout, and run its provision with the arguments given if it changed. Only by
 # fast-forward, so local commits and uncommitted changes are never merged or rewritten: a pull
-# that would touch them stops here, as an old start_fresh on a half-updated checkout helps nobody.
-# Offline, the pull is skipped. START_FRESH_UPDATED keeps the new start_fresh, and the one run
+# that would touch them stops here, as an old provision on a half-updated checkout helps nobody.
+# Offline, the pull is skipped. PROVISION_UPDATED keeps the new provision, and the one run
 # under the progress display, from pulling again.
 update_dotfiles() {
 	local offline before pull_log pull_status pulled
-	[ -z "${START_FRESH_UPDATED:-}" ] || return 0
-	export START_FRESH_UPDATED=1
+	[ -z "${PROVISION_UPDATED:-}" ] || return 0
+	export PROVISION_UPDATED=1
 	offline=$(offline_reason)
 	if [ -n "$offline" ]; then
 		update_done ": skipped, offline ($offline)"
@@ -89,14 +89,14 @@ update_dotfiles() {
 			printf '\e[1;91m%s\e[0m\n' "Couldn't pull the latest dotfiles into $dotfiles."
 			echo "git pull --ff-only said:"
 			echo "${pulled:-(nothing)}" | sed 's/^/    /'
-			echo "Resolve that by hand in $dotfiles, then run start_fresh again."
-			echo "To run this checkout as it is, without updating: start_fresh -n"
+			echo "Resolve that by hand in $dotfiles, then run provision again."
+			echo "To run this checkout as it is, without updating: provision -n"
 		} | sed 's/^/     /' >&2
 		exit 1
 	fi
 	if [ "$(git -C "$dotfiles" rev-parse HEAD)" != "$before" ]; then
 		update_done ": updated to $(git -C "$dotfiles" log -1 --format='%h %s')"
-		exec bash "$dotfiles"/start_fresh "$@"
+		exec bash "$dotfiles"/provision "$@"
 	fi
 	update_done ''
 }

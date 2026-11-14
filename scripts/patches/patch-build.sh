@@ -63,7 +63,7 @@ patch_report() {
 	fi
 }
 
-# Save that report next to the build, and list the failure for start_fresh. Args: what failed, the
+# Save that report next to the build, and list the failure for provision. Args: what failed, the
 # command that tries again, what goes wrong without the patch.
 report_patch_failure() {
 	local report=$cache/failure-report.txt

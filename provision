@@ -1,0 +1,261 @@
+#!/bin/bash
+#
+# Set up a fresh Fedora KDE Plasma install. On a new machine, run
+#
+#   curl -fsSL https://raw.githubusercontent.com/dmalyuta/dotfiles/fedora/provision | bash
+#
+# Safe to re-run: every step skips what is already done. See usage below and `man provision`.
+#
+# This file is the steps, in the order they run. The functions that do the work are in
+# scripts/lib/provision, one file per topic, and the last steps run scripts/configure_hardware
+# and scripts/configure_kde.
+#
+# Author: Danylo Malyuta, 2026.
+
+# shellcheck disable=SC2034,SC2154 # shares variables with the libraries it sources
+
+branch=fedora
+repo_https=https://github.com/dmalyuta/dotfiles.git
+repo_ssh=git@github.com:dmalyuta/dotfiles.git
+
+usage() {
+	cat <<'EOF'
+Usage: provision [-c] [-n] [-p] [-h]
+
+Set up a fresh Fedora KDE Plasma install: repositories, packages, apps, the NVIDIA driver, the
+dotfiles, hardware settings and the KDE desktop. Safe to re-run: every step skips what is already
+done. It first pulls the dotfiles and runs the newest provision, unless the machine is offline.
+
+Options:
+  -c  Reuse the answers from the last run instead of asking the setup questions again.
+  -n  Don't pull the dotfiles first: run this checkout as it is.
+  -p  Plain output, without the progress display.
+  -h  Show this help and exit.
+
+On a new machine:
+  curl -fsSL https://raw.githubusercontent.com/dmalyuta/dotfiles/fedora/provision | bash
+
+More in `man provision`.
+EOF
+}
+
+use_cached='' plain='' no_update=''
+while getopts cnph opt; do
+	case $opt in
+	c) use_cached=1 ;;
+	n) no_update=1 ;;
+	p) plain=1 ;;
+	h) usage && exit 0 ;;
+	*) usage >&2 && exit 1 ;;
+	esac
+done
+
+# --------------------------------------------------------------------------------------------------
+# Getting ready: the checkout, its update, and the progress display.
+# --------------------------------------------------------------------------------------------------
+
+# Without a checkout around this script, as under `curl ... | bash`, clone one to
+# ~/Projects/dotfiles (over HTTPS, there being no SSH key yet) and run its provision instead.
+# With the terminal on stdin, which under curl is this script.
+# Through any links to it, like bin/provision, which puts it on PATH.
+dotfiles=$(dirname "$(readlink -f "${BASH_SOURCE[0]:-.}")")
+if [ -z "${BASH_SOURCE[0]:-}" ] || [ ! -e "$dotfiles/.git" ]; then
+	dotfiles=~/Projects/dotfiles
+	if [ ! -e "$dotfiles/.git" ]; then
+		# Fedora doesn't ship git.
+		command -v git >/dev/null || sudo dnf install -y git </dev/tty || exit
+		git clone -b "$branch" "$repo_https" "$dotfiles" </dev/tty || exit
+		# Just cloned, so there is nothing to pull.
+		export PROVISION_UPDATED=1
+	fi
+	exec bash "$dotfiles"/provision "$@" </dev/tty
+fi
+
+# Downloads land here, and the installers that need a manual download are looked for here.
+downloads=~/Downloads
+mkdir -p "$downloads" ~/.local/bin ~/.local/share/applications
+cd "$downloads" || exit
+# Apps installed to ~/.local/bin below are run from here too.
+export PATH=$HOME/.local/bin:$PATH
+
+. "$dotfiles"/scripts/functions.sh
+for lib in "$dotfiles"/scripts/lib/provision/*.sh; do
+	# shellcheck source=/dev/null
+	. "$lib"
+done
+
+[ -n "$no_update" ] || update_dotfiles "$@"
+
+# Run the rest again under scripts/tui.py, which shows the progress through the steps above a box
+# with the tail of the output. It needs pyte, a terminal emulator library, under Fedora's own
+# Python rather than whichever is first on PATH (Anaconda's).
+if [ -z "${PROVISION_TUI:-}" ] && [ -z "$plain" ] && [ -t 0 ] && [ -t 1 ]; then
+	installed python3-pyte || sudo dnf install -y -q python3-pyte </dev/null
+	if /usr/bin/python3 -I -c 'import pyte' 2>/dev/null; then
+		PROVISION_TUI=1 exec /usr/bin/python3 -I "$dotfiles"/scripts/tui.py \
+			--script "$dotfiles"/provision --dotfiles "$dotfiles" -- bash "$dotfiles"/provision "$@"
+	fi
+	say "No progress display, see above." >&2
+fi
+
+# What needs a reboot and what failed, one per line, from here and the scripts run at the end. See
+# reboot_for and failed in scripts/functions.sh.
+REBOOT_REASONS=$(mktemp) FAILURES=$(mktemp)
+export REBOOT_REASONS FAILURES
+trap 'kill ${sudo_keepalive:-} 2>/dev/null; rm -f "$REBOOT_REASONS" "$FAILURES"' EXIT
+
+fedora=$(rpm -E %fedora)
+
+# The last run's answers, kept in the repo but out of git (under its earlier name, before the
+# script was renamed).
+answers_file=$dotfiles/.provision_answers
+[ -f "$answers_file" ] || mv "$dotfiles"/.start_fresh_answers "$answers_file" 2>/dev/null
+declare -A answers=()
+# shellcheck source=/dev/null
+[ -f "$answers_file" ] && . "$answers_file"
+
+# --------------------------------------------------------------------------------------------------
+# The steps.
+# --------------------------------------------------------------------------------------------------
+
+step "Asking the setup questions"
+start_sudo_session
+ask_questions
+declare -p answers >"$answers_file"
+
+step "Adding the software repositories"
+add_repositories
+
+step "Setting up kernel module signing"
+secure_boot && set_up_module_signing
+
+choose_packages
+step 6 "Upgrading the installed packages"
+sudo dnf upgrade -y --refresh
+step 6 "Installing packages"
+install_packages
+if [ -n "${want_openrgb:-}" ]; then
+	step "Installing OpenRGB"
+	install_openrgb
+fi
+# With its drivers installed and the printer off, there is no model to go by: leave it as it is.
+if [ -n "${want_brother:-}" ] && [ -n "$brother_model" ]; then
+	if ! installed brscan-skey; then
+		step "Installing the Brother printer and scanner drivers"
+		install_brother_drivers
+	fi
+	name_brother_devices
+fi
+step 3 "Building the kernel modules"
+build_kernel_modules
+
+step "Adding you to groups and installing Rust"
+add_user_to_groups
+# Rust toolchains, in ~/.cargo and ~/.rustup. rustup-init also adds ~/.cargo/bin to PATH in the
+# shell profiles.
+[ -x ~/.cargo/bin/rustup ] || rustup-init -y
+
+step 3 "Installing and updating the Flatpak apps"
+install_flatpak_apps
+
+if [ -n "${want_superluminal:-}" ]; then
+	step "Installing Superluminal"
+	install_superluminal
+fi
+step "Installing Oh My Posh, Bazelisk and the SN Pro font"
+install_oh_my_posh
+install_bazelisk
+install_sn_pro_font
+if [ -n "${want_pureref:-}" ]; then
+	step "Installing PureRef"
+	install_pureref
+fi
+step "Installing PdfCraft"
+install_pdfcraft
+if [ ! -x ~/.local/bin/raddbg ]; then
+	step 2 "Building RAD Debugger"
+	build_rad_debugger
+fi
+
+step "Setting up SSH and the dotfiles"
+set_up_ssh
+set_up_git_filters
+link_dotfiles
+set_up_bashrc
+
+step "Configuring Git, the fan sensors and OpenRGB"
+# Edit commit messages and the like in VS Code.
+git config --global core.editor "code --wait"
+if [ -n "${want_nct6775:-}" ]; then
+	sudo modprobe nct6775
+	echo nct6775 | write_root_file /etc/modules-load.d/nct6775.conf
+fi
+[ -n "${cc_backup:-}" ] && sudo tar -xvf "$cc_backup" -C /
+[ -n "${want_openrgb:-}" ] && configure_openrgb
+
+if [ -n "${want_obs:-}" ]; then
+	step "Configuring OBS"
+	configure_obs
+	set_up_webcam_mic
+fi
+
+step "Configuring Grafana and keyd, and starting services"
+configure_grafana
+# keyd remaps keys below the display server, see scripts/keyd/keyd.conf. A restart applies a new
+# config.
+install_script_file keyd/keyd.conf /etc/keyd/default.conf && sudo systemctl try-restart keyd
+sudo systemctl enable --now "${services[@]}"
+
+step "Setting up Syncthing"
+set_up_syncthing
+
+step 3 "Installing Anaconda"
+install_anaconda
+
+step 2 "Setting up Wine and PDF-XChange Editor"
+# ntsync-autoload only loads the module from the next boot on, so load it before Wine first runs.
+[ -e /dev/ntsync ] || sudo modprobe ntsync
+# Wine's COM library with a fix that keeps PDF-XChange Editor from crashing. Before Wine first
+# runs here, so all its programs use the patched one.
+"$dotfiles"/scripts/wine/patch-combase
+[ -f ~/.wine/drive_c/windows/Fonts/arial.ttf ] || winetricks -q corefonts
+install_wine_mono
+configure_wine
+set_up_wine_scanners
+[ -n "${want_pdfx:-}" ] && install_pdf_xchange
+[ -x "$pdfx_dir/PDF Editor/PXCEditor.exe" ] && add_pdf_xchange_launcher
+quiet_wine_logs
+
+step "Configuring Flameshot and the system journal"
+configure_flameshot
+set_journal_size
+
+# Low-level hardware setup: GPUs, kernel, sleep and hibernation, laptop quirks, patched libraries.
+bash "$dotfiles"/scripts/configure_hardware
+
+# The laptop's sleep and hibernation debug log, on or off as answered.
+if is_laptop; then
+	sleep_debug=(off)
+	[ -n "${want_sleep_debug:-}" ] && sleep_debug=(on ${want_sleep_debug_trace:+trace})
+	bash "$dotfiles"/scripts/sleep-debug/setup "${sleep_debug[@]}"
+fi
+
+# The KDE desktop.
+bash "$dotfiles"/scripts/configure_kde
+
+# Last, so that the upgrade takes everything along.
+if [ -n "${upgrade_to:-}" ]; then
+	step 6 "Downloading the Fedora upgrade"
+	download_fedora_upgrade
+fi
+
+[ -n "${need_mok_enroll:-}" ] && explain_mok_enrollment
+
+# Discover's update icon doesn't notice updates made outside Discover, so restart it to check again.
+# Last, as its check refreshes the package data, which dnf above would have waited for.
+systemctl --user try-restart app-org.kde.discover.notifier@autostart.service 2>/dev/null
+
+steps_done
+say "Done."
+[ -n "${syncthing_changed:-}" ] && echo "Syncthing is at http://syncthing.localhost/"
+report_and_offer_reboot

@@ -1,7 +1,7 @@
 # shellcheck shell=bash
-# shellcheck disable=SC2034,SC2154 # shares variables with start_fresh and its other libraries
+# shellcheck disable=SC2034,SC2154 # shares variables with provision and its other libraries
 #
-# start_fresh's package steps: software repositories, kernel module signing, the dnf and Flatpak
+# provision's package steps: software repositories, kernel module signing, the dnf and Flatpak
 # packages for this machine (listed in packages.toml), and the kernel modules built for them.
 
 # Enable COPR repo $1 (owner/project) if it isn't yet.
@@ -53,7 +53,7 @@ set_up_module_signing() {
 	sudo dnf install -y akmods kmodtool mokutil openssl
 	sudo test -f "$akmods_cert" || sudo kmodgenca -a
 	write_root_file /etc/dkms/framework.conf.d/akmods-key.conf <<EOF
-# Sign DKMS modules with the akmods key, see start_fresh.
+# Sign DKMS modules with the akmods key, see provision.
 mok_signing_key="/etc/pki/akmods/private/private_key.priv"
 mok_certificate="$akmods_cert"
 EOF
@@ -90,7 +90,7 @@ choose_packages() {
 	# Read with Fedora's own Python: its TOML parser needs 3.11, and nothing else here can read TOML.
 	[ -x /usr/bin/python3 ] || sudo dnf install -y -q python3 </dev/null
 	for key in "${!arrays[@]}"; do
-		list=$(/usr/bin/python3 -I "$dotfiles"/scripts/lib/start_fresh/packages.py \
+		list=$(/usr/bin/python3 -I "$dotfiles"/scripts/lib/provision/packages.py \
 			"$dotfiles"/packages.toml "$key" "${flags[@]}") || exit
 		read -r -a "${arrays[$key]}" <<<"$list"
 	done

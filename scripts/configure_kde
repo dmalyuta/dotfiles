@@ -45,6 +45,14 @@ shadow_desktop_entry cardwire-gui.desktop "s|^Exec=.*|Exec=\"$dotfiles/bin/cardw
 # every Exec of its desktop entry (which Meta+B uses too). Restart Brave for it to take effect.
 shadow_desktop_entry brave-browser.desktop \
 	's|^Exec=/usr/bin/brave-browser-stable|& --touch-slop-distance=4|'
+# Obsidian is Electron, so the same touch slop trails its panning too. The flatpak's launcher
+# reads extra flags from user-flags.conf, one per line, which covers every way it's started.
+# Restart Obsidian for it to take effect.
+obsidian_flags=~/.var/app/md.obsidian.Obsidian/config/obsidian/user-flags.conf
+mkdir -p "$(dirname "$obsidian_flags")"
+touch "$obsidian_flags"
+sed -i '/^--touch-slop-distance=/d' "$obsidian_flags"
+echo --touch-slop-distance=4 >>"$obsidian_flags"
 
 step "Setting the KDE global shortcuts"
 set_global_shortcuts

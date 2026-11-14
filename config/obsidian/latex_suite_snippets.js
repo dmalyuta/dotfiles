@@ -333,6 +333,7 @@ export default [
         options: "mA",
         excludedMacros: ["ce"],
     },
+    { trigger: "iff", replacement: "\\Leftrightarrow", options: "mA" },
     { trigger: "!>", replacement: "\\mapsto", options: "mA" },
     { trigger: "=>", replacement: "\\implies", options: "mA" },
     { trigger: "=<", replacement: "\\impliedby", options: "mA" },
@@ -744,6 +745,12 @@ export default [
         replacement: "\\left|$0\\right|",
         options: "mA",
         description: "Absolute value",
+    },
+    {
+        trigger: "to",
+        replacement: "\\to ",
+        options: "mA",
+        description: "To",
     },
 
     // Control systems.

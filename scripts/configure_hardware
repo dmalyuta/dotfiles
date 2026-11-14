@@ -421,6 +421,8 @@ if is_laptop; then
 	install_sleep_hook sleep-hooks/cs35l41-hibernate
 	# A smaller hibernation image, compressed on more threads.
 	install_sleep_hook sleep-hooks/hibernate-image
+	# Fans off while it hibernates.
+	install_sleep_hook sleep-hooks/hibernate-quiet
 	can_hibernate && set_hibernation_compression_threads
 	can_hibernate && skip_boot_menu_on_resume
 else

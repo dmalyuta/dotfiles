@@ -1,0 +1,104 @@
+#!/bin/sh
+# Keep the fans off while the laptop hibernates. Without this they spin up a few seconds after the
+# click and run until the power goes off, some 30-50 s later. Measured 2026-11-14 with a load like
+# a hibernation's, in the Balanced profile:
+# - What heats the CPU is not the image's compression but the steps before it, which run on one
+#   thread (making room for the image, freezing the graphics driver: 5-20 s). One busy thread
+#   boosts a fast core to 5.1 GHz, and that core goes from 43 to 86 C in 10 s, which takes the
+#   fans to 3700 rpm. The compression on 12 threads at 4.1 GHz then runs cooler, at 80 C.
+# - At 3.3 GHz, one thread settles at 56 C, and 8 threads pass 74 C within 6 s.
+# - The fans start at 47 C, with the CPU idling at 42-44 C, and once on they don't stop until it
+#   is back under 42 C: they were still at 2500 rpm 30 s after the load ended.
+# So, from just before a hibernation until after it:
+# - Cap the CPU's clock at its nominal frequency (2.0 GHz here, what it runs at with boost off).
+#   This makes the hibernation slower: the compression takes about twice as long (5.5 s before),
+#   and the single-threaded steps up to 2.5 times, as far as they wait on the CPU.
+# - Hold the fans off below FAN_START, through the ASUS fan curve (other laptops only get the
+#   cap). Above it they run as fast as in the Balanced profile's curve or faster, so a
+#   hibernation that hangs is still cooled.
+#
+# A systemd sleep hook, installed by scripts/configure_hardware. It runs next to the other hooks,
+# not before them, and after the NVIDIA driver's own preparation (nvidia-hibernate.service, ~3 s).
+#
+# Author: Danylo Malyuta, 2026.
+
+# The clock's cap in MHz. Empty: the CPU's nominal frequency.
+MAX_MHZ=
+# The fans' curve during a hibernation, as "temperature:pwm" points (pwm 0-255, see
+# scripts/bin/asus-fan-curves for the rpm): off below FAN_START, the first point after the 30 C one.
+FAN_START=75
+FAN_CURVE="30:0 $FAN_START:67 80:87 84:102 88:123 92:123 96:123 100:123"
+
+# What to put back after the hibernation, as "<file> <value>" lines in the order to write them.
+# /run is part of the hibernation image, so this is there after the resume too.
+state=/run/hibernate-quiet
+action=${SYSTEMD_SLEEP_ACTION:-${2:-}}
+
+log() { logger -t hibernate-quiet -- "$*"; }
+
+# Write $2 to the file $1, noting its value now so that `restore` puts it back.
+set_value() {
+	old=$(cat "$1" 2>/dev/null) || return 1
+	[ "$old" = "$2" ] && return 0
+	echo "$1 $old" >>"$state"
+	echo "$2" 2>/dev/null >"$1"
+}
+
+restore() {
+	[ -f "$state" ] || return 0
+	while read -r file value; do
+		echo "$value" 2>/dev/null >"$file" || log "couldn't set $file back to $value"
+	done <"$state"
+	rm -f "$state"
+}
+
+cap_clock() {
+	mhz=${MAX_MHZ:-$(cat /sys/devices/system/cpu/cpu0/acpi_cppc/nominal_freq 2>/dev/null)}
+	[ "${mhz:-0}" -gt 0 ] || return 0
+	for policy in /sys/devices/system/cpu/cpufreq/policy*; do
+		# Never raise a limit that something else has set lower.
+		[ "$(cat "$policy/scaling_max_freq")" -gt $((mhz * 1000)) ] || continue
+		set_value "$policy/scaling_max_freq" $((mhz * 1000)) ||
+			log "couldn't cap ${policy##*/} at $mhz MHz"
+	done
+}
+
+# The kernel's ASUS fan curves: pwm1 is the CPU fan, pwm2 the GPU fan. A point written there only
+# reaches the fan controller when the curve is enabled again, which is what the last write is for.
+hold_fans() {
+	for hwmon in /sys/class/hwmon/hwmon*; do
+		[ "$(cat "$hwmon/name" 2>/dev/null)" = asus_custom_fan_curve ] && break
+		hwmon=
+	done
+	[ -n "$hwmon" ] || return 0
+	for fan in 1 2; do
+		[ -e "$hwmon/pwm${fan}_enable" ] || continue
+		enabled=$(cat "$hwmon/pwm${fan}_enable")
+		point=1
+		for at in $FAN_CURVE; do
+			set_value "$hwmon/pwm${fan}_auto_point${point}_temp" "${at%:*}" &&
+				set_value "$hwmon/pwm${fan}_auto_point${point}_pwm" "${at#*:}" ||
+				log "couldn't set point $point of fan $fan's curve"
+			point=$((point + 1))
+		done
+		# Listed last, so that the restored points are sent to the controller, or, if no custom
+		# curve was in use, the firmware's own curve comes back (2).
+		echo "$hwmon/pwm${fan}_enable $enabled" >>"$state"
+		echo 1 2>/dev/null >"$hwmon/pwm${fan}_enable" ||
+			log "couldn't enable fan $fan's curve: the fans may run"
+	done
+}
+
+case $1/$action in
+pre/hibernate | pre/hybrid-sleep)
+	# After a hibernation whose "post" never ran, start from the settings it left to restore.
+	restore
+	: >"$state"
+	cap_clock
+	hold_fans
+	;;
+post/*)
+	restore
+	;;
+esac
+exit 0

@@ -1,7 +1,7 @@
 #!/bin/sh
 # Before each hibernation, make its image smaller and cheaper to build. The time and battery a
 # hibernation costs scale with the memory the kernel has to pack and write (measured 2026-11 with
-# 14.6 GB in use: 9 s making room, then ~15 s of compression, which is when the fans ramp up).
+# 14.6 GB in use: 9 s making room, then ~15 s of compression; for the fans, see hibernate-quiet).
 # - Drop the file cache: copies of files that are on disk anyway, some 3-4 GB that would otherwise
 #   be compressed, written, and read back at resume. Only pages no program has mapped go, so
 #   running programs keep their code in memory; files are simply read again when next needed.

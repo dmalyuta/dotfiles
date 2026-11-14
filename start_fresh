@@ -21,14 +21,16 @@ raw_base=https://raw.githubusercontent.com/dmalyuta/dotfiles/$branch
 
 usage() {
 	cat <<'EOF'
-Usage: start_fresh [-c] [-p] [-h]
+Usage: start_fresh [-c] [-n] [-p] [-h]
 
 Set up a fresh Fedora KDE Plasma install: repositories, packages, apps, the NVIDIA driver, the
 dotfiles, hardware settings and the KDE desktop. Safe to re-run: every step skips what is already
-done.
+done. Run from a checkout of the dotfiles, it first pulls the checkout's branch and runs the
+newest start_fresh, unless the machine is offline.
 
 Options:
   -c  Reuse the answers from the last run instead of asking the setup questions again.
+  -n  Don't pull the dotfiles first: run this checkout as it is.
   -p  Plain output, without the progress display.
   -h  Show this help and exit.
 
@@ -39,10 +41,11 @@ More in `man start_fresh`.
 EOF
 }
 
-use_cached='' plain=''
-while getopts cph opt; do
+use_cached='' plain='' no_update=''
+while getopts cnph opt; do
 	case $opt in
 	c) use_cached=1 ;;
+	n) no_update=1 ;;
 	p) plain=1 ;;
 	h) usage && exit 0 ;;
 	*) usage >&2 && exit 1 ;;
@@ -78,6 +81,107 @@ if [ "$dotfiles" = "$this_script_dir" ]; then
 else
 	functions=$(curl -fsSL "$raw_base/scripts/functions.sh") || exit
 	eval "$functions"
+fi
+
+# Update itself: pull the checkout's branch, and if that brought anything new, run the new
+# start_fresh in place of this one. Only by fast-forward, so local commits and uncommitted changes
+# are never merged or rewritten: changes to files the pull doesn't touch are fine, anything else
+# stops here, as running an old start_fresh on a half-updated checkout helps nobody. Not on a new
+# machine, where the checkout is cloned below. START_FRESH_UPDATED keeps the new start_fresh (and
+# the one run under the progress display) from pulling again.
+#
+# Offline, the pull is skipped and this checkout runs as it is. Offline means that NetworkManager
+# reports no connection to the internet, or that the remote's host has no address; a remote that
+# is a local path is always there.
+
+# The host of the remote that the checkout's branch pulls from, or nothing for a local path.
+dotfiles_remote_host() {
+	local remote url
+	remote=$(git -C "$dotfiles" config "branch.$(git -C "$dotfiles" branch --show-current).remote")
+	url=$(git -C "$dotfiles" remote get-url "${remote:-origin}" 2>/dev/null) || return 0
+	case $url in
+	*://*) url=${url#*://} && url=${url%%/*} && url=${url##*@} && echo "${url%%:*}" ;;
+	/* | ./* | ../*) ;;
+	*:*) url=${url%%:*} && echo "${url##*@}" ;;
+	esac
+}
+
+# Print why the remote can't be reached, if the reason is that there is no network.
+offline_reason() {
+	local host
+	case $(nmcli -t -f CONNECTIVITY general status 2>/dev/null) in
+	none | limited | portal) echo "no internet connection" && return ;;
+	esac
+	host=$(dotfiles_remote_host)
+	[ -z "$host" ] || getent ahosts "$host" >/dev/null || echo "can't find $host"
+}
+
+# The update's one line of output: an icon in the color $1, "Checking for updates", and $3 after
+# it. Drawn over the line the cursor is on, with the icons and colors of the progress display
+# (scripts/tui.py) and in its columns: its spinner while the pull runs, then the mark it ends a
+# run with.
+update_line() { printf '\r   %b%s\e[0m \e[1mChecking for updates\e[0m%s\e[K' "$1" "$2" "$3"; }
+update_done() { update_line '\e[1;92m' ✓ "$1" && echo; }
+
+# Pull, with the output in the file $1, and spin meanwhile. Without prompts, which the spinner
+# would draw over: if git or ssh needs to ask for something, this fails and says so.
+pull_with_spinner() {
+	local pid frame=0 spinner=(⠋ ⠙ ⠹ ⠸ ⠼ ⠴ ⠦ ⠧ ⠇ ⠏)
+	GIT_TERMINAL_PROMPT=0 GIT_SSH_COMMAND="${GIT_SSH_COMMAND:-ssh} -o BatchMode=yes" \
+		git -C "$dotfiles" pull --ff-only >"$1" 2>&1 &
+	pid=$!
+	if [ -t 1 ]; then
+		# Hide the cursor while it spins, and give it back if interrupted.
+		printf '\e[?25l'
+		trap 'printf "\e[?25h\n"; exit 130' INT
+		while kill -0 "$pid" 2>/dev/null; do
+			update_line '\e[94m' "${spinner[frame++ % ${#spinner[@]}]}" ''
+			sleep 0.08
+		done
+		trap - INT
+		printf '\e[?25h'
+	fi
+	wait "$pid"
+}
+
+if [ "$dotfiles" = "$this_script_dir" ] && [ -z "$no_update" ] && [ -z "${START_FRESH_UPDATED:-}" ]; then
+	export START_FRESH_UPDATED=1
+	offline=$(offline_reason)
+	if [ -n "$offline" ]; then
+		update_done ": skipped, offline ($offline)"
+	else
+		before=$(git -C "$dotfiles" rev-parse HEAD 2>/dev/null)
+		pull_log=$(mktemp)
+		pull_with_spinner "$pull_log"
+		pull_status=$?
+		if [ $pull_status -ne 0 ] &&
+			grep -qE 'Permission denied|Host key verification failed|terminal prompts disabled' "$pull_log"; then
+			# It needed to ask, for a key's passphrase for instance. Again with prompts, and so
+			# without the spinner.
+			[ -t 1 ] && update_line '\e[94m' "⠋" '' && echo
+			git -C "$dotfiles" pull --ff-only >"$pull_log" 2>&1
+			pull_status=$?
+		fi
+		pulled=$(cat "$pull_log")
+		rm -f "$pull_log"
+		if [ $pull_status -ne 0 ]; then
+			update_line '\e[1;91m' ✗ '' && echo
+			# Under the line's text.
+			{
+				printf '\e[1;91m%s\e[0m\n' "Couldn't pull the latest dotfiles into $dotfiles."
+				echo "git pull --ff-only said:"
+				echo "${pulled:-(nothing)}" | sed 's/^/    /'
+				echo "Resolve that by hand in $dotfiles, then run start_fresh again."
+				echo "To run this checkout as it is, without updating: start_fresh -n"
+			} | sed 's/^/     /' >&2
+			exit 1
+		fi
+		if [ "$(git -C "$dotfiles" rev-parse HEAD)" != "$before" ]; then
+			update_done ": updated to $(git -C "$dotfiles" log -1 --format='%h %s')"
+			exec bash "$this_script_dir/${BASH_SOURCE[0]##*/}" "$@"
+		fi
+		update_done ''
+	fi
 fi
 
 # Run the rest again under scripts/tui.py, which shows the progress through the steps above a box

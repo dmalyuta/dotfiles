@@ -3,8 +3,8 @@
 
 Usage: tui.py --script FILE [--dotfiles DIR] [--raw-base URL] [--log FILE] -- COMMAND...
 
-Drawn in place below what the terminal already shows: a spinner and a bar of how far through the
-steps the script is, the current step, and a box with the tail of the command's output. The command
+Drawn in place below what the terminal already shows: a spinner and the current step, a bar of how far through
+the steps the script is, and a box with the tail of the command's output. The command
 runs in a pseudo-terminal the size of that box, so prompts, progress bars and colors work as usual,
 and keys go straight to it. pyte keeps the box's screen.
 
@@ -207,7 +207,7 @@ class Layout:
 
     def __init__(self, rows, cols):
         self.rows, self.cols = rows, cols
-        self.box_top = 2  # 0-based: bar, description, then the box.
+        self.box_top = 2  # 0-based: description, bar, then the box.
         self.box_height = max(5, min(rows * 3 // 4, rows - self.box_top))
         self.inner_lines = self.box_height - 2
         self.inner_cols = max(10, cols - 4)
@@ -221,12 +221,14 @@ def header(progress, layout, frame, state):
         icon = f"{GREEN}✓{RESET}"
     else:
         icon = f"{RED}✗{RESET}"
+    # The percentage sits left of the bar, its "%" under the icon, so the bar starts under the
+    # description.
     percent = int(progress.shown * 100)
-    width = max(5, cols - 10)
-    line1 = f" {icon} {bar(progress.shown, width)} {percent:3d}%"
-    description = progress.description[: cols - 4]
+    width = max(5, cols - 7)
+    description = progress.description[: cols - 6]
     style = RED if state == "failed" else BOLD
-    line2 = f"   {style}{description}{RESET}"
+    line1 = f"   {icon} {style}{description}{RESET}"
+    line2 = f"{percent:3d}% {bar(progress.shown, width)}"
     return line1, line2
 
 
@@ -252,7 +254,8 @@ class Rows:
 
 def box_lines(rows, layout, title, lines=None):
     width = layout.cols - 2
-    label = f"─ {title} " if len(title) + 4 < width else ""
+    # Three dashes, so that the title starts under the step's description and the bar.
+    label = f"─── {title} " if len(title) + 6 < width else ""
     top = f"{BORDER}╭{label}{'─' * (width - len(label))}╮{RESET}"
     bottom = f"{BORDER}╰{'─' * width}╯{RESET}"
     side = f"{BORDER}│{RESET}"
@@ -284,7 +287,7 @@ def main():
     parser.add_argument("--dotfiles", default="")
     parser.add_argument("--raw-base", default="")
     parser.add_argument("--log", default=os.path.expanduser("~/.cache/start_fresh.log"))
-    parser.add_argument("--title", default="start_fresh")
+    parser.add_argument("--title", default="Console output")
     parser.add_argument("command", nargs="+")
     args = parser.parse_args()
 
@@ -516,12 +519,12 @@ def main():
         line1, line2 = header(progress, layout, 0, state)
         lines = [line1, line2] + box_lines(rows, layout, args.title, used)
     if failures:
-        lines.append(f" {RED}✗ Encountered errors:{RESET}")
-        lines += [f"   - {failure}" for failure in failures]
+        lines.append(f"   {RED}✗ Encountered errors:{RESET}")
+        lines += [f"     - {failure}" for failure in failures]
     elif state == "done":
-        lines.append(f" {GREEN}✓{RESET} {BOLD}Finished successfully{RESET}")
+        lines.append(f"   {GREEN}✓{RESET} {BOLD}Finished successfully{RESET}")
     log_path = args.log.replace(os.path.expanduser("~"), "~", 1)
-    lines.append(f"Full output: {log_path}")
+    lines.append(f"     {BORDER}Full output: {log_path}{RESET}")
     write(to_top() + "\x1b[J" + "\r\n".join(lines) + "\r\n")
     sys.exit(exit_code)
 

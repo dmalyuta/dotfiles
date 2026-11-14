@@ -4,6 +4,7 @@ start_fresh \- set up a fresh Fedora KDE Plasma install
 .SH SYNOPSIS
 .B start_fresh
 .RB [ \-c ]
+.RB [ \-n ]
 .RB [ \-p ]
 .RB [ \-h ]
 .PP
@@ -25,12 +26,23 @@ On a new machine, run it through
 .B curl
 as shown above. It then clones the dotfiles repository to
 .IR ~/Projects/dotfiles .
-Run from a checkout of the repository, it uses that checkout instead.
+Run from a checkout of the repository, it uses that checkout instead, and updates it first: it
+pulls the checkout's branch from its remote (by fast-forward only) and, if that brought anything
+new, runs the new
+.B start_fresh
+in place of itself. If the pull fails, for instance because it would overwrite uncommitted changes,
+or the branch has diverged from the remote, it stops and shows what git said; resolve that by hand
+and run it again, or pass
+.BR \-n .
+Offline, it says so, skips the pull and runs the checkout as it is.
 .SH OPTIONS
 .TP
 .B \-c
 Reuse the answers from the last run instead of asking the setup questions again. A question that
 was never answered is still asked.
+.TP
+.B \-n
+Don't pull the dotfiles first: run this checkout as it is.
 .TP
 .B \-p
 Plain output: print everything as is, without the progress display.

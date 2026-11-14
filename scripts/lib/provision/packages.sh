@@ -149,7 +149,9 @@ build_kernel_modules() {
 		installed dkms && sudo dkms autoinstall -k "$newest_kernel"
 	fi
 	if installed akmods; then
-		sudo akmods --kernels "$newest_kernel"
+		# Without the line that says the modules are already there, when nothing is built.
+		sudo akmods --kernels "$newest_kernel" 2>&1 |
+			grep --line-buffered -v '^Checking kmods exist for .*OK'
 		if has_nvidia && ! modinfo -k "$newest_kernel" nvidia >/dev/null 2>&1; then
 			failed "The NVIDIA driver failed to build, see /var/cache/akmods/nvidia."
 		fi

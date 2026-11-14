@@ -1,7 +1,8 @@
 # shellcheck shell=bash
 # shellcheck disable=SC2034,SC2154 # shares variables with scripts/configure_kde and its other libraries
 #
-# configure_kde's input devices: keyboard, cursor, pointer devices and the on-screen keyboard.
+# configure_kde's input devices and screens: keyboard, cursor, pointer devices, screen brightness and
+# the on-screen keyboard.
 
 # Since Plasma 6.7, KWin's Vulkan path keeps a context on the NVIDIA dGPU, which then never
 # suspends. KWin renders with OpenGL on the iGPU anyway. Plasma reads this file at login.
@@ -43,6 +44,17 @@ configure_pointer_devices() {
 			kconf "${device[@]}" --key PointerAcceleration -- -0.325
 		fi
 	done < <(pointer_devices)
+}
+
+# No automatic screen brightness (System Settings > Display): on each screen that has it on. KWin
+# keeps the setting per screen.
+turn_off_auto_brightness() {
+	local output
+	while read -r output; do
+		kscreen-doctor "output.$output.autoBrightness.disable" >/dev/null
+	done < <(kscreen-doctor -o 2>/dev/null | sed 's/\x1b\[[0-9;]*m//g' | awk '
+		$1 == "Output:" { name = $3 }
+		/Automatic brightness: supported, enabled/ { print name }')
 }
 
 # The on-screen keyboard, on a machine that folds into a tablet. KWin would pop it up over the app

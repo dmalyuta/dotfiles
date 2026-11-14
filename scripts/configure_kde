@@ -31,8 +31,7 @@ configure_pointer_devices
 # see scripts/patches/kwin-touchpad-gestures.patch. KWin reads it at the reconfigure below.
 kconf --file kwinrc --group TouchpadGestures --key StepDistance 2.5
 kconf --file kwinrc --group TouchpadGestures --key RowDistance 2.5
-compgen -G '/sys/class/backlight/*' >/dev/null &&
-	say "If System Settings > Display has an auto-brightness toggle, turn it off."
+turn_off_auto_brightness
 set_up_onscreen_keyboard
 
 step "Setting up the KDE app hotkeys"

@@ -1,19 +1,32 @@
 #!/bin/sh
-# Before each hibernation, make its image smaller and cheaper to build: the time and battery a
-# hibernation costs scale with the memory the kernel has to pack and write.
+# Before each hibernation, make its image smaller and cheaper to build, and make sure it can't
+# fail for lack of memory: the time and battery a hibernation costs scale with the memory the
+# kernel has to pack and write.
 # - Drop the file cache: copies of files that are on disk anyway, which would otherwise be
 #   compressed, written, and read back at resume. Only pages no program has mapped go, so running
 #   programs keep their code in memory.
-# - Raise the kernel's image size target (2/5 of RAM by default) to half of RAM less 2 GB. To get
-#   under the target the kernel swaps programs' memory out on a single thread, which is slower
-#   than packing those pages into the image. Not higher: the snapshot is a copy that must fit in
-#   the other half of RAM, and the image still grows after the kernel has made room for it, as
-#   the graphics drivers move their memory into RAM when they freeze. With all of RAM as the
-#   target, a hibernation with half of RAM in use failed for lack of memory.
+# - Leave room for the graphics driver. The kernel sizes the image first (preallocation) and only
+#   then freezes the devices, and amdgpu's freeze moves its VRAM into RAM and then copies all its
+#   buffers in RAM (GTT) into shmem (ttm_device_prepare_hibernation). That adds up to
+#   2 x VRAM + GTT in use to the image after it was sized, and each added page also needs a free
+#   page for its copy. With no room for it, the copy runs out of memory ("Error -12 creating
+#   image") and the hibernation is abandoned: on 2026-11-15 it grew by 2.4 GB.
+#   The kernel's knob for this is reserved_size (memory drivers allocate while freezing, 1 MB by
+#   default): it caps the image so that at least 4 x reserved_size stays free beyond the kernel's
+#   own reserve (totalreserve_pages), see hibernate_preallocate_memory in kernel/power/snapshot.c.
+#   So reserved_size is half the GPU's growth, enough for the pages and their copies, plus a
+#   quarter of a slack that covers the kernel reserve (which a hibernation that has to swap out
+#   memory can eat into) and 512 MB for GPU memory allocated after this hook and for the buffers
+#   that compress and write the image.
+# - Set the image size target to all of RAM, so that the cap above is the only limit: the kernel
+#   swaps programs' memory out only when the image wouldn't otherwise fit. Swapping out runs on a
+#   single thread, which is slower than packing those pages into the image.
 # - Tell GRUB to skip its menu at the next boot, the one that resumes this hibernation, which
 #   otherwise waits out the menu's timeout with the CPU at full power. GRUB clears the flag
 #   itself (see scripts/grub/15_hibernate_resume); it is cleared here too after a hibernation that
 #   came back without a boot, such as a failed one.
+# After the resume, the log says how much the image grew while devices froze, against the room
+# left for it.
 #
 # A systemd sleep hook, installed by scripts/configure_hardware, which also raises the number of
 # compression threads (hibernate_compression_threads).
@@ -28,10 +41,28 @@ grub_flag() {
 	grub2-editenv - "$@" 2>/dev/null || log "couldn't $1 GRUB's hibernated flag (grub2-editenv)"
 }
 
+# Report the growth of the image between its preallocation and its creation, from the kernel log
+# of the last hibernation.
+report_growth() {
+	dmesg 2>/dev/null | awk -v reserve="$(cat /sys/power/reserved_size)" '
+		/hibernation: Allocated [0-9]+ pages for snapshot/ {
+			for (i = 1; i <= NF; i++) if ($i == "Allocated") alloc = $(i + 1)
+		}
+		/hibernation: Need to copy [0-9]+ pages/ {
+			for (i = 1; i <= NF; i++) if ($i == "copy") copy = $(i + 1)
+		}
+		END {
+			if (alloc == "" || copy == "") exit
+			printf "image grew by %d MB while devices froze, room was left for %d MB\n",
+				(copy - alloc) * 4096 / 2^20, 2 * reserve / 2^20
+		}' | while read -r line; do log "$line"; done
+}
+
 case $1/${SYSTEMD_SLEEP_ACTION:-${2:-}} in
 pre/hibernate | pre/hybrid-sleep) ;;
 post/hibernate | post/hybrid-sleep)
 	grub_flag unset hibernated
+	report_growth
 	exit 0
 	;;
 *) exit 0 ;;
@@ -45,6 +76,33 @@ before=$(cached)
 # Dirty pages can't be dropped, so write them out first.
 sync
 echo 1 >/proc/sys/vm/drop_caches
-awk '/^MemTotal:/ {print int($2 * 512 - 2 * 2 ^ 30)}' /proc/meminfo >/sys/power/image_size
 log "dropped $((before - $(cached))) MB of file cache, $(cached) MB left"
+
+# What the graphics drivers can add to the image while freezing: 2 x VRAM + GTT in use, summed
+# over the GPUs that report them (amdgpu).
+gpu=0
+for d in /sys/class/drm/card*/device; do
+	[ -r "$d/mem_info_vram_total" ] && [ -r "$d/mem_info_gtt_used" ] || continue
+	gpu=$((gpu + 2 * $(cat "$d/mem_info_vram_total") + $(cat "$d/mem_info_gtt_used")))
+done
+# The kernel's own reserve (totalreserve_pages): per zone, the high watermark plus the largest
+# protection against allocations from higher zones.
+kernel=$(awk '
+	/^Node/ { zone = $4 }
+	/^ +high / { high[zone] = $2 }
+	/protection:/ {
+		gsub(/[(),]/, " ")
+		max = 0
+		for (i = 2; i <= NF; i++) if ($i + 0 > max) max = $i + 0
+		protection[zone] = max
+	}
+	END {
+		for (zone in high) total += high[zone] + protection[zone]
+		print total * 4096
+	}' /proc/zoneinfo)
+reserve=$((gpu / 2 + (kernel + 512 * 1024 * 1024) / 4))
+echo "$reserve" >/sys/power/reserved_size
+awk '/^MemTotal:/ {print $2 * 1024}' /proc/meminfo >/sys/power/image_size
+log "left $((2 * reserve >> 20)) MB for the image to grow by while devices freeze" \
+	"(graphics $((gpu >> 20)) MB, kernel reserve $((kernel >> 20)) MB)"
 exit 0

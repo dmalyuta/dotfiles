@@ -48,6 +48,31 @@ keep_hardware_clock_in_utc() {
 	fi
 }
 
+# Shut down or reboot within about half a minute whatever hangs (it takes 4 s when nothing does).
+# When the NVIDIA driver breaks, what uses the GPU (cardwired, nvidia-powerd, KWin) gets stuck in
+# the kernel where no signal reaches it, and systemd waited out every stage of stopping each: 4 min
+# for cardwired alone, then 90 s more before the power-off. So:
+# - 15 s after it starts, systemd stops waiting for units and goes on to power off (its own
+#   fallback, which it ships set to 30 min): it still ends every process, syncs and unmounts.
+# - A unit without a timeout of its own has 10 s to stop, not 45 s: the power-off waits that long
+#   twice for processes that outlive their signals.
+limit_shutdown_time() {
+	local target changed=
+	write_root_file /etc/systemd/system.conf.d/50-fast-shutdown.conf <<EOF && changed=1
+# A hung service can't hold up a shutdown, see limit_shutdown_time in the dotfiles.
+[Manager]
+DefaultTimeoutStopSec=10s
+EOF
+	for target in poweroff reboot halt kexec; do
+		write_root_file /etc/systemd/system/$target.target.d/50-fast-shutdown.conf <<EOF && changed=1
+# A hung service can't hold up a shutdown, see limit_shutdown_time in the dotfiles.
+[Unit]
+JobTimeoutSec=15s
+EOF
+	done
+	[ -z "$changed" ] || sudo systemctl daemon-reload
+}
+
 # Remove what earlier versions installed and newer ones replaced: udev rules for the USB wake
 # sources, and the webcam guard under its first name.
 remove_replaced_files() {

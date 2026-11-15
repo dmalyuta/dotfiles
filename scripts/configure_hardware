@@ -36,6 +36,7 @@ installed cardwire && has_nvidia &&
 step "Configuring the kernel"
 hide_rdseed_boot_message
 keep_hardware_clock_in_utc
+limit_shutdown_time
 
 step "Configuring USB devices and wake sources"
 # USB keyboards wake it, mice don't, see the hook.
@@ -65,7 +66,8 @@ if is_laptop; then
 	install_sleep_hook sleep-hooks/sleep-stats
 	# Keep the speaker amps from deadlocking a hibernation at power-off.
 	install_sleep_hook sleep-hooks/cs35l41-hibernate
-	# A smaller hibernation image, compressed on more threads.
+	# A smaller hibernation image, compressed on more threads, with room for the GPU so it never runs
+	# out of memory.
 	install_sleep_hook sleep-hooks/hibernate-image
 	# Fans off while it hibernates.
 	install_sleep_hook sleep-hooks/hibernate-quiet

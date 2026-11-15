@@ -82,7 +82,7 @@ snapshot() {
 	echo "## battery"
 	grep -H . "$bat"/{status,capacity,energy_now,power_now} /sys/class/power_supply/AC*/online 2>/dev/null
 	echo "## /sys/power"
-	grep -H . /sys/power/{disk,mem_sleep,image_size,pm_trace} /sys/power/suspend_stats/* 2>/dev/null
+	grep -H . /sys/power/{disk,mem_sleep,image_size,reserved_size,pm_trace} /sys/power/suspend_stats/* 2>/dev/null
 	echo "## memory"
 	free -m
 	swapon --show
@@ -290,12 +290,23 @@ PY
 	rm -rf "$tmp"
 }
 
+# Whether a kernel crash's log waits in EFI variables. Ones without content don't count: at a
+# fresh boot systemd-pstore has just moved the log out (collect_archived_crash's), which deletes
+# the variables, but efivarfs goes on listing them, empty.
+has_crash_vars() {
+	local v
+	for v in $crash_vars; do
+		[ "$(head -c 5 "$v" 2>/dev/null | wc -c)" -ge 5 ] && return 0
+	done
+	return 1
+}
+
 # Move the log of a kernel crash saved in EFI variables (the watchdog's) into the log. The kernel
 # lists them in pstorefs when it is mounted, so mount it again for ones saved since the boot.
 # Failing that, decode the variables directly. They are deleted only once the log is saved.
 collect_crash() {
 	local f parts
-	ls $crash_vars >/dev/null 2>&1 || return 0
+	has_crash_vars || return 0
 	umount "$pstore" 2>/dev/null
 	mount -t pstore pstore "$pstore" 2>/dev/null
 	parts=$(ls -d "$pstore"/dmesg-* 2>/dev/null)

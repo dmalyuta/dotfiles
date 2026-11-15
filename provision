@@ -138,6 +138,7 @@ if [ -n "${want_openrgb:-}" ]; then
 	step "Installing OpenRGB"
 	install_openrgb
 fi
+add_pdf_printer
 # With its drivers installed and the printer off, there is no model to go by: leave it as it is.
 if [ -n "${want_brother:-}" ] && [ -n "$brother_model" ]; then
 	if ! installed brscan-skey; then

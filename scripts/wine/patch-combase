@@ -89,12 +89,22 @@ build() {
 	arch_list=$(printf '%s\n' "${archs[@]%-windows}" | paste -sd,)
 	# Only the DLL, so without the libraries the rest of Wine uses.
 	mkdir -p "$tmp/build"
-	if ! (cd "$tmp/build" &&
-		"$src"/configure --enable-archs="$arch_list" --disable-tests --without-x --without-freetype &&
-		make -j"$(nproc)" "${targets[@]}") >>"$log" 2>&1; then
+	progress_start
+	if ! (cd "$tmp/build" && "$src"/configure --enable-archs="$arch_list" --disable-tests \
+		--without-x --without-freetype) >>"$log" 2>&1; then
+		progress_stop
+		failure="Couldn't configure Wine $ver's build."
+		return 1
+	fi
+	# Wine's build doesn't say how far it is: go by the commands it has run, out of them all.
+	progress_stop
+	progress_start "$(make -C "$tmp/build" -n "${targets[@]}" 2>/dev/null | wc -l)"
+	if ! make -C "$tmp/build" -j"$(nproc)" "${targets[@]}" >>"$log" 2>&1; then
+		progress_stop
 		failure="Wine $ver's combase.dll doesn't build with $(basename "$patch_file")."
 		return 1
 	fi
+	progress_done
 	for d in "${dlls[@]}"; do
 		install -Dm644 "$tmp/build/dlls/combase/$(arch_of "$d")/combase.dll" \
 			"$cache/$(arch_of "$d")/combase.dll" || return

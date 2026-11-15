@@ -1,8 +1,23 @@
 # shellcheck shell=bash
 # shellcheck disable=SC2154 # $brother_model and $brother_ip are set by ask_questions
 #
-# provision's Brother network printer and scanner: finding it, its drivers, and its name in the
-# print and scan dialogs.
+# provision's printers: the "Print to PDF" one, and the Brother network printer and scanner
+# (finding it, its drivers, and its name in the print and scan dialogs).
+
+# A printer that saves what it is sent as a PDF, for programs without a print-to-file of their own:
+# Wine's, like PDF-XChange Editor, list just the CUPS printers, and none at all without one. The
+# PDFs go to the folder set as Out in /etc/cups/cups-pdf.conf, the desktop folder by default.
+add_pdf_printer() {
+	lpstat -v Print_to_PDF >/dev/null 2>&1 && ! lpstat -v Cups-PDF >/dev/null 2>&1 && return
+	# The printer is added through CUPS, which otherwise only starts with the other services.
+	sudo systemctl enable --now cups
+	# The package adds its own, named Cups-PDF: remove that one, which a reinstall brings back.
+	if sudo lpadmin -p Print_to_PDF -E -v cups-pdf:/ -m CUPS-PDF_opt.ppd -D "Print to PDF"; then
+		sudo lpadmin -x Cups-PDF 2>/dev/null
+	else
+		failed "Could not add the Print to PDF printer."
+	fi
+}
 
 # Find a Brother printer on the network by what it announces over mDNS, and print its model (like
 # MFC-L2750DW), hostname and IPv4 address. Prints nothing while it is off.

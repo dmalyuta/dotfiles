@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # Configure the KDE Plasma desktop: input devices, app hotkeys, global shortcuts, virtual desktops,
-# effects, theme, icons and panels. Run by provision, and safe to re-run on its own.
+# effects, theme, icons, wallpapers and panels. Run by provision, and safe to re-run on its own.
 #
 # Usage: configure_kde
 #
@@ -68,6 +68,10 @@ apply_look_and_feel org.kde.breezedark.desktop
 # Dark icons to match, set after the look and feel, which resets the icon theme.
 install_tela_icons Tela-circle-dark
 apply_icon_theme Tela-circle-dark
+
+# After the look and feel, which can bring its own wallpaper.
+step "Setting the desktop, lock screen and login screen wallpapers"
+set_wallpapers desktop_bg.jpg lockscreen_bg.jpg
 
 step "Setting up the panels and the start menu"
 configure_panels

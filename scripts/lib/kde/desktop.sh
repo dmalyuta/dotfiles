@@ -1,8 +1,8 @@
 # shellcheck shell=bash
 # shellcheck disable=SC2034,SC2154 # shares variables with scripts/configure_kde and its other libraries
 #
-# configure_kde's desktop: virtual desktops, effects, theme and icons, panels, the system tray and
-# the start menu.
+# configure_kde's desktop: virtual desktops, effects, theme and icons, wallpapers, panels, the system
+# tray and the start menu.
 
 # Exactly the virtual desktops named by the arguments, in one row. Existing ones are renamed
 # rather than recreated, so their windows stay put.
@@ -99,6 +99,41 @@ apply_icon_theme() {
 	[ "$(kreadconfig6 --file kdeglobals --group Icons --key Theme)" = "$1" ] && return
 	/usr/libexec/plasma-changeicons "$1"
 	restart_plasmashell=1
+}
+
+# The desktop wallpaper $1 and the lock screen one $2, files in config/wallpapers. The login screen
+# shows the lock screen's too. It's Plasma Login Manager's greeter, which runs as the plasmalogin
+# user and can't read our home, so like System Settings' Login Screen page, give that user a copy in
+# its home and point /etc/plasmalogin.conf at it. A later change on that page replaces both.
+set_wallpapers() {
+	local desktop=$dotfiles/config/wallpapers/$1 lock=$dotfiles/config/wallpapers/$2
+	local image=(--group Wallpaper --group org.kde.image --group General) id current
+	local greeter_dir greeter_image conf
+	# Through plasmashell, which would write its own copy back over a change to the file.
+	for id in $(plasma_ids 'desktops()'); do
+		current=$(kreadconfig6 --file "$applets_rc" --group Containments --group "$id" \
+			"${image[@]}" --key Image)
+		[ "${current#file://}" = "$desktop" ] && continue
+		plasma-apply-wallpaperimage "$desktop" >/dev/null
+		break
+	done
+
+	kconf --file kscreenlockerrc --group Greeter --key WallpaperPlugin org.kde.image
+	kconf --file kscreenlockerrc --group Greeter "${image[@]}" --key Image "file://$lock"
+	kconf --file kscreenlockerrc --group Greeter "${image[@]}" --key PreviewImage "file://$lock"
+
+	getent passwd plasmalogin >/dev/null || return 0
+	greeter_dir=$(getent passwd plasmalogin | cut -d: -f6)/wallpapers
+	greeter_image=$greeter_dir/${lock##*/}
+	# Owned by plasmalogin, as the Login Screen page, which writes there as that user, expects.
+	sudo install -d -o plasmalogin -g plasmalogin -m755 "$greeter_dir"
+	sudo cmp -s "$lock" "$greeter_image" ||
+		sudo install -Z -o plasmalogin -g plasmalogin -m644 "$lock" "$greeter_image"
+	conf=$(mktemp)
+	cat /etc/plasmalogin.conf >"$conf" 2>/dev/null
+	kwriteconfig6 --file "$conf" --group Greeter "${image[@]}" --key Image "file://$greeter_image"
+	write_root_file /etc/plasmalogin.conf <"$conf"
+	rm -f "$conf"
 }
 
 # Panels 40 px tall, opaque (0 is adaptive, 1 opaque, 2 translucent), and never floating, even with

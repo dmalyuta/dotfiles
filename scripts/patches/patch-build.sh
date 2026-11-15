@@ -9,10 +9,88 @@
 
 # Download source package $1 into folder $2 and print its path. Only from Fedora's source repos, and
 # without input: dnf would otherwise ask to import other repos' keys, a question hidden in the log.
+#
+# $1 is an installed package, with or without its version. It is asked for as the source package
+# that rpm says it was built from, like wine-11.21-1.fc45.src for wine-core: with just the source
+# repos on, dnf can't tell which source a package like wine-core, named unlike it, comes from.
 download_source_rpm() {
-	dnf download -q --repo=fedora-source --repo=updates-source --source --destdir "$2" "$1" \
+	local src
+	src=$(rpm -q --qf '%{SOURCERPM}\n' "$1" 2>/dev/null | head -n 1)
+	[[ $src == *.src.rpm ]] && src=${src%.rpm} || src=$1
+	dnf download -q --repo=fedora-source --repo=updates-source --source --destdir "$2" "$src" \
 		</dev/null >>"$log" 2>&1 || return
 	compgen -G "$2/*.src.rpm" | head -n 1
+}
+
+# A progress bar for a build that writes to $log, drawn over one line of the terminal from
+# progress_start until progress_stop or progress_done, with the time taken so far. How far along
+# the build is comes from the log: the "[ 42%]" that CMake's builds print, the "[12/284]" of
+# Meson's, or, for a build that prints neither, the lines logged since the start out of $1 of them
+# (pass the count of `make -n`). Without a terminal there is no bar, just a line saying to wait.
+progress_pid='' progress_t0=''
+progress_start() {
+	local total=${1:-} from pct best=0
+	if [ ! -t 1 ]; then
+		[ -n "$progress_t0" ] || echo "Compiling, this takes a while."
+		progress_t0=${progress_t0:-$SECONDS}
+		return
+	fi
+	# A second bar, for the next part of the same build, carries on the first one's clock.
+	progress_t0=${progress_t0:-$SECONDS}
+	from=$(wc -l <"$log")
+	(
+		# Until stopped, or until the script itself is gone.
+		while kill -0 $$ 2>/dev/null; do
+			pct=$(progress_percent "$total" "$from")
+			# Never backwards: parallel jobs log out of order, and warnings push the marks away.
+			[ "$pct" -gt "$best" ] && best=$pct
+			progress_draw "$best"
+			sleep 0.5
+		done
+	) &
+	progress_pid=$!
+}
+
+# How far the build is, in percent: of $1 log lines since line $2, or by the log's last mark. At
+# most 99, as the build still has to end.
+progress_percent() {
+	local total=$1 from=$2 last pct=0
+	if [ -n "$total" ]; then
+		[ "$total" -gt 0 ] && pct=$((($(wc -l <"$log") - from) * 100 / total))
+	else
+		last=$(tail -c 65536 "$log" | grep -aoE '^\[ *[0-9]+%\]|^\[[0-9]+/[0-9]+\]' | tail -n 1)
+		last=${last//[][ ]/}
+		case $last in
+		*%) pct=${last%\%} ;;
+		*/*) [ "${last#*/}" -gt 0 ] && pct=$((${last%/*} * 100 / ${last#*/})) ;;
+		esac
+	fi
+	echo $((pct > 99 ? 99 : pct))
+}
+
+progress_time() { printf '%d:%02d' $(((SECONDS - progress_t0) / 60)) $(((SECONDS - progress_t0) % 60)); }
+
+progress_draw() {
+	local pct=$1 width=30 fill full rest
+	fill=$((pct * width / 100))
+	printf -v full '%*s' "$fill" ''
+	printf -v rest '%*s' $((width - fill)) ''
+	printf '\r  %s%s %3d%%  %s\e[K' "${full// /█}" "${rest// /░}" "$pct" "$(progress_time)"
+}
+
+# Take the bar away, as after a failed build.
+progress_stop() {
+	[ -n "$progress_pid" ] || return 0
+	kill "$progress_pid" 2>/dev/null
+	wait "$progress_pid" 2>/dev/null
+	progress_pid=''
+	printf '\r\e[K'
+}
+
+# The build worked: say how long it took, in place of the bar.
+progress_done() {
+	progress_stop
+	echo "Compiled in $(progress_time)."
 }
 
 # Apply $patch_file to the source tree $1. If it no longer applies, fail, and keep the tree for

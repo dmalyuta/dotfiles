@@ -89,12 +89,14 @@ build() {
 		return 1
 	fi
 	# Then the spec's %conf and %build.
-	echo "Compiling, this takes a while."
+	progress_start
 	if ! { "${rpmbuild[@]}" -bf --short-circuit "$spec" &&
 		"${rpmbuild[@]}" -bc --short-circuit "$spec"; } >>"$log" 2>&1; then
+		progress_stop
 		failure="$srpm_name doesn't build with $(basename "$patch_file")."
 		return 1
 	fi
+	progress_done
 	out=$(find "$src" -name "$(basename "$lib")" -type f -print -quit)
 	if [ -z "$out" ]; then
 		failure="The build of $srpm_name made no $(basename "$lib")."

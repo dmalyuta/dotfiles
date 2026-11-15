@@ -44,6 +44,10 @@ dnf = [
     # Wine. ntsync-autoload loads the ntsync kernel module at boot, so that Wine does its thread
     # syncing in the kernel instead of a slow round trip to wineserver each time.
     "wine", "winetricks", "ntsync-autoload",
+
+    # Printing. cups-pdf is the "Print to PDF" printer, see add_pdf_printer: Wine programs like
+    # PDF-XChange Editor only list CUPS's printers, and have no print-to-file of their own.
+    "cups", "cups-pdf",
 ]
 flatpak = [
     "com.github.tchx84.Flatseal",
@@ -54,7 +58,7 @@ flatpak = [
     "me.proton.Pass",
     "com.xnview.XnViewMP",
 ]
-services = ["grafana-server", "nordvpnd", "keyd", "coolercontrold"]
+services = ["grafana-server", "nordvpnd", "keyd", "coolercontrold", "cups"]
 groups = ["plugdev", "nordvpn"]
 
 # A machine with an NVIDIA GPU. The driver, as an akmod: akmods builds it for each new kernel. The
@@ -93,8 +97,7 @@ groups = ["i2c"]
 
 # With the Brother printer: the scanner driver is a SANE backend.
 [brother]
-dnf = ["cups", "sane-backends"]
-services = ["cups"]
+dnf = ["sane-backends"]
 
 # Until the Brother's drivers are installed. The printer driver is 32-bit: installed here, else
 # Brother's installer tool would ask dnf for them, and dnf would wait on its own question.

@@ -4,30 +4,19 @@
 # provision's questions, all asked up front so that the rest runs unattended. The answers are
 # remembered in $answers (see provision) as the defaults for the next run.
 
-# Ask for the sudo password once, and keep it fresh in the background so a long step doesn't ask
-# again partway through.
+# Keep the sudo password fresh in the background, so a long step doesn't ask again partway through.
+# Asks for it again only if it was forgotten since get_sudo.
 start_sudo_session() {
-	local tmp conf=/etc/sudoers.d/timestamp-global
 	sudo -v || exit
 	while kill -0 $$ 2>/dev/null && sleep 60; do sudo -n -v 2>/dev/null || break; done &
 	sudo_keepalive=$!
-
-	# sudo remembers the password per terminal, and the progress display is a terminal of its own,
-	# so have it remember it across the user's terminals. Checked with visudo first: a broken
-	# sudoers file locks sudo out.
-	tmp=$(mktemp)
-	echo "Defaults:$USER timestamp_type=global" >"$tmp"
-	if ! sudo cmp -s "$tmp" "$conf" && visudo -cqf "$tmp"; then
-		sudo install -Z -m 440 "$tmp" "$conf"
-	fi
-	rm -f "$tmp"
 }
 
-# Yes/no question whose default is the last answer, remembered under key $1. With -c, a remembered
-# answer is used without asking.
+# Yes/no question whose default is the last answer, remembered under key $1. A remembered answer
+# is used without asking, unless with -u.
 ask() {
 	local key=$1 hint="[yN]" a
-	if [ -n "$use_cached" ] && [ -n "${answers[$key]:-}" ]; then
+	if [ -z "$ask_again" ] && [ -n "${answers[$key]:-}" ]; then
 		[ "${answers[$key]}" = y ]
 		return
 	fi
@@ -38,12 +27,12 @@ ask() {
 }
 
 # Ask for a line of text, remembered under key $1, with the last answer pre-filled for editing.
-# Args: key, prompt, a function that checks the answer, and help to print before asking. With -c,
-# a valid remembered answer is used without asking. Only for what can't be found on the machine.
+# Args: key, prompt, a function that checks the answer, and help to print before asking. A valid
+# remembered answer is used without asking, unless with -u. Only for what can't be found on the machine.
 ask_text() {
 	local key=$1 prompt=$2 valid=${3:-true} help=${4:-}
 	local value=${answers[$key]-}
-	if [ -n "$use_cached" ] && [ -n "${answers[$key]+set}" ] && "$valid" "$value"; then
+	if [ -z "$ask_again" ] && [ -n "${answers[$key]+set}" ] && "$valid" "$value"; then
 		return
 	fi
 	[ -z "$help" ] || echo "$help"
@@ -64,7 +53,7 @@ valid_workspaces() {
 }
 
 # Offer a newer Fedora release: the highest final version on Fedora's download page. Asked every
-# run while there is one, even with -c. It's downloaded at the end, see download_fedora_upgrade.
+# run while there is one, even with the last answers reused. It's downloaded at the end, see download_fedora_upgrade.
 ask_fedora_upgrade() {
 	local newest a
 	newest=$(curl -fsSL https://fedoraproject.org/releases.json 2>/dev/null |

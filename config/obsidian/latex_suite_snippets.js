@@ -778,6 +778,18 @@ export default [
         options: "mA",
         description: "Inverse Z transform",
     },
+    {
+        trigger: "tfS",
+        replacement: "\\Sensitivity ",
+        options: "mA",
+        description: "Sensitivity transfer function",
+    },
+    {
+        trigger: "tfT",
+        replacement: "\\ComplSensitivity ",
+        options: "mA",
+        description: "Complementary sensitivity transfer function",
+    },
 ];
 
 function addRawConcealMaps() {

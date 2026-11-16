@@ -3,7 +3,7 @@
 provision \- set up a fresh Fedora KDE Plasma install
 .SH SYNOPSIS
 .B provision
-.RB [ \-c ]
+.RB [ \-u ]
 .RB [ \-n ]
 .RB [ \-p ]
 .RB [ \-h ]
@@ -17,10 +17,12 @@ sets up a Fedora KDE Plasma machine the way its author uses it: software reposit
 and apps, the NVIDIA driver, these dotfiles, low-level hardware settings and the KDE desktop.
 .PP
 It is safe to re-run: every step skips what is already done. Re-running it also updates what it
-installed from outside the package manager, like OpenRGB and PdfCraft, and the Flatpak apps.
+installed from outside the package manager, like OpenRGB, Flameshot and PdfCraft, and the Flatpak apps.
 .PP
 It asks all its questions up front, along with the sudo password, so the rest runs unattended.
-The answers are remembered as the defaults for the next run.
+The answers are remembered and reused by the next run, which asks only new questions (or all of
+them again with
+.BR \-u ).
 .PP
 On a new machine, run it through
 .B curl
@@ -39,9 +41,9 @@ and run it again, or pass
 Offline, it says so, skips the pull and runs the checkout as it is.
 .SH OPTIONS
 .TP
-.B \-c
-Reuse the answers from the last run instead of asking the setup questions again. A question that
-was never answered is still asked.
+.B \-u
+Ask the setup questions again, with the last run's answers as the defaults. Without it, the last
+run's answers are reused, and only a question that was never answered is asked.
 .TP
 .B \-n
 Don't pull the dotfiles first: run this checkout as it is.
@@ -55,8 +57,8 @@ Show a short help message and exit.
 In order:
 .IP 1. 4
 Asks the setup questions: whether to upgrade to a newer Fedora release, if there is one (yes by
-default, and asked every run while one is available, even with
-.BR \-c ),
+default, and asked every run while one is available, even without
+.BR \-u ),
 which optional apps to install (Superluminal, PDF-XChange Editor, and the drivers of a Brother
 printer if one is found on the network),
 whether to restore a CoolerControl backup, the custom OBS configuration on the desktop, the sleep
@@ -73,7 +75,8 @@ Sets up kernel module signing, with Secure Boot on.
 .IP 4. 4
 Upgrades the installed packages, installs the missing ones of
 .I packages.toml
-for this machine, OpenRGB from upstream on the desktop,
+for this machine, OpenRGB from upstream on the desktop, Flameshot from upstream when its release
+is newer than Fedora's,
 and builds the kernel modules (NVIDIA, OpenRazer) for the newest kernel.
 .IP 5. 4
 Installs and updates the Flatpak apps of
@@ -183,7 +186,13 @@ Set up a new machine:
 Re-run from the checkout with the last answers, to apply updates and changes to the dotfiles:
 .PP
 .RS
-.B provision \-c
+.B provision
+.RE
+.PP
+Re-run, answering the setup questions again:
+.PP
+.RS
+.B provision \-u
 .RE
 .SH SEE ALSO
 .BR sudoers (5),

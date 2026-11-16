@@ -28,10 +28,11 @@ anywhere (it is on `PATH`, like the other commands in `bin/`):
 provision
 ```
 
-To re-run with the last run's answers to its questions:
+Re-runs reuse the last run's answers to its questions, asking only new ones. To
+answer them all again:
 
 ```bash
-provision -c
+provision -u
 ```
 
 The answers are kept in `.provision_answers`, which git ignores, so that what is private stays

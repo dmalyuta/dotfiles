@@ -65,6 +65,41 @@ install_openrgb() {
 	rm -rf "$dir"
 }
 
+# Flameshot from the .rpm in its latest GitHub release, when that is newer than the installed one
+# (Fedora's lags behind). The release has an .rpm per Fedora version, zipped with its checksum, like
+# flameshot-v15.0.0+git0.f4f2e4e-artifact-fedora-44-x86_64.zip: take this version's, or the latest
+# one before it, as a new Fedora comes out before Flameshot builds for it. Re-running this upgrades
+# it; a Fedora upgrade may put Fedora's back, which the next run swaps out again.
+install_flameshot() {
+	local dir url ver have rpm
+	url=$(curl -fsSL https://api.github.com/repos/flameshot-org/flameshot/releases/latest |
+		grep -oE '"browser_download_url": *"[^"]+-artifact-fedora-[0-9]+-x86_64\.zip"' |
+		cut -d'"' -f4 | awk -v fedora="$fedora" 'match($0, /-fedora-[0-9]+-/) {
+			f = substr($0, RSTART + 8) + 0
+			if (f <= fedora && f > best) { best = f; url = $0 }
+		} END { print url }')
+	ver=$(sed -nE 's|.*/download/v([0-9][0-9.]*)/.*|\1|p' <<<"$url")
+	have=$(rpm -q --qf '%{VERSION}' flameshot 2>/dev/null)
+	if [ -z "$ver" ]; then
+		failed "Could not find the latest Flameshot release, keeping Fedora's."
+		return
+	fi
+	# Up to date, or Fedora's is as new.
+	[ "$(printf '%s\n' "$ver" "$have" | sort -V | tail -n 1)" = "$have" ] && return
+	dir=$(mktemp -d)
+	if curl -fsSL -o "$dir"/flameshot.zip "$url" &&
+		curl -fsSL -o "$dir"/flameshot.zip.sha256sum "$url.sha256sum" &&
+		(cd "$dir" && sha256sum -c --quiet <<<"$(cut -d' ' -f1 flameshot.zip.sha256sum)  flameshot.zip") &&
+		unzip -q -j -o "$dir"/flameshot.zip '*.rpm' -d "$dir" &&
+		rpm=$(echo "$dir"/flameshot-*.rpm) && [ -f "$rpm" ] &&
+		sudo dnf install -y "$rpm"; then
+		say "Installed Flameshot $(rpm -q --qf '%{VERSION}' flameshot) from upstream."
+	else
+		failed "Could not install upstream Flameshot $ver, keeping Fedora's${have:+ $have}."
+	fi
+	rm -rf "$dir"
+}
+
 # Superluminal: a plain tarball, unpacked user-owned so its updater can write.
 superluminal_dir=~/.local/superluminal
 install_superluminal() {

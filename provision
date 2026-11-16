@@ -171,6 +171,8 @@ step 6 "Installing packages"
 install_packages
 step "Updating Flameshot"
 install_flameshot
+# With a fix that lets its capture overlay cover the taskbar. After each update, which undoes it.
+"$dotfiles"/scripts/patches/patch-flameshot
 if [ -n "${want_openrgb:-}" ]; then
 	step "Installing OpenRGB"
 	install_openrgb

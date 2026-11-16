@@ -137,8 +137,11 @@ set_up_syncthing() {
 # itself keeps Exec=/usr/bin/flameshot, as KWin grants its screenshot interface by matching that.
 # It must also not see a Wayland session: then it makes its capture window bypass the window manager,
 # and KWin never gives such an X11 window the keyboard, so tool keys (A for arrow, T for text) die.
-# Seen as X11, the window is managed but stays a utility one KWin won't fullscreen, so the overlay
-# stops above the panel. Screenshots still go through the portal (useX11LegacyScreenshot is off).
+# Seen as X11, the window is managed, and scripts/patches/patch-flameshot lets KWin make it
+# fullscreen. Screenshots still go through the portal (useX11LegacyScreenshot is off).
+# Qt's own scaling is off too: at a fractional scale the window, in whole scaled pixels, ends a
+# fraction of a pixel short of the screen, leaving a white line along the right and bottom edges.
+# Flameshot sizes its buttons and text by the font, which follows the screen's DPI regardless.
 configure_flameshot() {
 	local autostart=~/.config/autostart/Flameshot.desktop
 	if [ ! -f "$autostart" ]; then
@@ -153,17 +156,17 @@ Type=Application
 X-GNOME-Autostart-enabled=true
 EOF
 	fi
-	set_desktop_key "$autostart" Exec "env -u WAYLAND_DISPLAY XDG_SESSION_TYPE=x11 QT_QPA_PLATFORM=xcb flameshot"
+	set_desktop_key "$autostart" Exec "env -u WAYLAND_DISPLAY XDG_SESSION_TYPE=x11 QT_QPA_PLATFORM=xcb QT_ENABLE_HIGHDPI_SCALING=0 flameshot"
 	mkdir -p ~/.local/share/dbus-1/services
 	cat >~/.local/share/dbus-1/services/org.flameshot.Flameshot.service <<'EOF'
 [D-BUS Service]
 Name=org.flameshot.Flameshot
-Exec=/usr/bin/env -u WAYLAND_DISPLAY XDG_SESSION_TYPE=x11 QT_QPA_PLATFORM=xcb /usr/bin/flameshot
+Exec=/usr/bin/env -u WAYLAND_DISPLAY XDG_SESSION_TYPE=x11 QT_QPA_PLATFORM=xcb QT_ENABLE_HIGHDPI_SCALING=0 /usr/bin/flameshot
 EOF
 	mkdir -p ~/.config/systemd/user/app-org.flameshot.Flameshot@.service.d
 	cat >~/.config/systemd/user/app-org.flameshot.Flameshot@.service.d/xcb.conf <<'EOF'
 [Service]
-Environment=QT_QPA_PLATFORM=xcb XDG_SESSION_TYPE=x11
+Environment=QT_QPA_PLATFORM=xcb XDG_SESSION_TYPE=x11 QT_ENABLE_HIGHDPI_SCALING=0
 UnsetEnvironment=WAYLAND_DISPLAY
 EOF
 	systemctl --user daemon-reload

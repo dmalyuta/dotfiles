@@ -1,0 +1,26 @@
+capture: don't make the capture overlay a utility window on X11, so KWin makes it fullscreen.
+
+Flameshot runs under XWayland here, seen as an X11 session (see configure_flameshot in
+scripts/lib/provision/services.sh). There its overlay is a Qt::Tool window, a utility window to
+the window manager. KWin only makes normal windows and dialogs fullscreen, so it turns down the
+overlay's request and fits it into the area the panel leaves free: the taskbar stays out of the
+overlay, and can't be selected or drawn on. As a normal window it goes fullscreen, over the panel.
+
+Applied by scripts/patches/patch-flameshot, see provision.
+
+diff --git a/src/widgets/capture/capturewidget.cpp b/src/widgets/capture/capturewidget.cpp
+index 3d18398..a4eba1e 100644
+--- a/src/widgets/capture/capturewidget.cpp
++++ b/src/widgets/capture/capturewidget.cpp
+@@ -184,8 +184,9 @@ CaptureWidget::CaptureWidget(const CaptureRequest& req,
+         } else {
+             // Note: Qt::BypassWindowManagerHint is removed to fix x11 gnome
+             // crash. It's needed on Cosmic
+-            setWindowFlags(Qt::WindowStaysOnTopHint | Qt::FramelessWindowHint |
+-                           Qt::Tool);
++            // No Qt::Tool: KWin won't make a utility window fullscreen, which
++            // leaves the panel uncovered.
++            setWindowFlags(Qt::WindowStaysOnTopHint | Qt::FramelessWindowHint);
+         }
+ #endif
+ 

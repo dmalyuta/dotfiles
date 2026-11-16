@@ -1,0 +1,107 @@
+#!/bin/bash
+#
+# Replace Flameshot's program with one built with flameshot-fullscreen-overlay.patch from this
+# folder (the patch says why it's needed). Built from Flameshot's own source of the installed
+# version, its release tag on GitHub, as the package comes from there too (see install_flameshot).
+#
+# A Flameshot update puts the unpatched program back, so provision runs this every time. It only
+# builds for a new version or a changed patch, and keeps the latest build in
+# ~/.cache/patched-libraries. A patch that no longer applies or builds gets a report for fixing it.
+#
+# `rpm -V flameshot` lists the replaced file as changed, `sudo dnf reinstall flameshot` undoes it.
+#
+# Usage: patch-flameshot [--build-only]
+#   --build-only   build it, but don't install it
+#
+# Author: Danylo Malyuta, 2026.
+
+here=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+dotfiles=$(cd "$here/../.." && pwd)
+. "$dotfiles"/scripts/functions.sh
+. "$here"/patch-build.sh
+
+build_only=''
+[ "${1:-}" = --build-only ] && build_only=1
+patch_file=$here/flameshot-fullscreen-overlay.patch
+program=/usr/bin/flameshot
+build_deps=(git cmake gcc-c++ qt6-qtbase-devel qt6-qtsvg-devel qt6-qttools-devel
+	kf6-kguiaddons-devel)
+
+installed flameshot || { echo "flameshot isn't installed." >&2; exit 1; }
+version=$(rpm -q --qf '%{VERSION}' flameshot)
+
+# The build for this version and this patch.
+cache=~/.cache/patched-libraries/flameshot-$version-$(sha256sum "$patch_file" | cut -c1-12)
+built=$cache/flameshot
+log=$cache/build.log
+
+# Build the patched program into $cache, working in $1. On failure, sets $failure to what failed.
+failure=''
+build() {
+	local tmp=$1 src=$1/flameshot dep missing=() d
+	say "Patching flameshot"
+	echo "Building flameshot $version with $(basename "$patch_file"), see $log"
+	rm -rf "$cache"
+	mkdir -p "$cache"
+	basename "$patch_file" >"$cache/patch"
+	for dep in "${build_deps[@]}"; do
+		installed "$dep" || missing+=("$dep")
+	done
+	if [ ${#missing[@]} -gt 0 ] && ! sudo dnf install -y "${missing[@]}" >>"$log" 2>&1; then
+		failure="Couldn't install the build dependencies of flameshot."
+		return 1
+	fi
+	if ! git clone -q --depth 1 --branch "v$version" \
+		https://github.com/flameshot-org/flameshot "$src" >>"$log" 2>&1; then
+		failure="Couldn't download the source of flameshot $version."
+		return 1
+	fi
+	rm -rf "$src/.git"
+	if ! apply_patch "$src"; then
+		failure="$(basename "$patch_file") no longer applies to flameshot $version."
+		return 1
+	fi
+	progress_start
+	if ! { cmake -S "$src" -B "$src/build" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr &&
+		cmake --build "$src/build" -j"$(nproc)"; } >>"$log" 2>&1; then
+		progress_stop
+		failure="flameshot $version doesn't build with $(basename "$patch_file")."
+		return 1
+	fi
+	progress_done
+	if [ ! -f "$src/build/src/flameshot" ]; then
+		failure="The build of flameshot $version made no flameshot program."
+		return 1
+	fi
+	install -Dm755 "$src/build/src/flameshot" "$built" && strip --strip-debug "$built" || return
+	# Drop the builds, and failed ones, with older versions of the patch or of Flameshot.
+	for d in ~/.cache/patched-libraries/*/; do
+		if [ "${d%/}" != "$cache" ] && cmp -s "$d/patch" "$cache/patch"; then
+			rm -rf "$d"
+		fi
+	done
+}
+
+[ -z "$build_only" ] && cmp -s "$built" "$program" && exit 0
+
+if [ ! -f "$built" ]; then
+	tmp=$(mktemp -d -p /var/tmp patch-flameshot.XXXXXX) || exit
+	trap 'rm -rf "$tmp"' EXIT
+	if ! build "$tmp"; then
+		report_patch_failure "${failure:-Building failed.}" \
+			"${here/#$HOME/\~}/patch-flameshot --build-only" \
+			"Couldn't patch flameshot: its capture overlay leaves out the taskbar."
+		exit 1
+	fi
+fi
+if [ -n "$build_only" ]; then
+	echo "Built $built."
+	exit 0
+fi
+
+# A running Flameshot has the program mapped, so put the new one next to it and rename it over.
+sudo install -Z -m755 "$built" "$program.new" && sudo mv -f "$program.new" "$program" || exit
+sudo restorecon "$program"
+# The one in the background, if any, is the old program still.
+pkill -x flameshot
+echo "Installed the patched flameshot $version."

@@ -5,18 +5,41 @@
 # (finding it, its drivers, and its name in the print and scan dialogs).
 
 # A printer that saves what it is sent as a PDF, for programs without a print-to-file of their own:
-# Wine's, like PDF-XChange Editor, list just the CUPS printers, and none at all without one. The
-# PDFs go to the folder set as Out in /etc/cups/cups-pdf.conf, the desktop folder by default.
+# Wine's, like PDF-XChange Editor, list just the CUPS printers, and none at all without one.
+#
+# cups-pdf saves to a fixed folder without asking. So it saves to a hidden one, which a systemd
+# user unit watches (config/systemd-user): for each PDF there, bin/print-to-pdf-save asks where to
+# save it, and moves it.
 add_pdf_printer() {
-	lpstat -v Print_to_PDF >/dev/null 2>&1 && ! lpstat -v Cups-PDF >/dev/null 2>&1 && return
-	# The printer is added through CUPS, which otherwise only starts with the other services.
-	sudo systemctl enable --now cups
-	# The package adds its own, named Cups-PDF: remove that one, which a reinstall brings back.
-	if sudo lpadmin -p Print_to_PDF -E -v cups-pdf:/ -m CUPS-PDF_opt.ppd -D "Print to PDF"; then
-		sudo lpadmin -x Cups-PDF 2>/dev/null
-	else
-		failed "Could not add the Print to PDF printer."
+	local unit
+	if ! lpstat -v Print_to_PDF >/dev/null 2>&1 || lpstat -v Cups-PDF >/dev/null 2>&1; then
+		# The printer is added through CUPS, which otherwise only starts with the other services.
+		sudo systemctl enable --now cups
+		# The package adds its own, named Cups-PDF: remove that one, which a reinstall brings back.
+		if sudo lpadmin -p Print_to_PDF -E -v cups-pdf:/ -m CUPS-PDF_opt.ppd -D "Print to PDF"; then
+			sudo lpadmin -x Cups-PDF 2>/dev/null
+		else
+			failed "Could not add the Print to PDF printer."
+			return
+		fi
 	fi
+	# Not the default 300 dpi: a program that prints its text as shapes, as PDF-XChange Editor does
+	# for fonts that aren't TrueType, gets them rounded to this grid, and they look rough.
+	lpoptions -p Print_to_PDF -l | grep -q 'Resolution.*\*1200dpi' ||
+		sudo lpadmin -p Print_to_PDF -o Resolution=1200dpi
+
+	# In ~/.cache, where SELinux lets cups-pdf write, as in the desktop folder, its default.
+	# shellcheck disable=SC2016 # cups-pdf fills in ${HOME}, for the user who prints
+	if ! sudo grep -qxF 'Out ${HOME}/.cache/print-to-pdf' /etc/cups/cups-pdf.conf; then
+		sudo sed -i '/^Out /d' /etc/cups/cups-pdf.conf
+		echo 'Out ${HOME}/.cache/print-to-pdf' | sudo tee -a /etc/cups/cups-pdf.conf >/dev/null
+	fi
+	mkdir -p ~/.cache/print-to-pdf ~/.config/systemd/user
+	for unit in print-to-pdf.path print-to-pdf.service; do
+		ln -sf "$dotfiles/config/systemd-user/$unit" ~/.config/systemd/user/
+	done
+	systemctl --user daemon-reload
+	systemctl --user enable -q --now print-to-pdf.path
 }
 
 # Find a Brother printer on the network by what it announces over mDNS, and print its model (like

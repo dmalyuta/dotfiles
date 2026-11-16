@@ -1,0 +1,6 @@
+[Unit]
+Description=Ask where to save documents printed to PDF
+
+[Service]
+Type=oneshot
+ExecStart=%h/.bin/print-to-pdf-save

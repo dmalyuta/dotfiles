@@ -47,7 +47,8 @@ dnf = [
 
     # Printing. cups-pdf is the "Print to PDF" printer, see add_pdf_printer: Wine programs like
     # PDF-XChange Editor only list CUPS's printers, and have no print-to-file of their own.
-    "cups", "cups-pdf",
+    # bin/print-to-pdf-save asks where to save each PDF, with kdialog.
+    "cups", "cups-pdf", "kdialog",
 ]
 flatpak = [
     "com.github.tchx84.Flatseal",

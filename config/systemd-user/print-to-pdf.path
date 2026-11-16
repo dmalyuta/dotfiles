@@ -1,0 +1,13 @@
+# Runs bin/print-to-pdf-save, which asks where to save it, when a document is printed to the
+# "Print to PDF" printer. provision links this and print-to-pdf.service into ~/.config/systemd/user.
+
+[Unit]
+Description=Watch for documents printed to PDF
+PartOf=graphical-session.target
+
+[Path]
+DirectoryNotEmpty=%h/.cache/print-to-pdf
+MakeDirectory=yes
+
+[Install]
+WantedBy=graphical-session.target

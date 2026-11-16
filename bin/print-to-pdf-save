@@ -1,0 +1,50 @@
+#!/bin/bash
+#
+# Asks where to save each document printed to the "Print to PDF" printer, with KDE's file dialog,
+# and moves it there. CUPS's PDF printer (cups-pdf) can only save to a fixed folder without
+# asking: provision points it at the folder below (add_pdf_printer), and print-to-pdf.path, a
+# systemd user unit, runs this when a PDF shows up there. So it works the same from every program,
+# Wine's too. Cancelling the dialog drops the document.
+#
+# Usage: print-to-pdf-save
+#
+# Author: Danylo Malyuta, 2026.
+
+spool=${XDG_CACHE_HOME:-$HOME/.cache}/print-to-pdf
+state=${XDG_STATE_HOME:-$HOME/.local/state}/print-to-pdf
+
+# cups-pdf writes the PDF in place: it is whole once it ends as a PDF does. Give up after 10 min.
+wait_until_written() {
+	local f=$1 tries=0
+	until tail -c 64 "$f" 2>/dev/null | grep -aq '%%EOF'; do
+		[ -e "$f" ] && [ $((tries += 1)) -lt 1200 ] || return 1
+		sleep 0.5
+	done
+}
+
+save() {
+	local f=$1 dir name out
+	wait_until_written "$f" || return
+	# Start in the folder of the last save, with the document's title as the name: cups-pdf names
+	# the file for it, plus the print job's number.
+	dir=$(cat "$state" 2>/dev/null)
+	[ -d "$dir" ] || dir=$(xdg-user-dir DOCUMENTS 2>/dev/null)
+	[ -d "$dir" ] || dir=$HOME
+	name=$(basename "$f" .pdf)
+	name=${name%-job_*}
+	name=${name%.[Pp][Dd][Ff]}
+	out=$(kdialog --title "Print to PDF" --getsavefilename "$dir/${name:-Document}.pdf" \
+		"PDF document (*.pdf)") || return
+	[ -n "$out" ] || return
+	[[ ${out,,} == *.pdf ]] || out+=.pdf
+	mkdir -p "$(dirname "$state")" && dirname "$out" >"$state"
+	mv -f "$f" "$out" ||
+		kdialog --title "Print to PDF" --error "Could not save the printed document as $out."
+}
+
+# One at a time, the oldest first, until the folder is empty: the unit runs this again otherwise.
+while f=$(find "$spool" -mindepth 1 -maxdepth 1 -printf '%T@ %p\n' 2>/dev/null | sort -n | head -n 1) &&
+	f=${f#* } && [ -n "$f" ]; do
+	[[ -f $f && $f == *.pdf ]] && save "$f"
+	rm -rf "$f"
+done

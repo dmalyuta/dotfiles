@@ -130,8 +130,15 @@ set_up_syncthing() {
 	sudo systemctl enable --now syncthing-gui-proxy.socket
 }
 
-# Flameshot's Wayland clipboard copy is lost outside Gnome, as the capture window closes too early.
-# Run it under XWayland instead, both from autostart and from D-Bus activation.
+# Flameshot's Wayland clipboard copy is lost outside Gnome, as the capture window closes too early,
+# and under fractional scaling its capture overlay is resampled and blurry (the saved image is fine).
+# Run it under XWayland instead, from autostart, D-Bus activation and KDE's launches of its desktop
+# file (the Print shortcut), which run as app-org.flameshot.Flameshot@<id>.service. The desktop file
+# itself keeps Exec=/usr/bin/flameshot, as KWin grants its screenshot interface by matching that.
+# It must also not see a Wayland session: then it makes its capture window bypass the window manager,
+# and KWin never gives such an X11 window the keyboard, so tool keys (A for arrow, T for text) die.
+# Seen as X11, the window is managed but stays a utility one KWin won't fullscreen, so the overlay
+# stops above the panel. Screenshots still go through the portal (useX11LegacyScreenshot is off).
 configure_flameshot() {
 	local autostart=~/.config/autostart/Flameshot.desktop
 	if [ ! -f "$autostart" ]; then
@@ -146,13 +153,20 @@ Type=Application
 X-GNOME-Autostart-enabled=true
 EOF
 	fi
-	set_desktop_key "$autostart" Exec "env QT_QPA_PLATFORM=xcb flameshot"
+	set_desktop_key "$autostart" Exec "env -u WAYLAND_DISPLAY XDG_SESSION_TYPE=x11 QT_QPA_PLATFORM=xcb flameshot"
 	mkdir -p ~/.local/share/dbus-1/services
 	cat >~/.local/share/dbus-1/services/org.flameshot.Flameshot.service <<'EOF'
 [D-BUS Service]
 Name=org.flameshot.Flameshot
-Exec=/usr/bin/env QT_QPA_PLATFORM=xcb /usr/bin/flameshot
+Exec=/usr/bin/env -u WAYLAND_DISPLAY XDG_SESSION_TYPE=x11 QT_QPA_PLATFORM=xcb /usr/bin/flameshot
 EOF
+	mkdir -p ~/.config/systemd/user/app-org.flameshot.Flameshot@.service.d
+	cat >~/.config/systemd/user/app-org.flameshot.Flameshot@.service.d/xcb.conf <<'EOF'
+[Service]
+Environment=QT_QPA_PLATFORM=xcb XDG_SESSION_TYPE=x11
+UnsetEnvironment=WAYLAND_DISPLAY
+EOF
+	systemctl --user daemon-reload
 }
 
 # A bigger system journal than the default 50 MB.

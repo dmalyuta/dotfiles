@@ -590,7 +590,13 @@ export default [
     { trigger: "avg", replacement: "\\langle $0 \\rangle $1", options: "mA" },
     {
         trigger: "norm",
-        replacement: "\\lvert $0 \\rvert $1",
+        replacement: "\\norm{$0} ",
+        options: "mA",
+        priority: 1,
+    },
+    {
+        trigger: "lnorm",
+        replacement: "\\norm[$0]{$1} ",
         options: "mA",
         priority: 1,
     },
@@ -789,6 +795,24 @@ export default [
         replacement: "\\ComplSensitivity ",
         options: "mA",
         description: "Complementary sensitivity transfer function",
+    },
+    {
+        trigger: "Hinf",
+        replacement: "\\mathcal{H}_{\\infty} ",
+        options: "mA",
+        description: "H-infinity norm",
+    },
+    {
+        trigger: "hinf",
+        replacement: "\\norm[\\infty]{$0} ",
+        options: "mA",
+        description: "H-infinity norm",
+    },
+    {
+        trigger: "wx",
+        replacement: "\\omega_{\\times} ",
+        options: "mA",
+        description: "Crossover frequency",
     },
 ];
 

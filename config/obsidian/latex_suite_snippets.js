@@ -501,17 +501,17 @@ export default [
     // Visual operations
     {
         trigger: "U",
-        replacement: "\\underbrace{ ${VISUAL} }_{ $0 }",
+        replacement: "\\underbrace{ ${VISUAL} }_{ \\mathclap{\\substack{$0}} }",
         options: "mv",
     },
     {
         trigger: "O",
-        replacement: "\\overbrace{ ${VISUAL} }^{ $0 }",
+        replacement: "\\overbrace{ ${VISUAL} }^{ \\mathclap{\\substack{$0}} }",
         options: "mv",
     },
     {
         trigger: "B",
-        replacement: "\\underset{ $0 }{ ${VISUAL} }",
+        replacement: "\\underset{ \\mathclap{\\substack{$0}} }{ ${VISUAL} }",
         options: "mv",
     },
     { trigger: "C", replacement: "\\cancel{ ${VISUAL} }", options: "mv" },
@@ -814,7 +814,201 @@ export default [
         options: "mA",
         description: "Crossover frequency",
     },
+    // Vectors, frames and derivatives (macros in Latex/preamble.tex).
+    {
+        trigger: "vb",
+        replacement: "\\v{$0}$1",
+        options: "mA",
+        description: "Bold vector",
+    },
+    {
+        trigger: "angv",
+        replacement: "\\w_{${0:ab}}$1",
+        options: "mA",
+        description: "Angular velocity of frame b wrt frame a",
+    },
+    {
+        trigger: "fram",
+        replacement: "\\f{${0:a}}$1",
+        options: "mA",
+        description: "Reference frame {a}",
+    },
+    {
+        trigger: "dfr",
+        replacement: "\\ddt[${0:i}] $1",
+        options: "mA",
+        description: "Time derivative taken in frame {i}",
+    },
+    {
+        trigger: "accf",
+        replacement: "\\ddtt[${0:i}] $1",
+        options: "mA",
+        description: "Second time derivative taken in frame {i}",
+    },
+
+    // Matrices and linear algebra.
+    {
+        trigger: "Mat",
+        replacement: "\\Matrix{$0}$1",
+        options: "mA",
+        description: "Bracketed matrix",
+    },
+    {
+        trigger: "trp",
+        replacement: "\\T",
+        options: "mA",
+        description: "Transpose",
+    },
+    {
+        trigger: "skw",
+        replacement: "\\skew{$0}$1",
+        options: "mA",
+        description: "Skew-symmetric (cross product) matrix",
+    },
+    {
+        trigger: "skv",
+        replacement: "\\skewinv",
+        options: "mA",
+        description: "Inverse of the skew operator",
+    },
+    {
+        trigger: "pnvr",
+        replacement: "\\rpinv",
+        options: "mA",
+        description: "Right pseudoinverse",
+    },
+    {
+        trigger: "pnvl",
+        replacement: "\\lpinv",
+        options: "mA",
+        description: "Left pseudoinverse",
+    },
+    {
+        trigger: "rnk",
+        replacement: "\\rank ",
+        options: "mA",
+        description: "Rank",
+    },
+    {
+        trigger: "nlty",
+        replacement: "\\nullity ",
+        options: "mA",
+        description: "Nullity",
+    },
+    {
+        trigger: "nsp",
+        replacement: "\\nullspace ",
+        options: "mA",
+        description: "Null space",
+    },
+    {
+        trigger: "rsp",
+        replacement: "\\rangespace ",
+        options: "mA",
+        description: "Range space",
+    },
+    {
+        trigger: "sbld",
+        replacement: "\\setbuilder{$0}{$1}$2",
+        options: "mA",
+        description: "Set builder {x | P(x)}",
+    },
+    {
+        trigger: "eqc",
+        replacement: "\\eqcomment{$0}$1",
+        options: "mA",
+        description: "Gray comment next to an equation",
+    },
+
+    // Rotations, rigid bodies and quaternions.
+    {
+        trigger: "SOO",
+        replacement: "\\SO ",
+        options: "mA",
+        description: "Special orthogonal group SO(3)",
+    },
+    {
+        trigger: "Jin",
+        replacement: "\\Inertia ",
+        options: "mA",
+        description: "Inertia tensor",
+    },
+    {
+        trigger: "quat",
+        replacement: "\\q",
+        options: "mA",
+        description: "Quaternion (\\q[p] for another symbol)",
+    },
+    {
+        trigger: "qww",
+        replacement: "\\qw",
+        options: "mA",
+        description: "Quaternion scalar part",
+    },
+    {
+        trigger: "qvv",
+        replacement: "\\qv",
+        options: "mA",
+        description: "Quaternion vector part",
+    },
+    {
+        trigger: "qcj",
+        replacement: "\\qconj",
+        options: "mA",
+        description: "Quaternion conjugate",
+    },
+    {
+        trigger: "qinv",
+        replacement: "\\qinv",
+        options: "mA",
+        description: "Quaternion inverse",
+    },
+    {
+        trigger: "qmlt",
+        replacement: "\\qmul ",
+        options: "mA",
+        description: "Quaternion multiplication",
+    },
+    {
+        trigger: "qML",
+        replacement: "\\qMl{$0}$1",
+        options: "mA",
+        description: "Left quaternion multiplication matrix",
+    },
+    {
+        trigger: "qMR",
+        replacement: "\\qMr{$0}$1",
+        options: "mA",
+        description: "Right quaternion multiplication matrix",
+    },
+    {
+        trigger: "Expm",
+        replacement: "\\Exp ",
+        options: "mA",
+        description: "Capitalized exponential map",
+    },
+    {
+        trigger: "Logm",
+        replacement: "\\Log ",
+        options: "mA",
+        description: "Capitalized logarithmic map",
+    },
 ];
+
+// Custom macros from Latex/preamble.tex, so the "disable snippets while typing
+// macros" and "insert space after macros" snippets above treat them as macros.
+try {
+    require("latex-suite").ALL_MACROS.push(
+        "\\ddt", "\\ddtt", "\\curl", "\\Matrix", "\\skew", "\\skewinv",
+        "\\lpinv", "\\rpinv", "\\rank", "\\nullity", "\\nullspace",
+        "\\rangespace", "\\col", "\\row", "\\linspan", "\\setbuilder",
+        "\\SO", "\\Inertia", "\\qw", "\\qv", "\\conj", "\\qconj",
+        "\\qinv", "\\qid", "\\qmul", "\\qMl", "\\qMr", "\\qcomm",
+        "\\imi", "\\imj", "\\imk", "\\Exp", "\\Log", "\\eqcomment",
+    );
+} catch (error) {
+    console.error("latex_suite_snippets.js: could not register custom macros", error);
+}
 
 function addRawConcealMaps() {
     const ls = require("latex-suite");

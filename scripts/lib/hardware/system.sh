@@ -73,6 +73,18 @@ EOF
 	[ -z "$changed" ] || sudo systemctl daemon-reload
 }
 
+# More inotify instances per user than the kernel's 128. Every program that watches files for
+# changes takes one or more (VS Code alone about 40), so VS Code, a browser, Obsidian and KDE's
+# services together run out: file watching then stops working, and KDE warns that the capacity is
+# low. Watches, the other inotify limit, are plentiful.
+raise_inotify_limit() {
+	write_root_file /etc/sysctl.d/90-inotify-instances.conf <<'EOF' || return 0
+# More inotify instances per user, see raise_inotify_limit in the dotfiles.
+fs.inotify.max_user_instances = 1024
+EOF
+	sudo sysctl -q -p /etc/sysctl.d/90-inotify-instances.conf
+}
+
 # Remove what earlier versions installed and newer ones replaced: udev rules for the USB wake
 # sources, and the webcam guard under its first name.
 remove_replaced_files() {

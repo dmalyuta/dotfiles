@@ -37,6 +37,7 @@ step "Configuring the kernel"
 hide_rdseed_boot_message
 keep_hardware_clock_in_utc
 limit_shutdown_time
+raise_inotify_limit
 
 step "Configuring USB devices and wake sources"
 # USB keyboards wake it, mice don't, see the hook.

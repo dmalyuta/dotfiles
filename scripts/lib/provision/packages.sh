@@ -261,8 +261,15 @@ add_user_to_groups() {
 # Flatpak apps, system-wide, plus the GL extension matching the NVIDIA driver for hardware
 # rendering.
 install_flatpak_apps() {
-	local nvidia a missing=()
+	local nvidia a remote out rc missing=() refs=()
 	sudo flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+	# Fedora's own remote, which Fedora adds, while nothing is installed from it: everything here
+	# is from Flathub. The update check below and flatpak update fetch every enabled remote, and
+	# when registry.fedoraproject.org is slow they wait minutes on it, silently.
+	if flatpak remotes --system --columns=name,options | grep -qE '^fedora\s+oci$' &&
+		! flatpak list --system --columns=origin | grep -qx fedora; then
+		sudo flatpak remote-modify --system --disable fedora
+	fi
 	nvidia=$(nvidia_version)
 	[ -n "$nvidia" ] && flatpak_apps+=("org.freedesktop.Platform.GL.nvidia-${nvidia//./-}")
 	# Only those not installed yet, else flatpak lists each one that is.
@@ -270,7 +277,22 @@ install_flatpak_apps() {
 		flatpak info --system "$a" >/dev/null 2>&1 || missing+=("$a")
 	done
 	[ ${#missing[@]} -eq 0 ] || sudo flatpak install -y --noninteractive flathub "${missing[@]}"
-	# Install leaves installed apps as they are, so update them and their runtimes too.
-	[ -z "$(flatpak remote-ls --system --updates 2>/dev/null)" ] ||
-		sudo flatpak update -y --noninteractive
+	# Install leaves installed apps as they are, so update them and their runtimes too. Each remote
+	# is asked for its updates in turn, given 15 seconds, as flatpak has no timeout of its own and
+	# waits minutes on one that doesn't answer. Then only those updates: flatpak update without refs
+	# would also fetch every remote's app catalog, the one that didn't answer too.
+	while read -r remote; do
+		out=$(timeout 15 flatpak remote-ls --system --updates --columns=ref "$remote" 2>/dev/null)
+		rc=$?
+		if [ $rc -eq 0 ]; then
+			[ -z "$out" ] || mapfile -t -O "${#refs[@]}" refs <<<"$out"
+		elif [ $rc -eq 124 ]; then
+			failed "Flatpak remote $remote didn't answer in 15 seconds, so its apps weren't updated."
+		else
+			failed "Could not check Flatpak remote $remote for updates, so its apps weren't updated."
+		fi
+	done < <(flatpak remotes --system --columns=name,options | awk '$2 !~ /disabled/ { print $1 }')
+	[ ${#refs[@]} -eq 0 ] || sudo flatpak update -y --noninteractive "${refs[@]}"
+	# What flatpak update without refs also does: remove the runtimes that nothing uses any more.
+	sudo flatpak uninstall -y --noninteractive --unused >/dev/null
 }

@@ -1,5 +1,0 @@
-#!/bin/bash
-# start_fresh is now called provision. This is here for the machines whose start_fresh, from
-# before the rename, updates the dotfiles and then runs itself again by its old name. Delete it
-# once they have all run it.
-exec bash "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"/provision "$@"

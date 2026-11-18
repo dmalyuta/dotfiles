@@ -9,6 +9,86 @@ copr() {
 	compgen -G "/etc/yum.repos.d/_copr*:${1/\//:}.repo" >/dev/null || sudo dnf copr enable -y "$1"
 }
 
+# packages.toml's [held] table: the packages that dnf only updates when asked, by name, each with
+# the version it is held at. See read_held_packages, ask_held_upgrades and hold_packages.
+declare -A held_packages=()
+packages_toml=$dotfiles/packages.toml
+versionlock=/etc/dnf/versionlock.toml
+
+# Fill held_packages from packages.toml, once. Before the questions, which come before
+# choose_packages reads the rest of the file.
+read_held_packages() {
+	local pair list
+	[ -z "${held_packages_read:-}" ] || return 0
+	[ -x /usr/bin/python3 ] || sudo dnf install -y -q python3 </dev/null
+	list=$(/usr/bin/python3 -I "$dotfiles"/scripts/lib/provision/packages.py \
+		"$packages_toml" held) || exit
+	for pair in $list; do
+		held_packages[${pair%%=*}]=${pair#*=}
+	done
+	held_packages_read=1
+}
+
+# Offer each held package's newest version in its repo, if newer than the held one. Asked every run
+# while there is one, even with the last answers reused. Before saying yes, review the release. A
+# yes writes the new version into packages.toml, as a change to commit. Packages not installed yet
+# are left out: they install at the version in packages.toml.
+ask_held_upgrades() {
+	local name ver newest a
+	read_held_packages
+	for name in "${!held_packages[@]}"; do
+		installed "$name" || continue
+		ver=${held_packages[$name]}
+		# repoquery ignores versionlock, so it sees the versions that are held back.
+		newest=$(dnf -q repoquery --arch="$(uname -m)" --latest-limit=1 --qf '%{version}\n' \
+			"$name" </dev/null 2>/dev/null | tail -n 1)
+		[ -n "$newest" ] && [ "$newest" != "$ver" ] &&
+			[ "$(printf '%s\n' "$ver" "$newest" | sort -V | tail -n 1)" = "$newest" ] || continue
+		read -p "$name $newest is out, held at $ver. Upgrade to it? Review it first. [yN] " -r a
+		[[ $a =~ ^[Yy]$ ]] || continue
+		# Only the line in [held], up to the next table.
+		sed -i -E "/^\[held\]/,/^\[/ s/^($name = \")[^\"]*\"/\1$newest\"/" "$packages_toml"
+		held_packages[$name]=$newest
+		say "Holding $name at $newest now. Commit the change to packages.toml."
+	done
+}
+
+# Lock each of held_packages to its version, any build of that (as the release, like 1.fc45,
+# changes with Fedora), and move it there if it is installed at another. Before the upgrade, which
+# would otherwise take the newest. Other entries in dnf's versionlock file stay as they are.
+hold_packages() {
+	local name ver next comment
+	read_held_packages
+	for name in "${!held_packages[@]}"; do
+		ver=${held_packages[$name]}
+		next=${ver%.*}.$((${ver##*.} + 1))
+		comment="held by provision at $ver, see packages.toml"
+		if ! grep -qF "comment = \"$name $comment\"" "$versionlock" 2>/dev/null; then
+			grep -qF "name = \"$name\"" "$versionlock" 2>/dev/null &&
+				sudo dnf versionlock delete "$name" >/dev/null
+			[ -s "$versionlock" ] || echo 'version = "1.0"' | sudo tee "$versionlock" >/dev/null
+			sudo tee -a "$versionlock" >/dev/null <<EOF
+
+[[packages]]
+name = "$name"
+comment = "$name $comment"
+[[packages.conditions]]
+key = "evr"
+comparator = ">="
+value = "$ver"
+[[packages.conditions]]
+key = "evr"
+comparator = "<"
+value = "$next"
+EOF
+		fi
+		if installed "$name" && [ "$(rpm -q --qf '%{VERSION}' "$name")" != "$ver" ]; then
+			sudo dnf distro-sync -y "$name" ||
+				failed "Could not move $name to $ver, where it is held."
+		fi
+	done
+}
+
 add_repositories() {
 	local repo
 	# RPM Fusion, for the NVIDIA driver and the codecs that Fedora leaves out.
@@ -25,9 +105,12 @@ add_repositories() {
 		sudo dnf install -y --nogpgcheck \
 			--repofrompath 'terra,https://repos.fyralabs.com/terra$releasever' terra-release
 
-	# COPRs: FSearch from its author, and acpi_call for scripts/bin/asus-power-limits.
+	# COPRs: FSearch and Proton Drive for Linux from their authors, and acpi_call for
+	# scripts/bin/asus-power-limits.
 	copr cboxdoerfer/fsearch
+	copr narl-rs/proton-drive-linux
 	[ -n "${want_asusctl:-}" ] && copr rhea/acpi_call
+	hold_packages
 
 	# The vendors' own repos, see scripts/yum. Fedora has Grafana too, but years behind.
 	for repo in "$dotfiles"/scripts/yum/*.repo; do
@@ -94,6 +177,9 @@ choose_packages() {
 			"$dotfiles"/packages.toml "$key" "${flags[@]}") || exit
 		read -r -a "${arrays[$key]}" <<<"$list"
 	done
+	# The held packages, on every machine, at their version as hold_packages locked it.
+	read_held_packages
+	dnf_apps+=("${!held_packages[@]}")
 }
 
 install_packages() {
@@ -125,6 +211,12 @@ install_packages() {
 		say "Installing the packages failed, see above. Fix it and run this again." >&2
 		exit 1
 	fi
+	# A held version gone from its repo is skipped above. COPR deletes old builds some days after a
+	# newer one.
+	for p in "${!held_packages[@]}"; do
+		installed "$p" || failed "Could not install $p ${held_packages[$p]}, where it is held:" \
+			"its repo may have dropped that version. Review a newer one to hold instead."
+	done
 }
 
 # Build the kernel modules for the newest kernel now, rather than on its first boot, which would

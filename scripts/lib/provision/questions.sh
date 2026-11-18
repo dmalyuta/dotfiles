@@ -84,6 +84,7 @@ ask_questions() {
 	local a
 
 	ask_fedora_upgrade
+	ask_held_upgrades
 
 	[ -n "$(git config --global user.name)" ] ||
 		{ read -p "Git name: " -r a && git config --global user.name "$a"; }

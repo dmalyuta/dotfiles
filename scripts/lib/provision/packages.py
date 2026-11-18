@@ -2,6 +2,7 @@
 """Print the names in one of packages.toml's lists, for this machine, on one line.
 
 Usage: packages.py FILE KEY TABLE=FLAG...
+       packages.py FILE held
 
   FILE   packages.toml, which says what its tables and keys are.
   KEY    The list to print: dnf, flatpak, services or groups.
@@ -9,11 +10,13 @@ Usage: packages.py FILE KEY TABLE=FLAG...
 
 Prints the KEY lists of the tables that apply, in the file's order. Fails, saying where, if the
 file has a table that isn't among the arguments, a key that isn't a list's, or a list of anything
-but names: all are mistakes in the file that would otherwise go unnoticed.
+but names: all are mistakes in the file that would otherwise go unnoticed. With held, prints the
+[held] table instead, as NAME=VERSION pairs, failing if a version isn't one like 3.8.0.
 
-Run by choose_packages in packages.sh.
+Run by choose_packages and read_held_packages in packages.sh.
 """
 
+import re
 import sys
 import tomllib
 
@@ -28,6 +31,17 @@ def main():
             tables = tomllib.load(f)
     except (OSError, tomllib.TOMLDecodeError) as error:
         sys.exit(f"{path}: {error}")
+
+    # Not a machine's table: the versions packages are held at, on every machine.
+    held = tables.pop("held", {})
+    if key == "held":
+        if not isinstance(held, dict) or not all(
+            isinstance(version, str) and re.fullmatch(r"[0-9]+(\.[0-9]+)*", version)
+            for version in held.values()
+        ):
+            sys.exit(f'{path}: [held] must map package names to versions like "3.8.0"')
+        print(" ".join(f"{name}={version}" for name, version in held.items()))
+        return
 
     names, mistakes = [], []
     for table, lists in tables.items():

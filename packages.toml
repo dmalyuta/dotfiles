@@ -9,6 +9,16 @@
 #   flatpak   Apps to install from Flathub, system-wide, by application ID.
 #   services  systemd services to enable and start.
 #   groups    Groups that the user joins.
+#
+# [held] is not a machine's table: it holds packages at a version, installed on every machine. dnf
+# doesn't update them; provision asks first, when a newer one is out, and writes the new version
+# here on a yes. See hold_packages in scripts/lib/provision/packages.sh.
+
+[held]
+# Unofficial Proton Drive client. Its author also wrote the Proton SDK that it logs in with, so a
+# release can do anything with the account: review each before upgrading. 3.8.0 was checked: its
+# source, its vendored crates against crates.io, and its SRP login, which never sends the password.
+proton-drive-linux = "3.8.0"
 
 [all]
 dnf = [

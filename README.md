@@ -7,7 +7,7 @@ Fedora KDE Plasma setup after a fresh install.
 On a brand new install, run:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/dmalyuta/dotfiles/fedora/provision | bash
+curl -fsSL https://raw.githubusercontent.com/dmalyuta/dotfiles/master/provision | bash
 ```
 
 This clones this repo to `~/Projects/dotfiles`, symlinks the dotfiles into the

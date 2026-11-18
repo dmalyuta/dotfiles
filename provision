@@ -2,7 +2,7 @@
 #
 # Set up a fresh Fedora KDE Plasma install. On a new machine, run
 #
-#   curl -fsSL https://raw.githubusercontent.com/dmalyuta/dotfiles/fedora/provision | bash
+#   curl -fsSL https://raw.githubusercontent.com/dmalyuta/dotfiles/master/provision | bash
 #
 # Safe to re-run: every step skips what is already done. See usage below and `man provision`.
 #
@@ -14,7 +14,7 @@
 
 # shellcheck disable=SC2034,SC2154 # shares variables with the libraries it sources
 
-branch=fedora
+branch=master
 repo_https=https://github.com/dmalyuta/dotfiles.git
 repo_ssh=git@github.com:dmalyuta/dotfiles.git
 
@@ -34,7 +34,7 @@ Options:
   -h  Show this help and exit.
 
 On a new machine:
-  curl -fsSL https://raw.githubusercontent.com/dmalyuta/dotfiles/fedora/provision | bash
+  curl -fsSL https://raw.githubusercontent.com/dmalyuta/dotfiles/master/provision | bash
 
 More in `man provision`.
 EOF

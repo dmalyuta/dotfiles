@@ -49,6 +49,21 @@ remember_settings() {
 	done
 }
 
+# A settings file's lines as "group<tab>key=value", sorted, so that a file rewritten in another
+# order compares equal. kglobalaccel's [<component>][$InverseAction] groups pair opposite actions
+# (Decrease Opacity=Increase Opacity), and which one it writes as the key varies with each start
+# of it, so each pair is put in alphabetical order.
+normalized_settings() {
+	awk '
+		/^\[/ { group = $0; inverse = /\]\[\$InverseAction\]$/; next }
+		inverse && (i = index($0, "=")) {
+			a = substr($0, 1, i - 1); b = substr($0, i + 1)
+			$0 = a < b ? a "=" b : b "=" a
+		}
+		{ print group "\t" $0 }
+	' "$1" 2>/dev/null | LC_ALL=C sort
+}
+
 # Ask for a reboot for each file that changed, naming up to 5 of the keys that changed in it.
 report_changed_settings() {
 	local f old keys n
@@ -56,7 +71,10 @@ report_changed_settings() {
 		old=$kde_before/${f##*/}
 		{ [ -e "$old" ] || [ -e "$f" ]; } || continue
 		cmp -s "$old" "$f" 2>/dev/null && continue
-		keys=$(diff "$old" "$f" 2>/dev/null | sed -n 's/^[<>] \([^=]*\)=.*/\1/p' | sort -u)
+		[ -e "$old" ] && [ -e "$f" ] &&
+			cmp -s <(normalized_settings "$old") <(normalized_settings "$f") && continue
+		keys=$(diff <(normalized_settings "$old") <(normalized_settings "$f") |
+			sed -n 's/^[<>] [^\t]*\t\([^=]*\)=.*/\1/p' | sort -u)
 		n=$(wc -l <<<"$keys")
 		[ -n "$keys" ] &&
 			keys=": $(awk 'NR <= 5 { printf "%s%s", (NR > 1 ? ", " : ""), $0 }' <<<"$keys")" &&

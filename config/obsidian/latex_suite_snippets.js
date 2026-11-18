@@ -138,6 +138,7 @@ export default [
     },
     { trigger: "//", replacement: "\\frac{$0}{$1}$2", options: "mA" },
     { trigger: /\bee/, replacement: "e^{ $0 }$1", options: "mA" },
+    { trigger: /\bEE/, replacement: "\\exp\\left[$0\\right] ", options: "mA" },
     { trigger: "invs", replacement: "^{-1}", options: "mA" },
 
     {
@@ -296,6 +297,11 @@ export default [
         options: "mA",
     },
     {
+        trigger: "ddsum",
+        replacement: "\\sum_{${0:x}\\in \\mathcal{${1:X}}} $2",
+        options: "mA",
+    },
+    {
         trigger: "dprod",
         replacement: "\\prod_{${0:i}=${1:1}}^{${2:N}} $3",
         options: "mA",
@@ -346,7 +352,6 @@ export default [
     { trigger: "sub=", replacement: "\\subseteq", options: "mA" },
     { trigger: "sup=", replacement: "\\supseteq", options: "mA" },
     { trigger: "eset", replacement: "\\emptyset", options: "mA" },
-    { trigger: "set", replacement: "\\{ $0 \\}$1", options: "wmA" },
     {
         trigger: /(n?)e\\xi sts/,
         replacement: "\\[[0]]exists",
@@ -467,6 +472,12 @@ export default [
         replacement: "\\int_{${0:0}}^{${1:1}} $2 \\, \\d ${3:x} $4",
         options: "mA",
         description: "Definite integral",
+    },
+    {
+        trigger: "ddint",
+        replacement: "\\int_{${0:\\set{X}}} $1 \\, \\d ${2:x} $3",
+        options: "mA",
+        description: "Definite integral over a set",
     },
     { trigger: "oint", replacement: "\\oint", options: "mA" },
     { trigger: "iint", replacement: "\\iint", options: "mA" },
@@ -718,6 +729,20 @@ export default [
         description: "N x N identity matrix",
     },
 
+    // Formatting.
+    {
+        trigger: "quad",
+        replacement: "\\quad ",
+        options: "mA",
+        description: "1em space",
+    },
+    {
+        trigger: "qquad",
+        replacement: "\\qquad ",
+        options: "mA",
+        description: "2em space",
+    },
+
     // Generic math.
     {
         trigger: "def",
@@ -734,6 +759,11 @@ export default [
     {
         trigger: "cursive",
         replacement: "\\mathcal\{$0\}",
+        options: "mA",
+    },
+    {
+        trigger: "set",
+        replacement: "\\set\{$0\}",
         options: "mA",
     },
     {
@@ -757,6 +787,63 @@ export default [
         replacement: "\\to ",
         options: "mA",
         description: "To",
+    },
+
+    // Statistics.
+    {
+        trigger: "pr",
+        replacement: "\\prob{$0} ",
+        options: "mA",
+        description: "Probability",
+    },
+    {
+        trigger: "Ex",
+        replacement: "\\expect{$0} ",
+        options: "mA",
+        description: "Expected value",
+    },
+    {
+        trigger: "Var",
+        replacement: "\\variance{$0} ",
+        options: "mA",
+        description: "Variance",
+    },
+    {
+        trigger: "Cov",
+        replacement: "\\covariance{$0}{$1} ",
+        options: "mA",
+        description: "Covariance",
+    },
+    {
+        trigger: "sim",
+        replacement: "\\sim ",
+        options: "mA",
+    },
+    {
+        trigger: "GRV",
+        replacement: "\\GRV{${0:\\mu}}{${1:\\Sigma}} $2",
+        options: "mA",
+        description: "Gaussian Random Variable",
+    },
+    {
+        trigger: "URV",
+        replacement: "\\URV{${0:0}}{${1:1}} $2",
+        options: "mA",
+        description: "Uniform Random Variable",
+    },
+
+    // Calculus.
+    {
+        trigger: ":d",
+        replacement: "\\d $2",
+        options: "mA",
+        description: "upright d",
+    },
+    {
+        trigger: "dd",
+        replacement: "\\dd{${0:y}}{${1:x}} $2",
+        options: "mA",
+        description: "dx/dy with custom x and y",
     },
 
     // Control systems.
@@ -814,6 +901,7 @@ export default [
         options: "mA",
         description: "Crossover frequency",
     },
+
     // Vectors, frames and derivatives (macros in Latex/preamble.tex).
     {
         trigger: "vb",

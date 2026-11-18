@@ -85,6 +85,100 @@ EOF
 	sudo sysctl -q -p /etc/sysctl.d/90-inotify-instances.conf
 }
 
+# GRUB boots the kernel picked last in its menu, not the newest: kernel-install doesn't make new
+# kernels the default, and remember-kernel.service saves the booted one as the default. The menu
+# shows at every boot, so a new kernel can be picked there. A resume from hibernation still boots
+# the kernel that made the image, see scripts/sleep-hooks/hibernate-image.
+remember_kernel_choice() {
+	installed grub2-tools || return 0
+	grep -qx 'UPDATEDEFAULT=yes' /etc/sysconfig/kernel 2>/dev/null &&
+		sudo sed -i 's/^UPDATEDEFAULT=yes$/UPDATEDEFAULT=no/' /etc/sysconfig/kernel
+	# Fedora hides the menu after a good boot when this is set.
+	sudo grub2-editenv - list 2>/dev/null | grep -q '^menu_auto_hide=' &&
+		sudo grub2-editenv - unset menu_auto_hide
+	install_command remember-kernel
+	install_unit remember-kernel.service
+	sudo systemctl enable --now remember-kernel
+}
+
+# Rebuild GRUB's menu from /etc/default/grub and /etc/grub.d.
+rebuild_grub_menu() {
+	sudo grub2-mkconfig -o /boot/grub2/grub.cfg >/dev/null 2>&1 ||
+		failed "Could not rebuild GRUB's menu (grub2-mkconfig), see the full output."
+}
+
+# Set a key in /etc/default/grub. Returns 0 only if it changed.
+set_grub_default() {
+	local file=/etc/default/grub
+	grep -qxF "$1=$2" "$file" && return 1
+	if grep -q "^$1=" "$file"; then
+		sudo sed -i "s|^$1=.*|$1=$2|" "$file"
+	else
+		echo "$1=$2" | sudo tee -a "$file" >/dev/null
+	fi
+}
+
+# The display scale of the sharpest connected display, guessed from its dpi (its native mode and
+# its width in its EDID): 1 per 144 dpi, near what KDE picks. For when KDE can't be asked.
+dpi_scale() {
+	local d cm px
+	for d in /sys/class/drm/card*-*; do
+		[ "$(cat "$d/status" 2>/dev/null)" = connected ] || continue
+		# sysfs gives the EDID's file size as 0, so just read it.
+		cm=$(od -An -tu1 -j21 -N1 "$d/edid" 2>/dev/null | tr -d ' ')
+		px=$(head -n 1 "$d/modes" 2>/dev/null)
+		[ -n "$cm" ] && [ "$cm" -gt 0 ] && [ -n "$px" ] && echo "${px%%x*} $cm"
+	done | awk '{ s = $1 / ($2 / 2.54) / 144; if (s > max) max = s } END { print max + 0 }'
+}
+
+# The pixel size at which the terminal (kitty) draws its $1-point font: 4/3 px a point, times the
+# display scale KDE uses (the largest, if displays differ), or one guessed from the dpi without a
+# KDE session to ask. Nothing if under 20 px: the firmware's own text (16 px) is as big there.
+boot_menu_font_size() {
+	local scale
+	scale=$(kscreen-doctor -j 2>/dev/null | python3 -I -c '
+import json, sys
+print(max(o["scale"] for o in json.load(sys.stdin)["outputs"] if o["enabled"]))' 2>/dev/null) ||
+		scale=$(dpi_scale)
+	awk -v pt="$1" -v s="$scale" 'BEGIN { px = int(pt * 4 / 3 * s + 0.5); if (px >= 20) print px }'
+}
+
+# Draw GRUB's menu in the terminal's font (kitty's, from its config here) at the size the terminal
+# shows it on screen (see boot_menu_font_size), in GRUB's own graphical terminal: on a high-dpi
+# screen the firmware's text is tiny. Elsewhere, leave it in the firmware's text, and undo the font
+# if a run on another screen set it.
+size_boot_menu_font() {
+	installed grub2-tools || return 0
+	local conf=$dotfiles/config/kitty/kitty.conf family pt size font ttf
+	local dir=/boot/grub2/fonts changed=
+	family=$(sed -n 's/^font_family[[:space:]]*family="\([^"]*\)".*/\1/p' "$conf")
+	family=${family:-monospace}
+	pt=$(awk '$1 == "font_size" { print $2 }' "$conf")
+	size=$(boot_menu_font_size "${pt:-12}")
+	if [ -n "$size" ]; then
+		font=$dir/dotfiles-${family//[^A-Za-z0-9]/}-$size.pf2
+		if ! sudo test -s "$font"; then
+			ttf=$(fc-match -f '%{file}' "$family:style=Regular")
+			sudo rm -f "$dir"/dotfiles-*.pf2
+			sudo mkdir -p "$dir"
+			# Latin, arrows, and the box drawing of the menu's frame: the whole font is slow to load.
+			if ! sudo grub2-mkfont -s "$size" -r 0x20-0x7E,0xA0-0xFF,0x2190-0x21FF,0x2500-0x259F \
+				-o "$font" "$ttf"; then
+				failed "Could not make GRUB's menu font from $ttf (grub2-mkfont)."
+				return
+			fi
+		fi
+		set_grub_default GRUB_FONT "$font" && changed=1
+		set_grub_default GRUB_TERMINAL_OUTPUT '"gfxterm"' && changed=1
+	elif grep -q "^GRUB_FONT=$dir/dotfiles-" /etc/default/grub; then
+		sudo sed -i '/^GRUB_FONT=/d' /etc/default/grub
+		set_grub_default GRUB_TERMINAL_OUTPUT '"console"'
+		sudo rm -f "$dir"/dotfiles-*.pf2
+		changed=1
+	fi
+	[ -z "$changed" ] || rebuild_grub_menu
+}
+
 # Remove what earlier versions installed and newer ones replaced: udev rules for the USB wake
 # sources, and the webcam guard under its first name.
 remove_replaced_files() {

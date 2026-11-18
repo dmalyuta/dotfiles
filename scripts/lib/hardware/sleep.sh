@@ -113,8 +113,7 @@ skip_boot_menu_on_resume() {
 	installed grub2-tools || return 0
 	if install_script_file grub/15_hibernate_resume /etc/grub.d/15_hibernate_resume 755 ||
 		! sudo grep -qs 'hibernated' /boot/grub2/grub.cfg; then
-		sudo grub2-mkconfig -o /boot/grub2/grub.cfg >/dev/null 2>&1 ||
-			failed "Could not rebuild GRUB's menu (grub2-mkconfig), see the full output."
+		rebuild_grub_menu
 	fi
 }
 

@@ -33,6 +33,9 @@ dnf = [
     "bat", "btop", "htop", "tree", "fzf", "fd-find", "ripgrep", "the_silver_searcher", "gping",
     "xclip", "tmux",
 
+    # Boot: grub2-mkfont, for GRUB's menu in the terminal's font (see size_boot_menu_font).
+    "grub2-tools-extra",
+
     # Terminal and fonts.
     "kitty", "cascadiacode-nerd-fonts",
 

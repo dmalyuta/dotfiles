@@ -788,6 +788,12 @@ export default [
         options: "mA",
         description: "To",
     },
+	{
+        trigger: "seq",
+        replacement: "\\sequence{$0}[${1:i}=${2:1}][${3:N}] $4",
+        options: "mA",
+        description: "Sequence",
+    },
 
     // Statistics.
     {

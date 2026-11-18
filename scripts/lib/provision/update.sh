@@ -28,9 +28,9 @@ offline_reason() {
 }
 
 # The update's one line of output, drawn over the line the cursor is on, in the columns and colors
-# of the progress display (scripts/tui.py): an icon $2 in the color $1, "Checking for updates",
-# and $3 after it.
-update_line() { printf '\r   %b%s\e[0m \e[1mChecking for updates\e[0m%s\e[K' "$1" "$2" "$3"; }
+# of the progress display (scripts/tui.py): an icon $2 in the color $1, "Checking for dotfiles
+# updates", and $3 after it.
+update_line() { printf '\r   %b%s\e[0m \e[1mChecking for dotfiles updates\e[0m%s\e[K' "$1" "$2" "$3"; }
 update_done() { update_line '\e[1;92m' ✓ "$1" && echo; }
 
 # Pull, with the output in the file $1, and spin meanwhile. Without prompts, which the spinner

@@ -165,9 +165,16 @@ check_marker() {
 	resume=$(take_resuming)
 	[ -f "$marker" ] || return 0
 	if [ -n "$resume" ] && grep -q '^hibernate ' "$marker"; then
+		local made booted kernels="compare the two kernels"
+		made=$(sed -n 's/.*, kernel \([^ ,]*\).*/\1/p' "$marker")
+		booted=$(printf '%s\n' "$resume" | sed -n 's/.*boot kernel \([^ ,)]*\).*/\1/p')
+		[ -n "$made" ] && [ -n "$booted" ] && [ "$made" != "$booted" ] &&
+			kernels="it booted kernel $booted, not the $made that made the image, which"
+		[ "$kernels" = "compare the two kernels" ] ||
+			kernels="$kernels hibernate-image's pin (GRUB's next_entry) should have prevented"
 		alert "The last boot ended in a hibernation whose resume hung: $(cat "$marker"). It had" \
 			"powered off, and was being resumed ($resume) when it stopped: nothing of that is" \
-			"logged, so compare the two kernels, and see journalctl -b -1 for the hibernation. If a" \
+			"logged, so $kernels, and see journalctl -b -1 for the hibernation. If a" \
 			"resume hangs again, leave it 6 min before forcing it off: the watchdog armed in the" \
 			"image crashes the hung kernel if its timers still run, and the next boot saves its log."
 	else

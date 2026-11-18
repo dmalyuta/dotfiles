@@ -25,6 +25,10 @@
 #   otherwise waits out the menu's timeout with the CPU at full power. GRUB clears the flag
 #   itself (see scripts/grub/15_hibernate_resume); it is cleared here too after a hibernation that
 #   came back without a boot, such as a failed one.
+# - Tell GRUB to boot this same kernel at that boot (its one-shot next_entry, as grub2-reboot
+#   does), whatever its default is or the menu would pick: another kernel can't resume the image
+#   of this one (on 2026-11-18, a newly installed 7.3.4, then GRUB's default, hung resuming
+#   7.2.15's). The boot after it is back to the default.
 # After the resume, the log says how much the image grew while devices froze, against the room
 # left for it.
 #
@@ -39,6 +43,28 @@ log() { logger -t hibernate-image -- "$*"; }
 grub_flag() {
 	[ -x /etc/grub.d/15_hibernate_resume ] || return 0
 	grub2-editenv - "$@" 2>/dev/null || log "couldn't $1 GRUB's hibernated flag (grub2-editenv)"
+}
+
+# The id of this kernel's entry in GRUB's menu: the name of its boot loader entry.
+this_entry() {
+	for f in /boot/loader/entries/*-"$(uname -r)".conf; do
+		[ -f "$f" ] && basename "$f" .conf && return
+	done
+}
+
+# Make the next boot, and only it, boot this kernel; or undo that, unless it was changed since.
+pin_kernel() {
+	entry=$(this_entry)
+	if [ -z "$entry" ]; then
+		log "no boot loader entry for kernel $(uname -r): GRUB will resume with its default one"
+		return
+	fi
+	case $1 in
+	set) grub2-editenv - set next_entry="$entry" 2>/dev/null ||
+		log "couldn't make GRUB resume with kernel $(uname -r) (grub2-editenv)" ;;
+	unset) grub2-editenv - list 2>/dev/null | grep -qxF "next_entry=$entry" &&
+		grub2-editenv - unset next_entry 2>/dev/null ;;
+	esac
 }
 
 # Report the growth of the image between its preallocation and its creation, from the kernel log
@@ -62,6 +88,7 @@ case $1/${SYSTEMD_SLEEP_ACTION:-${2:-}} in
 pre/hibernate | pre/hybrid-sleep) ;;
 post/hibernate | post/hybrid-sleep)
 	grub_flag unset hibernated
+	pin_kernel unset
 	report_growth
 	exit 0
 	;;
@@ -69,6 +96,7 @@ post/hibernate | post/hybrid-sleep)
 esac
 
 grub_flag set hibernated=1
+pin_kernel set
 
 cached() { awk '/^Cached:/ {print int($2 / 1024)}' /proc/meminfo; }
 

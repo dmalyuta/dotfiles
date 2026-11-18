@@ -1,0 +1,24 @@
+#!/bin/sh
+# Make the kernel this boot runs GRUB's default (its saved_entry, as grub2-set-default does), so
+# that GRUB keeps booting the kernel last picked in its menu. A newly installed kernel only runs
+# once picked there: provision turns off kernel-install's making each new one the default
+# (UPDATEDEFAULT in /etc/sysconfig/kernel).
+#
+# Run at each boot by remember-kernel.service, installed by scripts/configure_hardware. Not at a
+# resume from hibernation, which isn't a boot: that runs the kernel that made the image, which
+# hibernate-image tells GRUB to boot (next_entry).
+#
+# Author: Danylo Malyuta, 2026.
+
+kernel=$(uname -r)
+entry=
+for f in /boot/loader/entries/*-"$kernel".conf; do
+	[ -f "$f" ] && entry=$(basename "$f" .conf)
+done
+if [ -z "$entry" ]; then
+	echo "No boot loader entry for kernel $kernel, GRUB's default is left as it is." >&2
+	exit 0
+fi
+# Write only on a change: the environment block is on the boot partition.
+grub2-editenv - list 2>/dev/null | grep -qxF "saved_entry=$entry" && exit 0
+grub2-editenv - set saved_entry="$entry" && echo "GRUB's default is now kernel $kernel."

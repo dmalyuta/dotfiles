@@ -1,0 +1,12 @@
+# Keep booting the kernel picked last in GRUB's menu, see /usr/local/bin/remember-kernel.
+[Unit]
+Description=Make the running kernel GRUB's default
+RequiresMountsFor=/boot
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/bin/remember-kernel
+
+[Install]
+WantedBy=multi-user.target

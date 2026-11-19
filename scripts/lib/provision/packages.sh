@@ -261,7 +261,7 @@ add_user_to_groups() {
 # Flatpak apps, system-wide, plus the GL extension matching the NVIDIA driver for hardware
 # rendering.
 install_flatpak_apps() {
-	local nvidia a remote out rc missing=() refs=()
+	local nvidia a remote out plan rc missing=() refs=()
 	sudo flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
 	# Fedora's own remote, which Fedora adds, while nothing is installed from it: everything here
 	# is from Flathub. The update check below and flatpak update fetch every enabled remote, and
@@ -278,17 +278,23 @@ install_flatpak_apps() {
 	done
 	[ ${#missing[@]} -eq 0 ] || sudo flatpak install -y --noninteractive flathub "${missing[@]}"
 	# Install leaves installed apps as they are, so update them and their runtimes too. Each remote
-	# is asked for its updates in turn, given 15 seconds, as flatpak has no timeout of its own and
-	# waits minutes on one that doesn't answer. Then only those updates: flatpak update without refs
-	# would also fetch every remote's app catalog, the one that didn't answer too.
+	# is asked in turn, given 15 seconds, as flatpak has no timeout of its own and waits minutes on
+	# one that doesn't answer. Then only that remote's refs are updated: flatpak update without refs
+	# would also fetch every remote's app catalog, the one that didn't answer too. The question is
+	# flatpak update itself, unprivileged, which with no input shows its plan and declines it. It
+	# isn't remote-ls --updates, which only lists newer commits: a runtime whose extension is missing,
+	# such as GNOME 50's codecs-extra for 25.08, has none, while Discover offers it as an update.
 	while read -r remote; do
-		out=$(timeout 15 flatpak remote-ls --system --updates --columns=ref "$remote" 2>/dev/null)
+		mapfile -t out < <(flatpak list --system --columns=ref,origin | awk -v r="$remote" '$2 == r { print $1 }')
+		[ ${#out[@]} -gt 0 ] || continue
+		# Declining exits 1, so the plan is looked for first.
+		plan=$(LC_ALL=C timeout 15 flatpak update --system "${out[@]}" </dev/null 2>/dev/null)
 		rc=$?
-		if [ $rc -eq 0 ]; then
-			[ -z "$out" ] || mapfile -t -O "${#refs[@]}" refs <<<"$out"
+		if [[ $plan == *'Proceed with these changes'* ]]; then
+			refs+=("${out[@]}")
 		elif [ $rc -eq 124 ]; then
 			failed "Flatpak remote $remote didn't answer in 15 seconds, so its apps weren't updated."
-		else
+		elif [ $rc -ne 0 ]; then
 			failed "Could not check Flatpak remote $remote for updates, so its apps weren't updated."
 		fi
 	done < <(flatpak remotes --system --columns=name,options | awk '$2 !~ /disabled/ { print $1 }')

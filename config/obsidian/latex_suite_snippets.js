@@ -846,7 +846,7 @@ export default [
         description: "upright d",
     },
     {
-        trigger: "dd",
+        trigger: ":dd",
         replacement: "\\dd{${0:y}}{${1:x}} $2",
         options: "mA",
         description: "dx/dy with custom x and y",

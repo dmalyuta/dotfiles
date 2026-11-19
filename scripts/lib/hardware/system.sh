@@ -35,6 +35,30 @@ hide_rdseed_boot_message() {
 	fi
 }
 
+# Go from the boot splash straight to the login screen. Plasma's login manager, unlike GDM, doesn't
+# take the screen over from Plymouth: plymouth-quit.service ends the splash first, and the text
+# console shows, black with a blinking cursor, until the login screen draws. So the splash's last
+# frame stays on screen until then, and the console's cursor is hidden so it doesn't blink on top.
+# New kernels copy the option from the running one.
+seamless_boot_splash() {
+	installed plymouth || return 0
+	local changed=
+	if write_root_file /etc/systemd/system/plymouth-quit.service.d/50-retain-splash.conf <<'EOF'; then
+# The splash stays on screen until the login screen draws, see seamless_boot_splash in the dotfiles.
+[Service]
+ExecStart=
+ExecStart=-/usr/bin/plymouth quit --retain-splash
+EOF
+		sudo systemctl daemon-reload
+		changed=1
+	fi
+	if ! sudo grubby --info=DEFAULT | grep -q '^args=.*\bvt\.global_cursor_default=0\b'; then
+		sudo grubby --update-kernel=ALL --args=vt.global_cursor_default=0
+		changed=1
+	fi
+	[ -z "$changed" ] || reboot_for "the boot splash going straight to the login screen"
+}
+
 # The hardware clock in UTC, Linux's default, unless Windows is installed, which keeps it in local
 # time: systemd never updates a local-time clock, so it's an hour off after each daylight saving
 # change. Look for Windows itself, as its boot entry can outlive it.

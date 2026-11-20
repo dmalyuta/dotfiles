@@ -29,7 +29,8 @@ Finds the cause the first time a sleep or a hibernation goes wrong on the laptop
 - **After each step**, the battery used, and for a suspend, the share of it in hardware sleep (the
   SoC's deepest state) and the wakeup sources that fired. A suspend under 90% in hardware sleep is
   flagged, with the AMD PMC's debug state in `<time>-pmc.txt`. A hibernation is flagged as probably
-  hung if it drew over 1 W on average for 20 min or more, or lost 5% or more (a working one is off).
+  hung if it lasted 20 min or more and drew over 1 W on average plus 1 Wh (saving and loading the
+  image take ~0.5 Wh, a working one is otherwise off), or lost 5% or more.
 - **For every sleep**, the kernel's debug messages (`pm_debug_messages`: the wakeup source, the AMD
   PMC's view of what kept the SoC awake), in the journal. Not `pm_print_times`: two lines per device
   and step overflow the 256 KB kernel log while journald is frozen, and push out the other messages.

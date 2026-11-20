@@ -548,15 +548,17 @@ clock() {
 }
 
 # Log how long a hibernation lasted and what it drew, flagging one that drew too much to have been
-# off. Args: start and end times, battery energy before and after, and status before and after.
+# off. The readings bracket writing the image and booting to load it again, ~0.5 Wh whatever the
+# time off, so 1 Wh of that is allowed on top of 1 W (a hang draws ~13 W). Args: start and end
+# times, battery energy before and after, and status before and after.
 hibernate_drain() {
 	local t0=$1 t1=$2 e0=$3 e1=$4 s0=$5 s1=$6 t
 	t=$((t1 - t0))
 	if [ "$s0" != Discharging ] || [ "$s1" != Discharging ]; then
 		log "hibernate: lasted $((t / 3600))h$(printf %02d $((t % 3600 / 60)))m, on AC ($s0 -> $s1)"
-	elif [ "$t" -ge 1200 ] && [ $((e0 - e1)) -gt $((t * 1000000 / 3600)) ]; then
-		alert "A hibernation probably hung at power-off: it drew over 1 W, where a working one" \
-			"is off: $(drain "$t" "$e0" "$e1")."
+	elif [ "$t" -ge 1200 ] && [ $((e0 - e1)) -gt $((1000000 + t * 1000000 / 3600)) ]; then
+		alert "A hibernation probably hung at power-off: it drew over 1 W beyond saving and loading" \
+			"the image, where a working one is off: $(drain "$t" "$e0" "$e1")."
 	else
 		log "hibernate: $(drain "$t" "$e0" "$e1")"
 	fi

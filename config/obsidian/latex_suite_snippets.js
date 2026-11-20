@@ -154,7 +154,20 @@ export default [
 
     // Linear algebra
     { trigger: /([^\\])(det)/, replacement: "[[0]]\\[[1]]", options: "rmA" },
-    { trigger: "trace", replacement: "\\mathrm{Tr}", options: "mA" },
+    { trigger: "trace", replacement: "\\trace ", options: "mA" },
+    { trigger: "spec", replacement: "\\spectrum{$0} $1", options: "mA" },
+    {
+        trigger: "SPD",
+        replacement: "\\SPD{$0} $1",
+        options: "mA",
+        description: "Symmetric positive definite matrix",
+    },
+    {
+        trigger: "SPSD",
+        replacement: "\\SPSD{$0} $1",
+        options: "mA",
+        description: "Symmetric positive semi-definite matrix",
+    },
 
     // More operations
     { trigger: "([a-zA-Z])hat", replacement: "\\hat{[[0]]}", options: "rmA" },
@@ -314,6 +327,9 @@ export default [
     { trigger: "+-", replacement: "\\pm", options: "mA" },
     { trigger: "-+", replacement: "\\mp", options: "mA" },
     { trigger: "...", replacement: "\\dots", options: "mA" },
+    { trigger: ":::", replacement: "\\vdots", options: "mA" },
+    { trigger: ".:", replacement: "\\ddots", options: "mA" },
+    { trigger: ":.", replacement: "\\ddots", options: "mA" },
     { trigger: "nabl", replacement: "\\nabla", options: "mA" },
     // The operator nabla is also called del, but using "del" as a trigger conflicts with the greek letter delta.
     // {trigger: "del", replacement: "\\nabla", options: "mA"},
@@ -328,8 +344,8 @@ export default [
     { trigger: "<=", replacement: "\\leq", options: "mA" },
     { trigger: ">>", replacement: "\\gg", options: "mA" },
     { trigger: "<<", replacement: "\\ll", options: "mA" },
-    { trigger: "simm", replacement: "\\sim", options: "mA" },
-    { trigger: "sim=", replacement: "\\simeq", options: "mA" },
+    { trigger: "~", replacement: "\\sim", options: "mA" },
+    { trigger: "~=", replacement: "\\simeq", options: "mA" },
     { trigger: "prop", replacement: "\\propto", options: "mA" },
 
     { trigger: "<->", replacement: "\\leftrightarrow ", options: "mA" },
@@ -436,9 +452,10 @@ export default [
 
     // Derivatives and integrals
     {
-        trigger: "par",
+        trigger: "par/",
         replacement: "\\frac{ \\partial ${0:y} }{ \\partial ${1:x} } $2",
-        options: "m",
+        options: "mA",
+        priority: 100,
     },
     {
         trigger: /par([0-9])/,
@@ -466,7 +483,11 @@ export default [
         options: "mA",
         priority: -1,
     },
-    { trigger: "\\int", replacement: "\\int $0 \\, \\d ${1:x} $2", options: "m" },
+    {
+        trigger: "\\int",
+        replacement: "\\int $0 \\, \\d ${1:x} $2",
+        options: "m",
+    },
     {
         trigger: "dint",
         replacement: "\\int_{${0:0}}^{${1:1}} $2 \\, \\d ${3:x} $4",
@@ -534,7 +555,7 @@ export default [
     { trigger: "S", replacement: "\\sqrt{ ${VISUAL} }", options: "mv" },
 
     // Physics
-    { trigger: "kbt", replacement: "k_{B}T", options: "mA" },
+    { trigger: "kbt", replacement: "k_{B} T", options: "mA" },
     { trigger: "msun", replacement: "M_{\\odot}", options: "mA" },
 
     // Quantum mechanics
@@ -636,6 +657,35 @@ export default [
     { trigger: "lr[", replacement: "\\left[ $0 \\right] $1", options: "mA" },
     { trigger: "lr|", replacement: "\\left| $0 \\right| $1", options: "mA" },
     { trigger: "lra", replacement: "\\left< $0 \\right> $1", options: "mA" },
+    {
+        // \big( -> \big( | \big), \bigl[ -> \bigl[ | \bigr], \left\langle -> \left\langle | \right\rangle, ...
+        // Priority beats the plain "(" / "[" / "{" auto-close and the macro catch-all (priority 3).
+        trigger:
+            /\\(left|(?:big|Big|bigg|Bigg)l?)(\(|\[|\\\{|\\\||\||\\langle|\\lvert|\\lVert|\\lfloor|\\lceil|\\lbrace|\\lbrack)/,
+        replacement: (match) => {
+            const [, size, open] = match;
+            const close = {
+                "(": ")",
+                "[": "]",
+                "\\{": "\\}",
+                "\\|": "\\|",
+                "|": "|",
+                "\\langle": "\\rangle",
+                "\\lvert": "\\rvert",
+                "\\lVert": "\\rVert",
+                "\\lfloor": "\\rfloor",
+                "\\lceil": "\\rceil",
+                "\\lbrace": "\\rbrace",
+                "\\lbrack": "\\rbrack",
+            }[open];
+            const closeSize =
+                size === "left" ? "right" : size.replace(/l$/, "r");
+            return `\\${size}${open} $0 \\${closeSize}${close} $1`;
+        },
+        options: "rmA",
+        priority: 4,
+        description: "Auto-close sized delimiters",
+    },
 
     // Misc
 
@@ -778,7 +828,7 @@ export default [
     },
     {
         trigger: "abs",
-        replacement: "\\left|$0\\right|",
+        replacement: "\\abs{$0} $1",
         options: "mA",
         description: "Absolute value",
     },
@@ -788,18 +838,23 @@ export default [
         options: "mA",
         description: "To",
     },
-	{
+    {
         trigger: "seq",
         replacement: "\\sequence{$0}[${1:i}=${2:1}][${3:N}] $4",
         options: "mA",
         description: "Sequence",
     },
+    {
+        trigger: "!",
+        replacement: "\\unique ",
+        options: "mA",
+    },
 
     // Statistics.
     {
-        trigger: "pr",
+        trigger: /(?<![A-Za-z\\])pr/,
         replacement: "\\prob{$0} ",
-        options: "mA",
+        options: "rmA",
         description: "Probability",
     },
     {
@@ -846,10 +901,11 @@ export default [
         description: "upright d",
     },
     {
-        trigger: ":dd",
+        trigger: "dd/",
         replacement: "\\dd{${0:y}}{${1:x}} $2",
         options: "mA",
         description: "dx/dy with custom x and y",
+        priority: 100,
     },
 
     // Control systems.
@@ -907,6 +963,18 @@ export default [
         options: "mA",
         description: "Crossover frequency",
     },
+    {
+        trigger: "ctrlmat",
+        replacement: "\\\CtrlMatrix ",
+        options: "mA",
+        description: "Controllability matrix",
+    },
+    {
+        trigger: "obsvmat",
+        replacement: "\\\ObsvMatrix ",
+        options: "mA",
+        description: "Observability matrix",
+    },
 
     // Vectors, frames and derivatives (macros in Latex/preamble.tex).
     {
@@ -948,9 +1016,9 @@ export default [
         description: "Bracketed matrix",
     },
     {
-        trigger: "trp",
-        replacement: "\\T",
-        options: "mA",
+        trigger: /([A-Za-z)\]}|])T /,
+        replacement: "[[0]]\\T ",
+        options: "rmA",
         description: "Transpose",
     },
     {
@@ -1087,21 +1155,64 @@ export default [
         options: "mA",
         description: "Capitalized logarithmic map",
     },
+
+    // Optimization
+    {
+        trigger: "argmax",
+        replacement: "\\argmax_{$0} $1",
+        options: "mA",
+    },
+    {
+        trigger: "argmin",
+        replacement: "\\argmin_{$0} $1",
+        options: "mA",
+    },
 ];
 
 // Custom macros from Latex/preamble.tex, so the "disable snippets while typing
 // macros" and "insert space after macros" snippets above treat them as macros.
 try {
     require("latex-suite").ALL_MACROS.push(
-        "\\ddt", "\\ddtt", "\\curl", "\\Matrix", "\\skew", "\\skewinv",
-        "\\lpinv", "\\rpinv", "\\rank", "\\nullity", "\\nullspace",
-        "\\rangespace", "\\col", "\\row", "\\linspan", "\\setbuilder",
-        "\\SO", "\\Inertia", "\\qw", "\\qv", "\\conj", "\\qconj",
-        "\\qinv", "\\qid", "\\qmul", "\\qMl", "\\qMr", "\\qcomm",
-        "\\imi", "\\imj", "\\imk", "\\Exp", "\\Log", "\\eqcomment",
+        "\\ddt",
+        "\\ddtt",
+        "\\curl",
+        "\\Matrix",
+        "\\skew",
+        "\\skewinv",
+        "\\lpinv",
+        "\\rpinv",
+        "\\rank",
+        "\\nullity",
+        "\\nullspace",
+        "\\rangespace",
+        "\\col",
+        "\\row",
+        "\\linspan",
+        "\\setbuilder",
+        "\\SO",
+        "\\Inertia",
+        "\\qw",
+        "\\qv",
+        "\\conj",
+        "\\qconj",
+        "\\qinv",
+        "\\qid",
+        "\\qmul",
+        "\\qMl",
+        "\\qMr",
+        "\\qcomm",
+        "\\imi",
+        "\\imj",
+        "\\imk",
+        "\\Exp",
+        "\\Log",
+        "\\eqcomment",
     );
 } catch (error) {
-    console.error("latex_suite_snippets.js: could not register custom macros", error);
+    console.error(
+        "latex_suite_snippets.js: could not register custom macros",
+        error,
+    );
 }
 
 function addRawConcealMaps() {

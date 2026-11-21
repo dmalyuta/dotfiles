@@ -796,7 +796,7 @@ export default [
     // Generic math.
     {
         trigger: "def",
-        replacement: "\\triangleq ",
+        replacement: "\\define ",
         options: "mA",
         description: "defined as",
     },
@@ -906,6 +906,12 @@ export default [
         options: "mA",
         description: "dx/dy with custom x and y",
         priority: 100,
+    },
+    {
+        trigger: "grad",
+        replacement: "\\grad[$0] $1",
+        options: "mA",
+        description: "Gradient",
     },
 
     // Control systems.

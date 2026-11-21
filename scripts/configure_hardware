@@ -100,6 +100,9 @@ has_amd_sfh && installed udev-hid-bpf && install_accelerometer_fix
 step "Patching KDE's idle timers"
 patch_library "after waking up by itself, the system won't go back to sleep" \
 	kidletime-wayland-simulate-activity.patch kf6-kidletime KF6IdleTimeWaylandPlugin.so
+step 4 "Patching Plasma's task manager"
+patch_library "an app's window coming onto this desktop can show beside its pinned icon" \
+	plasma-taskmanager-launcher-duplicate.patch plasma-workspace-libs libtaskmanager.so
 if is_laptop; then
 	step 2 "Patching libinput for the touchpad"
 	patch_library "the touchpad cursor and scrolling will start late" \

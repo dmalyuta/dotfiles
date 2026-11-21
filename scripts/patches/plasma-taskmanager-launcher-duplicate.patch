@@ -1,0 +1,54 @@
+Task manager: merge a window into its pinned launcher as soon as the window shows up.
+
+A pinned launcher is hidden while one of its app's windows passes the task manager's filters
+(only this desktop, this activity, ...), but that was only re-checked when a window's app
+changed. So when a window came onto this desktop's task manager any other way, its launcher
+stayed next to it until the next desktop switch re-checked everything: e.g. opening a link
+while Brave runs on another desktop makes Brave's window demand attention there, which shows it
+on every desktop, as a second Brave icon beside the pinned one. Same for any app, and for a
+window moving desktop or activity, or being minimized (the reverse too: the launcher stayed
+hidden after the window left). Now the launchers are re-checked whenever anything the filters
+look at changes; a window's geometry only with a screen or region filter on.
+
+Applied by scripts/patches/patch-library, see scripts/configure_hardware.
+
+diff --git a/libtaskmanager/taskfilterproxymodel.cpp b/libtaskmanager/taskfilterproxymodel.cpp
+--- a/libtaskmanager/taskfilterproxymodel.cpp
++++ b/libtaskmanager/taskfilterproxymodel.cpp
+@@ -83,11 +83,31 @@
+         }
+     });
+     connect(sourceModel, &QAbstractItemModel::dataChanged, this, [this](const QModelIndex &, const QModelIndex &, const QList<int> &roles) {
+-        if ((d->hideActivatedLaunchers
+-             && (roles.isEmpty() || roles.contains(AbstractTasksModel::AppId)
+-                 || roles.contains(AbstractTasksModel::LauncherUrlWithoutIcon)
+-                 // Launchers are hidden based on windows passing the other filters, so re-check them when a window changes screen.
+-                 || (d->filterByScreen && roles.contains(AbstractTasksModel::ScreenGeometry))))) {
++        if (!d->hideActivatedLaunchers) {
++            return;
++        }
++        // Launchers are hidden based on windows passing the other filters, so re-check them when
++        // anything those filters look at changes, not just the window's app. Otherwise a window
++        // that starts demanding attention on another desktop (and so skips the desktop filter)
++        // shows up next to its still-visible pinned launcher, until the next desktop switch.
++        static const QList<int> filteredRoles{AbstractTasksModel::AppId,
++                                              AbstractTasksModel::LauncherUrlWithoutIcon,
++                                              AbstractTasksModel::IsDemandingAttention,
++                                              AbstractTasksModel::VirtualDesktops,
++                                              AbstractTasksModel::IsOnAllVirtualDesktops,
++                                              AbstractTasksModel::Activities,
++                                              AbstractTasksModel::SkipTaskbar,
++                                              AbstractTasksModel::SkipPager,
++                                              AbstractTasksModel::IsMinimized,
++                                              AbstractTasksModel::IsMaximized,
++                                              AbstractTasksModel::IsHidden};
++        bool affectsFilters = roles.isEmpty();
++        for (int role : roles) {
++            affectsFilters = affectsFilters || filteredRoles.contains(role)
++                || ((d->filterByScreen || d->filterByCurrentVirtualDesktop) && role == AbstractTasksModel::ScreenGeometry)
++                || (d->filterByRegion != RegionFilterMode::Mode::Disabled && role == AbstractTasksModel::Geometry);
++        }
++        if (affectsFilters) {
+             invalidateFilter();
+         }
+     });
